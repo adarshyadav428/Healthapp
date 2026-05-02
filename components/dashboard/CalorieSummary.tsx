@@ -1,4 +1,4 @@
- 'use client'
+'use client'
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { Card } from '../ui/card'

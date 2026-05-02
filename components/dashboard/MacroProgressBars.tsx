@@ -1,4 +1,4 @@
- 'use client'
+'use client'
 
 import { Progress } from '../ui/progress'
 import type { DailyTotals, Profile } from '../../types/index'

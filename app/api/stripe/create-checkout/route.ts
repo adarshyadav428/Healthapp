@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 export const runtime = 'nodejs'
+import Stripe from 'stripe'
 import { getStripeClient } from '../../../../lib/stripe/client'
 import { createServerClient } from '../../../../lib/supabase/server'
 
@@ -30,21 +31,26 @@ export async function POST(req: Request) {
     const customer = customers.data[0] ?? (await stripe.customers.create({ email: user.email }))
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    const session = await stripe.checkout.sessions.create({
+    const isSubscription = plan !== 'lifetime'
+
+    const params: Stripe.Checkout.SessionCreateParams = {
       customer: customer.id,
-      mode: plan === 'lifetime' ? 'payment' : 'subscription',
+      mode: isSubscription ? 'subscription' : 'payment',
       line_items: [{ price: priceMap[plan] as string, quantity: 1 }],
       success_url: `${appUrl}/dashboard?upgraded=true`,
       cancel_url: `${appUrl}/upgrade`,
-      subscription_data:
-        plan === 'lifetime'
-          ? undefined
-          : {
-              metadata: { user_id: user.id, plan },
-              trial_period_days: plan === 'annual' ? 7 : undefined,
-            },
       metadata: { user_id: user.id, plan },
-    })
+    }
+
+    if (isSubscription) {
+      const subData: Stripe.Checkout.SessionCreateParams.SubscriptionData = {
+        metadata: { user_id: user.id, plan },
+      }
+      if (plan === 'annual') subData.trial_period_days = 7
+      params.subscription_data = subData
+    }
+
+    const session = await stripe.checkout.sessions.create(params)
 
     return NextResponse.json({ url: session.url })
   } catch (err) {

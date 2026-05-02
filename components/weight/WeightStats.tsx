@@ -1,4 +1,4 @@
- 'use client'
+'use client'
 
 import type { WeightLog, Profile } from '../../types/index'
 
