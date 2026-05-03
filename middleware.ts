@@ -1,53 +1,60 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
+const PUBLIC_PATHS = ['/', '/auth', '/api', '/_next', '/privacy', '/terms', '/favicon.ico']
+
+function isPublicPath(pathname: string) {
+  return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/') || pathname === p)
+}
+
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
-  const response = NextResponse.next()
+  try {
+    const { pathname } = request.nextUrl
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  if (!url || !anonKey) return response
+    // If env vars missing, let the page handle it
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.next()
+    }
 
-  const supabase = createServerClient(url, anonKey, {
-    cookies: {
-      get(name: string) {
-        return request.cookies.get(name)?.value
+    let response = NextResponse.next({ request })
+
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+        },
       },
-      set(name: string, value: string, options: Record<string, unknown>) {
-        response.cookies.set({ name, value, ...options })
-      },
-      remove(name: string, options: Record<string, unknown>) {
-        response.cookies.set({ name, value: '', ...options })
-      },
-    },
-  })
+    })
 
-  const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
 
-  const isPublic =
-    pathname === '/' ||
-    pathname.startsWith('/auth') ||
-    pathname.startsWith('/api') ||
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/privacy') ||
-    pathname.startsWith('/terms') ||
-    pathname === '/favicon.ico'
+    // Logged-in user visiting auth page → send to dashboard
+    if (user && pathname.startsWith('/auth')) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
 
-  // Redirect logged-in users away from auth pages
-  if (user && pathname.startsWith('/auth')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    // Unauthenticated user visiting protected page → send to sign-in
+    if (!user && !isPublicPath(pathname)) {
+      const signInUrl = new URL('/auth/sign-in', request.url)
+      signInUrl.searchParams.set('returnTo', pathname)
+      return NextResponse.redirect(signInUrl)
+    }
+
+    return response
+  } catch {
+    // Never crash the site — if middleware fails just let the request through
+    return NextResponse.next()
   }
-
-  // Redirect unauthenticated users to sign-in
-  if (!user && !isPublic) {
-    const signInUrl = new URL('/auth/sign-in', request.url)
-    signInUrl.searchParams.set('returnTo', pathname)
-    return NextResponse.redirect(signInUrl)
-  }
-
-  return response
 }
 
 export const config = {
