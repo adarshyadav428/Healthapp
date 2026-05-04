@@ -3,16 +3,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { getBrowserSupabaseClient } from '../lib/supabase/client'
 import type { FoodLog } from '../types/index'
-
-function getDateRange(date: Date) {
-  const start = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
-  const end = new Date(start)
-  end.setUTCDate(start.getUTCDate() + 1)
-  return { start: start.toISOString(), end: end.toISOString() }
-}
+import { getUtcDayRange } from '../lib/dateUtils'
 
 export function useFoodLogs(userId: string | null, date = new Date(), initialData?: FoodLog[]) {
-  const { start, end } = getDateRange(date)
+  const { start, end } = getUtcDayRange(date)
 
   return useQuery({
     queryKey: ['food-logs', userId, start],

@@ -68,7 +68,7 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
           <input type="hidden" {...form.register('measured_at')} />
           <div>
             <Label htmlFor="weight">Weight ({profile?.unit_system === 'imperial' ? 'lbs' : 'kg'})</Label>
-            <Input id="weight" type="number" {...form.register('weight_kg', { valueAsNumber: true })} />
+            <Input id="weight" type="number" step="0.1" min="1" {...form.register('weight_kg', { valueAsNumber: true })} />
             {form.formState.errors.weight_kg ? (
               <p className="mt-1 text-xs text-red-500">{form.formState.errors.weight_kg.message}</p>
             ) : null}

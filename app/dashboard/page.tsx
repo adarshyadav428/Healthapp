@@ -7,15 +7,9 @@ import { BottomNav } from '../../components/layout/BottomNav'
 import { DashboardClient } from '../../components/dashboard/DashboardClient'
 import Link from 'next/link'
 import { Button } from '../../components/ui/button'
+import { getUtcDayRange } from '../../lib/dateUtils'
 
 export const dynamic = 'force-dynamic'
-
-function dateRangeUTC(date = new Date()) {
-  const start = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
-  const end = new Date(start)
-  end.setUTCDate(start.getUTCDate() + 1)
-  return { start: start.toISOString(), end: end.toISOString() }
-}
 
 export default async function DashboardPage() {
   const supabase = createServerClient()
@@ -35,7 +29,7 @@ export default async function DashboardPage() {
   if (profileError) throw new Error(profileError.message)
   if (!profile || profile.height_cm === null) redirect('/onboarding')
 
-  const { start, end } = dateRangeUTC()
+  const { start, end } = getUtcDayRange()
 
   const { data: logs, error: logsError } = await supabase
     .from('food_logs')

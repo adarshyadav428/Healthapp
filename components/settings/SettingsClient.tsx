@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { Profile } from '../../types/index'
@@ -17,6 +18,9 @@ import { useRouter } from 'next/navigation'
 export function SettingsClient({ profile, version }: { profile: Profile; version: string }) {
   const router = useRouter()
   const { data: subscription } = useSubscription(profile.id)
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [signOutLoading, setSignOutLoading] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   const form = useForm<ProfileUpdateData>({
     resolver: zodResolver(profileUpdateSchema),
@@ -40,31 +44,35 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
         const body = await res.json().catch(() => null)
         throw new Error(body?.error || 'Failed to update profile')
       }
-      toast({ title: 'Profile updated', description: 'Targets recalculated.' })
+      toast({ title: 'Profile updated', description: 'Targets recalculated.', duration: 3000 })
     } catch (err) {
-      toast({ title: 'Update failed', description: (err as Error).message, variant: 'error' })
+      toast({ title: 'Update failed', description: (err as Error).message, variant: 'error', duration: 4000 })
     }
   }
 
   const manageSubscription = async () => {
     try {
+      setPortalLoading(true)
       const res = await fetch('/api/stripe/portal', { method: 'POST' })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       window.location.href = data.url
     } catch (err) {
-      toast({ title: 'Could not open portal', description: (err as Error).message, variant: 'error' })
+      toast({ title: 'Could not open portal', description: (err as Error).message, variant: 'error', duration: 4000 })
+      setPortalLoading(false)
     }
   }
 
   const signOut = async () => {
     try {
+      setSignOutLoading(true)
       const supabase = getBrowserSupabaseClient()
       const { error } = await supabase.auth.signOut()
       if (error) throw new Error(error.message)
       router.push('/')
     } catch (err) {
-      toast({ title: 'Sign out failed', description: (err as Error).message, variant: 'error' })
+      toast({ title: 'Sign out failed', description: (err as Error).message, variant: 'error', duration: 4000 })
+      setSignOutLoading(false)
     }
   }
 
@@ -73,12 +81,14 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
     if (!confirmed) return
 
     try {
+      setDeleteLoading(true)
       const res = await fetch('/api/account/delete', { method: 'POST' })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       router.push('/')
     } catch (err) {
-      toast({ title: 'Delete failed', description: (err as Error).message, variant: 'error' })
+      toast({ title: 'Delete failed', description: (err as Error).message, variant: 'error', duration: 4000 })
+      setDeleteLoading(false)
     }
   }
 
@@ -156,7 +166,9 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
         </p>
         <div className="mt-3">
           {subscription?.isPro ? (
-            <Button variant="outline" onClick={manageSubscription}>Manage Subscription</Button>
+            <Button variant="outline" onClick={manageSubscription} disabled={portalLoading}>
+              {portalLoading ? 'Opening...' : 'Manage Subscription'}
+            </Button>
           ) : (
             <Button asChild>
               <Link href="/upgrade">Upgrade to Pro</Link>
@@ -168,8 +180,12 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
       <section className="rounded-2xl border border-gray-100 bg-white p-4">
         <h2 className="text-lg font-semibold text-gray-900">Account</h2>
         <div className="mt-3 flex flex-col gap-3">
-          <Button variant="outline" onClick={signOut}>Sign out</Button>
-          <Button variant="ghost" className="text-red-600" onClick={deleteAccount}>Delete account</Button>
+          <Button variant="outline" onClick={signOut} disabled={signOutLoading}>
+            {signOutLoading ? 'Signing out...' : 'Sign out'}
+          </Button>
+          <Button variant="ghost" className="text-red-600" onClick={deleteAccount} disabled={deleteLoading}>
+            {deleteLoading ? 'Deleting...' : 'Delete account'}
+          </Button>
         </div>
         <p className="mt-4 text-xs text-gray-400">App version {version}</p>
       </section>

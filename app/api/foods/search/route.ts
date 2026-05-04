@@ -63,21 +63,30 @@ export async function GET(request: Request) {
           type UsdaResponse = { foods?: UsdaFood[] }
 
           const usdaJson = (await usdaRes.json()) as UsdaResponse
-          const mapped: Food[] = (usdaJson.foods || []).map((item) => ({
-            id: crypto.randomUUID(),
-            source: 'usda',
-            source_id: String(item.fdcId),
-            name: item.description,
-            brand: item.brandOwner ?? null,
-            serving_size_g: 100,
-            serving_description: '100g',
-            kcal_per_100g: item.foodNutrients?.find((n) => n.nutrientName === 'Energy')?.value ?? 0,
-            protein_g_per_100g: item.foodNutrients?.find((n) => n.nutrientName === 'Protein')?.value ?? 0,
-            carbs_g_per_100g:
-              item.foodNutrients?.find((n) => n.nutrientName === 'Carbohydrate, by difference')?.value ?? 0,
-            fat_g_per_100g: item.foodNutrients?.find((n) => n.nutrientName === 'Total lipid (fat)')?.value ?? 0,
-            fiber_g_per_100g: item.foodNutrients?.find((n) => n.nutrientName === 'Fiber, total dietary')?.value ?? null,
-          }))
+          const mapped: Food[] = (usdaJson.foods || [])
+            .map((item) => ({
+              id: crypto.randomUUID(),
+              source: 'usda' as const,
+              source_id: String(item.fdcId),
+              name: item.description,
+              brand: item.brandOwner ?? null,
+              serving_size_g: 100,
+              serving_description: '100g',
+              kcal_per_100g: item.foodNutrients?.find((n) => n.nutrientName === 'Energy')?.value ?? 0,
+              protein_g_per_100g: item.foodNutrients?.find((n) => n.nutrientName === 'Protein')?.value ?? 0,
+              carbs_g_per_100g:
+                item.foodNutrients?.find((n) => n.nutrientName === 'Carbohydrate, by difference')?.value ?? 0,
+              fat_g_per_100g: item.foodNutrients?.find((n) => n.nutrientName === 'Total lipid (fat)')?.value ?? 0,
+              fiber_g_per_100g: item.foodNutrients?.find((n) => n.nutrientName === 'Fiber, total dietary')?.value ?? null,
+            }))
+            // Skip foods with no meaningful nutritional data
+            .filter(
+              (f) =>
+                f.kcal_per_100g > 0 ||
+                f.protein_g_per_100g > 0 ||
+                f.carbs_g_per_100g > 0 ||
+                f.fat_g_per_100g > 0
+            )
 
           const admin = createAdminClient()
           if (mapped.length > 0) {
@@ -96,9 +105,24 @@ export async function GET(request: Request) {
                 fat_g_per_100g: f.fat_g_per_100g,
                 fiber_g_per_100g: f.fiber_g_per_100g,
               })),
-              { onConflict: 'source,source_id' }
+              { onConflict: 'source,source_id', ignoreDuplicates: false }
             )
             if (insertError) throw new Error(insertError.message)
+
+            // Refetch the stored rows so we return the canonical database IDs
+            const sourceIds = mapped.map((f) => f.source_id)
+            const { data: storedFoods } = await admin
+              .from('foods')
+              .select('*')
+              .eq('source', 'usda')
+              .in('source_id', sourceIds)
+            if (storedFoods && storedFoods.length > 0) {
+              const storedMap = new Map((storedFoods as Food[]).map((f) => [f.source_id, f]))
+              mapped.forEach((f, i) => {
+                const stored = storedMap.get(f.source_id)
+                if (stored) mapped[i] = stored
+              })
+            }
           }
 
           const combined = [...results, ...mapped]

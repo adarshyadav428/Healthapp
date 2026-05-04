@@ -2,8 +2,8 @@
 
 import type { WeightLog, Profile } from '../../types/index'
 
-export function WeightStats({ logs, profile }: { logs: WeightLog[]; profile: Profile }) {
-  const sorted = logs.slice().sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime())
+export function WeightStats({ logs, profile }: { logs: WeightLog[] | null | undefined; profile: Profile }) {
+  const sorted = (logs ?? []).slice().sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime())
   const starting = sorted[0]?.weight_kg ?? profile.current_weight_kg
   const current = sorted[sorted.length - 1]?.weight_kg ?? profile.current_weight_kg
   const delta = Number((starting - current).toFixed(1))

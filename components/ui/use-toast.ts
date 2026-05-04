@@ -6,6 +6,8 @@ export type ToastOptions = {
   title: string
   description?: string
   variant?: ToastVariant
+  /** Auto-dismiss delay in ms. Defaults to 4000. */
+  duration?: number
 }
 
 type ToastItem = ToastOptions & { id: string }

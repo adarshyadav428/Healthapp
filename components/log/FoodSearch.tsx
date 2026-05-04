@@ -28,8 +28,9 @@ export function FoodSearch() {
     enabled: debounced.trim().length > 1,
     queryFn: async () => {
       const res = await fetch(`/api/foods/search?q=${encodeURIComponent(debounced)}`)
-      if (!res.ok) throw new Error('Search failed')
-      return (await res.json()) as Food[]
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error((json as { error?: string }).error ?? 'Search failed')
+      return (Array.isArray(json) ? json : []) as Food[]
     },
   })
 
