@@ -14,7 +14,7 @@ import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { useSubscription } from '../../hooks/useSubscription'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Crown, Target, User, LogOut, Trash2 } from 'lucide-react'
+import { ChevronRight, Crown, Target, User, LogOut, Trash2, Download } from 'lucide-react'
 
 const ACTIVITY_LABELS: Record<string, string> = {
   sedentary: 'Sedentary (desk job, no exercise)',
@@ -102,6 +102,10 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
       toast({ title: 'Sign out failed', description: (err as Error).message, variant: 'error', duration: 4000 })
       setSignOutLoading(false)
     }
+  }
+
+  const exportData = () => {
+    window.location.href = '/api/export'
   }
 
   const deleteAccount = async () => {
@@ -218,6 +222,17 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
       {/* Account */}
       <SectionCard title="Account" icon={<Target className="h-4 w-4" />}>
         <div className="space-y-2">
+          <button
+            type="button"
+            onClick={exportData}
+            className="flex w-full items-center justify-between rounded-2xl border border-gray-100 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <Download className="h-4 w-4 text-gray-400" />
+              Export my data (CSV)
+            </span>
+            <ChevronRight className="h-4 w-4 text-gray-300" />
+          </button>
           <button
             type="button"
             onClick={signOut}
