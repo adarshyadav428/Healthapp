@@ -5,7 +5,10 @@ import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine, Cell,
 } from 'recharts'
 import type { Profile } from '../../types/index'
-import { format, parseISO, startOfDay, subDays, eachDayOfInterval } from 'date-fns'
+import { format, parseISO, startOfDay, subDays, eachDayOfInterval, parse } from 'date-fns'
+import { DayDiary } from './DayDiary'
+import { useUser } from '../../hooks/useUser'
+import { CalendarDays, X } from 'lucide-react'
 
 type LogRow = {
   logged_at: string
@@ -35,6 +38,8 @@ const RANGES = [
 export function HistoryClient({ logs, profile }: { logs: LogRow[]; profile: Profile }) {
   const [range, setRange] = useState(14)
   const [metric, setMetric] = useState<'kcal' | 'protein' | 'carbs' | 'fat'>('kcal')
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const { user } = useUser()
   const target = profile.daily_calorie_target
 
   const chartData: DayData[] = useMemo(() => {
@@ -203,12 +208,17 @@ export function HistoryClient({ logs, profile }: { logs: LogRow[]; profile: Prof
                   )
                 }}
               />
-              <Bar dataKey={metric} radius={[4, 4, 0, 0]}>
+              <Bar
+                dataKey={metric}
+                radius={[4, 4, 0, 0]}
+                onClick={(data: DayData) => setSelectedDate(data.date === selectedDate ? null : data.date)}
+                style={{ cursor: 'pointer' }}
+              >
                 {chartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={entry.kcal === 0 ? '#f3f4f6' : cfg.color}
-                    opacity={entry.kcal === 0 ? 1 : 0.85}
+                    fill={entry.date === selectedDate ? '#9333ea' : entry.kcal === 0 ? '#f3f4f6' : cfg.color}
+                    opacity={entry.kcal === 0 ? 1 : entry.date === selectedDate ? 1 : 0.85}
                   />
                 ))}
               </Bar>
@@ -217,9 +227,34 @@ export function HistoryClient({ logs, profile }: { logs: LogRow[]; profile: Prof
         </div>
 
         <p className="mt-2 text-[10px] text-gray-400 text-center">
-          Grey bars = days with no logs
+          Tap a bar to view that day&apos;s food diary
         </p>
       </div>
+
+      {/* Day diary panel */}
+      {selectedDate && user && (
+        <div className="rounded-3xl border border-purple-100 bg-white/90 p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-purple-500" />
+              <p className="text-sm font-bold text-gray-800">
+                {format(parse(selectedDate, 'yyyy-MM-dd', new Date()), 'EEEE, MMM d')}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedDate(null)}
+              className="rounded-full p-1 hover:bg-gray-100 transition-colors"
+            >
+              <X className="h-4 w-4 text-gray-400" />
+            </button>
+          </div>
+          <DayDiary
+            userId={user.id}
+            date={parse(selectedDate, 'yyyy-MM-dd', new Date())}
+          />
+        </div>
+      )}
 
       {/* Weekly breakdown */}
       {loggedDays.length > 0 && (
@@ -229,19 +264,25 @@ export function HistoryClient({ logs, profile }: { logs: LogRow[]; profile: Prof
             {[...chartData].reverse().slice(0, 7).map((day) => {
               const pct = target > 0 ? Math.min((day.kcal / target) * 100, 100) : 0
               const color = day.kcal === 0 ? 'bg-gray-200' : day.kcal > target * 1.1 ? 'bg-rose-400' : day.kcal >= target * 0.9 ? 'bg-emerald-400' : 'bg-orange-400'
-              return (
-                <div key={day.date} className="flex items-center gap-3">
-                  <span className="w-14 text-xs text-gray-500 font-medium shrink-0">{day.label}</span>
+              const isSelected = selectedDate === day.date
+            return (
+                <button
+                  key={day.date}
+                  type="button"
+                  onClick={() => setSelectedDate(isSelected ? null : day.date)}
+                  className={`flex items-center gap-3 w-full rounded-xl px-2 py-1 -mx-2 transition-colors ${isSelected ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
+                >
+                  <span className={`w-14 text-xs font-medium shrink-0 ${isSelected ? 'text-purple-700 font-bold' : 'text-gray-500'}`}>{day.label}</span>
                   <div className="flex-1 h-5 rounded-full bg-gray-100 overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all ${color}`}
+                      className={`h-full rounded-full transition-all ${isSelected ? 'bg-purple-400' : color}`}
                       style={{ width: day.kcal === 0 ? '0%' : `${pct}%` }}
                     />
                   </div>
-                  <span className="w-16 text-xs font-bold text-gray-700 text-right shrink-0">
+                  <span className={`w-16 text-xs font-bold text-right shrink-0 ${isSelected ? 'text-purple-700' : 'text-gray-700'}`}>
                     {day.kcal > 0 ? `${day.kcal.toLocaleString()} kcal` : '—'}
                   </span>
-                </div>
+                </button>
               )
             })}
           </div>

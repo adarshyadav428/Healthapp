@@ -1,0 +1,120 @@
+'use client'
+
+import { useQuery } from '@tanstack/react-query'
+import { getBrowserSupabaseClient } from '../../lib/supabase/client'
+import type { FoodLog } from '../../types/index'
+import { getUtcDayRange } from '../../lib/dateUtils'
+import { Loader2 } from 'lucide-react'
+
+const MEAL_CONFIG = {
+  breakfast: { emoji: '🥣', label: 'Breakfast', color: 'text-amber-700' },
+  lunch: { emoji: '🍛', label: 'Lunch', color: 'text-emerald-700' },
+  dinner: { emoji: '🍲', label: 'Dinner', color: 'text-rose-700' },
+  snack: { emoji: '🥜', label: 'Snack', color: 'text-amber-600' },
+}
+
+function useDayLogs(userId: string | null, date: Date) {
+  const { start, end } = getUtcDayRange(date)
+  return useQuery({
+    queryKey: ['food-logs-diary', userId, start],
+    enabled: Boolean(userId),
+    queryFn: async () => {
+      if (!userId) return [] as FoodLog[]
+      const supabase = getBrowserSupabaseClient()
+      const { data, error } = await supabase
+        .from('food_logs')
+        .select('*, food:foods(name, brand)')
+        .eq('user_id', userId)
+        .gte('logged_at', start)
+        .lt('logged_at', end)
+        .order('logged_at', { ascending: true })
+      if (error) throw error
+      return (data ?? []) as FoodLog[]
+    },
+  })
+}
+
+export function DayDiary({ userId, date }: { userId: string; date: Date }) {
+  const { data: logs, isLoading } = useDayLogs(userId, date)
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-6">
+        <Loader2 className="h-5 w-5 animate-spin text-orange-400" />
+      </div>
+    )
+  }
+
+  if (!logs || logs.length === 0) {
+    return (
+      <div className="py-6 text-center">
+        <p className="text-2xl mb-1">🍽️</p>
+        <p className="text-sm text-gray-500">Nothing logged on this day.</p>
+      </div>
+    )
+  }
+
+  const byMeal = (Object.keys(MEAL_CONFIG) as (keyof typeof MEAL_CONFIG)[]).reduce((acc, meal) => {
+    acc[meal] = logs.filter((l) => l.meal === meal)
+    return acc
+  }, {} as Record<keyof typeof MEAL_CONFIG, FoodLog[]>)
+
+  const totalKcal = logs.reduce((s, l) => s + l.kcal, 0)
+  const totalP = logs.reduce((s, l) => s + l.protein_g, 0)
+  const totalC = logs.reduce((s, l) => s + l.carbs_g, 0)
+  const totalF = logs.reduce((s, l) => s + l.fat_g, 0)
+
+  return (
+    <div className="space-y-3">
+      {/* Day total */}
+      <div className="flex gap-2 flex-wrap">
+        <div className="rounded-xl bg-orange-50 border border-orange-100 px-3 py-1.5 text-center">
+          <p className="text-sm font-black text-orange-700">{Math.round(totalKcal)}</p>
+          <p className="text-[10px] text-orange-500">kcal</p>
+        </div>
+        <div className="rounded-xl bg-blue-50 border border-blue-100 px-3 py-1.5 text-center">
+          <p className="text-sm font-black text-blue-700">{Math.round(totalP)}g</p>
+          <p className="text-[10px] text-blue-500">protein</p>
+        </div>
+        <div className="rounded-xl bg-amber-50 border border-amber-100 px-3 py-1.5 text-center">
+          <p className="text-sm font-black text-amber-700">{Math.round(totalC)}g</p>
+          <p className="text-[10px] text-amber-500">carbs</p>
+        </div>
+        <div className="rounded-xl bg-rose-50 border border-rose-100 px-3 py-1.5 text-center">
+          <p className="text-sm font-black text-rose-700">{Math.round(totalF)}g</p>
+          <p className="text-[10px] text-rose-500">fat</p>
+        </div>
+      </div>
+
+      {/* Meals */}
+      {(Object.entries(byMeal) as [keyof typeof MEAL_CONFIG, FoodLog[]][])
+        .filter(([, items]) => items.length > 0)
+        .map(([meal, items]) => {
+          const cfg = MEAL_CONFIG[meal]
+          const mealKcal = items.reduce((s, l) => s + l.kcal, 0)
+          return (
+            <div key={meal}>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span>{cfg.emoji}</span>
+                  <span className={`text-xs font-bold ${cfg.color}`}>{cfg.label}</span>
+                </div>
+                <span className="text-[11px] text-gray-400 font-medium">{Math.round(mealKcal)} kcal</span>
+              </div>
+              <div className="space-y-1.5">
+                {items.map((log) => (
+                  <div key={log.id} className="flex items-center justify-between rounded-xl bg-gray-50 border border-gray-100 px-3 py-2">
+                    <div className="min-w-0 flex-1 mr-2">
+                      <p className="text-xs font-semibold text-gray-800 truncate">{log.food?.name ?? 'Food item'}</p>
+                      <p className="text-[10px] text-gray-400">{Math.round(log.grams)}g · {Math.round(log.protein_g)}P {Math.round(log.carbs_g)}C {Math.round(log.fat_g)}F</p>
+                    </div>
+                    <span className="text-xs font-bold text-gray-700 shrink-0">{Math.round(log.kcal)} kcal</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+    </div>
+  )
+}
