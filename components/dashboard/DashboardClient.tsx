@@ -10,6 +10,7 @@ import { WeightTrendCard } from './WeightTrendCard'
 import { WaterCard } from './WaterCard'
 import { ExerciseCard } from '../exercise/ExerciseCard'
 import { ExerciseLogModal } from '../exercise/ExerciseLogModal'
+import { DailyInsight } from './DailyInsight'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
 import { getBrowserSupabaseClient } from '../../lib/supabase/client'
@@ -131,6 +132,11 @@ export function DashboardClient({
           </div>
         </div>
       </section>
+
+      {/* Daily Insight */}
+      <div className="animate-fade-up" style={{ animationDelay: '160ms' }}>
+        <DailyInsight totals={totals} profile={profile} />
+      </div>
 
       <section className="grid gap-4 sm:grid-cols-2">
         <div className="animate-fade-up" style={{ animationDelay: '200ms' }}>
