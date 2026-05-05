@@ -4,11 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { Food } from '../../types/index'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
-import { Button } from '../ui/button'
-import { Input } from '../ui/input'
-import { Label } from '../ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { useUser } from '../../hooks/useUser'
 import { useSubscription } from '../../hooks/useSubscription'
@@ -16,50 +11,58 @@ import { toast } from '../ui/use-toast'
 import { addFoodSchema, type AddFoodData } from '../../lib/validations'
 import { useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
+import { X, Zap } from 'lucide-react'
 
-const mealOptions = [
-  { value: 'breakfast', label: 'Breakfast' },
-  { value: 'lunch', label: 'Lunch' },
-  { value: 'dinner', label: 'Dinner' },
-  { value: 'snack', label: 'Snack' },
+const MEAL_OPTIONS = [
+  { value: 'breakfast', label: '🥣 Breakfast' },
+  { value: 'lunch', label: '🍛 Lunch' },
+  { value: 'dinner', label: '🍲 Dinner' },
+  { value: 'snack', label: '🥜 Snack' },
 ] as const
 
-type MealValue = (typeof mealOptions)[number]['value']
+type MealValue = (typeof MEAL_OPTIONS)[number]['value']
 
 const round2 = (n: number) => Math.round(n * 100) / 100
+
+function defaultMeal(): MealValue {
+  const hour = new Date().getHours()
+  if (hour < 11) return 'breakfast'
+  if (hour < 16) return 'lunch'
+  if (hour < 21) return 'dinner'
+  return 'snack'
+}
 
 export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => void }) {
   const { user } = useUser()
   const { data: subscription } = useSubscription(user?.id ?? null)
+  const [showLimit, setShowLimit] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const inFlightRef = useRef(false)
+  const queryClient = useQueryClient()
+
   const form = useForm<AddFoodData>({
     resolver: zodResolver(addFoodSchema),
     defaultValues: {
       food_id: food.id,
-      meal: 'breakfast',
+      meal: defaultMeal(),
       servings: 1,
       grams: food.serving_size_g,
     },
   })
 
-  // Stable food.id dep so reset only fires when food actually changes
   const foodId = food.id
   useEffect(() => {
     form.reset({
       food_id: foodId,
-      meal: 'breakfast',
+      meal: defaultMeal(),
       servings: 1,
       grams: food.serving_size_g,
     })
   }, [foodId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showLimit, setShowLimit] = useState(false)
-  // Guard against double-submit in the tiny window before React re-renders
-  const inFlightRef = useRef(false)
-  const queryClient = useQueryClient()
-
   const grams = form.watch('grams')
   const servings = form.watch('servings')
+  const meal = form.watch('meal')
 
   const nutrition = useMemo(() => {
     const factor = (grams || 0) / 100
@@ -114,7 +117,7 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
 
       if (error) throw new Error(error.message)
 
-      toast({ title: 'Food logged', description: 'Nice job staying consistent.', duration: 3000 })
+      toast({ title: '✅ Food logged!', description: 'Nice job staying consistent.', duration: 2500 })
       queryClient.invalidateQueries({ queryKey: ['food-logs'] })
       onClose()
     } catch (err) {
@@ -125,116 +128,140 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
     }
   }
 
+  if (showLimit) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-end justify-center">
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+        <div className="relative w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl">
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-gray-200" />
+          <div className="text-center pt-4">
+            <div className="text-4xl mb-3">🔒</div>
+            <h2 className="text-lg font-black text-gray-900">Free limit reached</h2>
+            <p className="mt-2 text-sm text-gray-500">You&apos;ve logged 5 items today. Upgrade to Pro for unlimited logging.</p>
+            <div className="mt-5 flex gap-3">
+              <button type="button" onClick={onClose} className="flex-1 rounded-2xl border border-gray-200 py-3 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+                Close
+              </button>
+              <Link href="/upgrade" className="flex-1 rounded-2xl bg-orange-600 py-3 text-sm font-bold text-white text-center hover:bg-orange-700 transition-colors">
+                Upgrade to Pro
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <>
-      <Dialog open onOpenChange={onClose}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{food.name}</DialogTitle>
-            <DialogDescription>{food.brand ?? 'Generic'}</DialogDescription>
-          </DialogHeader>
+    <div className="fixed inset-0 z-50 flex items-end justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-          <div className="space-y-4">
-            <input type="hidden" {...form.register('food_id')} />
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="grams">Serving size (g)</Label>
-                <Input
-                  id="grams"
-                  type="number"
-                  step="0.1"
-                  min="1"
-                  {...form.register('grams', { valueAsNumber: true })}
-                />
-                {form.formState.errors.grams ? (
-                  <p className="mt-1 text-xs text-red-500">{form.formState.errors.grams.message}</p>
-                ) : null}
-              </div>
-              <div>
-                <Label htmlFor="servings">Servings</Label>
-                <Input
-                  id="servings"
-                  type="number"
-                  step="0.25"
-                  min="0.25"
-                  {...form.register('servings', { valueAsNumber: true })}
-                />
-                {form.formState.errors.servings ? (
-                  <p className="mt-1 text-xs text-red-500">{form.formState.errors.servings.message}</p>
-                ) : null}
-              </div>
-            </div>
+      {/* Sheet */}
+      <div className="relative w-full max-w-md rounded-t-3xl bg-white p-5 shadow-2xl max-h-[92vh] overflow-y-auto">
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-gray-200" />
 
-            <div>
-              <Label>Meal</Label>
-              <Select
-                value={form.watch('meal')}
-                onValueChange={(value) => form.setValue('meal', value as MealValue, { shouldValidate: true })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mealOptions.map((m) => (
-                    <SelectItem key={m.value} value={m.value}>
-                      {m.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {form.formState.errors.meal ? (
-                <p className="mt-1 text-xs text-red-500">{form.formState.errors.meal.message}</p>
-              ) : null}
-            </div>
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4 mt-2">
+          <div className="flex-1 min-w-0 pr-3">
+            <h2 className="text-base font-black text-gray-900 truncate">{food.name}</h2>
+            {food.brand && <p className="text-xs text-gray-400">{food.brand}</p>}
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full p-1.5 hover:bg-gray-100 transition-colors flex-shrink-0">
+            <X className="h-5 w-5 text-gray-400" />
+          </button>
+        </div>
 
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-              <div className="flex items-baseline gap-1 mb-3">
-                <span className="text-2xl font-black text-gray-900">{Math.round(nutrition.kcal)}</span>
-                <span className="text-sm text-gray-500">kcal</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-lg bg-blue-50 py-2">
-                  <p className="text-sm font-bold text-blue-700">{nutrition.protein}g</p>
-                  <p className="text-xs text-blue-500">Protein</p>
-                </div>
-                <div className="rounded-lg bg-amber-50 py-2">
-                  <p className="text-sm font-bold text-amber-700">{nutrition.carbs}g</p>
-                  <p className="text-xs text-amber-500">Carbs</p>
-                </div>
-                <div className="rounded-lg bg-rose-50 py-2">
-                  <p className="text-sm font-bold text-rose-700">{nutrition.fat}g</p>
-                  <p className="text-xs text-rose-500">Fat</p>
-                </div>
-              </div>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <input type="hidden" {...form.register('food_id')} />
+
+          {/* Meal selector */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Meal</p>
+            <div className="grid grid-cols-4 gap-1.5">
+              {MEAL_OPTIONS.map((m) => (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => form.setValue('meal', m.value, { shouldValidate: true })}
+                  className={`rounded-xl py-2 text-xs font-semibold transition-all ${
+                    meal === m.value
+                      ? 'bg-orange-100 text-orange-700 border border-orange-300'
+                      : 'bg-gray-50 text-gray-600 border border-gray-100 hover:border-orange-200'
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button onClick={form.handleSubmit(handleSubmit)} disabled={isSubmitting}>
-              {isSubmitting ? 'Logging...' : 'Log Food'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          {/* Serving + grams */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
+                Serving size (g)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                min="1"
+                {...form.register('grams', { valueAsNumber: true })}
+                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm font-bold text-gray-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all text-center"
+              />
+              {form.formState.errors.grams && (
+                <p className="mt-1 text-xs text-red-500">{form.formState.errors.grams.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
+                Servings
+              </label>
+              <input
+                type="number"
+                step="0.25"
+                min="0.25"
+                {...form.register('servings', { valueAsNumber: true })}
+                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm font-bold text-gray-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all text-center"
+              />
+              {form.formState.errors.servings && (
+                <p className="mt-1 text-xs text-red-500">{form.formState.errors.servings.message}</p>
+              )}
+            </div>
+          </div>
 
-      {/* Limit dialog rendered at sibling level — not nested — to avoid focus/portal conflicts */}
-      <Dialog open={showLimit} onOpenChange={() => setShowLimit(false)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Upgrade to keep logging</DialogTitle>
-            <DialogDescription>
-              You&apos;ve logged 5 meals today. Upgrade to Pro for unlimited logs.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowLimit(false)}>Close</Button>
-            <Button asChild>
-              <Link href="/upgrade">Upgrade for $9.99/mo</Link>
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+          {/* Nutrition preview */}
+          <div className="rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50 to-amber-50 p-4">
+            <div className="flex items-baseline gap-2 mb-3">
+              <span className="text-3xl font-black text-orange-700">{Math.round(nutrition.kcal)}</span>
+              <span className="text-sm text-orange-400 font-semibold">kcal</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <MacroChip value={nutrition.protein} label="Protein" color="bg-blue-100 text-blue-700" />
+              <MacroChip value={nutrition.carbs} label="Carbs" color="bg-amber-100 text-amber-700" />
+              <MacroChip value={nutrition.fat} label="Fat" color="bg-rose-100 text-rose-700" />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full rounded-2xl bg-orange-600 py-3.5 text-sm font-bold text-white hover:bg-orange-700 active:scale-[.98] transition-all shadow-md disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            <Zap className="h-4 w-4" />
+            {isSubmitting ? 'Logging...' : 'Log food'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function MacroChip({ value, label, color }: { value: number; label: string; color: string }) {
+  return (
+    <div className={`rounded-xl ${color} py-2 text-center`}>
+      <p className="text-sm font-black">{value}g</p>
+      <p className="text-[10px] font-semibold opacity-75">{label}</p>
+    </div>
   )
 }
