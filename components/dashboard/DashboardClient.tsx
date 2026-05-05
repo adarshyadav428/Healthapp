@@ -177,7 +177,7 @@ export function DashboardClient({
         <MealSection title="Snacks" logs={byMeal.Snacks} onDelete={deleteLog} deletingId={deletingId} />
       </section>
 
-      {showExerciseModal ? <ExerciseLogModal onClose={() => setShowExerciseModal(false)} /> : null}
+      {showExerciseModal ? <ExerciseLogModal onClose={() => setShowExerciseModal(false)} bodyWeightKg={profile.current_weight_kg} /> : null}
     </div>
   )
 }
