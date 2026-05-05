@@ -2,12 +2,12 @@ import { redirect } from 'next/navigation'
 import { createServerClient } from '../../lib/supabase/server'
 import { Navbar } from '../../components/layout/Navbar'
 import { BottomNav } from '../../components/layout/BottomNav'
-import { WeightClient } from '../../components/weight/WeightClient'
-import type { WeightLog } from '../../types/index'
+import { HistoryClient } from '../../components/history/HistoryClient'
+import type { Profile } from '../../types/index'
 
 export const dynamic = 'force-dynamic'
 
-export default async function WeightPage() {
+export default async function HistoryPage() {
   const supabase = createServerClient()
   const {
     data: { session },
@@ -26,27 +26,29 @@ export default async function WeightPage() {
   if (profileError) throw new Error(profileError.message)
   if (!profile || profile.height_cm === null) redirect('/onboarding')
 
+  // Fetch last 90 days of food logs
+  const ninetyDaysAgo = new Date()
+  ninetyDaysAgo.setUTCDate(ninetyDaysAgo.getUTCDate() - 90)
+
   const { data: logs, error: logsError } = await supabase
-    .from('weight_logs')
-    .select('*')
+    .from('food_logs')
+    .select('logged_at, kcal, protein_g, carbs_g, fat_g, meal')
     .eq('user_id', user.id)
-    .order('measured_at', { ascending: false })
-    .limit(60)
+    .gte('logged_at', ninetyDaysAgo.toISOString())
+    .order('logged_at', { ascending: true })
 
   if (logsError) throw new Error(logsError.message)
 
-  const weightLogs = (logs ?? []) as WeightLog[]
-
   return (
     <div className="min-h-screen bg-[#fff7ed] pb-24">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.15),_transparent_50%)]" />
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(234,88,12,0.10),_transparent_50%)]" />
       <Navbar />
       <main className="mx-auto w-full max-w-md px-4 py-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-black text-gray-900">Weight</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Track your journey to {profile.target_weight_kg} kg</p>
+          <h1 className="text-2xl font-black text-gray-900">History</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Your nutrition over time</p>
         </div>
-        <WeightClient logs={weightLogs} profile={profile} />
+        <HistoryClient logs={logs ?? []} profile={profile as Profile} />
       </main>
       <BottomNav />
     </div>

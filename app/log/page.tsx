@@ -86,11 +86,12 @@ export default async function LogPage() {
   const hasYesterdayLogs = yesterdayCount > 0
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-[#fff7ed] pb-24">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(234,88,12,0.10),_transparent_50%)]" />
       <Navbar />
       <main className="mx-auto w-full max-w-md px-4 py-6">
-        <h1 className="text-2xl font-bold text-gray-900">Log Food</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Search Indian &amp; global foods</p>
+        <h1 className="text-2xl font-black text-gray-900">Log Food</h1>
+        <p className="text-sm text-gray-500 mt-0.5">Search 600+ Indian &amp; global foods</p>
         <div className="mt-4">
           <FoodSearch
             recentFoods={recentFoods}

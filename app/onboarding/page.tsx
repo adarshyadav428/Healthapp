@@ -31,9 +31,17 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-10">
-      <div className="mx-auto w-full max-w-md rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-        <OnboardingForm />
+    <div className="min-h-screen bg-[#fff7ed] px-4 py-10">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(234,88,12,0.12),_transparent_55%)]" />
+      <div className="mx-auto w-full max-w-md">
+        <div className="mb-8 text-center">
+          <span className="text-3xl">🥗</span>
+          <h1 className="mt-2 text-2xl font-black text-gray-900">Let&apos;s set up your goals</h1>
+          <p className="mt-1 text-sm text-gray-500">Takes less than 2 minutes.</p>
+        </div>
+        <div className="rounded-3xl border border-orange-100 bg-white/90 p-6 shadow-sm backdrop-blur-sm">
+          <OnboardingForm />
+        </div>
       </div>
     </div>
   )

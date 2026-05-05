@@ -1,13 +1,15 @@
 {
-  "name": "Cal Track — Weight Loss Tracker",
+  "name": "CalTrack — Indian Calorie Tracker",
   "short_name": "CalTrack",
-  "description": "Track calories, log meals, lose weight",
+  "description": "Log Indian & global foods, track macros, water, exercise and weight. Built for Indian diets.",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2563eb",
+  "background_color": "#fff7ed",
+  "theme_color": "#ea580c",
+  "orientation": "portrait",
+  "categories": ["health", "fitness"],
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }
