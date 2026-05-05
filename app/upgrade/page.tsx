@@ -1,77 +1,163 @@
 'use client'
 
+import { useState } from 'react'
 import { Button } from '../../components/ui/button'
 import { toast } from '../../components/ui/use-toast'
+import Link from 'next/link'
+import { Check, Crown, Zap, ArrowLeft } from 'lucide-react'
 
 const plans = [
-  { id: 'monthly', title: 'Monthly', price: '$9.99/month', highlight: false },
-  { id: 'annual', title: 'Annual', price: '$79.99/year', highlight: true },
-  { id: 'lifetime', title: 'Lifetime', price: '$199.99', highlight: false },
-] as const
+  {
+    id: 'monthly' as const,
+    title: 'Monthly',
+    price: '$9.99',
+    per: '/month',
+    note: 'Cancel anytime',
+    badge: null,
+    cta: 'Start Monthly',
+    highlight: false,
+  },
+  {
+    id: 'annual' as const,
+    title: 'Annual',
+    price: '$4.99',
+    per: '/month',
+    note: 'Billed $59.99/year · 7-day free trial',
+    badge: 'Best value — Save 50%',
+    cta: 'Start Annual Free Trial',
+    highlight: true,
+  },
+  {
+    id: 'lifetime' as const,
+    title: 'Lifetime',
+    price: '$129.99',
+    per: 'one time',
+    note: 'Pay once, use forever',
+    badge: null,
+    cta: 'Get Lifetime Access',
+    highlight: false,
+  },
+]
 
-type PlanId = (typeof plans)[number]['id']
+const FEATURES = [
+  'Unlimited food logs (free = 5/day)',
+  'Exercise & workout logging',
+  'Full Indian food database (300+ dishes)',
+  'Weight trend charts',
+  'Copy yesterday\'s meals',
+  'Water intake tracking',
+  'Advanced macro analytics',
+  'Export data to CSV',
+  'Priority support',
+  'No ads, ever',
+]
 
 export default function UpgradePage() {
-  const startCheckout = async (plan: PlanId) => {
+  const [loading, setLoading] = useState<string | null>(null)
+
+  const startCheckout = async (plan: typeof plans[number]['id']) => {
+    if (loading) return
+    setLoading(plan)
     try {
       const res = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan }),
       })
-
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       window.location.href = data.url
     } catch (err) {
       toast({ title: 'Checkout failed', description: (err as Error).message, variant: 'error' })
+      setLoading(null)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-10">
-      <div className="mx-auto w-full max-w-md space-y-6">
-        <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-          <h1 className="text-2xl font-semibold text-gray-900">Upgrade to Pro</h1>
-          <p className="mt-2 text-sm text-gray-500">Unlock unlimited logging and advanced insights.</p>
-          <ul className="mt-4 space-y-2 text-sm text-gray-700">
-            <li>✅ Unlimited food logs (free = 5/day)</li>
-            <li>✅ AI meal suggestions (coming soon)</li>
-            <li>✅ Recipe builder (coming soon)</li>
-            <li>✅ Advanced analytics</li>
-            <li>✅ Export to CSV</li>
-            <li>✅ No ads, ever</li>
+    <div className="min-h-screen bg-[#fff7ed]">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(251,191,36,0.25),_transparent_50%)]" />
+
+      <div className="mx-auto w-full max-w-lg px-4 py-8">
+        <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
+          <ArrowLeft className="h-4 w-4" />
+          Back to dashboard
+        </Link>
+
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 rounded-full bg-orange-100 border border-orange-200 px-3 py-1 text-xs font-semibold text-orange-700 mb-3">
+            <Crown className="h-3.5 w-3.5" />
+            CalTrack Pro
+          </div>
+          <h1 className="text-3xl font-black text-gray-900">Upgrade to Pro</h1>
+          <p className="mt-2 text-sm text-gray-600">Everything you need to hit your goals, nothing you don&apos;t.</p>
+        </div>
+
+        {/* Features */}
+        <div className="rounded-3xl border border-orange-100 bg-white/90 p-5 mb-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className="h-4 w-4 text-orange-600" />
+            <p className="text-sm font-bold text-gray-800">What you get with Pro</p>
+          </div>
+          <ul className="space-y-2">
+            {FEATURES.map((f) => (
+              <li key={f} className="flex items-center gap-2.5 text-sm text-gray-700">
+                <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                  <Check className="h-3 w-3 text-emerald-600" />
+                </span>
+                {f}
+              </li>
+            ))}
           </ul>
         </div>
 
-        <div className="space-y-4">
+        {/* Plans */}
+        <div className="space-y-3">
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`rounded-3xl border ${plan.highlight ? 'border-blue-200 bg-blue-50' : 'border-gray-100 bg-white'} p-6 shadow-sm`}
+              className={`rounded-3xl border p-5 shadow-sm transition-all ${
+                plan.highlight
+                  ? 'border-orange-300 bg-gradient-to-br from-orange-50 to-amber-50 ring-2 ring-orange-200'
+                  : 'border-gray-100 bg-white/90'
+              }`}
             >
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">{plan.title}</h2>
-                {plan.id === 'annual' ? (
-                  <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white">Save 50%</span>
-                ) : null}
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{plan.title}</p>
+                  <div className="flex items-baseline gap-1 mt-0.5">
+                    <span className="text-3xl font-black text-gray-900">{plan.price}</span>
+                    <span className="text-sm text-gray-500">{plan.per}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">{plan.note}</p>
+                </div>
+                {plan.badge && (
+                  <span className="rounded-full bg-orange-600 px-2.5 py-1 text-xs font-bold text-white">
+                    {plan.badge}
+                  </span>
+                )}
               </div>
-              <p className="mt-2 text-2xl font-semibold text-gray-900">{plan.price}</p>
-              {plan.id === 'annual' ? <p className="text-xs text-gray-500">7-day free trial</p> : null}
-              <Button className="mt-4 w-full" onClick={() => startCheckout(plan.id)}>
-                {plan.id === 'annual' ? 'Start Annual — Best Value' : plan.id === 'monthly' ? 'Start Monthly' : 'Start Lifetime'}
+              <Button
+                className={`mt-4 w-full rounded-full font-bold ${
+                  plan.highlight
+                    ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-md'
+                    : 'bg-gray-900 hover:bg-gray-800 text-white'
+                }`}
+                onClick={() => startCheckout(plan.id)}
+                disabled={!!loading}
+              >
+                {loading === plan.id ? 'Opening checkout...' : plan.cta}
               </Button>
             </div>
           ))}
         </div>
 
-        <div className="text-center text-xs text-gray-500">
-          <button className="underline" onClick={() => toast({ title: 'Restore purchases', description: 'Use your billing portal to manage purchases.' })}>
-            Restore purchases
-          </button>
-          <div className="mt-2 space-x-3">
-            <a href="/terms" className="underline">Terms of Service</a>
-            <a href="/privacy" className="underline">Privacy Policy</a>
+        {/* Footer */}
+        <div className="mt-8 text-center space-y-2">
+          <p className="text-xs text-gray-400">Secured by Stripe · Cancel anytime · 30-day money back</p>
+          <div className="flex justify-center gap-4 text-xs text-gray-400">
+            <Link href="/terms" className="underline hover:text-gray-600">Terms</Link>
+            <Link href="/privacy" className="underline hover:text-gray-600">Privacy</Link>
           </div>
         </div>
       </div>

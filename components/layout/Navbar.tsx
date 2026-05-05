@@ -1,10 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { Button } from '../ui/button'
 import { useUser } from '../../hooks/useUser'
 import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { toast } from '../ui/use-toast'
+import { LogOut } from 'lucide-react'
 
 export function Navbar() {
   const { user, profile } = useUser()
@@ -20,16 +20,33 @@ export function Navbar() {
     }
   }
 
+  const initials = profile?.display_name
+    ? profile.display_name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
+    : (user?.email?.[0] ?? '?').toUpperCase()
+
   return (
-    <nav className="flex w-full items-center justify-between border-b border-gray-100 bg-white px-4 py-4">
-      <Link href="/dashboard" className="text-lg font-semibold text-gray-900">
-        CalTrack
+    <nav className="sticky top-0 z-30 flex w-full items-center justify-between border-b border-orange-100/60 bg-[#fff7ed]/80 px-4 py-3 backdrop-blur-md">
+      <Link href="/dashboard" className="flex items-center gap-2">
+        <span className="text-xl">🥗</span>
+        <span className="text-base font-black text-gray-900 tracking-tight">CalTrack</span>
       </Link>
-      <div className="flex items-center gap-3">
-        <div className="hidden text-sm text-gray-600 md:block">
-          {profile?.display_name ?? user?.email ?? 'Welcome'}
-        </div>
-        <Button variant="outline" onClick={handleSignOut}>Sign out</Button>
+
+      <div className="flex items-center gap-2">
+        <Link
+          href="/settings"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-700 hover:bg-orange-200 transition-colors"
+          title={profile?.display_name ?? user?.email ?? 'Settings'}
+        >
+          {initials}
+        </Link>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          title="Sign out"
+        >
+          <LogOut className="h-4 w-4" />
+        </button>
       </div>
     </nav>
   )

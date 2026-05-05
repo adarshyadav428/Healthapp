@@ -14,6 +14,33 @@ import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { useSubscription } from '../../hooks/useSubscription'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ChevronRight, Crown, Target, User, LogOut, Trash2 } from 'lucide-react'
+
+const ACTIVITY_LABELS: Record<string, string> = {
+  sedentary: 'Sedentary (desk job, no exercise)',
+  light: 'Light (1–3 days/week)',
+  moderate: 'Moderate (3–5 days/week)',
+  active: 'Active (6–7 days/week)',
+  very_active: 'Very active (twice a day)',
+}
+
+const GOAL_LABELS: Record<string, string> = {
+  lose: '⬇️ Lose weight',
+  maintain: '⚖️ Maintain weight',
+  gain: '⬆️ Gain muscle',
+}
+
+function SectionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="rounded-3xl border border-gray-100 bg-white/90 shadow-sm overflow-hidden">
+      <div className="flex items-center gap-2 border-b border-gray-50 px-4 py-3">
+        <span className="text-gray-500">{icon}</span>
+        <h2 className="text-sm font-bold text-gray-800">{title}</h2>
+      </div>
+      <div className="p-4">{children}</div>
+    </section>
+  )
+}
 
 export function SettingsClient({ profile, version }: { profile: Profile; version: string }) {
   const router = useRouter()
@@ -45,7 +72,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
         const body = await res.json().catch(() => null)
         throw new Error(body?.error || 'Failed to update profile')
       }
-      toast({ title: 'Profile updated', description: 'Targets recalculated.', duration: 3000 })
+      toast({ title: 'Profile updated ✓', description: 'Calorie targets recalculated.', duration: 3000 })
     } catch (err) {
       toast({ title: 'Update failed', description: (err as Error).message, variant: 'error', duration: 4000 })
     }
@@ -70,7 +97,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
       const supabase = getBrowserSupabaseClient()
       const { error } = await supabase.auth.signOut()
       if (error) throw new Error(error.message)
-      router.push('/')
+      window.location.href = '/'
     } catch (err) {
       toast({ title: 'Sign out failed', description: (err as Error).message, variant: 'error', duration: 4000 })
       setSignOutLoading(false)
@@ -80,7 +107,6 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
   const deleteAccount = async () => {
     const confirmed = window.confirm('Delete your account and all data? This cannot be undone.')
     if (!confirmed) return
-
     try {
       setDeleteLoading(true)
       const res = await fetch('/api/account/delete', { method: 'POST' })
@@ -93,110 +119,151 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
     }
   }
 
-  return (
-    <div className="space-y-8">
-      <section className="rounded-2xl border border-gray-100 bg-white p-4">
-        <h2 className="text-lg font-semibold text-gray-900">Profile</h2>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="mt-4 space-y-4">
-          <div>
-            <Label htmlFor="display_name">Display name</Label>
-            <Input id="display_name" {...form.register('display_name')} />
-            {form.formState.errors.display_name ? (
-              <p className="mt-1 text-xs text-red-500">{form.formState.errors.display_name.message}</p>
-            ) : null}
-          </div>
-          <div>
-            <Label htmlFor="height_cm">Height (cm)</Label>
-            <Input id="height_cm" type="number" {...form.register('height_cm', { valueAsNumber: true })} />
-            {form.formState.errors.height_cm ? (
-              <p className="mt-1 text-xs text-red-500">{form.formState.errors.height_cm.message}</p>
-            ) : null}
-          </div>
-          <div>
-            <Label htmlFor="current_weight_kg">Current weight (kg)</Label>
-            <Input id="current_weight_kg" type="number" step="0.1" min="1" {...form.register('current_weight_kg', { valueAsNumber: true })} />
-            {form.formState.errors.current_weight_kg ? (
-              <p className="mt-1 text-xs text-red-500">{form.formState.errors.current_weight_kg.message}</p>
-            ) : null}
-          </div>
-          <div>
-            <Label htmlFor="target_weight_kg">Target weight (kg)</Label>
-            <Input id="target_weight_kg" type="number" step="0.1" min="1" {...form.register('target_weight_kg', { valueAsNumber: true })} />
-            {form.formState.errors.target_weight_kg ? (
-              <p className="mt-1 text-xs text-red-500">{form.formState.errors.target_weight_kg.message}</p>
-            ) : null}
-          </div>
-          <div>
-            <Label>Activity level</Label>
-            <Select value={form.watch('activity_level')} onValueChange={(value) => form.setValue('activity_level', value as Profile['activity_level'])}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sedentary">Sedentary</SelectItem>
-                <SelectItem value="light">Light</SelectItem>
-                <SelectItem value="moderate">Moderate</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="very_active">Very active</SelectItem>
-              </SelectContent>
-            </Select>
-            {form.formState.errors.activity_level ? (
-              <p className="mt-1 text-xs text-red-500">{form.formState.errors.activity_level.message}</p>
-            ) : null}
-          </div>
-          <div>
-            <Label>Goal</Label>
-            <Select value={form.watch('goal')} onValueChange={(value) => form.setValue('goal', value as Profile['goal'])}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="lose">Lose</SelectItem>
-                <SelectItem value="maintain">Maintain</SelectItem>
-                <SelectItem value="gain">Gain</SelectItem>
-              </SelectContent>
-            </Select>
-            {form.formState.errors.goal ? (
-              <p className="mt-1 text-xs text-red-500">{form.formState.errors.goal.message}</p>
-            ) : null}
-          </div>
+  // BMI calculation
+  const bmi = profile.height_cm && profile.current_weight_kg
+    ? +(profile.current_weight_kg / Math.pow(profile.height_cm / 100, 2)).toFixed(1)
+    : null
+  const bmiLabel = bmi === null ? null : bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Healthy' : bmi < 30 ? 'Overweight' : 'Obese'
+  const bmiColor = bmi === null ? '' : bmi < 18.5 ? 'text-blue-600' : bmi < 25 ? 'text-emerald-600' : bmi < 30 ? 'text-amber-600' : 'text-rose-600'
 
-          <Button type="submit" disabled={form.formState.isSubmitting}>
+  return (
+    <div className="space-y-4">
+
+      {/* Targets summary */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-3xl border border-orange-100 bg-orange-50 p-4">
+          <p className="text-xs text-orange-600 font-semibold uppercase tracking-wide">Daily goal</p>
+          <p className="text-3xl font-black text-orange-700 mt-1">{profile.daily_calorie_target.toLocaleString()}</p>
+          <p className="text-xs text-orange-500">kcal / day</p>
+        </div>
+        <div className="rounded-3xl border border-gray-100 bg-white/90 p-4 space-y-1.5">
+          <MacroChip label="Protein" g={profile.protein_g_target} color="text-blue-600" />
+          <MacroChip label="Carbs" g={profile.carbs_g_target} color="text-amber-600" />
+          <MacroChip label="Fat" g={profile.fat_g_target} color="text-rose-500" />
+        </div>
+      </div>
+
+      {bmi !== null && (
+        <div className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white/90 px-4 py-3">
+          <span className="text-sm text-gray-600">BMI</span>
+          <span className={`text-sm font-bold ${bmiColor}`}>{bmi} — {bmiLabel}</span>
+        </div>
+      )}
+
+      {/* Profile form */}
+      <SectionCard title="Profile" icon={<User className="h-4 w-4" />}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <Field label="Display name" error={form.formState.errors.display_name?.message}>
+            <Input id="display_name" {...form.register('display_name')} />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Height (cm)" error={form.formState.errors.height_cm?.message}>
+              <Input id="height_cm" type="number" {...form.register('height_cm', { valueAsNumber: true })} />
+            </Field>
+            <Field label="Current weight (kg)" error={form.formState.errors.current_weight_kg?.message}>
+              <Input id="current_weight_kg" type="number" step="0.1" min="1" {...form.register('current_weight_kg', { valueAsNumber: true })} />
+            </Field>
+          </div>
+          <Field label="Target weight (kg)" error={form.formState.errors.target_weight_kg?.message}>
+            <Input id="target_weight_kg" type="number" step="0.1" min="1" {...form.register('target_weight_kg', { valueAsNumber: true })} />
+          </Field>
+          <Field label="Activity level" error={form.formState.errors.activity_level?.message}>
+            <Select value={form.watch('activity_level')} onValueChange={(v) => form.setValue('activity_level', v as Profile['activity_level'])}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Object.entries(ACTIVITY_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Goal" error={form.formState.errors.goal?.message}>
+            <Select value={form.watch('goal')} onValueChange={(v) => form.setValue('goal', v as Profile['goal'])}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Object.entries(GOAL_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Button type="submit" className="w-full bg-orange-600 hover:bg-orange-700" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting ? 'Saving...' : 'Save changes'}
           </Button>
         </form>
-      </section>
+      </SectionCard>
 
-      <section className="rounded-2xl border border-gray-100 bg-white p-4">
-        <h2 className="text-lg font-semibold text-gray-900">Subscription</h2>
-        <p className="text-sm text-gray-500">
-          {subscription?.isPro ? 'You are on Pro.' : 'Free plan: up to 5 logs per day.'}
-        </p>
-        <div className="mt-3">
-          {subscription?.isPro ? (
-            <Button variant="outline" onClick={manageSubscription} disabled={portalLoading}>
+      {/* Subscription */}
+      <SectionCard title="Subscription" icon={<Crown className="h-4 w-4" />}>
+        {subscription?.isPro ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">PRO</span>
+              <span className="text-sm text-gray-600">Unlimited logging, all features</span>
+            </div>
+            <Button variant="outline" className="w-full" onClick={manageSubscription} disabled={portalLoading}>
               {portalLoading ? 'Opening...' : 'Manage Subscription'}
+              <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
-          ) : (
-            <Button asChild>
-              <Link href="/upgrade">Upgrade to Pro</Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600">Free plan — 5 food logs per day</p>
+            <Button asChild className="w-full bg-orange-600 hover:bg-orange-700">
+              <Link href="/upgrade">
+                <Crown className="mr-1.5 h-4 w-4" />
+                Upgrade to Pro
+              </Link>
             </Button>
-          )}
-        </div>
-      </section>
+          </div>
+        )}
+      </SectionCard>
 
-      <section className="rounded-2xl border border-gray-100 bg-white p-4">
-        <h2 className="text-lg font-semibold text-gray-900">Account</h2>
-        <div className="mt-3 flex flex-col gap-3">
-          <Button variant="outline" onClick={signOut} disabled={signOutLoading}>
-            {signOutLoading ? 'Signing out...' : 'Sign out'}
-          </Button>
-          <Button variant="ghost" className="text-red-600" onClick={deleteAccount} disabled={deleteLoading}>
-            {deleteLoading ? 'Deleting...' : 'Delete account'}
-          </Button>
+      {/* Account */}
+      <SectionCard title="Account" icon={<Target className="h-4 w-4" />}>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={signOut}
+            disabled={signOutLoading}
+            className="flex w-full items-center justify-between rounded-2xl border border-gray-100 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <LogOut className="h-4 w-4 text-gray-400" />
+              {signOutLoading ? 'Signing out...' : 'Sign out'}
+            </span>
+            <ChevronRight className="h-4 w-4 text-gray-300" />
+          </button>
+          <button
+            type="button"
+            onClick={deleteAccount}
+            disabled={deleteLoading}
+            className="flex w-full items-center justify-between rounded-2xl border border-rose-100 px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-50 transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4" />
+              {deleteLoading ? 'Deleting...' : 'Delete account'}
+            </span>
+            <ChevronRight className="h-4 w-4 text-rose-300" />
+          </button>
         </div>
-        <p className="mt-4 text-xs text-gray-400">App version {version}</p>
-      </section>
+        <p className="mt-3 text-center text-xs text-gray-300">CalTrack v{version}</p>
+      </SectionCard>
+    </div>
+  )
+}
+
+function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</Label>
+      <div className="mt-1">{children}</div>
+      {error && <p className="mt-1 text-xs text-rose-500">{error}</p>}
+    </div>
+  )
+}
+
+function MacroChip({ label, g, color }: { label: string; g: number; color: string }) {
+  return (
+    <div className="flex items-center justify-between text-xs">
+      <span className="text-gray-500">{label}</span>
+      <span className={`font-bold ${color}`}>{g}g</span>
     </div>
   )
 }
