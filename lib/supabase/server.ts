@@ -14,8 +14,20 @@ export function createServerClient(): SupabaseClient {
   const cookieStore = cookies()
   return createSupabaseServerClient(url, anonKey, {
     cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value
+      // getAll is required so @supabase/ssr can reassemble chunked session cookies
+      // (large JWTs are split across multiple cookies: sb-xxx-auth-token.0, .1, ...)
+      getAll() {
+        return cookieStore.getAll()
+      },
+      setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          )
+        } catch {
+          // Called from a Server Component — safe to ignore.
+          // Middleware handles session refresh and cookie writing.
+        }
       },
     },
   })
