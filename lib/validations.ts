@@ -59,6 +59,20 @@ export const profileUpdateSchema = z.object({
   goal: z.enum(['lose', 'maintain', 'gain']),
 })
 
+export const customFoodSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').max(100),
+  brand: z.string().max(60).optional(),
+  serving_size_g: z.number().positive().max(2000),
+  serving_description: z.string().max(50).default('1 serving'),
+  kcal_per_100g: z.number().min(0).max(9000),
+  protein_g_per_100g: z.number().min(0).max(100),
+  carbs_g_per_100g: z.number().min(0).max(100),
+  fat_g_per_100g: z.number().min(0).max(100),
+  fiber_g_per_100g: z.number().min(0).max(100).optional(),
+})
+
+export type CustomFoodData = z.infer<typeof customFoodSchema>
+
 export type SignInData = z.infer<typeof signInSchema>
 export type SignUpData = z.infer<typeof signUpSchema>
 export type OnboardingData = z.infer<typeof onboardingSchema>

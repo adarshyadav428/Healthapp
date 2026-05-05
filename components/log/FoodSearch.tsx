@@ -8,7 +8,8 @@ import type { Food } from '../../types/index'
 import { FoodResult } from './FoodResult'
 import { AddFoodModal } from './AddFoodModal'
 import { toast } from '../ui/use-toast'
-import { Clock, Copy, Star, Zap } from 'lucide-react'
+import { Clock, Copy, Star, Zap, PlusCircle } from 'lucide-react'
+import { CreateFoodModal } from './CreateFoodModal'
 import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { useUser } from '../../hooks/useUser'
 import { useSubscription } from '../../hooks/useSubscription'
@@ -36,6 +37,7 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
   const [copying, setCopying] = useState(false)
   const [quickAddingId, setQuickAddingId] = useState<string | null>(null)
   const [showLimit, setShowLimit] = useState(false)
+  const [showCreateFood, setShowCreateFood] = useState(false)
   const debounced = useDebounce(query, 300)
   const queryClient = useQueryClient()
   const { user } = useUser()
@@ -236,8 +238,17 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
             <p className="text-sm text-red-500 px-1">Search failed. Check your connection and try again.</p>
           ) : (data ?? []).length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-sm font-medium text-gray-600">No foods found for &ldquo;{debounced}&rdquo;</p>
-              <p className="text-xs text-gray-400 mt-1">Try a different spelling or search in English</p>
+              <p className="text-3xl mb-2">🔍</p>
+              <p className="text-sm font-medium text-gray-600">No results for &ldquo;{debounced}&rdquo;</p>
+              <p className="text-xs text-gray-400 mt-1 mb-4">Try a different spelling or create a custom food</p>
+              <button
+                type="button"
+                onClick={() => setShowCreateFood(true)}
+                className="inline-flex items-center gap-2 rounded-2xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-orange-700 active:scale-[.98] transition-all shadow-sm"
+              >
+                <PlusCircle className="h-4 w-4" />
+                Create &ldquo;{debounced}&rdquo;
+              </button>
             </div>
           ) : (
             (data ?? []).map((food) => (
@@ -258,11 +269,29 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
         <div className="py-10 text-center">
           <p className="text-3xl mb-2">🍱</p>
           <p className="text-sm font-medium text-gray-600">Search for any food above</p>
-          <p className="text-xs text-gray-400 mt-1">Includes Indian dishes, staples, and more</p>
+          <p className="text-xs text-gray-400 mt-1 mb-4">Includes 600+ Indian dishes, staples &amp; global foods</p>
+          <button
+            type="button"
+            onClick={() => setShowCreateFood(true)}
+            className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-100 transition-colors"
+          >
+            <PlusCircle className="h-4 w-4" />
+            Create custom food
+          </button>
         </div>
       )}
 
       {selected ? <AddFoodModal food={selected} onClose={() => setSelected(null)} /> : null}
+      {showCreateFood ? (
+        <CreateFoodModal
+          initialName={debounced}
+          onClose={() => setShowCreateFood(false)}
+          onCreated={(food) => {
+            setShowCreateFood(false)
+            setSelected(food)
+          }}
+        />
+      ) : null}
       <FoodSearchLimitDialog open={showLimit} onOpenChange={setShowLimit} />
     </div>
   )
