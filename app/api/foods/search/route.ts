@@ -5,6 +5,11 @@ import type { Food } from '../../../../types/index'
 export const runtime = 'nodejs'
 
 const rateMap = new Map<string, { count: number; reset: number }>()
+const searchCache = new Map<string, { data: Food[]; expires: number }>()
+const CACHE_TTL_MS = 120_000
+const CACHE_MAX = 200
+const FOOD_SELECT =
+  'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g'
 
 function rateLimit(ip: string, limit = 30, windowMs = 60_000) {
   const now = Date.now()
@@ -16,6 +21,24 @@ function rateLimit(ip: string, limit = 30, windowMs = 60_000) {
   if (entry.count >= limit) return true
   entry.count += 1
   return false
+}
+
+function getCached(query: string) {
+  const entry = searchCache.get(query)
+  if (!entry) return null
+  if (entry.expires < Date.now()) {
+    searchCache.delete(query)
+    return null
+  }
+  return entry.data
+}
+
+function setCached(query: string, data: Food[]) {
+  if (searchCache.size >= CACHE_MAX) {
+    const oldestKey = searchCache.keys().next().value as string | undefined
+    if (oldestKey) searchCache.delete(oldestKey)
+  }
+  searchCache.set(query, { data, expires: Date.now() + CACHE_TTL_MS })
 }
 
 async function fetchUsda(query: string): Promise<Food[]> {
@@ -63,6 +86,8 @@ export async function GET(request: Request) {
     const query = searchParams.get('q')?.trim()
     if (!query) return NextResponse.json([])
 
+    const normalizedQuery = query.toLowerCase()
+
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     if (rateLimit(ip)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
@@ -71,14 +96,19 @@ export async function GET(request: Request) {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Run local DB search and USDA fetch concurrently to save time
+    const cached = getCached(normalizedQuery)
+    if (cached) return NextResponse.json(cached)
+
+    const shouldFetchUsda = query.length >= 3
+
+    // Run local DB search and USDA fetch concurrently when needed
     const [localResult, usdaResults] = await Promise.all([
       supabase
         .from('foods')
-        .select('*')
+        .select(FOOD_SELECT)
         .ilike('name', `%${query}%`)
         .limit(10),
-      fetchUsda(query),
+      shouldFetchUsda ? fetchUsda(query) : Promise.resolve([]),
     ])
 
     if (localResult.error) throw new Error(localResult.error.message)
@@ -117,7 +147,9 @@ export async function GET(request: Request) {
       if (!deduped.has(key)) deduped.set(key, food)
     })
 
-    return NextResponse.json(Array.from(deduped.values()).slice(0, 10))
+    const result = Array.from(deduped.values()).slice(0, 10)
+    setCached(normalizedQuery, result)
+    return NextResponse.json(result)
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }

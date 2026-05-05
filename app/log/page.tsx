@@ -3,10 +3,13 @@ import { FoodSearch } from '../../components/log/FoodSearch'
 import { Navbar } from '../../components/layout/Navbar'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { createServerClient } from '../../lib/supabase/server'
-import type { Food, FoodLog } from '../../types/index'
+import type { Food } from '../../types/index'
 import { getUtcDayRange } from '../../lib/dateUtils'
 
 export const dynamic = 'force-dynamic'
+
+const FOOD_SELECT =
+  'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g'
 
 export default async function LogPage() {
   const supabase = createServerClient()
@@ -26,51 +29,73 @@ export default async function LogPage() {
   if (profileError) throw new Error(profileError.message)
   if (!profile || profile.height_cm === null) redirect('/onboarding')
 
-  // Fetch recent unique foods — last 20 logs, unique by food_id
-  const { data: recentLogs } = await supabase
-    .from('food_logs')
-    .select('food_id, food:foods(*)')
-    .eq('user_id', user.id)
-    .order('logged_at', { ascending: false })
-    .limit(40)
-
-  // Deduplicate by food_id, keep first occurrence (most recent)
-  const seenIds = new Set<string>()
-  const recentFoods: Food[] = []
-  for (const log of recentLogs ?? []) {
-    if (log.food && !seenIds.has(log.food_id)) {
-      seenIds.add(log.food_id)
-      recentFoods.push(log.food as unknown as Food)
-      if (recentFoods.length >= 8) break
-    }
-  }
-
   // Check if user has yesterday's logs (for "copy yesterday" feature)
   const yesterday = new Date()
   yesterday.setUTCDate(yesterday.getUTCDate() - 1)
   const { start: yStart, end: yEnd } = getUtcDayRange(yesterday)
 
-  const { data: yesterdayLogs } = await supabase
-    .from('food_logs')
-    .select('*, food:foods(*)')
-    .eq('user_id', user.id)
-    .gte('logged_at', yStart)
-    .lt('logged_at', yEnd)
-    .order('logged_at', { ascending: true })
+  const [logSnapshotResult, yesterdayResult] = await Promise.all([
+    supabase
+      .from('food_logs')
+      .select(`food_id, food:foods(${FOOD_SELECT})`)
+      .eq('user_id', user.id)
+      .order('logged_at', { ascending: false })
+      .limit(200),
+    supabase
+      .from('food_logs')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('logged_at', yStart)
+      .lt('logged_at', yEnd)
+  ])
 
-  const hasYesterdayLogs = (yesterdayLogs ?? []).length > 0
+  if (logSnapshotResult.error) throw new Error(logSnapshotResult.error.message)
+  if (yesterdayResult.error) throw new Error(yesterdayResult.error.message)
+
+  const logSnapshot = logSnapshotResult.data ?? []
+  const yesterdayCount = yesterdayResult.count ?? 0
+
+  // Deduplicate by food_id for recent foods and count frequency in one pass
+  const seenIds = new Set<string>()
+  const recentFoods: Food[] = []
+  const frequentMap = new Map<string, { food: Food; count: number; lastIndex: number }>()
+  let index = 0
+  for (const log of logSnapshot) {
+    if (log.food && !seenIds.has(log.food_id) && recentFoods.length < 5) {
+      seenIds.add(log.food_id)
+      recentFoods.push(log.food as unknown as Food)
+    }
+
+    if (log.food) {
+      const existing = frequentMap.get(log.food_id)
+      if (existing) {
+        existing.count += 1
+      } else {
+        frequentMap.set(log.food_id, { food: log.food as unknown as Food, count: 1, lastIndex: index })
+      }
+    }
+
+    index += 1
+  }
+
+  const frequentFoods = Array.from(frequentMap.values())
+    .sort((a, b) => (b.count - a.count) || (a.lastIndex - b.lastIndex))
+    .slice(0, 8)
+    .map((entry) => entry.food)
+
+  const hasYesterdayLogs = yesterdayCount > 0
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <Navbar />
       <main className="mx-auto w-full max-w-md px-4 py-6">
         <h1 className="text-2xl font-bold text-gray-900">Log Food</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Search from 300+ Indian &amp; global foods</p>
+        <p className="text-sm text-gray-500 mt-0.5">Search Indian &amp; global foods</p>
         <div className="mt-4">
           <FoodSearch
             recentFoods={recentFoods}
+            frequentFoods={frequentFoods}
             hasYesterdayLogs={hasYesterdayLogs}
-            yesterdayLogs={(yesterdayLogs ?? []) as FoodLog[]}
           />
         </div>
       </main>

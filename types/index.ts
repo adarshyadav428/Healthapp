@@ -20,7 +20,7 @@ export type Profile = {
 
 export type Food = {
   id: string
-  source: 'usda' | 'off' | 'user' | 'ifct'
+  source: 'usda' | 'off' | 'user' | 'ifct' | 'estimate'
   source_id: string | null
   name: string
   brand: string | null
@@ -46,6 +46,16 @@ export type FoodLog = {
   carbs_g: number
   fat_g: number
   logged_at: string
+}
+
+export type ExerciseLog = {
+  id: string
+  user_id: string
+  activity: string
+  duration_min: number
+  calories: number
+  logged_at: string
+  created_at: string
 }
 
 export type WeightLog = {

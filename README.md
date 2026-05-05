@@ -45,3 +45,12 @@ npm run lint
 
 - Provide `USDA_API_KEY` in `.env.local`.
 
+## Indian foods seeding
+
+- The seed script uses the built-in dataset in `lib/indian-foods-data.ts` by default.
+- To seed a larger dataset, place a JSON array of food objects in `data/indian-foods.json`, then run:
+
+```bash
+npx tsx scripts/seed-indian-foods.ts
+```
+

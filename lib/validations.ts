@@ -44,6 +44,12 @@ export const weightLogSchema = z.object({
   notes: z.string().optional(),
 })
 
+export const exerciseLogSchema = z.object({
+  activity: z.string().min(2, { message: 'Activity is required' }),
+  duration_min: z.number().positive().max(600, { message: 'Duration cannot exceed 600 minutes' }),
+  calories: z.number().positive().max(5000, { message: 'Calories cannot exceed 5,000' }),
+})
+
 export const profileUpdateSchema = z.object({
   display_name: z.string().min(1),
   height_cm: z.number().positive(),
@@ -58,4 +64,5 @@ export type SignUpData = z.infer<typeof signUpSchema>
 export type OnboardingData = z.infer<typeof onboardingSchema>
 export type AddFoodData = z.infer<typeof addFoodSchema>
 export type WeightLogData = z.infer<typeof weightLogSchema>
+export type ExerciseLogData = z.infer<typeof exerciseLogSchema>
 export type ProfileUpdateData = z.infer<typeof profileUpdateSchema>
