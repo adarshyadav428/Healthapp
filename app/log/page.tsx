@@ -5,6 +5,8 @@ import { BottomNav } from '../../components/layout/BottomNav'
 import { createServerClient } from '../../lib/supabase/server'
 import type { Food } from '../../types/index'
 import { getUtcDayRange } from '../../lib/dateUtils'
+import Link from 'next/link'
+import { ChefHat } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -90,8 +92,19 @@ export default async function LogPage() {
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(234,88,12,0.10),_transparent_50%)]" />
       <Navbar />
       <main className="mx-auto w-full max-w-md px-4 py-6">
-        <h1 className="text-2xl font-black text-gray-900">Log Food</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Search 600+ Indian &amp; global foods</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-black text-gray-900">Log Food</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Search 600+ Indian &amp; global foods</p>
+          </div>
+          <Link
+            href="/recipes"
+            className="flex items-center gap-1.5 rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-bold text-orange-700 hover:bg-orange-100 transition-colors"
+          >
+            <ChefHat className="h-3.5 w-3.5" />
+            Recipe builder
+          </Link>
+        </div>
         <div className="mt-4">
           <FoodSearch
             recentFoods={recentFoods}
