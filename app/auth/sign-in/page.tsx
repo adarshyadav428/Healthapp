@@ -19,37 +19,26 @@ export default function SignInPage() {
   const onSubmit = async (data: SignInData) => {
     try {
       const supabase = getBrowserSupabaseClient()
-      const { data: auth, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       })
       if (error) throw new Error(error.message)
 
-      const userId = auth.user?.id
-      if (!userId) throw new Error('Missing user after sign in')
+      // Determine where to send the user after sign-in.
+      // Middleware (getSession-based) will redirect to /onboarding if the
+      // profile is incomplete, so we only need to pick the right "happy path" URL.
+      const params = new URLSearchParams(window.location.search)
+      const rawReturnTo = params.get('returnTo') ?? ''
+      const destination =
+        rawReturnTo.startsWith('/') && !rawReturnTo.startsWith('//')
+          ? rawReturnTo
+          : '/dashboard'
 
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('height_cm')
-        .eq('id', userId)
-        .maybeSingle()
-
-      if (profileError) throw new Error(profileError.message)
-
-      toast({ title: 'Welcome back', description: 'You are signed in.' })
-
-      if (!profile || profile.height_cm === null) {
-        window.location.href = '/onboarding'
-      } else {
-        const params = new URLSearchParams(window.location.search)
-        const rawReturnTo = params.get('returnTo') ?? ''
-        // Only allow relative paths that start with '/' but not '//' (protocol-relative URLs)
-        const returnTo =
-          rawReturnTo.startsWith('/') && !rawReturnTo.startsWith('//')
-            ? rawReturnTo
-            : '/dashboard'
-        window.location.href = returnTo
-      }
+      // Hard redirect so the browser sends a fresh HTTP request with all
+      // cookies attached — middleware reads them with getSession() (local JWT
+      // validation, no network) and lets the request through.
+      window.location.href = destination
     } catch (err) {
       toast({ title: 'Sign in failed', description: (err as Error).message, variant: 'error' })
     }

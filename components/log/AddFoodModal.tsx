@@ -187,11 +187,25 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
               ) : null}
             </div>
 
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-600">
-              <p>{Math.round(nutrition.kcal)} kcal</p>
-              <p>Protein: {nutrition.protein}g</p>
-              <p>Carbs: {nutrition.carbs}g</p>
-              <p>Fat: {nutrition.fat}g</p>
+            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+              <div className="flex items-baseline gap-1 mb-3">
+                <span className="text-2xl font-black text-gray-900">{Math.round(nutrition.kcal)}</span>
+                <span className="text-sm text-gray-500">kcal</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-lg bg-blue-50 py-2">
+                  <p className="text-sm font-bold text-blue-700">{nutrition.protein}g</p>
+                  <p className="text-xs text-blue-500">Protein</p>
+                </div>
+                <div className="rounded-lg bg-amber-50 py-2">
+                  <p className="text-sm font-bold text-amber-700">{nutrition.carbs}g</p>
+                  <p className="text-xs text-amber-500">Carbs</p>
+                </div>
+                <div className="rounded-lg bg-rose-50 py-2">
+                  <p className="text-sm font-bold text-rose-700">{nutrition.fat}g</p>
+                  <p className="text-xs text-rose-500">Fat</p>
+                </div>
+              </div>
             </div>
           </div>
 

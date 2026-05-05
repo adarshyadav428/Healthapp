@@ -9,22 +9,28 @@ export async function middleware(request: NextRequest) {
 
   let response = NextResponse.next({ request })
 
+  // NOTE: @supabase/ssr@0.2.0 only calls cookies.get(name) internally —
+  // getAll/setAll are silently ignored. We must provide get/set/remove.
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
-      getAll() {
-        return request.cookies.getAll()
+      get(name: string) {
+        return request.cookies.get(name)?.value
       },
-      setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+      set(name: string, value: string, options: Record<string, unknown>) {
+        request.cookies.set(name, value)
         response = NextResponse.next({ request })
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options)
-        )
+        response.cookies.set(name, value, options as Parameters<typeof response.cookies.set>[2])
+      },
+      remove(name: string, options: Record<string, unknown>) {
+        request.cookies.set(name, '')
+        response = NextResponse.next({ request })
+        response.cookies.set(name, '', options as Parameters<typeof response.cookies.set>[2])
       },
     },
   })
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user ?? null
   const { pathname, origin } = request.nextUrl
 
   const isAuthRoute = pathname.startsWith('/auth/')

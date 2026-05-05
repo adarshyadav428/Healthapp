@@ -18,9 +18,10 @@ export async function POST(req: Request) {
     const stripe = getStripeClient()
     const supabase = createServerClient()
     const {
-      data: { user },
+      data: { session: authSession },
       error: userError,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getSession()
+    const user = authSession?.user ?? null
 
     if (userError) throw new Error(userError.message)
     if (!user || !user.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

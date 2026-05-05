@@ -1,14 +1,35 @@
- 'use client'
+'use client'
 
 export function StreakBadge({ streak }: { streak: number }) {
+  if (streak === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-4 py-3 flex items-center gap-3">
+        <span className="text-2xl">🌱</span>
+        <div>
+          <p className="text-sm font-semibold text-gray-700">Start your streak today!</p>
+          <p className="text-xs text-gray-400">Log your first meal to begin</p>
+        </div>
+      </div>
+    )
+  }
+
+  const flameCount = Math.min(streak >= 30 ? 3 : streak >= 7 ? 2 : 1, 3)
+
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-      <p className="text-sm text-gray-500">Streak</p>
-      {streak > 0 ? (
-        <p className="text-2xl font-semibold text-gray-900">🔥 {streak} day streak</p>
-      ) : (
-        <p className="text-base text-gray-700">Start your streak today!</p>
-      )}
+    <div className="rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 px-4 py-3 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <span className="text-2xl">{'🔥'.repeat(flameCount)}</span>
+        <div>
+          <p className="text-sm font-bold text-orange-700">{streak}-day streak!</p>
+          <p className="text-xs text-orange-500">
+            {streak >= 30 ? 'Legendary! Keep it up 🏆' : streak >= 7 ? "You're on fire! 🚀" : 'Great start!'}
+          </p>
+        </div>
+      </div>
+      <div className="text-right">
+        <p className="text-2xl font-black text-orange-600 leading-none">{streak}</p>
+        <p className="text-xs text-orange-400">days</p>
+      </div>
     </div>
   )
 }

@@ -10,9 +10,10 @@ export const dynamic = 'force-dynamic'
 export default async function WeightPage() {
   const supabase = createServerClient()
   const {
-    data: { user },
+    data: { session },
     error,
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getSession()
+  const user = session?.user ?? null
 
   if (error || !user) redirect('/auth/sign-in')
 

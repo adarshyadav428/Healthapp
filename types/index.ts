@@ -20,7 +20,7 @@ export type Profile = {
 
 export type Food = {
   id: string
-  source: 'usda' | 'off' | 'user'
+  source: 'usda' | 'off' | 'user' | 'ifct'
   source_id: string | null
   name: string
   brand: string | null

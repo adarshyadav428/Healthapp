@@ -14,9 +14,10 @@ export const dynamic = 'force-dynamic'
 export default async function DashboardPage() {
   const supabase = createServerClient()
   const {
-    data: { user },
+    data: { session },
     error: userError,
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getSession()
+  const user = session?.user ?? null
 
   if (userError || !user) redirect('/auth/sign-in')
 

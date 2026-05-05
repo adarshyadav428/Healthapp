@@ -35,10 +35,11 @@ export function useUser() {
         setLoading(true)
         setError(null)
         const {
-          data: { user: sessionUser },
+          data: { session },
           error: userError,
-        } = await supabase.auth.getUser()
+        } = await supabase.auth.getSession()
         if (userError) throw new Error(userError.message)
+        const sessionUser = session?.user ?? null
 
         if (!isMounted || reqId !== reqIdRef.current) return
 
