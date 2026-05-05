@@ -5,8 +5,8 @@ import { toast } from '../../components/ui/use-toast'
 
 const plans = [
   { id: 'monthly', title: 'Monthly', price: '$9.99/month', highlight: false },
-  { id: 'annual', title: 'Annual', price: '$59.99/year', highlight: true },
-  { id: 'lifetime', title: 'Lifetime', price: '$129.99', highlight: false },
+  { id: 'annual', title: 'Annual', price: '$79.99/year', highlight: true },
+  { id: 'lifetime', title: 'Lifetime', price: '$199.99', highlight: false },
 ] as const
 
 type PlanId = (typeof plans)[number]['id']

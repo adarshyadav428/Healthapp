@@ -14,6 +14,14 @@ function movingAverage(data: { date: string; weight: number }[], windowSize = 14
 }
 
 export function WeightChart({ logs }: { logs: WeightLog[] }) {
+  if (logs.length === 0) {
+    return (
+      <div className="flex h-[250px] w-full items-center justify-center rounded-xl border border-dashed border-gray-200">
+        <p className="text-sm text-gray-400">No weight entries yet. Log your first weight to see your chart.</p>
+      </div>
+    )
+  }
+
   const data = logs
     .slice()
     .reverse()

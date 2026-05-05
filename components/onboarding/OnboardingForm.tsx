@@ -19,6 +19,7 @@ export function OnboardingForm() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [step, setStep] = useState(1)
+  const [isNavigating, setIsNavigating] = useState(false)
 
   const form = useForm<OnboardingData>({
     resolver: zodResolver(onboardingSchema),
@@ -37,6 +38,7 @@ export function OnboardingForm() {
   })
 
   const nextStep = async () => {
+    if (isNavigating) return
     const fieldsByStep: Record<number, (keyof OnboardingData)[]> = {
       1: ['display_name', 'unit_system'],
       2: ['age', 'sex'],
@@ -44,8 +46,13 @@ export function OnboardingForm() {
       4: ['target_weight_kg', 'goal'],
       5: ['activity_level', 'pace_kg_per_week'],
     }
-    const ok = await form.trigger(fieldsByStep[step])
-    if (ok) setStep((s) => Math.min(TOTAL_STEPS, s + 1))
+    setIsNavigating(true)
+    try {
+      const ok = await form.trigger(fieldsByStep[step])
+      if (ok) setStep((s) => Math.min(TOTAL_STEPS, s + 1))
+    } finally {
+      setIsNavigating(false)
+    }
   }
 
   const prevStep = () => setStep((s) => Math.max(1, s - 1))
@@ -234,7 +241,9 @@ export function OnboardingForm() {
             Back
           </Button>
           {step < TOTAL_STEPS ? (
-            <Button type="button" onClick={nextStep}>Next</Button>
+            <Button type="button" onClick={nextStep} disabled={isNavigating || form.formState.isSubmitting}>
+              {isNavigating ? 'Checking...' : 'Next'}
+            </Button>
           ) : (
             <Button type="submit" disabled={form.formState.isSubmitting}>
               {form.formState.isSubmitting ? 'Saving...' : 'Finish'}

@@ -28,6 +28,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
       display_name: profile.display_name ?? '',
       height_cm: profile.height_cm,
       current_weight_kg: profile.current_weight_kg,
+      target_weight_kg: profile.target_weight_kg,
       activity_level: profile.activity_level,
       goal: profile.goal,
     },
@@ -113,9 +114,16 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
           </div>
           <div>
             <Label htmlFor="current_weight_kg">Current weight (kg)</Label>
-            <Input id="current_weight_kg" type="number" {...form.register('current_weight_kg', { valueAsNumber: true })} />
+            <Input id="current_weight_kg" type="number" step="0.1" min="1" {...form.register('current_weight_kg', { valueAsNumber: true })} />
             {form.formState.errors.current_weight_kg ? (
               <p className="mt-1 text-xs text-red-500">{form.formState.errors.current_weight_kg.message}</p>
+            ) : null}
+          </div>
+          <div>
+            <Label htmlFor="target_weight_kg">Target weight (kg)</Label>
+            <Input id="target_weight_kg" type="number" step="0.1" min="1" {...form.register('target_weight_kg', { valueAsNumber: true })} />
+            {form.formState.errors.target_weight_kg ? (
+              <p className="mt-1 text-xs text-red-500">{form.formState.errors.target_weight_kg.message}</p>
             ) : null}
           </div>
           <div>

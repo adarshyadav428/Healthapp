@@ -11,7 +11,11 @@ export function calculateBMR({ weightKg, heightCm, age, sex }: { weightKg: numbe
   if (sex === 'male') {
     return 10 * weightKg + 6.25 * heightCm - 5 * age + 5
   }
-  return 10 * weightKg + 6.25 * heightCm - 5 * age - 161
+  if (sex === 'female') {
+    return 10 * weightKg + 6.25 * heightCm - 5 * age - 161
+  }
+  // 'other': use the average of male (+5) and female (-161) constants = -78
+  return 10 * weightKg + 6.25 * heightCm - 5 * age - 78
 }
 
 export function activityMultiplier(level: Profile['activity_level']): number {

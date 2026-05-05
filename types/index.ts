@@ -37,7 +37,7 @@ export type FoodLog = {
   id: string
   user_id: string
   food_id: string
-  food: Food
+  food: Food | null
   meal: 'breakfast' | 'lunch' | 'dinner' | 'snack'
   servings: number
   grams: number

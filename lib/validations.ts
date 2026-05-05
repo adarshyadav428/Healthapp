@@ -27,13 +27,20 @@ export const onboardingSchema = z.object({
 export const addFoodSchema = z.object({
   food_id: z.string().uuid(),
   meal: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
-  servings: z.number().positive(),
-  grams: z.number().positive(),
+  servings: z.number().positive().max(99, { message: 'Servings cannot exceed 99' }),
+  grams: z.number().positive().max(10000, { message: 'Grams cannot exceed 10,000' }),
 })
 
 export const weightLogSchema = z.object({
   weight_kg: z.number().positive(),
-  measured_at: z.string().refine((s) => !Number.isNaN(Date.parse(s)), { message: 'Invalid date' }),
+  // Use Date constructor — more strict than Date.parse which accepts partial strings
+  measured_at: z.string().refine(
+    (s) => {
+      const d = new Date(s)
+      return !Number.isNaN(d.getTime()) && s.trim().length > 0
+    },
+    { message: 'Invalid date' }
+  ),
   notes: z.string().optional(),
 })
 
@@ -41,6 +48,7 @@ export const profileUpdateSchema = z.object({
   display_name: z.string().min(1),
   height_cm: z.number().positive(),
   current_weight_kg: z.number().positive(),
+  target_weight_kg: z.number().positive(),
   activity_level: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']),
   goal: z.enum(['lose', 'maintain', 'gain']),
 })

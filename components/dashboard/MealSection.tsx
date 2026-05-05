@@ -7,10 +7,12 @@ export function MealSection({
   title,
   logs,
   onDelete,
+  deletingId,
 }: {
   title: string
   logs: FoodLog[]
   onDelete?: (id: string) => void
+  deletingId?: string | null
 }) {
   return (
     <div className="space-y-2">
@@ -20,7 +22,7 @@ export function MealSection({
       ) : (
         <div className="space-y-2">
           {logs.map((log) => (
-            <FoodLogItem key={log.id} log={log} onDelete={onDelete} />
+            <FoodLogItem key={log.id} log={log} onDelete={onDelete} isDeleting={deletingId === log.id} />
           ))}
         </div>
       )}

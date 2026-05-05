@@ -4,16 +4,17 @@ import Stripe from 'stripe'
 import { getStripeClient } from '../../../../lib/stripe/client'
 import { createServerClient } from '../../../../lib/supabase/server'
 
-const priceMap = {
-  monthly: process.env.STRIPE_MONTHLY_PRICE_ID,
-  annual: process.env.STRIPE_ANNUAL_PRICE_ID,
-  lifetime: process.env.STRIPE_LIFETIME_PRICE_ID,
-} as const
-
-type Plan = keyof typeof priceMap
+type Plan = 'monthly' | 'annual' | 'lifetime'
 
 export async function POST(req: Request) {
   try {
+    // Read price IDs at request time so new env vars take effect without redeploying
+    const priceMap: Record<Plan, string | undefined> = {
+      monthly: process.env.STRIPE_MONTHLY_PRICE_ID,
+      annual: process.env.STRIPE_ANNUAL_PRICE_ID,
+      lifetime: process.env.STRIPE_LIFETIME_PRICE_ID,
+    }
+
     const stripe = getStripeClient()
     const supabase = createServerClient()
     const {
@@ -30,7 +31,8 @@ export async function POST(req: Request) {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 })
     const customer = customers.data[0] ?? (await stripe.customers.create({ email: user.email }))
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL
+    if (!appUrl) throw new Error('NEXT_PUBLIC_APP_URL environment variable is not set')
     const isSubscription = plan !== 'lifetime'
 
     const params: Stripe.Checkout.SessionCreateParams = {

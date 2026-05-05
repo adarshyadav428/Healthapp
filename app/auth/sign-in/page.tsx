@@ -45,7 +45,12 @@ export default function SignInPage() {
         router.push('/onboarding')
       } else {
         const params = new URLSearchParams(window.location.search)
-        const returnTo = params.get('returnTo') || '/dashboard'
+        const rawReturnTo = params.get('returnTo') ?? ''
+        // Only allow relative paths that start with '/' but not '//' (protocol-relative URLs)
+        const returnTo =
+          rawReturnTo.startsWith('/') && !rawReturnTo.startsWith('//')
+            ? rawReturnTo
+            : '/dashboard'
         router.push(returnTo)
       }
     } catch (err) {

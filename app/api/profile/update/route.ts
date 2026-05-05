@@ -45,6 +45,7 @@ export async function POST(req: Request) {
         display_name: parsed.data.display_name,
         height_cm: parsed.data.height_cm,
         current_weight_kg: parsed.data.current_weight_kg,
+        target_weight_kg: parsed.data.target_weight_kg,
         activity_level: parsed.data.activity_level,
         goal: parsed.data.goal,
         daily_calorie_target: macros.daily_calorie_target,
