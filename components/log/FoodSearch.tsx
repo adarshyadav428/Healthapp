@@ -8,7 +8,7 @@ import type { Food } from '../../types/index'
 import { FoodResult } from './FoodResult'
 import { AddFoodModal } from './AddFoodModal'
 import { toast } from '../ui/use-toast'
-import { Clock, Copy, Star, Zap, PlusCircle } from 'lucide-react'
+import { Clock, Copy, Star, Zap, PlusCircle, Search, X } from 'lucide-react'
 import { CreateFoodModal } from './CreateFoodModal'
 import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { useUser } from '../../hooks/useUser'
@@ -152,13 +152,25 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
     <div className="space-y-5">
       {/* Search input */}
       <div className="relative">
-        <Input
-          placeholder="Search Indian &amp; global foods..."
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+        <input
+          placeholder="Search dal makhani, roti, paneer..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="pl-4 pr-4 h-12 text-base rounded-xl border-gray-200 bg-white shadow-sm"
+          className="w-full pl-10 pr-10 h-12 text-sm rounded-2xl border border-gray-200 bg-white shadow-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
           autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
         />
+        {query.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setQuery('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 hover:bg-gray-100 transition-colors"
+          >
+            <X className="h-4 w-4 text-gray-400" />
+          </button>
+        )}
       </div>
 
       {/* Copy yesterday banner */}
