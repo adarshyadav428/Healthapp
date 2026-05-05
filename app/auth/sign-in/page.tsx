@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { signInSchema, type SignInData } from '../../../lib/validations'
@@ -12,8 +11,6 @@ import { Label } from '../../../components/ui/label'
 import { toast } from '../../../components/ui/use-toast'
 
 export default function SignInPage() {
-  const router = useRouter()
-
   const form = useForm<SignInData>({
     resolver: zodResolver(signInSchema),
     defaultValues: { email: '', password: '' },
@@ -42,7 +39,7 @@ export default function SignInPage() {
       toast({ title: 'Welcome back', description: 'You are signed in.' })
 
       if (!profile || profile.height_cm === null) {
-        router.push('/onboarding')
+        window.location.href = '/onboarding'
       } else {
         const params = new URLSearchParams(window.location.search)
         const rawReturnTo = params.get('returnTo') ?? ''
@@ -51,7 +48,7 @@ export default function SignInPage() {
           rawReturnTo.startsWith('/') && !rawReturnTo.startsWith('//')
             ? rawReturnTo
             : '/dashboard'
-        router.push(returnTo)
+        window.location.href = returnTo
       }
     } catch (err) {
       toast({ title: 'Sign in failed', description: (err as Error).message, variant: 'error' })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FoodLog, Profile } from '../../types/index'
 import { CalorieSummary } from './CalorieSummary'
 import { MacroProgressBars } from './MacroProgressBars'
@@ -29,15 +29,19 @@ export function DashboardClient({ profile, initialLogs, streak }: { profile: Pro
     }
   }, [])
 
-  const totals = logs.reduce(
-    (acc, log) => {
-      acc.kcal += log.kcal
-      acc.protein_g += log.protein_g
-      acc.carbs_g += log.carbs_g
-      acc.fat_g += log.fat_g
-      return acc
-    },
-    { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }
+  const totals = useMemo(
+    () =>
+      logs.reduce(
+        (acc, log) => {
+          acc.kcal += log.kcal
+          acc.protein_g += log.protein_g
+          acc.carbs_g += log.carbs_g
+          acc.fat_g += log.fat_g
+          return acc
+        },
+        { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }
+      ),
+    [logs]
   )
 
   const deleteLog = async (id: string) => {
@@ -56,12 +60,15 @@ export function DashboardClient({ profile, initialLogs, streak }: { profile: Pro
     }
   }
 
-  const byMeal = {
-    Breakfast: logs.filter((l) => l.meal === 'breakfast'),
-    Lunch: logs.filter((l) => l.meal === 'lunch'),
-    Dinner: logs.filter((l) => l.meal === 'dinner'),
-    Snacks: logs.filter((l) => l.meal === 'snack'),
-  }
+  const byMeal = useMemo(
+    () => ({
+      Breakfast: logs.filter((l) => l.meal === 'breakfast'),
+      Lunch: logs.filter((l) => l.meal === 'lunch'),
+      Dinner: logs.filter((l) => l.meal === 'dinner'),
+      Snacks: logs.filter((l) => l.meal === 'snack'),
+    }),
+    [logs]
+  )
 
   return (
     <div className="flex flex-col gap-6">
