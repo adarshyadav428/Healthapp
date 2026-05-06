@@ -72,6 +72,7 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
       protein: round2(food.protein_g_per_100g * factor * s),
       carbs:   round2(food.carbs_g_per_100g   * factor * s),
       fat:     round2(food.fat_g_per_100g     * factor * s),
+      fiber:   food.fiber_g_per_100g != null ? round2(food.fiber_g_per_100g * factor * s) : null,
     }
   }, [food, grams, servings])
 
@@ -166,6 +167,9 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
           <div className="flex-1 min-w-0 pr-3">
             <h2 className="text-base font-black text-gray-900 truncate">{food.name}</h2>
             {food.brand && <p className="text-xs text-gray-400">{food.brand}</p>}
+            {food.serving_description && (
+              <p className="text-xs text-gray-500 mt-0.5">1 serving = {food.serving_size_g}g ({food.serving_description})</p>
+            )}
           </div>
           <button type="button" onClick={onClose} className="rounded-full p-1.5 hover:bg-gray-100 transition-colors flex-shrink-0">
             <X className="h-5 w-5 text-gray-400" />
@@ -236,10 +240,13 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
               <span className="text-3xl font-black text-orange-700">{Math.round(nutrition.kcal)}</span>
               <span className="text-sm text-orange-400 font-semibold">kcal</span>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className={`grid gap-2 ${nutrition.fiber != null && nutrition.fiber > 0 ? 'grid-cols-4' : 'grid-cols-3'}`}>
               <MacroChip value={nutrition.protein} label="Protein" color="bg-blue-100 text-blue-700" />
               <MacroChip value={nutrition.carbs} label="Carbs" color="bg-amber-100 text-amber-700" />
               <MacroChip value={nutrition.fat} label="Fat" color="bg-rose-100 text-rose-700" />
+              {nutrition.fiber != null && nutrition.fiber > 0 && (
+                <MacroChip value={nutrition.fiber} label="Fiber" color="bg-emerald-100 text-emerald-700" />
+              )}
             </div>
           </div>
 

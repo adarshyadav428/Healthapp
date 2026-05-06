@@ -85,6 +85,8 @@ export function HistoryClient({ logs, profile }: { logs: LogRow[]; profile: Prof
   const avgKcal = loggedDays.length > 0 ? Math.round(loggedDays.reduce((s, d) => s + d.kcal, 0) / loggedDays.length) : 0
   const avgProtein = loggedDays.length > 0 ? Math.round(loggedDays.reduce((s, d) => s + d.protein, 0) / loggedDays.length) : 0
   const avgCarbs = loggedDays.length > 0 ? Math.round(loggedDays.reduce((s, d) => s + d.carbs, 0) / loggedDays.length) : 0
+  // Calorie deficit/surplus vs goal (positive = deficit, negative = surplus)
+  const avgDeficit = target > 0 && avgKcal > 0 ? target - avgKcal : null
   const avgFat = loggedDays.length > 0 ? Math.round(loggedDays.reduce((s, d) => s + d.fat, 0) / loggedDays.length) : 0
 
   const streakCount = useMemo(() => {
@@ -134,6 +136,26 @@ export function HistoryClient({ logs, profile }: { logs: LogRow[]; profile: Prof
           bg="bg-emerald-50 border-emerald-100"
         />
       </div>
+      {avgDeficit !== null && (
+        <div className={`rounded-2xl border px-4 py-3 flex items-center justify-between ${
+          avgDeficit > 0
+            ? 'border-emerald-100 bg-emerald-50'
+            : 'border-rose-100 bg-rose-50'
+        }`}>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Avg daily {avgDeficit >= 0 ? 'deficit' : 'surplus'}</p>
+            <p className={`text-xl font-black mt-0.5 ${avgDeficit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+              {avgDeficit >= 0 ? '-' : '+'}{Math.abs(avgDeficit).toLocaleString()} kcal
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] text-gray-400">Est. weight {avgDeficit >= 0 ? 'loss' : 'gain'}</p>
+            <p className={`text-sm font-bold ${avgDeficit >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+              {Math.abs(avgDeficit * loggedDays.length / 7700).toFixed(2)} kg / {range} days
+            </p>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-3 gap-2">
         <MacroCard label="Avg protein" value={avgProtein} unit="g" color="text-blue-600" />
         <MacroCard label="Avg carbs" value={avgCarbs} unit="g" color="text-amber-600" />
