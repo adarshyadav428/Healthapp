@@ -167,8 +167,8 @@ export default function Home() {
             <div className="rounded-3xl border-2 border-orange-400 bg-gradient-to-br from-orange-50 to-amber-50 p-6 shadow-md relative overflow-hidden">
               <div className="absolute top-4 right-4 rounded-full bg-orange-600 px-2.5 py-1 text-[10px] font-black text-white uppercase tracking-wide">Popular</div>
               <p className="text-xs font-semibold uppercase tracking-wide text-orange-600 mb-1">Pro</p>
-              <p className="text-3xl font-black text-gray-900">₹499<span className="text-base font-semibold text-gray-500">/mo</span></p>
-              <p className="text-sm text-gray-500 mt-1 mb-5">or ₹3,999/year · Save 33%</p>
+              <p className="text-3xl font-black text-gray-900">$4.99<span className="text-base font-semibold text-gray-500">/mo</span></p>
+              <p className="text-sm text-gray-500 mt-1 mb-5">billed $59.99/year · 7-day free trial</p>
               <ul className="space-y-2.5">
                 {[
                   'Everything in Free',
