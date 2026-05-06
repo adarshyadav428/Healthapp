@@ -54,11 +54,11 @@ export default function SignUpPage() {
 
   if (info) {
     return (
-      <div className="min-h-screen bg-[#fff7ed] flex flex-col items-center justify-center px-4 py-10">
-        <div className="w-full max-w-sm rounded-3xl border border-orange-100 bg-white/90 p-8 shadow-sm text-center">
+      <div className="min-h-screen bg-[#fff7ed] flex flex-col items-center justify-center px-4 py-10 dark:bg-slate-950">
+        <div className="w-full max-w-sm rounded-3xl border border-orange-100 bg-white/90 p-8 shadow-sm text-center dark:border-slate-800 dark:bg-slate-900/90">
           <div className="text-4xl mb-4">📬</div>
-          <h2 className="text-xl font-black text-gray-900">Check your inbox</h2>
-          <p className="mt-2 text-sm text-gray-500">{info}</p>
+          <h2 className="text-xl font-black text-foreground">Check your inbox</h2>
+          <p className="mt-2 text-sm text-muted">{info}</p>
           <Link
             href="/auth/sign-in"
             className="mt-6 inline-block rounded-2xl bg-orange-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-orange-700 transition-all"
@@ -71,7 +71,7 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff7ed] flex flex-col items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-[#fff7ed] flex flex-col items-center justify-center px-4 py-10 dark:bg-slate-950">
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(234,88,12,0.12),_transparent_55%)]" />
 
       {/* Logo */}
@@ -80,18 +80,18 @@ export default function SignUpPage() {
         <span className="text-xl font-black text-orange-600">CalTrack</span>
       </Link>
 
-      <div className="w-full max-w-sm rounded-3xl border border-orange-100 bg-white/90 p-7 shadow-sm backdrop-blur-sm">
-        <h1 className="text-2xl font-black text-gray-900">Start for free</h1>
-        <p className="mt-1 text-sm text-gray-500">Create your account in seconds.</p>
+      <div className="w-full max-w-sm rounded-3xl border border-orange-100 bg-white/90 p-7 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/90">
+        <h1 className="text-2xl font-black text-foreground">Start for free</h1>
+        <p className="mt-1 text-sm text-muted">Create your account in seconds.</p>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+            <label htmlFor="email" className="block text-sm font-semibold text-foreground mb-1">Email</label>
             <input
               id="email"
               type="email"
               {...form.register('email')}
-              className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+              className="w-full rounded-2xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all placeholder:text-muted"
               placeholder="you@example.com"
             />
             {form.formState.errors.email && (
@@ -99,12 +99,12 @@ export default function SignUpPage() {
             )}
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-1">Password</label>
+            <label htmlFor="password" className="block text-sm font-semibold text-foreground mb-1">Password</label>
             <input
               id="password"
               type="password"
               {...form.register('password')}
-              className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+              className="w-full rounded-2xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all placeholder:text-muted"
               placeholder="min. 8 characters"
             />
             {form.formState.errors.password && (
@@ -112,12 +112,12 @@ export default function SignUpPage() {
             )}
           </div>
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-1">Confirm password</label>
+            <label htmlFor="confirmPassword" className="block text-sm font-semibold text-foreground mb-1">Confirm password</label>
             <input
               id="confirmPassword"
               type="password"
               {...form.register('confirmPassword')}
-              className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+              className="w-full rounded-2xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all placeholder:text-muted"
               placeholder="••••••••"
             />
             {form.formState.errors.confirmPassword && (
@@ -136,17 +136,17 @@ export default function SignUpPage() {
 
         <div className="relative my-5">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-100" />
+            <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-white px-3 text-xs text-gray-400">or</span>
+            <span className="bg-white px-3 text-xs text-muted dark:bg-slate-900">or</span>
           </div>
         </div>
 
         <button
           type="button"
           onClick={handleGoogle}
-          className="w-full rounded-2xl border border-gray-200 bg-white py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 active:scale-[.98] transition-all flex items-center justify-center gap-2"
+          className="w-full rounded-2xl border border-border bg-card py-3 text-sm font-semibold text-foreground hover:bg-muted/20 active:scale-[.98] transition-all flex items-center justify-center gap-2"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -157,14 +157,14 @@ export default function SignUpPage() {
           Continue with Google
         </button>
 
-        <p className="mt-4 text-center text-xs text-gray-400">
+        <p className="mt-4 text-center text-xs text-muted">
           By signing up you agree to our{' '}
           <Link href="/terms" className="text-orange-600 hover:underline">Terms</Link>
           {' '}and{' '}
           <Link href="/privacy" className="text-orange-600 hover:underline">Privacy Policy</Link>.
         </p>
 
-        <p className="mt-4 text-center text-sm text-gray-500">
+        <p className="mt-4 text-center text-sm text-muted">
           Already have an account?{' '}
           <Link href="/auth/sign-in" className="font-semibold text-orange-600 hover:text-orange-700">
             Sign in

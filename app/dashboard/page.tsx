@@ -1,33 +1,28 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-
-export const metadata: Metadata = {
-  title: 'Dashboard — CalTrack',
-  description: 'Your daily calorie, macro, and nutrition dashboard.',
-  robots: { index: false },
-}
 import { createServerClient } from '../../lib/supabase/server'
 import type { FoodLog, WeightLog, ExerciseLog } from '../../types/index'
 import { calculateStreak } from '../../lib/streak'
 import { Navbar } from '../../components/layout/Navbar'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { DashboardClient } from '../../components/dashboard/DashboardClient'
+import Link from 'next/link'
+import { Button } from '../../components/ui/button'
 import { getUtcDayRange } from '../../lib/dateUtils'
+
+export const metadata: Metadata = {
+  title: 'Dashboard — CalTrack',
+  description: 'Your daily calorie, macro, and nutrition dashboard.',
+  robots: { index: false },
+}
 
 export const dynamic = 'force-dynamic'
 
 function getGreeting() {
-  // Use UTC+5:30 (IST) for greeting
   const istHour = (new Date().getUTCHours() + 5) % 24
   if (istHour < 12) return 'Good morning'
   if (istHour < 17) return 'Good afternoon'
   return 'Good evening'
-}
-
-function getTodayLabel() {
-  return new Date().toLocaleDateString('en-IN', {
-    weekday: 'long', day: 'numeric', month: 'long',
-  })
 }
 
 export default async function DashboardPage() {
@@ -93,7 +88,6 @@ export default async function DashboardPage() {
   ])
 
   if (logsResult.error) throw new Error(logsResult.error.message)
-  // exercise_logs table may not exist yet — degrade gracefully instead of crashing
   if (weightResult.error) throw new Error(weightResult.error.message)
   if (streakResult.error) throw new Error(streakResult.error.message)
 
@@ -105,19 +99,23 @@ export default async function DashboardPage() {
 
   const firstName = profile.display_name?.split(' ')[0] ?? null
   const greeting = getGreeting()
-  const todayLabel = getTodayLabel()
 
   return (
-    <div className="min-h-screen bg-[#fff7ed] pb-24">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.25),_transparent_50%),radial-gradient(circle_at_20%_60%,_rgba(248,113,113,0.2),_transparent_55%),radial-gradient(circle_at_80%_20%,_rgba(16,185,129,0.18),_transparent_45%)]" />
+    <div className="min-h-screen bg-[#fff7ed] pb-24 dark:bg-slate-950">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.25),_transparent_50%),radial-gradient(circle_at_20%_60%,_rgba(248,113,113,0.2),_transparent_55%),radial-gradient(circle_at_80%_20%,_rgba(16,185,129,0.18),_transparent_45%)] dark:opacity-20" />
       <Navbar />
       <main className="relative mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-6">
-        <div>
-          <p className="text-sm font-medium text-orange-600">
-            {greeting}{firstName ? `, ${firstName}` : ''} 👋
-          </p>
-          <h1 className="text-2xl font-black text-gray-900 mt-0.5">Today</h1>
-          <p className="text-xs text-gray-400 mt-0.5">{todayLabel}</p>
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-sm font-medium text-orange-600 dark:text-amber-400">
+              {greeting}{firstName ? `, ${firstName}` : ''} 👋
+            </p>
+            <h1 className="text-2xl font-black text-foreground mt-0.5">Today</h1>
+            <p className="text-xs text-muted mt-0.5">Your daily snapshot</p>
+          </div>
+          <div className="text-xs font-semibold text-orange-600 bg-white/80 border border-orange-100 px-2.5 py-1 rounded-full dark:bg-slate-900/80 dark:border-slate-800 dark:text-amber-300">
+            CalTrack
+          </div>
         </div>
 
         <DashboardClient
@@ -128,6 +126,10 @@ export default async function DashboardPage() {
           initialExerciseLogs={exerciseLogs}
           weekLogs={weekLogs}
         />
+
+        <Button asChild className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-2xl shadow-md">
+          <Link href="/log">+ Add Food</Link>
+        </Button>
       </main>
       <BottomNav />
     </div>

@@ -14,32 +14,75 @@
   --danger: #ef4444;
 }
 
+.dark {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --muted: #94a3b8;
+  --border: #334155;
+  --card: #1e293b;
+  --primary: #f97316;
+  --success: #4ade80;
+  --warning: #facc15;
+  --danger: #f87171;
+}
+
 @layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+    font-family: 'Trebuchet MS', 'Avenir Next', 'Segoe UI', sans-serif;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Georgia', 'Times New Roman', serif;
   }
 }
 
 @layer utilities {
-  /* Fade up entry animation */
+  /* ── Fade-up entry animation ── */
   @keyframes fadeUp {
-    0% { opacity: 0; transform: translateY(12px); }
+    0%   { opacity: 0; transform: translateY(12px); }
     100% { opacity: 1; transform: translateY(0); }
   }
+
   .animate-fade-up {
-    animation: fadeUp 0.5s ease-out both;
+    animation: fadeUp 0.6s ease-out both;
   }
 
-  /* Confetti burst for calorie goal celebration */
+  /* ── Shimmer loading skeleton ── */
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to   { background-position:  200% 0; }
+  }
+
+  .animate-shimmer {
+    background-image: linear-gradient(
+      90deg,
+      #f3f4f6 0%,
+      #e9eaec 40%,
+      #f3f4f6 80%
+    );
+    background-size: 200% auto;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+
+  .dark .animate-shimmer {
+    background-image: linear-gradient(
+      90deg,
+      #1e293b 0%,
+      #2d3f55 40%,
+      #1e293b 80%
+    );
+  }
+
+  /* ── Confetti burst (CalorieSummary) ── */
   @keyframes confettiBurst {
     0%   { opacity: 0; transform: translateY(0) scale(0.8); }
     10%  { opacity: 1; }
     100% { opacity: 0; transform: translateY(120px) rotate(180deg) scale(1.1); }
   }
+
   .confetti-piece {
     position: absolute;
     top: 12px;
@@ -49,19 +92,8 @@
     animation: confettiBurst 1.8s ease-out both;
   }
 
-  /* Shimmer loading skeleton */
-  @keyframes shimmer {
-    0%   { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
-  .animate-shimmer {
-    background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-  }
-
-  /* iOS-style safe area inset for bottom nav */
+  /* ── Safe area for bottom nav ── */
   .safe-area-bottom {
-    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom, 8px);
   }
 }

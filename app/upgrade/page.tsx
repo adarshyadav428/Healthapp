@@ -74,34 +74,34 @@ export default function UpgradePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff7ed]">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(251,191,36,0.25),_transparent_50%)]" />
+    <div className="min-h-screen bg-[#fff7ed] dark:bg-slate-950">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(251,191,36,0.25),_transparent_50%)] dark:opacity-40" />
 
       <div className="mx-auto w-full max-w-lg px-4 py-8">
-        <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-6">
+        <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground mb-6">
           <ArrowLeft className="h-4 w-4" />
           Back to dashboard
         </Link>
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-orange-100 border border-orange-200 px-3 py-1 text-xs font-semibold text-orange-700 mb-3">
+          <div className="inline-flex items-center gap-2 rounded-full bg-orange-100 border border-orange-200 px-3 py-1 text-xs font-semibold text-orange-700 mb-3 dark:border-slate-700 dark:bg-slate-900 dark:text-amber-300">
             <Crown className="h-3.5 w-3.5" />
             CalTrack Pro
           </div>
-          <h1 className="text-3xl font-black text-gray-900">Upgrade to Pro</h1>
-          <p className="mt-2 text-sm text-gray-600">Everything you need to hit your goals, nothing you don&apos;t.</p>
+          <h1 className="text-3xl font-black text-foreground">Upgrade to Pro</h1>
+          <p className="mt-2 text-sm text-muted">Everything you need to hit your goals, nothing you don&apos;t.</p>
         </div>
 
         {/* Features */}
-        <div className="rounded-3xl border border-orange-100 bg-white/90 p-5 mb-6 shadow-sm">
+        <div className="rounded-3xl border border-orange-100 bg-white/90 p-5 mb-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
           <div className="flex items-center gap-2 mb-4">
             <Zap className="h-4 w-4 text-orange-600" />
-            <p className="text-sm font-bold text-gray-800">What you get with Pro</p>
+            <p className="text-sm font-bold text-foreground">What you get with Pro</p>
           </div>
           <ul className="space-y-2">
             {FEATURES.map((f) => (
-              <li key={f} className="flex items-center gap-2.5 text-sm text-gray-700">
+              <li key={f} className="flex items-center gap-2.5 text-sm text-muted">
                 <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100">
                   <Check className="h-3 w-3 text-emerald-600" />
                 </span>
@@ -118,18 +118,18 @@ export default function UpgradePage() {
               key={plan.id}
               className={`rounded-3xl border p-5 shadow-sm transition-all ${
                 plan.highlight
-                  ? 'border-orange-300 bg-gradient-to-br from-orange-50 to-amber-50 ring-2 ring-orange-200'
-                  : 'border-gray-100 bg-white/90'
+                  ? 'border-orange-300 bg-gradient-to-br from-orange-50 to-amber-50 ring-2 ring-orange-200 dark:border-amber-500/60 dark:from-slate-900 dark:to-slate-800 dark:ring-amber-500/20'
+                  : 'border-gray-100 bg-white/90 dark:border-slate-800 dark:bg-slate-900/90'
               }`}
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{plan.title}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">{plan.title}</p>
                   <div className="flex items-baseline gap-1 mt-0.5">
-                    <span className="text-3xl font-black text-gray-900">{plan.price}</span>
-                    <span className="text-sm text-gray-500">{plan.per}</span>
+                    <span className="text-3xl font-black text-foreground">{plan.price}</span>
+                    <span className="text-sm text-muted">{plan.per}</span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-0.5">{plan.note}</p>
+                  <p className="text-xs text-muted mt-0.5">{plan.note}</p>
                 </div>
                 {plan.badge && (
                   <span className="rounded-full bg-orange-600 px-2.5 py-1 text-xs font-bold text-white">
@@ -141,7 +141,7 @@ export default function UpgradePage() {
                 className={`mt-4 w-full rounded-full font-bold ${
                   plan.highlight
                     ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-md'
-                    : 'bg-gray-900 hover:bg-gray-800 text-white'
+                    : 'bg-gray-900 hover:bg-gray-800 text-white dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-slate-100'
                 }`}
                 onClick={() => startCheckout(plan.id)}
                 disabled={!!loading}
@@ -154,10 +154,10 @@ export default function UpgradePage() {
 
         {/* Footer */}
         <div className="mt-8 text-center space-y-2">
-          <p className="text-xs text-gray-400">Secured by Stripe · Cancel anytime · 30-day money back</p>
-          <div className="flex justify-center gap-4 text-xs text-gray-400">
-            <Link href="/terms" className="underline hover:text-gray-600">Terms</Link>
-            <Link href="/privacy" className="underline hover:text-gray-600">Privacy</Link>
+          <p className="text-xs text-muted">Secured by Stripe · Cancel anytime · 30-day money back</p>
+          <div className="flex justify-center gap-4 text-xs text-muted">
+            <Link href="/terms" className="underline hover:text-foreground">Terms</Link>
+            <Link href="/privacy" className="underline hover:text-foreground">Privacy</Link>
           </div>
         </div>
       </div>

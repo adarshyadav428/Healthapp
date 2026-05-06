@@ -51,29 +51,29 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff7ed] flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-[#fff7ed] flex flex-col items-center justify-center px-4 dark:bg-slate-950">
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.2),_transparent_50%)]" />
 
       <div className="w-full max-w-sm">
-        <div className="rounded-3xl bg-white/90 border border-orange-100 p-7 shadow-xl">
+        <div className="rounded-3xl bg-white/90 border border-orange-100 p-7 shadow-xl dark:border-slate-800 dark:bg-slate-900/90">
           <div className="mb-6 text-center">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100">
               <Lock className="h-6 w-6 text-orange-600" />
             </div>
-            <h1 className="text-xl font-black text-gray-900">Set new password</h1>
-            <p className="text-sm text-gray-500 mt-1">Choose a strong password for your account.</p>
+            <h1 className="text-xl font-black text-foreground">Set new password</h1>
+            <p className="text-sm text-muted mt-1">Choose a strong password for your account.</p>
           </div>
 
           {done ? (
             <div className="text-center py-4">
               <div className="text-5xl mb-3">✅</div>
-              <p className="text-sm font-semibold text-gray-800">Password updated!</p>
-              <p className="text-xs text-gray-500 mt-1">Redirecting you to your dashboard...</p>
+              <p className="text-sm font-semibold text-foreground">Password updated!</p>
+              <p className="text-xs text-muted mt-1">Redirecting you to your dashboard...</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1.5">
                   New password
                 </label>
                 <input
@@ -82,11 +82,11 @@ export default function ResetPasswordPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Min. 8 characters"
                   required
-                  className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+                  className="w-full rounded-2xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all placeholder:text-muted"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1.5">
                   Confirm password
                 </label>
                 <input
@@ -95,12 +95,12 @@ export default function ResetPasswordPage() {
                   onChange={(e) => setConfirm(e.target.value)}
                   placeholder="Same as above"
                   required
-                  className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+                  className="w-full rounded-2xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all placeholder:text-muted"
                 />
               </div>
 
               {error && (
-                <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-2.5 text-xs text-red-600">
+                <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-2.5 text-xs text-red-600 dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-300">
                   {error}
                 </div>
               )}

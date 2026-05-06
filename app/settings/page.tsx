@@ -6,6 +6,7 @@ import { SettingsClient } from '../../components/settings/SettingsClient'
 import pkg from '../../package.json'
 
 export const dynamic = 'force-dynamic'
+export const metadata = { robots: { index: false } }
 
 export default async function SettingsPage() {
   const supabase = createServerClient()
@@ -27,12 +28,12 @@ export default async function SettingsPage() {
   if (!profile || profile.height_cm === null) redirect('/onboarding')
 
   return (
-    <div className="min-h-screen bg-[#fff7ed] pb-24">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(234,88,12,0.10),_transparent_50%)]" />
+    <div className="min-h-screen bg-[#fff7ed] pb-24 dark:bg-slate-950">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(234,88,12,0.10),_transparent_50%)] dark:opacity-40" />
       <Navbar />
       <main className="mx-auto w-full max-w-md px-4 py-6">
-        <h1 className="text-2xl font-black text-gray-900">Settings</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Profile, goals &amp; subscription</p>
+        <h1 className="text-2xl font-black text-foreground">Settings</h1>
+        <p className="text-sm text-muted mt-0.5">Profile, goals &amp; subscription</p>
         <div className="mt-6">
           <SettingsClient profile={profile} version={pkg.version} />
         </div>

@@ -12,13 +12,13 @@ export const signUpSchema = signInSchema.extend({
 })
 
 export const onboardingSchema = z.object({
-  display_name: z.string().min(1, 'Name is required'),
+  display_name: z.string().min(1),
   unit_system: z.enum(['metric', 'imperial']),
-  age: z.number().int({ message: 'Age must be a whole number' }).min(13, 'Must be at least 13').max(120, 'Invalid age'),
+  age: z.number().int().min(13).max(120),
   sex: z.enum(['male', 'female', 'other']),
-  height_cm: z.number({ invalid_type_error: 'Height is required' }).positive('Height must be positive').max(300, 'Invalid height'),
-  current_weight_kg: z.number({ invalid_type_error: 'Weight is required' }).positive('Weight must be positive').max(600, 'Invalid weight'),
-  target_weight_kg: z.number({ invalid_type_error: 'Target weight is required' }).positive('Weight must be positive').max(600, 'Invalid weight'),
+  height_cm: z.number().positive(),
+  current_weight_kg: z.number().positive(),
+  target_weight_kg: z.number().positive(),
   goal: z.enum(['lose', 'maintain', 'gain']),
   activity_level: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']),
   pace_kg_per_week: z.number().min(0).max(2),
@@ -57,7 +57,7 @@ export const profileUpdateSchema = z.object({
   target_weight_kg: z.number().positive(),
   activity_level: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']),
   goal: z.enum(['lose', 'maintain', 'gain']),
-  water_target_ml: z.number().int().min(500).max(8000).optional(),
+  water_target_ml: z.number().min(500).max(8000).optional(),
 })
 
 export const customFoodSchema = z.object({

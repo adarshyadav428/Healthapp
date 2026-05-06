@@ -40,24 +40,34 @@ export async function POST(req: Request) {
       goal: parsed.data.goal,
     })
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        display_name: parsed.data.display_name,
-        height_cm: parsed.data.height_cm,
-        current_weight_kg: parsed.data.current_weight_kg,
-        target_weight_kg: parsed.data.target_weight_kg,
-        activity_level: parsed.data.activity_level,
-        goal: parsed.data.goal,
-        daily_calorie_target: macros.daily_calorie_target,
-        protein_g_target: macros.protein_g_target,
-        carbs_g_target: macros.carbs_g_target,
-        fat_g_target: macros.fat_g_target,
-        ...(parsed.data.water_target_ml !== undefined ? { water_target_ml: parsed.data.water_target_ml } : {}),
-      })
-      .eq('id', user.id)
+    const payload = {
+      display_name: parsed.data.display_name,
+      height_cm: parsed.data.height_cm,
+      current_weight_kg: parsed.data.current_weight_kg,
+      target_weight_kg: parsed.data.target_weight_kg,
+      activity_level: parsed.data.activity_level,
+      goal: parsed.data.goal,
+      daily_calorie_target: macros.daily_calorie_target,
+      protein_g_target: macros.protein_g_target,
+      carbs_g_target: macros.carbs_g_target,
+      fat_g_target: macros.fat_g_target,
+      ...(parsed.data.water_target_ml !== undefined ? { water_target_ml: parsed.data.water_target_ml } : {}),
+    }
 
-    if (error) throw new Error(error.message)
+    const { error } = await supabase.from('profiles').update(payload).eq('id', user.id)
+
+    if (error) {
+      if (String(error.message).includes('water_target_ml')) {
+        const { water_target_ml: _ignored, ...fallback } = payload as Record<string, unknown>
+        const { error: retryError } = await supabase
+          .from('profiles')
+          .update(fallback)
+          .eq('id', user.id)
+        if (retryError) throw new Error(retryError.message)
+      } else {
+        throw new Error(error.message)
+      }
+    }
 
     return NextResponse.json({ ok: true })
   } catch (err) {

@@ -37,26 +37,28 @@ export function DashboardClient({
   const { user } = useUser()
   const queryClient = useQueryClient()
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
-  const { data: exerciseLogs = initialExerciseLogs } = useExerciseLogs(user?.id ?? null, new Date(), initialExerciseLogs)
+  const exerciseQuery = useExerciseLogs(user?.id ?? null, new Date(), initialExerciseLogs)
+  const exerciseLogs = exerciseQuery.data?.logs ?? initialExerciseLogs
+  const exerciseTableMissing = exerciseQuery.data?.tableMissing ?? false
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [showExerciseModal, setShowExerciseModal] = useState(false)
   const [deletingExerciseId, setDeletingExerciseId] = useState<string | null>(null)
 
+  // Upgraded toast on first render
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('upgraded') === 'true') {
-      toast({ title: 'Welcome to Pro!', description: 'Your upgrade is active.' })
+      toast({ title: 'Welcome to Pro! 🎉', description: 'Your upgrade is active. Enjoy unlimited tracking.' })
       params.delete('upgraded')
       const query = params.toString()
-      const newUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname
-      window.history.replaceState({}, '', newUrl)
+      window.history.replaceState({}, '', query ? `${window.location.pathname}?${query}` : window.location.pathname)
     }
   }, [])
 
-  // Streak milestone celebrations — fire once per milestone day
+  // Streak milestone celebrations — fire once per milestone
   useEffect(() => {
     const MILESTONES: Record<number, { title: string; description: string }> = {
-      7:   { title: '🔥 7-Day Streak!', description: "One week strong! You're building a real habit." },
+      7:   { title: '🔥 7-Day Streak!',  description: "One week strong! You're building a real habit." },
       14:  { title: '🚀 14-Day Streak!', description: 'Two weeks consistent — your body thanks you!' },
       30:  { title: '🏆 30-Day Streak!', description: "A whole month! You're unstoppable." },
       60:  { title: '💎 60-Day Streak!', description: 'Two months in — this is your lifestyle now.' },
@@ -90,7 +92,7 @@ export function DashboardClient({
   )
 
   const deleteLog = async (id: string) => {
-    if (deletingId) return // prevent concurrent deletes
+    if (deletingId) return
     try {
       setDeletingId(id)
       const supabase = getBrowserSupabaseClient()
@@ -124,90 +126,80 @@ export function DashboardClient({
   const byMeal = useMemo(
     () => ({
       Breakfast: logs.filter((l) => l.meal === 'breakfast'),
-      Lunch: logs.filter((l) => l.meal === 'lunch'),
-      Dinner: logs.filter((l) => l.meal === 'dinner'),
-      Snacks: logs.filter((l) => l.meal === 'snack'),
+      Lunch:     logs.filter((l) => l.meal === 'lunch'),
+      Dinner:    logs.filter((l) => l.meal === 'dinner'),
+      Snacks:    logs.filter((l) => l.meal === 'snack'),
     }),
     [logs]
   )
 
   return (
-    <div className="flex flex-col gap-6">
-      <section className="grid gap-4">
-        <div className="animate-fade-up">
-          <CalorieSummary
-            kcalEaten={Math.round(totals.kcal)}
-            kcalBurned={Math.round(totalBurned)}
-            kcalTarget={profile.daily_calorie_target}
-          />
-        </div>
+    <div className="flex flex-col gap-5">
+      {/* Calorie ring */}
+      <div className="animate-fade-up">
+        <CalorieSummary
+          kcalEaten={Math.round(totals.kcal)}
+          kcalBurned={Math.round(totalBurned)}
+          kcalTarget={profile.daily_calorie_target}
+        />
+      </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="animate-fade-up" style={{ animationDelay: '80ms' }}>
-            <StreakBadge streak={streak} />
-          </div>
-          <div className="animate-fade-up" style={{ animationDelay: '140ms' }}>
-            <WeightTrendCard logs={weightLogs} />
-          </div>
-        </div>
-      </section>
+      {/* Streak + weight trend */}
+      <div className="grid grid-cols-2 gap-3 animate-fade-up" style={{ animationDelay: '80ms' }}>
+        <StreakBadge streak={streak} />
+        <WeightTrendCard logs={weightLogs} />
+      </div>
 
-      {/* Daily Insight */}
-      <div className="animate-fade-up" style={{ animationDelay: '160ms' }}>
+      {/* Daily insight */}
+      <div className="animate-fade-up" style={{ animationDelay: '140ms' }}>
         <DailyInsight totals={totals} profile={profile} />
       </div>
 
-      {/* Weekly Summary */}
-      <div className="animate-fade-up" style={{ animationDelay: '190ms' }}>
+      {/* Weekly summary */}
+      <div className="animate-fade-up" style={{ animationDelay: '170ms' }}>
         <WeeklySummary weekLogs={weekLogs} kcalTarget={profile.daily_calorie_target} />
       </div>
 
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div className="animate-fade-up" style={{ animationDelay: '200ms' }}>
-          <div className="rounded-3xl border border-amber-100 bg-white/90 p-4 shadow-sm">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Macros</p>
-              <p className="mt-1 text-sm text-gray-500">Keep your balance today</p>
-            </div>
-            <div className="h-10 w-10 rounded-2xl bg-amber-100/80 flex items-center justify-center text-amber-700">
-              🧭
-            </div>
+      {/* Macros + Water */}
+      <div className="grid grid-cols-2 gap-3 animate-fade-up" style={{ animationDelay: '210ms' }}>
+        {/* Macros card */}
+        <div className="rounded-3xl border border-amber-100 bg-white/90 p-4 shadow-sm dark:border-amber-900/30 dark:bg-slate-900/90">
+          <div className="flex items-start justify-between mb-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">Macros</p>
+            <span className="text-base">🧭</span>
           </div>
-          <div className="mt-4">
-            <MacroProgressBars totals={totals} profile={profile} />
-          </div>
-          </div>
+          <MacroProgressBars totals={totals} profile={profile} />
         </div>
+        {/* Water card */}
+        <WaterCard targetMl={profile.water_target_ml ?? 2500} />
+      </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: '260ms' }}>
-          <WaterCard targetMl={profile.water_target_ml ?? 2500} />
-        </div>
-      </section>
+      {/* Exercise */}
+      <div className="animate-fade-up" style={{ animationDelay: '260ms' }}>
+        <ExerciseCard
+          logs={exerciseLogs}
+          onAdd={() => setShowExerciseModal(true)}
+          onDelete={deleteExercise}
+          deletingId={deletingExerciseId}
+          tableMissing={exerciseTableMissing}
+        />
+      </div>
 
-      <section className="grid gap-4">
-        <div className="animate-fade-up" style={{ animationDelay: '320ms' }}>
-          <ExerciseCard
-            logs={exerciseLogs}
-            onAdd={() => setShowExerciseModal(true)}
-            onDelete={deleteExercise}
-            deletingId={deletingExerciseId}
-          />
-        </div>
-      </section>
-
-      <section className="space-y-4">
+      {/* Meal sections */}
+      <div className="space-y-3 animate-fade-up" style={{ animationDelay: '310ms' }}>
         <div className="flex items-center justify-between">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Meals</p>
-          <span className="text-xs text-gray-400">Today</span>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Meals</p>
+          <span className="text-xs text-muted">Today</span>
         </div>
         <MealSection title="Breakfast" logs={byMeal.Breakfast} onDelete={deleteLog} deletingId={deletingId} />
-        <MealSection title="Lunch" logs={byMeal.Lunch} onDelete={deleteLog} deletingId={deletingId} />
-        <MealSection title="Dinner" logs={byMeal.Dinner} onDelete={deleteLog} deletingId={deletingId} />
-        <MealSection title="Snacks" logs={byMeal.Snacks} onDelete={deleteLog} deletingId={deletingId} />
-      </section>
+        <MealSection title="Lunch"     logs={byMeal.Lunch}     onDelete={deleteLog} deletingId={deletingId} />
+        <MealSection title="Dinner"    logs={byMeal.Dinner}    onDelete={deleteLog} deletingId={deletingId} />
+        <MealSection title="Snacks"    logs={byMeal.Snacks}    onDelete={deleteLog} deletingId={deletingId} />
+      </div>
 
-      {showExerciseModal ? <ExerciseLogModal onClose={() => setShowExerciseModal(false)} bodyWeightKg={profile.current_weight_kg} /> : null}
+      {showExerciseModal && !exerciseTableMissing ? (
+        <ExerciseLogModal onClose={() => setShowExerciseModal(false)} bodyWeightKg={profile.current_weight_kg} />
+      ) : null}
     </div>
   )
 }

@@ -13,8 +13,8 @@ export type Profile = {
   protein_g_target: number
   carbs_g_target: number
   fat_g_target: number
+  water_target_ml?: number | null
   unit_system: 'metric' | 'imperial'
-  water_target_ml?: number
   created_at: string
   updated_at: string
 }
@@ -55,6 +55,14 @@ export type ExerciseLog = {
   activity: string
   duration_min: number
   calories: number
+  logged_at: string
+  created_at: string
+}
+
+export type WaterLog = {
+  id: string
+  user_id: string
+  ml: number
   logged_at: string
   created_at: string
 }

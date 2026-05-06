@@ -15,17 +15,17 @@ export default function GlobalError({
   }, [error])
 
   return (
-    <div className="min-h-screen bg-[#fff7ed] flex flex-col items-center justify-center px-6 text-center">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(239,68,68,0.1),_transparent_50%)]" />
+    <div className="min-h-screen bg-[#fff7ed] flex flex-col items-center justify-center px-6 text-center dark:bg-slate-950">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(239,68,68,0.1),_transparent_50%)] dark:opacity-40" />
 
       <div className="mb-6 text-7xl select-none">😵</div>
 
-      <h1 className="text-2xl font-black text-gray-900 mb-2">Something went wrong</h1>
-      <p className="text-sm text-gray-500 mb-2 max-w-xs">
+      <h1 className="text-2xl font-black text-foreground mb-2">Something went wrong</h1>
+      <p className="text-sm text-muted mb-2 max-w-xs">
         An unexpected error occurred. Your data is safe — please try again.
       </p>
       {error.digest && (
-        <p className="text-[11px] text-gray-400 mb-6 font-mono">Error ID: {error.digest}</p>
+        <p className="text-[11px] text-muted mb-6 font-mono">Error ID: {error.digest}</p>
       )}
 
       <div className="flex flex-col gap-3 w-full max-w-xs">
@@ -37,7 +37,7 @@ export default function GlobalError({
         </button>
         <a
           href="/dashboard"
-          className="w-full rounded-2xl border border-orange-200 bg-orange-50 py-3 text-sm font-bold text-orange-700 text-center hover:bg-orange-100 transition-all"
+          className="w-full rounded-2xl border border-orange-200 bg-orange-50 py-3 text-sm font-bold text-orange-700 text-center hover:bg-orange-100 transition-all dark:border-slate-700 dark:bg-slate-900 dark:text-amber-300 dark:hover:bg-slate-800"
         >
           Back to Dashboard
         </a>

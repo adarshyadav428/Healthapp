@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { FoodSearch } from '../../components/log/FoodSearch'
+import { TodayProgressBar } from '../../components/log/TodayProgressBar'
 import { Navbar } from '../../components/layout/Navbar'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { createServerClient } from '../../lib/supabase/server'
@@ -7,9 +8,9 @@ import type { Food } from '../../types/index'
 import { getUtcDayRange } from '../../lib/dateUtils'
 import Link from 'next/link'
 import { ChefHat } from 'lucide-react'
-import { TodayProgressBar } from '../../components/log/TodayProgressBar'
 
 export const dynamic = 'force-dynamic'
+export const metadata = { robots: { index: false } }
 
 const FOOD_SELECT =
   'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g'
@@ -62,16 +63,11 @@ export default async function LogPage() {
 
   if (logSnapshotResult.error) throw new Error(logSnapshotResult.error.message)
   if (yesterdayResult.error) throw new Error(yesterdayResult.error.message)
+  if (todayResult.error) throw new Error(todayResult.error.message)
 
   const logSnapshot = logSnapshotResult.data ?? []
   const yesterdayCount = yesterdayResult.count ?? 0
-
-  // Compute today's totals for the progress bar
   const todayLogs = todayResult.data ?? []
-  const todayTotals = todayLogs.reduce(
-    (acc, l) => ({ kcal: acc.kcal + l.kcal, protein: acc.protein + l.protein_g, carbs: acc.carbs + l.carbs_g, fat: acc.fat + l.fat_g }),
-    { kcal: 0, protein: 0, carbs: 0, fat: 0 }
-  )
 
   // Deduplicate by food_id for recent foods and count frequency in one pass
   const seenIds = new Set<string>()
@@ -103,39 +99,47 @@ export default async function LogPage() {
 
   const hasYesterdayLogs = yesterdayCount > 0
 
+  const totals = todayLogs.reduce(
+    (acc, log) => {
+      acc.kcal += log.kcal
+      acc.protein_g += log.protein_g
+      acc.carbs_g += log.carbs_g
+      acc.fat_g += log.fat_g
+      return acc
+    },
+    { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }
+  )
+
   return (
-    <div className="min-h-screen bg-[#fff7ed] pb-24">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(234,88,12,0.10),_transparent_50%)]" />
+    <div className="min-h-screen bg-[#fff7ed] pb-24 dark:bg-slate-950">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(234,88,12,0.10),_transparent_50%)] dark:opacity-40" />
       <Navbar />
       <main className="mx-auto w-full max-w-md px-4 py-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-black text-gray-900">Log Food</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Search 600+ Indian &amp; global foods</p>
+            <h1 className="text-2xl font-black text-foreground">Log Food</h1>
+            <p className="text-sm text-muted mt-0.5">Search 600+ Indian &amp; global foods</p>
           </div>
           <Link
             href="/recipes"
-            className="flex items-center gap-1.5 rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-bold text-orange-700 hover:bg-orange-100 transition-colors"
+            className="flex items-center gap-1.5 rounded-2xl border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-bold text-orange-700 hover:bg-orange-100 transition-colors dark:border-slate-700 dark:bg-slate-900 dark:text-amber-300 dark:hover:bg-slate-800"
           >
             <ChefHat className="h-3.5 w-3.5" />
             Recipe builder
           </Link>
         </div>
-
-        {/* Today's progress strip */}
         <div className="mt-4">
           <TodayProgressBar
-            kcalEaten={Math.round(todayTotals.kcal)}
-            kcalTarget={profile.daily_calorie_target}
-            proteinEaten={Math.round(todayTotals.protein)}
-            proteinTarget={profile.protein_g_target}
-            carbsEaten={Math.round(todayTotals.carbs)}
-            carbsTarget={profile.carbs_g_target}
-            fatEaten={Math.round(todayTotals.fat)}
-            fatTarget={profile.fat_g_target}
+            kcalEaten={Math.round(totals.kcal)}
+            kcalTarget={profile.daily_calorie_target ?? 0}
+            proteinEaten={Math.round(totals.protein_g)}
+            proteinTarget={profile.protein_g_target ?? 0}
+            carbsEaten={Math.round(totals.carbs_g)}
+            carbsTarget={profile.carbs_g_target ?? 0}
+            fatEaten={Math.round(totals.fat_g)}
+            fatTarget={profile.fat_g_target ?? 0}
           />
         </div>
-
         <div className="mt-4">
           <FoodSearch
             recentFoods={recentFoods}

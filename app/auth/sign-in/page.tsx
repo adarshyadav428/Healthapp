@@ -50,7 +50,7 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff7ed] flex flex-col items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-[#fff7ed] flex flex-col items-center justify-center px-4 py-10 dark:bg-slate-950">
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(234,88,12,0.12),_transparent_55%)]" />
 
       {/* Logo */}
@@ -59,18 +59,18 @@ export default function SignInPage() {
         <span className="text-xl font-black text-orange-600">CalTrack</span>
       </Link>
 
-      <div className="w-full max-w-sm rounded-3xl border border-orange-100 bg-white/90 p-7 shadow-sm backdrop-blur-sm">
-        <h1 className="text-2xl font-black text-gray-900">Welcome back</h1>
-        <p className="mt-1 text-sm text-gray-500">Sign in to continue your journey.</p>
+      <div className="w-full max-w-sm rounded-3xl border border-orange-100 bg-white/90 p-7 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/90">
+        <h1 className="text-2xl font-black text-foreground">Welcome back</h1>
+        <p className="mt-1 text-sm text-muted">Sign in to continue your journey.</p>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+            <label htmlFor="email" className="block text-sm font-semibold text-foreground mb-1">Email</label>
             <input
               id="email"
               type="email"
               {...form.register('email')}
-              className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+              className="w-full rounded-2xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all placeholder:text-muted"
               placeholder="you@example.com"
             />
             {form.formState.errors.email && (
@@ -79,7 +79,7 @@ export default function SignInPage() {
           </div>
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-700">Password</label>
+              <label htmlFor="password" className="block text-sm font-semibold text-foreground">Password</label>
               <Link href="/auth/forgot-password" className="text-xs text-orange-600 hover:text-orange-700 font-medium">
                 Forgot password?
               </Link>
@@ -88,7 +88,7 @@ export default function SignInPage() {
               id="password"
               type="password"
               {...form.register('password')}
-              className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+              className="w-full rounded-2xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all placeholder:text-muted"
               placeholder="••••••••"
             />
             {form.formState.errors.password && (
@@ -107,17 +107,17 @@ export default function SignInPage() {
 
         <div className="relative my-5">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-100" />
+            <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-white px-3 text-xs text-gray-400">or</span>
+            <span className="bg-white px-3 text-xs text-muted dark:bg-slate-900">or</span>
           </div>
         </div>
 
         <button
           type="button"
           onClick={handleGoogle}
-          className="w-full rounded-2xl border border-gray-200 bg-white py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 active:scale-[.98] transition-all flex items-center justify-center gap-2"
+          className="w-full rounded-2xl border border-border bg-card py-3 text-sm font-semibold text-foreground hover:bg-muted/20 active:scale-[.98] transition-all flex items-center justify-center gap-2"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -128,7 +128,7 @@ export default function SignInPage() {
           Continue with Google
         </button>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-sm text-muted">
           New to CalTrack?{' '}
           <Link href="/auth/sign-up" className="font-semibold text-orange-600 hover:text-orange-700">
             Create account

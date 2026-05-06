@@ -6,6 +6,7 @@ import { WeightClient } from '../../components/weight/WeightClient'
 import type { WeightLog } from '../../types/index'
 
 export const dynamic = 'force-dynamic'
+export const metadata = { robots: { index: false } }
 
 export default async function WeightPage() {
   const supabase = createServerClient()
@@ -38,13 +39,13 @@ export default async function WeightPage() {
   const weightLogs = (logs ?? []) as WeightLog[]
 
   return (
-    <div className="min-h-screen bg-[#fff7ed] pb-24">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.15),_transparent_50%)]" />
+    <div className="min-h-screen bg-[#fff7ed] pb-24 dark:bg-slate-950">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.15),_transparent_50%)] dark:opacity-40" />
       <Navbar />
       <main className="mx-auto w-full max-w-md px-4 py-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-black text-gray-900">Weight</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Track your journey to {profile.target_weight_kg} kg</p>
+          <h1 className="text-2xl font-black text-foreground">Weight</h1>
+          <p className="text-sm text-muted mt-0.5">Track your journey to {profile.target_weight_kg} kg</p>
         </div>
         <WeightClient logs={weightLogs} profile={profile} />
       </main>

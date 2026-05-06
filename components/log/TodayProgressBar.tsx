@@ -27,10 +27,10 @@ function MacroBar({
   return (
     <div className="flex-1 min-w-0">
       <div className="flex items-center justify-between mb-0.5">
-        <span className="text-[10px] font-semibold text-gray-500">{label}</span>
-        <span className="text-[10px] font-bold text-gray-700">{eaten}g</span>
+        <span className="text-[10px] font-semibold text-muted">{label}</span>
+        <span className="text-[10px] font-bold text-foreground">{eaten}g</span>
       </div>
-      <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+      <div className="h-1.5 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden">
         <div
           className={`h-full rounded-full transition-all ${color}`}
           style={{ width: `${pct}%` }}
@@ -59,7 +59,7 @@ export function TodayProgressBar({
     kcalPct < 80 ? 'bg-emerald-500' : kcalPct <= 100 ? 'bg-amber-500' : 'bg-rose-500'
 
   return (
-    <div className="rounded-2xl border border-orange-100 bg-gradient-to-r from-orange-50 to-amber-50 px-4 py-3 shadow-sm">
+    <div className="rounded-2xl border border-orange-100 dark:border-orange-900/30 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 px-4 py-3 shadow-sm dark:bg-slate-900/80">
       {/* Calorie row */}
       <div className="flex items-center gap-3 mb-2.5">
         <div className="flex-1">
@@ -71,7 +71,7 @@ export function TodayProgressBar({
               {over > 0 ? `+${over} over` : `${remaining} left`}
             </span>
           </div>
-          <div className="h-2 rounded-full bg-orange-100 overflow-hidden">
+          <div className="h-2 rounded-full bg-orange-100 dark:bg-orange-950/40 overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${ringColor}`}
               style={{ width: `${kcalPct}%` }}

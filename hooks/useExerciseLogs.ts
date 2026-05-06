@@ -5,26 +5,36 @@ import { getBrowserSupabaseClient } from '../lib/supabase/client'
 import type { ExerciseLog } from '../types/index'
 import { getUtcDayRange } from '../lib/dateUtils'
 
+const MISSING_TABLE_RE = /exercise_logs/i
+
+type ExerciseQueryResult = {
+  logs: ExerciseLog[]
+  tableMissing: boolean
+}
+
 export function useExerciseLogs(userId: string | null, date = new Date(), initialData?: ExerciseLog[]) {
   const { start, end } = getUtcDayRange(date)
 
-  return useQuery({
+  return useQuery<ExerciseQueryResult>({
     queryKey: ['exercise-logs', userId, start],
     enabled: Boolean(userId),
-    initialData,
+    initialData: initialData ? { logs: initialData, tableMissing: false } : undefined,
     queryFn: async () => {
-      if (!userId) return [] as ExerciseLog[]
+      if (!userId) return { logs: [], tableMissing: false }
       const supabase = getBrowserSupabaseClient()
       const { data, error } = await supabase
         .from('exercise_logs')
-        .select('*')
+        .select('id, activity, duration_min, calories, logged_at, created_at')
         .eq('user_id', userId)
         .gte('logged_at', start)
         .lt('logged_at', end)
         .order('logged_at', { ascending: false })
 
-      if (error) throw new Error(error.message)
-      return (data ?? []) as ExerciseLog[]
+      if (error) {
+        if (MISSING_TABLE_RE.test(error.message)) return { logs: [], tableMissing: true }
+        throw new Error(error.message)
+      }
+      return { logs: (data ?? []) as ExerciseLog[], tableMissing: false }
     },
   })
 }
