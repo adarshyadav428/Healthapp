@@ -49,7 +49,7 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
     return (
       <div className="py-6 text-center">
         <p className="text-2xl mb-1">🍽️</p>
-        <p className="text-sm text-gray-500">Nothing logged on this day.</p>
+        <p className="text-sm text-muted">Nothing logged on this day.</p>
       </div>
     )
   }
@@ -68,21 +68,21 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
     <div className="space-y-3">
       {/* Day total */}
       <div className="flex gap-2 flex-wrap">
-        <div className="rounded-xl bg-orange-50 border border-orange-100 px-3 py-1.5 text-center">
-          <p className="text-sm font-black text-orange-700">{Math.round(totalKcal)}</p>
-          <p className="text-[10px] text-orange-500">kcal</p>
+        <div className="rounded-xl bg-orange-50 dark:bg-orange-950/30 border border-orange-100 dark:border-orange-900/30 px-3 py-1.5 text-center">
+          <p className="text-sm font-black text-orange-700 dark:text-orange-400">{Math.round(totalKcal)}</p>
+          <p className="text-[10px] text-orange-500 dark:text-orange-400">kcal</p>
         </div>
-        <div className="rounded-xl bg-blue-50 border border-blue-100 px-3 py-1.5 text-center">
-          <p className="text-sm font-black text-blue-700">{Math.round(totalP)}g</p>
-          <p className="text-[10px] text-blue-500">protein</p>
+        <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/30 px-3 py-1.5 text-center">
+          <p className="text-sm font-black text-blue-700 dark:text-blue-400">{Math.round(totalP)}g</p>
+          <p className="text-[10px] text-blue-500 dark:text-blue-400">protein</p>
         </div>
-        <div className="rounded-xl bg-amber-50 border border-amber-100 px-3 py-1.5 text-center">
-          <p className="text-sm font-black text-amber-700">{Math.round(totalC)}g</p>
-          <p className="text-[10px] text-amber-500">carbs</p>
+        <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/30 px-3 py-1.5 text-center">
+          <p className="text-sm font-black text-amber-700 dark:text-amber-400">{Math.round(totalC)}g</p>
+          <p className="text-[10px] text-amber-500 dark:text-amber-400">carbs</p>
         </div>
-        <div className="rounded-xl bg-rose-50 border border-rose-100 px-3 py-1.5 text-center">
-          <p className="text-sm font-black text-rose-700">{Math.round(totalF)}g</p>
-          <p className="text-[10px] text-rose-500">fat</p>
+        <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/30 px-3 py-1.5 text-center">
+          <p className="text-sm font-black text-rose-700 dark:text-rose-400">{Math.round(totalF)}g</p>
+          <p className="text-[10px] text-rose-500 dark:text-rose-400">fat</p>
         </div>
       </div>
 
@@ -99,16 +99,16 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
                   <span>{cfg.emoji}</span>
                   <span className={`text-xs font-bold ${cfg.color}`}>{cfg.label}</span>
                 </div>
-                <span className="text-[11px] text-gray-400 font-medium">{Math.round(mealKcal)} kcal</span>
+                <span className="text-[11px] text-muted font-medium">{Math.round(mealKcal)} kcal</span>
               </div>
               <div className="space-y-1.5">
                 {items.map((log) => (
-                  <div key={log.id} className="flex items-center justify-between rounded-xl bg-gray-50 border border-gray-100 px-3 py-2">
+                  <div key={log.id} className="flex items-center justify-between rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 px-3 py-2">
                     <div className="min-w-0 flex-1 mr-2">
-                      <p className="text-xs font-semibold text-gray-800 truncate">{log.food?.name ?? 'Food item'}</p>
-                      <p className="text-[10px] text-gray-400">{Math.round(log.grams)}g · {Math.round(log.protein_g)}P {Math.round(log.carbs_g)}C {Math.round(log.fat_g)}F</p>
+                      <p className="text-xs font-semibold text-foreground truncate">{log.food?.name ?? 'Food item'}</p>
+                      <p className="text-[10px] text-muted">{Math.round(log.grams)}g · {Math.round(log.protein_g)}P {Math.round(log.carbs_g)}C {Math.round(log.fat_g)}F</p>
                     </div>
-                    <span className="text-xs font-bold text-gray-700 shrink-0">{Math.round(log.kcal)} kcal</span>
+                    <span className="text-xs font-bold text-foreground shrink-0">{Math.round(log.kcal)} kcal</span>
                   </div>
                 ))}
               </div>

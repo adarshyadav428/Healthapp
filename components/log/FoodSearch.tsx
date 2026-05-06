@@ -152,12 +152,12 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
     <div className="space-y-5">
       {/* Search input */}
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted pointer-events-none" />
         <input
           placeholder="Search dal makhani, roti, paneer..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full pl-10 pr-10 h-12 text-sm rounded-2xl border border-gray-200 bg-white shadow-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+          className="w-full pl-10 pr-10 h-12 text-sm rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-foreground placeholder:text-muted shadow-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
@@ -166,9 +166,9 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
           <button
             type="button"
             onClick={() => setQuery('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 hover:bg-gray-100 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
           >
-            <X className="h-4 w-4 text-gray-400" />
+            <X className="h-4 w-4 text-muted" />
           </button>
         )}
       </div>
@@ -179,14 +179,14 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
           type="button"
           onClick={copyYesterday}
           disabled={copying}
-          className="flex w-full items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-left hover:bg-blue-100 transition-colors disabled:opacity-50"
+          className="flex w-full items-center gap-3 rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-950/20 px-4 py-3 text-left hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-colors disabled:opacity-50"
         >
           <Copy className="h-4 w-4 text-blue-600 flex-shrink-0" />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-blue-700">
+            <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
               {copying ? 'Copying...' : "Copy yesterday's meals"}
             </p>
-            <p className="text-xs text-blue-500">Add all of yesterday&apos;s food to today</p>
+            <p className="text-xs text-blue-500 dark:text-blue-400">Add all of yesterday&apos;s food to today</p>
           </div>
         </button>
       )}
@@ -194,11 +194,11 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
       {/* Recent foods */}
       {showFrequent && (
         <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
             <Star className="h-3.5 w-3.5" />
             <span>Frequent</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="flex items-center gap-2 text-xs text-muted">
             <Zap className="h-3.5 w-3.5" />
             <span>Tap + to quick add</span>
           </div>
@@ -219,7 +219,7 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
       {/* Recent foods */}
       {showRecent && (
         <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
             <Clock className="h-3.5 w-3.5" />
             <span>Recent</span>
           </div>
@@ -243,7 +243,7 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
           {isLoading ? (
             <div className="space-y-2">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-16 rounded-xl bg-gray-100 animate-pulse" />
+                <div key={i} className="h-16 rounded-xl bg-gray-100 dark:bg-slate-800 animate-pulse" />
               ))}
             </div>
           ) : error ? (
@@ -251,8 +251,8 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
           ) : (data ?? []).length === 0 ? (
             <div className="text-center py-8">
               <p className="text-3xl mb-2">🔍</p>
-              <p className="text-sm font-medium text-gray-600">No results for &ldquo;{debounced}&rdquo;</p>
-              <p className="text-xs text-gray-400 mt-1 mb-4">Try a different spelling or create a custom food</p>
+              <p className="text-sm font-medium text-foreground">No results for &ldquo;{debounced}&rdquo;</p>
+              <p className="text-xs text-muted mt-1 mb-4">Try a different spelling or create a custom food</p>
               <button
                 type="button"
                 onClick={() => setShowCreateFood(true)}
@@ -280,12 +280,12 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
       {!isSearching && recentFoods.length === 0 && (
         <div className="py-10 text-center">
           <p className="text-3xl mb-2">🍱</p>
-          <p className="text-sm font-medium text-gray-600">Search for any food above</p>
-          <p className="text-xs text-gray-400 mt-1 mb-4">Includes 600+ Indian dishes, staples &amp; global foods</p>
+          <p className="text-sm font-medium text-foreground">Search for any food above</p>
+          <p className="text-xs text-muted mt-1 mb-4">Includes 600+ Indian dishes, staples &amp; global foods</p>
           <button
             type="button"
             onClick={() => setShowCreateFood(true)}
-            className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-100 transition-colors"
+            className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30 px-4 py-2 text-sm font-semibold text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-950/50 transition-colors"
           >
             <PlusCircle className="h-4 w-4" />
             Create custom food

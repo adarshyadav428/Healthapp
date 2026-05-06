@@ -124,33 +124,33 @@ export function HistoryClient({ logs, profile }: { logs: LogRow[]; profile: Prof
           value={avgKcal > 0 ? `${avgKcal.toLocaleString()}` : '--'}
           unit="kcal"
           sub={target > 0 && avgKcal > 0 ? `Goal: ${target.toLocaleString()}` : undefined}
-          color="text-orange-600"
-          bg="bg-orange-50 border-orange-100"
+          color="text-orange-600 dark:text-orange-400"
+          bg="bg-orange-50 dark:bg-orange-950/20 border-orange-100 dark:border-orange-900/30"
         />
         <StatCard
           label="Days logged"
           value={String(loggedDays.length)}
           unit={`of ${range}`}
           sub={streakCount > 0 ? `🔥 ${streakCount} day streak` : undefined}
-          color="text-emerald-600"
-          bg="bg-emerald-50 border-emerald-100"
+          color="text-emerald-600 dark:text-emerald-400"
+          bg="bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/30"
         />
       </div>
       {avgDeficit !== null && (
         <div className={`rounded-2xl border px-4 py-3 flex items-center justify-between ${
           avgDeficit > 0
-            ? 'border-emerald-100 bg-emerald-50'
-            : 'border-rose-100 bg-rose-50'
+            ? 'border-emerald-100 dark:border-emerald-900/30 bg-emerald-50 dark:bg-emerald-950/20'
+            : 'border-rose-100 dark:border-rose-900/30 bg-rose-50 dark:bg-rose-950/20'
         }`}>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Avg daily {avgDeficit >= 0 ? 'deficit' : 'surplus'}</p>
-            <p className={`text-xl font-black mt-0.5 ${avgDeficit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Avg daily {avgDeficit >= 0 ? 'deficit' : 'surplus'}</p>
+            <p className={`text-xl font-black mt-0.5 ${avgDeficit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
               {avgDeficit >= 0 ? '-' : '+'}{Math.abs(avgDeficit).toLocaleString()} kcal
             </p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] text-gray-400">Est. weight {avgDeficit >= 0 ? 'loss' : 'gain'}</p>
-            <p className={`text-sm font-bold ${avgDeficit >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+            <p className="text-[10px] text-muted">Est. weight {avgDeficit >= 0 ? 'loss' : 'gain'}</p>
+            <p className={`text-sm font-bold ${avgDeficit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
               {Math.abs(avgDeficit * loggedDays.length / 7700).toFixed(2)} kg / {range} days
             </p>
           </div>
@@ -163,18 +163,18 @@ export function HistoryClient({ logs, profile }: { logs: LogRow[]; profile: Prof
       </div>
 
       {/* Chart card */}
-      <div className="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm">
+      <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4 shadow-sm">
         {/* Range tabs */}
         <div className="flex items-center justify-between mb-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{cfg.label} trend</p>
-          <div className="flex gap-1 rounded-xl bg-gray-100 p-0.5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">{cfg.label} trend</p>
+          <div className="flex gap-1 rounded-xl bg-gray-100 dark:bg-slate-800 p-0.5">
             {RANGES.map((r) => (
               <button
                 key={r.days}
                 type="button"
                 onClick={() => setRange(r.days)}
                 className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
-                  range === r.days ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                  range === r.days ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm' : 'text-muted'
                 }`}
               >
                 {r.label}
@@ -193,7 +193,7 @@ export function HistoryClient({ logs, profile }: { logs: LogRow[]; profile: Prof
               className={`rounded-xl px-3 py-1 text-xs font-semibold transition-all ${
                 metric === m
                   ? 'text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-slate-800 text-muted hover:bg-gray-200 dark:hover:bg-slate-700'
               }`}
               style={metric === m ? { backgroundColor: metricConfig[m].color } : {}}
             >
@@ -228,8 +228,8 @@ export function HistoryClient({ logs, profile }: { logs: LogRow[]; profile: Prof
                   if (!active || !payload?.length) return null
                   const val = payload[0]?.value as number
                   return (
-                    <div className="rounded-xl border border-gray-100 bg-white px-3 py-2 shadow-md text-xs">
-                      <p className="font-semibold text-gray-600 mb-0.5">{label}</p>
+                    <div className="rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 shadow-md text-xs">
+                      <p className="font-semibold text-muted mb-0.5">{label}</p>
                       <p style={{ color: cfg.color }} className="font-bold">
                         {val > 0 ? `${val.toLocaleString()} ${cfg.unit}` : 'Not logged'}
                       </p>
@@ -246,7 +246,7 @@ export function HistoryClient({ logs, profile }: { logs: LogRow[]; profile: Prof
                 {chartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={entry.date === selectedDate ? '#9333ea' : entry.kcal === 0 ? '#f3f4f6' : cfg.color}
+                    fill={entry.date === selectedDate ? '#9333ea' : entry.kcal === 0 ? 'rgba(100,116,139,0.2)' : cfg.color}
                     opacity={entry.kcal === 0 ? 1 : entry.date === selectedDate ? 1 : 0.85}
                   />
                 ))}
@@ -255,27 +255,27 @@ export function HistoryClient({ logs, profile }: { logs: LogRow[]; profile: Prof
           </ResponsiveContainer>
         </div>
 
-        <p className="mt-2 text-[10px] text-gray-400 text-center">
+        <p className="mt-2 text-[10px] text-muted text-center">
           Tap a bar to view that day&apos;s food diary
         </p>
       </div>
 
       {/* Day diary panel */}
       {selectedDate && user && (
-        <div className="rounded-3xl border border-purple-100 bg-white/90 p-4 shadow-sm">
+        <div className="rounded-3xl border border-purple-100 dark:border-purple-900/30 bg-white/90 dark:bg-slate-900/80 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-purple-500" />
-              <p className="text-sm font-bold text-gray-800">
+              <CalendarDays className="h-4 w-4 text-purple-500 dark:text-purple-400" />
+              <p className="text-sm font-bold text-foreground">
                 {format(parse(selectedDate, 'yyyy-MM-dd', new Date()), 'EEEE, MMM d')}
               </p>
             </div>
             <button
               type="button"
               onClick={() => setSelectedDate(null)}
-              className="rounded-full p-1 hover:bg-gray-100 transition-colors"
+              className="rounded-full p-1 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
             >
-              <X className="h-4 w-4 text-gray-400" />
+              <X className="h-4 w-4 text-muted" />
             </button>
           </div>
           <DayDiary
@@ -287,28 +287,28 @@ export function HistoryClient({ logs, profile }: { logs: LogRow[]; profile: Prof
 
       {/* Weekly breakdown */}
       {loggedDays.length > 0 && (
-        <div className="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Calorie breakdown by day</p>
+        <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-3">Calorie breakdown by day</p>
           <div className="space-y-2">
             {[...chartData].reverse().slice(0, 7).map((day) => {
               const pct = target > 0 ? Math.min((day.kcal / target) * 100, 100) : 0
-              const color = day.kcal === 0 ? 'bg-gray-200' : day.kcal > target * 1.1 ? 'bg-rose-400' : day.kcal >= target * 0.9 ? 'bg-emerald-400' : 'bg-orange-400'
+              const color = day.kcal === 0 ? 'bg-gray-200 dark:bg-slate-700' : day.kcal > target * 1.1 ? 'bg-rose-400' : day.kcal >= target * 0.9 ? 'bg-emerald-400' : 'bg-orange-400'
               const isSelected = selectedDate === day.date
             return (
                 <button
                   key={day.date}
                   type="button"
                   onClick={() => setSelectedDate(isSelected ? null : day.date)}
-                  className={`flex items-center gap-3 w-full rounded-xl px-2 py-1 -mx-2 transition-colors ${isSelected ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
+                  className={`flex items-center gap-3 w-full rounded-xl px-2 py-1 -mx-2 transition-colors ${isSelected ? 'bg-purple-50 dark:bg-purple-950/30' : 'hover:bg-gray-50 dark:hover:bg-slate-800'}`}
                 >
-                  <span className={`w-14 text-xs font-medium shrink-0 ${isSelected ? 'text-purple-700 font-bold' : 'text-gray-500'}`}>{day.label}</span>
-                  <div className="flex-1 h-5 rounded-full bg-gray-100 overflow-hidden">
+                  <span className={`w-14 text-xs font-medium shrink-0 ${isSelected ? 'text-purple-700 dark:text-purple-300 font-bold' : 'text-muted'}`}>{day.label}</span>
+                  <div className="flex-1 h-5 rounded-full bg-gray-100 dark:bg-slate-800 overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all ${isSelected ? 'bg-purple-400' : color}`}
                       style={{ width: day.kcal === 0 ? '0%' : `${pct}%` }}
                     />
                   </div>
-                  <span className={`w-16 text-xs font-bold text-right shrink-0 ${isSelected ? 'text-purple-700' : 'text-gray-700'}`}>
+                  <span className={`w-16 text-xs font-bold text-right shrink-0 ${isSelected ? 'text-purple-700 dark:text-purple-300' : 'text-foreground'}`}>
                     {day.kcal > 0 ? `${day.kcal.toLocaleString()} kcal` : '—'}
                   </span>
                 </button>
@@ -316,7 +316,7 @@ export function HistoryClient({ logs, profile }: { logs: LogRow[]; profile: Prof
             })}
           </div>
           {target > 0 && (
-            <div className="mt-3 flex items-center gap-3 text-[10px] text-gray-400">
+            <div className="mt-3 flex items-center gap-3 text-[10px] text-muted">
               <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400 inline-block" /> On target</div>
               <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-orange-400 inline-block" /> Under target</div>
               <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-400 inline-block" /> Over target</div>
@@ -335,22 +335,22 @@ function StatCard({
 }) {
   return (
     <div className={`rounded-2xl border p-3.5 ${bg}`}>
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">{label}</p>
       <div className="flex items-baseline gap-1 mt-1">
         <span className={`text-2xl font-black ${color}`}>{value}</span>
-        {unit && <span className="text-xs text-gray-400">{unit}</span>}
+        {unit && <span className="text-xs text-muted">{unit}</span>}
       </div>
-      {sub && <p className="text-[11px] text-gray-500 mt-0.5">{sub}</p>}
+      {sub && <p className="text-[11px] text-muted mt-0.5">{sub}</p>}
     </div>
   )
 }
 
 function MacroCard({ label, value, unit, color }: { label: string; value: number; unit: string; color: string }) {
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white/90 p-3 text-center shadow-sm">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
+    <div className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-3 text-center shadow-sm">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">{label}</p>
       <p className={`text-lg font-black mt-0.5 ${color}`}>{value > 0 ? value : '--'}</p>
-      <p className="text-[10px] text-gray-400">{unit}</p>
+      <p className="text-[10px] text-muted">{unit}</p>
     </div>
   )
 }

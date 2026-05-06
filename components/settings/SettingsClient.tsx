@@ -32,10 +32,10 @@ const GOAL_LABELS: Record<string, string> = {
 
 function SectionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-3xl border border-gray-100 bg-white/90 shadow-sm overflow-hidden">
-      <div className="flex items-center gap-2 border-b border-gray-50 px-4 py-3">
-        <span className="text-gray-500">{icon}</span>
-        <h2 className="text-sm font-bold text-gray-800">{title}</h2>
+    <section className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 shadow-sm overflow-hidden">
+      <div className="flex items-center gap-2 border-b border-gray-50 dark:border-slate-800 px-4 py-3">
+        <span className="text-muted">{icon}</span>
+        <h2 className="text-sm font-bold text-foreground">{title}</h2>
       </div>
       <div className="p-4">{children}</div>
     </section>
@@ -136,12 +136,12 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
 
       {/* Targets summary */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-3xl border border-orange-100 bg-orange-50 p-4">
-          <p className="text-xs text-orange-600 font-semibold uppercase tracking-wide">Daily goal</p>
-          <p className="text-3xl font-black text-orange-700 mt-1">{profile.daily_calorie_target.toLocaleString()}</p>
-          <p className="text-xs text-orange-500">kcal / day</p>
+        <div className="rounded-3xl border border-orange-100 dark:border-orange-900/30 bg-orange-50 dark:bg-orange-950/20 p-4">
+          <p className="text-xs text-orange-600 dark:text-orange-400 font-semibold uppercase tracking-wide">Daily goal</p>
+          <p className="text-3xl font-black text-orange-700 dark:text-orange-400 mt-1">{profile.daily_calorie_target.toLocaleString()}</p>
+          <p className="text-xs text-orange-500 dark:text-orange-500">kcal / day</p>
         </div>
-        <div className="rounded-3xl border border-gray-100 bg-white/90 p-4 space-y-1.5">
+        <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4 space-y-1.5">
           <MacroChip label="Protein" g={profile.protein_g_target} color="text-blue-600" />
           <MacroChip label="Carbs" g={profile.carbs_g_target} color="text-amber-600" />
           <MacroChip label="Fat" g={profile.fat_g_target} color="text-rose-500" />
@@ -149,8 +149,8 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
       </div>
 
       {bmi !== null && (
-        <div className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white/90 px-4 py-3">
-          <span className="text-sm text-gray-600">BMI</span>
+        <div className="flex items-center justify-between rounded-2xl border border-gray-100 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-4 py-3">
+          <span className="text-sm text-muted">BMI</span>
           <span className={`text-sm font-bold ${bmiColor}`}>{bmi} — {bmiLabel}</span>
         </div>
       )}
@@ -175,7 +175,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
           <Field label="Daily water goal (ml)" error={form.formState.errors.water_target_ml?.message}>
             <div className="flex items-center gap-2">
               <Input id="water_target_ml" type="number" step="250" min="500" max="8000" {...form.register('water_target_ml', { valueAsNumber: true })} />
-              <span className="text-xs text-gray-400 whitespace-nowrap">💧 ml/day</span>
+              <span className="text-xs text-muted whitespace-nowrap">💧 ml/day</span>
             </div>
           </Field>
           <Field label="Activity level" error={form.formState.errors.activity_level?.message}>
@@ -205,8 +205,8 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
         {subscription?.isPro ? (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">PRO</span>
-              <span className="text-sm text-gray-600">Unlimited logging, all features</span>
+              <span className="rounded-full bg-amber-100 dark:bg-amber-950/40 px-2 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-400">PRO</span>
+              <span className="text-sm text-muted">Unlimited logging, all features</span>
             </div>
             <Button variant="outline" className="w-full" onClick={manageSubscription} disabled={portalLoading}>
               {portalLoading ? 'Opening...' : 'Manage Subscription'}
@@ -215,7 +215,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-sm text-gray-600">Free plan — 5 food logs per day</p>
+            <p className="text-sm text-muted">Free plan — 5 food logs per day</p>
             <Button asChild className="w-full bg-orange-600 hover:bg-orange-700">
               <Link href="/upgrade">
                 <Crown className="mr-1.5 h-4 w-4" />
@@ -232,40 +232,40 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
           <button
             type="button"
             onClick={exportData}
-            className="flex w-full items-center justify-between rounded-2xl border border-gray-100 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex w-full items-center justify-between rounded-2xl border border-gray-100 dark:border-slate-700 px-4 py-3 text-sm font-medium text-foreground hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
           >
             <span className="flex items-center gap-2">
-              <Download className="h-4 w-4 text-gray-400" />
+              <Download className="h-4 w-4 text-muted" />
               Export my data (CSV)
             </span>
-            <ChevronRight className="h-4 w-4 text-gray-300" />
+            <ChevronRight className="h-4 w-4 text-muted" />
           </button>
           <button
             type="button"
             onClick={signOut}
             disabled={signOutLoading}
-            className="flex w-full items-center justify-between rounded-2xl border border-gray-100 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            className="flex w-full items-center justify-between rounded-2xl border border-gray-100 dark:border-slate-700 px-4 py-3 text-sm font-medium text-foreground hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
           >
             <span className="flex items-center gap-2">
-              <LogOut className="h-4 w-4 text-gray-400" />
+              <LogOut className="h-4 w-4 text-muted" />
               {signOutLoading ? 'Signing out...' : 'Sign out'}
             </span>
-            <ChevronRight className="h-4 w-4 text-gray-300" />
+            <ChevronRight className="h-4 w-4 text-muted" />
           </button>
           <button
             type="button"
             onClick={deleteAccount}
             disabled={deleteLoading}
-            className="flex w-full items-center justify-between rounded-2xl border border-rose-100 px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-50 transition-colors"
+            className="flex w-full items-center justify-between rounded-2xl border border-rose-100 dark:border-rose-900/30 px-4 py-3 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 disabled:opacity-50 transition-colors"
           >
             <span className="flex items-center gap-2">
               <Trash2 className="h-4 w-4" />
               {deleteLoading ? 'Deleting...' : 'Delete account'}
             </span>
-            <ChevronRight className="h-4 w-4 text-rose-300" />
+            <ChevronRight className="h-4 w-4 text-rose-300 dark:text-rose-700" />
           </button>
         </div>
-        <p className="mt-3 text-center text-xs text-gray-300">CalTrack v{version}</p>
+        <p className="mt-3 text-center text-xs text-muted">CalTrack v{version}</p>
       </SectionCard>
     </div>
   )
@@ -274,7 +274,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div>
-      <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</Label>
+      <Label className="text-xs font-semibold text-muted uppercase tracking-wide">{label}</Label>
       <div className="mt-1">{children}</div>
       {error && <p className="mt-1 text-xs text-rose-500">{error}</p>}
     </div>
@@ -284,7 +284,7 @@ function Field({ label, error, children }: { label: string; error?: string; chil
 function MacroChip({ label, g, color }: { label: string; g: number; color: string }) {
   return (
     <div className="flex items-center justify-between text-xs">
-      <span className="text-gray-500">{label}</span>
+      <span className="text-muted">{label}</span>
       <span className={`font-bold ${color}`}>{g}g</span>
     </div>
   )

@@ -113,13 +113,13 @@ export function OnboardingForm() {
           <span className="text-lg">{STEP_EMOJIS[step - 1]}</span>
           <span className="text-xs font-semibold text-orange-600">{step} / {TOTAL_STEPS}</span>
         </div>
-        <div className="h-1.5 rounded-full bg-orange-100 overflow-hidden">
+        <div className="h-1.5 rounded-full bg-orange-100 dark:bg-orange-950/30 overflow-hidden">
           <div
             className="h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-600 transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
-        <p className="mt-2 text-sm font-semibold text-gray-700">{STEP_LABELS[step - 1]}</p>
+        <p className="mt-2 text-sm font-semibold text-foreground">{STEP_LABELS[step - 1]}</p>
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -127,10 +127,10 @@ export function OnboardingForm() {
         {step === 1 && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">What should we call you?</label>
+              <label className="block text-sm font-semibold text-foreground mb-1">What should we call you?</label>
               <input
                 {...form.register('display_name')}
-                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
                 placeholder="Your name"
               />
               {form.formState.errors.display_name && (
@@ -138,7 +138,7 @@ export function OnboardingForm() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Preferred units</label>
+              <label className="block text-sm font-semibold text-foreground mb-1">Preferred units</label>
               <div className="grid grid-cols-2 gap-2">
                 {(['metric', 'imperial'] as const).map((u) => (
                   <button
@@ -147,8 +147,8 @@ export function OnboardingForm() {
                     onClick={() => form.setValue('unit_system', u)}
                     className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition-all ${
                       form.watch('unit_system') === u
-                        ? 'border-orange-500 bg-orange-50 text-orange-700'
-                        : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-orange-200'
+                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300'
+                        : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-foreground hover:border-orange-200 dark:hover:border-orange-800'
                     }`}
                   >
                     {u === 'metric' ? '📐 Metric (cm, kg)' : '📏 Imperial (in, lbs)'}
@@ -163,11 +163,11 @@ export function OnboardingForm() {
         {step === 2 && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Age</label>
+              <label className="block text-sm font-semibold text-foreground mb-1">Age</label>
               <input
                 type="number"
                 {...form.register('age', { valueAsNumber: true })}
-                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
                 placeholder="25"
               />
               {form.formState.errors.age && (
@@ -175,7 +175,7 @@ export function OnboardingForm() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Biological sex</label>
+              <label className="block text-sm font-semibold text-foreground mb-1">Biological sex</label>
               <div className="grid grid-cols-3 gap-2">
                 {(['male', 'female', 'other'] as const).map((s) => (
                   <button
@@ -184,8 +184,8 @@ export function OnboardingForm() {
                     onClick={() => form.setValue('sex', s)}
                     className={`rounded-2xl border px-3 py-3 text-sm font-semibold capitalize transition-all ${
                       form.watch('sex') === s
-                        ? 'border-orange-500 bg-orange-50 text-orange-700'
-                        : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-orange-200'
+                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300'
+                        : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-foreground hover:border-orange-200 dark:hover:border-orange-800'
                     }`}
                   >
                     {s === 'male' ? '♂️ Male' : s === 'female' ? '♀️ Female' : '⚧ Other'}
@@ -200,13 +200,13 @@ export function OnboardingForm() {
         {step === 3 && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-foreground mb-1">
                 Height ({isMetric ? 'cm' : 'inches'})
               </label>
               <input
                 type="number"
                 {...form.register('height_cm', { valueAsNumber: true })}
-                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
                 placeholder={isMetric ? '170' : '67'}
               />
               {form.formState.errors.height_cm && (
@@ -214,13 +214,13 @@ export function OnboardingForm() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-foreground mb-1">
                 Current weight ({isMetric ? 'kg' : 'lbs'})
               </label>
               <input
                 type="number"
                 {...form.register('current_weight_kg', { valueAsNumber: true })}
-                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
                 placeholder={isMetric ? '70' : '154'}
               />
               {form.formState.errors.current_weight_kg && (
@@ -234,13 +234,13 @@ export function OnboardingForm() {
         {step === 4 && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-foreground mb-1">
                 Target weight ({isMetric ? 'kg' : 'lbs'})
               </label>
               <input
                 type="number"
                 {...form.register('target_weight_kg', { valueAsNumber: true })}
-                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
                 placeholder={isMetric ? '65' : '143'}
               />
               {form.formState.errors.target_weight_kg && (
@@ -248,7 +248,7 @@ export function OnboardingForm() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Goal</label>
+              <label className="block text-sm font-semibold text-foreground mb-1">Goal</label>
               <div className="grid grid-cols-3 gap-2">
                 {(['lose', 'maintain', 'gain'] as const).map((g) => (
                   <button
@@ -257,8 +257,8 @@ export function OnboardingForm() {
                     onClick={() => form.setValue('goal', g)}
                     className={`rounded-2xl border px-3 py-3 text-sm font-semibold capitalize transition-all ${
                       form.watch('goal') === g
-                        ? 'border-orange-500 bg-orange-50 text-orange-700'
-                        : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-orange-200'
+                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300'
+                        : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-foreground hover:border-orange-200 dark:hover:border-orange-800'
                     }`}
                   >
                     {g === 'lose' ? '📉 Lose' : g === 'maintain' ? '⚖️ Maintain' : '📈 Gain'}
@@ -273,7 +273,7 @@ export function OnboardingForm() {
         {step === 5 && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Activity level</label>
+              <label className="block text-sm font-semibold text-foreground mb-2">Activity level</label>
               <div className="space-y-2">
                 {([
                   { value: 'sedentary', label: 'Sedentary', desc: 'Desk job, little exercise', emoji: '🛋️' },
@@ -288,26 +288,26 @@ export function OnboardingForm() {
                     onClick={() => form.setValue('activity_level', a.value)}
                     className={`w-full flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all ${
                       form.watch('activity_level') === a.value
-                        ? 'border-orange-500 bg-orange-50'
-                        : 'border-gray-200 bg-gray-50 hover:border-orange-200'
+                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30'
+                        : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 hover:border-orange-200 dark:hover:border-orange-800'
                     }`}
                   >
                     <span className="text-lg">{a.emoji}</span>
                     <div>
-                      <p className={`text-sm font-semibold ${form.watch('activity_level') === a.value ? 'text-orange-700' : 'text-gray-700'}`}>{a.label}</p>
-                      <p className="text-xs text-gray-400">{a.desc}</p>
+                      <p className={`text-sm font-semibold ${form.watch('activity_level') === a.value ? 'text-orange-700 dark:text-orange-300' : 'text-foreground'}`}>{a.label}</p>
+                      <p className="text-xs text-muted">{a.desc}</p>
                     </div>
                   </button>
                 ))}
               </div>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Goal pace (kg/week)</label>
+              <label className="block text-sm font-semibold text-foreground mb-1">Goal pace (kg/week)</label>
               <Select
                 value={String(form.watch('pace_kg_per_week'))}
                 onValueChange={(v) => form.setValue('pace_kg_per_week', Number(v))}
               >
-                <SelectTrigger className="rounded-2xl border-gray-200 bg-gray-50">
+                <SelectTrigger className="rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -323,27 +323,27 @@ export function OnboardingForm() {
 
         {/* Live TDEE preview on final step */}
         {step === 5 && tdeePreview && (
-          <div className="rounded-2xl border border-orange-100 bg-gradient-to-r from-orange-50 to-amber-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-orange-600 mb-2">Your personalised targets</p>
+          <div className="rounded-2xl border border-orange-100 dark:border-orange-900/30 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-orange-600 dark:text-orange-400 mb-2">Your personalised targets</p>
             <div className="flex items-baseline gap-1.5 mb-3">
-              <span className="text-3xl font-black text-orange-700">{tdeePreview.daily_calorie_target.toLocaleString()}</span>
-              <span className="text-sm text-orange-500 font-semibold">kcal / day</span>
+              <span className="text-3xl font-black text-orange-700 dark:text-orange-400">{tdeePreview.daily_calorie_target.toLocaleString()}</span>
+              <span className="text-sm text-orange-500 dark:text-orange-400 font-semibold">kcal / day</span>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl bg-blue-100 py-2 text-center">
-                <p className="text-sm font-black text-blue-800">{tdeePreview.protein_g_target}g</p>
-                <p className="text-[10px] font-semibold text-blue-600">Protein</p>
+              <div className="rounded-xl bg-blue-100 dark:bg-blue-950/40 py-2 text-center">
+                <p className="text-sm font-black text-blue-800 dark:text-blue-300">{tdeePreview.protein_g_target}g</p>
+                <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400">Protein</p>
               </div>
-              <div className="rounded-xl bg-amber-100 py-2 text-center">
-                <p className="text-sm font-black text-amber-800">{tdeePreview.carbs_g_target}g</p>
-                <p className="text-[10px] font-semibold text-amber-600">Carbs</p>
+              <div className="rounded-xl bg-amber-100 dark:bg-amber-950/40 py-2 text-center">
+                <p className="text-sm font-black text-amber-800 dark:text-amber-300">{tdeePreview.carbs_g_target}g</p>
+                <p className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">Carbs</p>
               </div>
-              <div className="rounded-xl bg-rose-100 py-2 text-center">
-                <p className="text-sm font-black text-rose-800">{tdeePreview.fat_g_target}g</p>
-                <p className="text-[10px] font-semibold text-rose-600">Fat</p>
+              <div className="rounded-xl bg-rose-100 dark:bg-rose-950/40 py-2 text-center">
+                <p className="text-sm font-black text-rose-800 dark:text-rose-300">{tdeePreview.fat_g_target}g</p>
+                <p className="text-[10px] font-semibold text-rose-600 dark:text-rose-400">Fat</p>
               </div>
             </div>
-            <p className="mt-2 text-[11px] text-orange-500">Calculated using Mifflin-St Jeor formula. You can adjust this anytime in settings.</p>
+            <p className="mt-2 text-[11px] text-orange-500 dark:text-orange-400">Calculated using Mifflin-St Jeor formula. You can adjust this anytime in settings.</p>
           </div>
         )}
 
@@ -353,7 +353,7 @@ export function OnboardingForm() {
             type="button"
             onClick={prevStep}
             disabled={step === 1}
-            className="flex items-center gap-1 rounded-2xl px-4 py-2.5 text-sm font-semibold text-gray-500 hover:bg-gray-100 disabled:opacity-0 transition-all"
+            className="flex items-center gap-1 rounded-2xl px-4 py-2.5 text-sm font-semibold text-muted hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-0 transition-all"
           >
             <ChevronLeft className="h-4 w-4" />
             Back
