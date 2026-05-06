@@ -58,6 +58,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
       target_weight_kg: profile.target_weight_kg,
       activity_level: profile.activity_level,
       goal: profile.goal,
+      water_target_ml: profile.water_target_ml ?? 2500,
     },
   })
 
@@ -170,6 +171,12 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
           </div>
           <Field label="Target weight (kg)" error={form.formState.errors.target_weight_kg?.message}>
             <Input id="target_weight_kg" type="number" step="0.1" min="1" {...form.register('target_weight_kg', { valueAsNumber: true })} />
+          </Field>
+          <Field label="Daily water goal (ml)" error={form.formState.errors.water_target_ml?.message}>
+            <div className="flex items-center gap-2">
+              <Input id="water_target_ml" type="number" step="250" min="500" max="8000" {...form.register('water_target_ml', { valueAsNumber: true })} />
+              <span className="text-xs text-gray-400 whitespace-nowrap">💧 ml/day</span>
+            </div>
           </Field>
           <Field label="Activity level" error={form.formState.errors.activity_level?.message}>
             <Select value={form.watch('activity_level')} onValueChange={(v) => form.setValue('activity_level', v as Profile['activity_level'])}>

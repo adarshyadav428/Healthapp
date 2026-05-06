@@ -50,6 +50,22 @@ export function DashboardClient({
     }
   }, [])
 
+  // Streak milestone celebrations — fire once per milestone day
+  useEffect(() => {
+    const MILESTONES: Record<number, { title: string; description: string }> = {
+      7:   { title: '🔥 7-Day Streak!', description: "One week strong! You're building a real habit." },
+      14:  { title: '🚀 14-Day Streak!', description: 'Two weeks consistent — your body thanks you!' },
+      30:  { title: '🏆 30-Day Streak!', description: "A whole month! You're unstoppable." },
+      60:  { title: '💎 60-Day Streak!', description: 'Two months in — this is your lifestyle now.' },
+      100: { title: '👑 100-Day Streak!', description: 'Legendary. You are the 1%.' },
+    }
+    if (!MILESTONES[streak]) return
+    const key = `streak_celebrated_${streak}`
+    if (localStorage.getItem(key)) return
+    localStorage.setItem(key, '1')
+    setTimeout(() => toast({ ...MILESTONES[streak], duration: 6000 }), 800)
+  }, [streak])
+
   const totals = useMemo(
     () =>
       logs.reduce(
@@ -157,7 +173,7 @@ export function DashboardClient({
         </div>
 
         <div className="animate-fade-up" style={{ animationDelay: '260ms' }}>
-          <WaterCard />
+          <WaterCard targetMl={profile.water_target_ml ?? 2500} />
         </div>
       </section>
 

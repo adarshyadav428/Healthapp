@@ -14,6 +14,7 @@ export type Profile = {
   carbs_g_target: number
   fat_g_target: number
   unit_system: 'metric' | 'imperial'
+  water_target_ml?: number
   created_at: string
   updated_at: string
 }

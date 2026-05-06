@@ -5,6 +5,7 @@ import type { WeightLog, Profile } from '../../types/index'
 import { WeightStats } from './WeightStats'
 import { WeightChart } from './WeightChart'
 import { WeightLogModal } from './WeightLogModal'
+import { BmiCard } from './BmiCard'
 import { useWeightLogs } from '../../hooks/useWeightLogs'
 import { useUser } from '../../hooks/useUser'
 import { getBrowserSupabaseClient } from '../../lib/supabase/client'
@@ -41,6 +42,9 @@ export function WeightClient({ logs, profile }: { logs: WeightLog[]; profile: Pr
   return (
     <div className="space-y-4">
       <WeightStats logs={data} profile={profile} />
+
+      {/* BMI card */}
+      <BmiCard logs={data} profile={profile} />
 
       {/* Chart */}
       {sorted.length > 1 && (

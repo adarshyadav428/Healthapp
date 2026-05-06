@@ -57,6 +57,7 @@ export const profileUpdateSchema = z.object({
   target_weight_kg: z.number().positive(),
   activity_level: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']),
   goal: z.enum(['lose', 'maintain', 'gain']),
+  water_target_ml: z.number().int().min(500).max(8000).optional(),
 })
 
 export const customFoodSchema = z.object({

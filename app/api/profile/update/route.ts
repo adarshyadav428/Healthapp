@@ -53,6 +53,7 @@ export async function POST(req: Request) {
         protein_g_target: macros.protein_g_target,
         carbs_g_target: macros.carbs_g_target,
         fat_g_target: macros.fat_g_target,
+        ...(parsed.data.water_target_ml !== undefined ? { water_target_ml: parsed.data.water_target_ml } : {}),
       })
       .eq('id', user.id)
 
