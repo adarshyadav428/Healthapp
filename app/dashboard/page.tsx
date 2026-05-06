@@ -11,6 +11,20 @@ import { getUtcDayRange } from '../../lib/dateUtils'
 
 export const dynamic = 'force-dynamic'
 
+function getGreeting() {
+  // Use UTC+5:30 (IST) for greeting
+  const istHour = (new Date().getUTCHours() + 5) % 24
+  if (istHour < 12) return 'Good morning'
+  if (istHour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
+function getTodayLabel() {
+  return new Date().toLocaleDateString('en-IN', {
+    weekday: 'long', day: 'numeric', month: 'long',
+  })
+}
+
 export default async function DashboardPage() {
   const supabase = createServerClient()
   const {
@@ -73,19 +87,21 @@ export default async function DashboardPage() {
   const weightLogs = (weightResult.data ?? []) as unknown as WeightLog[]
   const streak = calculateStreak((streakResult.data ?? []) as unknown as FoodLog[])
 
+  const firstName = profile.display_name?.split(' ')[0] ?? null
+  const greeting = getGreeting()
+  const todayLabel = getTodayLabel()
+
   return (
     <div className="min-h-screen bg-[#fff7ed] pb-24">
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.25),_transparent_50%),radial-gradient(circle_at_20%_60%,_rgba(248,113,113,0.2),_transparent_55%),radial-gradient(circle_at_80%_20%,_rgba(16,185,129,0.18),_transparent_45%)]" />
       <Navbar />
       <main className="relative mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-6">
-        <div className="flex items-end justify-between">
-          <div>
-            <h1 className="text-2xl font-black text-gray-900">Today</h1>
-            <p className="text-sm text-gray-600">Your daily snapshot</p>
-          </div>
-          <div className="text-xs font-semibold text-orange-600 bg-white/80 border border-orange-100 px-2 py-1 rounded-full">
-            CalTrack
-          </div>
+        <div>
+          <p className="text-sm font-medium text-orange-600">
+            {greeting}{firstName ? `, ${firstName}` : ''} 👋
+          </p>
+          <h1 className="text-2xl font-black text-gray-900 mt-0.5">Today</h1>
+          <p className="text-xs text-gray-400 mt-0.5">{todayLabel}</p>
         </div>
 
         <DashboardClient
@@ -95,10 +111,6 @@ export default async function DashboardPage() {
           weightLogs={weightLogs}
           initialExerciseLogs={exerciseLogs}
         />
-
-        <Button asChild className="w-full bg-orange-600 hover:bg-orange-700">
-          <Link href="/log">Add Food</Link>
-        </Button>
       </main>
       <BottomNav />
     </div>
