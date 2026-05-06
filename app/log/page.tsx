@@ -7,6 +7,7 @@ import type { Food } from '../../types/index'
 import { getUtcDayRange } from '../../lib/dateUtils'
 import Link from 'next/link'
 import { ChefHat } from 'lucide-react'
+import { TodayProgressBar } from '../../components/log/TodayProgressBar'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,19 +25,21 @@ export default async function LogPage() {
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('height_cm')
+    .select('height_cm, daily_calorie_target, protein_g_target, carbs_g_target, fat_g_target')
     .eq('id', user.id)
     .maybeSingle()
 
   if (profileError) throw new Error(profileError.message)
   if (!profile || profile.height_cm === null) redirect('/onboarding')
 
+  const { start, end } = getUtcDayRange()
+
   // Check if user has yesterday's logs (for "copy yesterday" feature)
   const yesterday = new Date()
   yesterday.setUTCDate(yesterday.getUTCDate() - 1)
   const { start: yStart, end: yEnd } = getUtcDayRange(yesterday)
 
-  const [logSnapshotResult, yesterdayResult] = await Promise.all([
+  const [logSnapshotResult, yesterdayResult, todayResult] = await Promise.all([
     supabase
       .from('food_logs')
       .select(`food_id, food:foods(${FOOD_SELECT})`)
@@ -48,7 +51,13 @@ export default async function LogPage() {
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .gte('logged_at', yStart)
-      .lt('logged_at', yEnd)
+      .lt('logged_at', yEnd),
+    supabase
+      .from('food_logs')
+      .select('kcal, protein_g, carbs_g, fat_g')
+      .eq('user_id', user.id)
+      .gte('logged_at', start)
+      .lt('logged_at', end),
   ])
 
   if (logSnapshotResult.error) throw new Error(logSnapshotResult.error.message)
@@ -56,6 +65,13 @@ export default async function LogPage() {
 
   const logSnapshot = logSnapshotResult.data ?? []
   const yesterdayCount = yesterdayResult.count ?? 0
+
+  // Compute today's totals for the progress bar
+  const todayLogs = todayResult.data ?? []
+  const todayTotals = todayLogs.reduce(
+    (acc, l) => ({ kcal: acc.kcal + l.kcal, protein: acc.protein + l.protein_g, carbs: acc.carbs + l.carbs_g, fat: acc.fat + l.fat_g }),
+    { kcal: 0, protein: 0, carbs: 0, fat: 0 }
+  )
 
   // Deduplicate by food_id for recent foods and count frequency in one pass
   const seenIds = new Set<string>()
@@ -105,6 +121,21 @@ export default async function LogPage() {
             Recipe builder
           </Link>
         </div>
+
+        {/* Today's progress strip */}
+        <div className="mt-4">
+          <TodayProgressBar
+            kcalEaten={Math.round(todayTotals.kcal)}
+            kcalTarget={profile.daily_calorie_target}
+            proteinEaten={Math.round(todayTotals.protein)}
+            proteinTarget={profile.protein_g_target}
+            carbsEaten={Math.round(todayTotals.carbs)}
+            carbsTarget={profile.carbs_g_target}
+            fatEaten={Math.round(todayTotals.fat)}
+            fatTarget={profile.fat_g_target}
+          />
+        </div>
+
         <div className="mt-4">
           <FoodSearch
             recentFoods={recentFoods}

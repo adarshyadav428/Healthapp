@@ -42,6 +42,13 @@ export function HistoryClient({ logs, profile }: { logs: LogRow[]; profile: Prof
   const { user } = useUser()
   const target = profile.daily_calorie_target
 
+  const metricTargets: Record<string, number> = {
+    kcal: profile.daily_calorie_target,
+    protein: profile.protein_g_target,
+    carbs: profile.carbs_g_target,
+    fat: profile.fat_g_target,
+  }
+
   const chartData: DayData[] = useMemo(() => {
     const today = startOfDay(new Date())
     const days = eachDayOfInterval({ start: subDays(today, range - 1), end: today })
@@ -184,13 +191,13 @@ export function HistoryClient({ logs, profile }: { logs: LogRow[]; profile: Prof
                 tickLine={false}
               />
               <YAxis hide />
-              {metric === 'kcal' && target > 0 && (
+              {metricTargets[metric] > 0 && (
                 <ReferenceLine
-                  y={target}
-                  stroke="#ea580c"
+                  y={metricTargets[metric]}
+                  stroke={cfg.color}
                   strokeDasharray="4 2"
                   strokeWidth={1.5}
-                  label={{ value: 'Goal', position: 'right', fontSize: 9, fill: '#ea580c' }}
+                  label={{ value: 'Goal', position: 'right', fontSize: 9, fill: cfg.color }}
                 />
               )}
               <Tooltip

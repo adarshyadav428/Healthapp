@@ -43,6 +43,9 @@ export function FoodResult({
           <span className="text-xs font-medium text-blue-600">P {Math.round(food.protein_g_per_100g)}g</span>
           <span className="text-xs font-medium text-amber-600">C {Math.round(food.carbs_g_per_100g)}g</span>
           <span className="text-xs font-medium text-rose-500">F {Math.round(food.fat_g_per_100g)}g</span>
+          {food.fiber_g_per_100g != null && food.fiber_g_per_100g > 0 && (
+            <span className="text-xs font-medium text-emerald-600">Fi {Math.round(food.fiber_g_per_100g)}g</span>
+          )}
           <span className="text-[10px] text-gray-400">per 100g</span>
         </div>
       </button>
