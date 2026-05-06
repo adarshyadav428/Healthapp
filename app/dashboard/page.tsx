@@ -1,4 +1,11 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+
+export const metadata: Metadata = {
+  title: 'Dashboard — CalTrack',
+  description: 'Your daily calorie, macro, and nutrition dashboard.',
+  robots: { index: false },
+}
 import { createServerClient } from '../../lib/supabase/server'
 import type { FoodLog, WeightLog, ExerciseLog } from '../../types/index'
 import { calculateStreak } from '../../lib/streak'

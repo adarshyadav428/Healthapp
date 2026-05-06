@@ -46,8 +46,8 @@ export function MacroProgressBars({ totals, profile }: { totals: DailyTotals; pr
         eaten={totals.protein_g}
         target={profile.protein_g_target}
         unit="g"
-        color="bg-emerald-500"
-        bg="bg-emerald-50"
+        color="bg-blue-500"
+        bg="bg-blue-50"
       />
       <MacroCard
         label="Carbs"
