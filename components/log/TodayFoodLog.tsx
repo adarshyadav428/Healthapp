@@ -1,0 +1,161 @@
+'use client'
+
+import { useMemo, useState } from 'react'
+import type { FoodLog } from '../../types/index'
+import { useFoodLogs } from '../../hooks/useFoodLogs'
+import { getBrowserSupabaseClient } from '../../lib/supabase/client'
+import { useUser } from '../../hooks/useUser'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from '../ui/use-toast'
+import { Trash2, ChevronDown, Pencil } from 'lucide-react'
+import { EditFoodLogModal } from './EditFoodLogModal'
+
+const MEAL_CONFIG: Record<string, { label: string; emoji: string; accent: string }> = {
+  breakfast: { label: 'Breakfast', emoji: '🥣', accent: 'text-orange-700 dark:text-orange-400' },
+  lunch:     { label: 'Lunch',     emoji: '🍛', accent: 'text-emerald-700 dark:text-emerald-400' },
+  dinner:    { label: 'Dinner',    emoji: '🍲', accent: 'text-rose-700 dark:text-rose-400' },
+  snack:     { label: 'Snacks',    emoji: '🥜', accent: 'text-amber-700 dark:text-amber-400' },
+}
+
+function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
+  meal: string
+  logs: FoodLog[]
+  onDelete: (id: string) => void
+  deletingId: string | null
+  onEdit: (log: FoodLog) => void
+}) {
+  const [open, setOpen] = useState(true)
+  const cfg = MEAL_CONFIG[meal] ?? { label: meal, emoji: '🍽️', accent: 'text-muted' }
+  const totalKcal = logs.reduce((s, l) => s + l.kcal, 0)
+
+  return (
+    <div className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-900/80 shadow-sm overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center justify-between px-3 py-2.5 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-sm">{cfg.emoji}</span>
+          <span className={`text-xs font-bold ${cfg.accent}`}>{cfg.label}</span>
+          <span className="text-xs text-muted">· {logs.length} item{logs.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-muted">{Math.round(totalKcal)} kcal</span>
+          <ChevronDown className={`h-3.5 w-3.5 text-muted transition-transform ${open ? 'rotate-180' : ''}`} />
+        </div>
+      </button>
+      {open && (
+        <div className="px-3 pb-2 space-y-1.5 border-t border-gray-50 dark:border-slate-800 pt-1.5">
+          {logs.map((log) => (
+            <div key={log.id} className="flex items-center justify-between rounded-xl bg-gray-50 dark:bg-slate-800 px-3 py-2">
+              <div className="min-w-0 flex-1 mr-2">
+                <p className="text-xs font-semibold text-foreground truncate">{log.food?.name ?? 'Food item'}</p>
+                <div className="flex gap-2 mt-0.5 flex-wrap">
+                  <span className="text-[10px] font-bold text-foreground">{Math.round(log.kcal)} kcal</span>
+                  <span className="text-[10px] text-blue-500 dark:text-blue-400">P{Math.round(log.protein_g)}g</span>
+                  <span className="text-[10px] text-amber-500 dark:text-amber-400">C{Math.round(log.carbs_g)}g</span>
+                  <span className="text-[10px] text-rose-500 dark:text-rose-400">F{Math.round(log.fat_g)}g</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => onEdit(log)}
+                  className="rounded-full p-1 text-muted hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors"
+                  aria-label="Edit"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(log.id)}
+                  disabled={deletingId === log.id}
+                  className="rounded-full p-1 text-muted hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 disabled:opacity-40 transition-colors"
+                  aria-label="Delete"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function TodayFoodLog({ initialLogs }: { initialLogs: FoodLog[] }) {
+  const { user } = useUser()
+  const queryClient = useQueryClient()
+  const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [editingLog, setEditingLog] = useState<FoodLog | null>(null)
+
+  const byMeal = useMemo(() => {
+    const order = ['breakfast', 'lunch', 'dinner', 'snack']
+    const groups: Record<string, FoodLog[]> = {}
+    for (const log of logs) {
+      if (!groups[log.meal]) groups[log.meal] = []
+      groups[log.meal].push(log)
+    }
+    return order.filter((m) => groups[m]?.length > 0).map((m) => ({ meal: m, logs: groups[m] }))
+  }, [logs])
+
+  const totals = useMemo(() => ({
+    kcal: logs.reduce((s, l) => s + l.kcal, 0),
+    protein: logs.reduce((s, l) => s + l.protein_g, 0),
+    carbs: logs.reduce((s, l) => s + l.carbs_g, 0),
+    fat: logs.reduce((s, l) => s + l.fat_g, 0),
+  }), [logs])
+
+  const deleteLog = async (id: string) => {
+    if (deletingId) return
+    setDeletingId(id)
+    try {
+      const supabase = getBrowserSupabaseClient()
+      const { error } = await supabase.from('food_logs').delete().eq('id', id)
+      if (error) throw new Error(error.message)
+      queryClient.invalidateQueries({ queryKey: ['food-logs'] })
+      toast({ title: 'Entry deleted', duration: 2000 })
+    } catch (err) {
+      toast({ title: 'Delete failed', description: (err as Error).message, variant: 'error' })
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  if (logs.length === 0) return null
+
+  return (
+    <div className="space-y-2">
+      {/* Summary row */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted">Today&apos;s log</p>
+        <div className="flex gap-3 text-[11px]">
+          <span className="font-bold text-foreground">{Math.round(totals.kcal)} kcal</span>
+          <span className="text-blue-500 dark:text-blue-400">P{Math.round(totals.protein)}g</span>
+          <span className="text-amber-500 dark:text-amber-400">C{Math.round(totals.carbs)}g</span>
+          <span className="text-rose-500 dark:text-rose-400">F{Math.round(totals.fat)}g</span>
+        </div>
+      </div>
+      {byMeal.map(({ meal, logs: mealLogs }) => (
+        <MealGroup
+          key={meal}
+          meal={meal}
+          logs={mealLogs}
+          onDelete={deleteLog}
+          deletingId={deletingId}
+          onEdit={setEditingLog}
+        />
+      ))}
+
+      {editingLog && (
+        <EditFoodLogModal
+          log={editingLog}
+          onClose={() => setEditingLog(null)}
+        />
+      )}
+    </div>
+  )
+}

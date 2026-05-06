@@ -323,7 +323,7 @@ function FoodSearchLimitDialog({ open, onOpenChange }: { open: boolean; onOpenCh
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Close</Button>
           <Button asChild>
-            <Link href="/upgrade">Upgrade for $9.99/mo</Link>
+            <Link href="/upgrade">Upgrade to Pro →</Link>
           </Button>
         </DialogFooter>
       </DialogContent>

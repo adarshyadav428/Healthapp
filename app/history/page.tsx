@@ -27,18 +27,28 @@ export default async function HistoryPage() {
   if (profileError) throw new Error(profileError.message)
   if (!profile || profile.height_cm === null) redirect('/onboarding')
 
-  // Fetch last 90 days of food logs
+  // Fetch last 90 days of food logs + exercise logs in parallel
   const ninetyDaysAgo = new Date()
   ninetyDaysAgo.setUTCDate(ninetyDaysAgo.getUTCDate() - 90)
 
-  const { data: logs, error: logsError } = await supabase
-    .from('food_logs')
-    .select('logged_at, kcal, protein_g, carbs_g, fat_g, meal')
-    .eq('user_id', user.id)
-    .gte('logged_at', ninetyDaysAgo.toISOString())
-    .order('logged_at', { ascending: true })
+  const [logsResult, exerciseResult] = await Promise.all([
+    supabase
+      .from('food_logs')
+      .select('logged_at, kcal, protein_g, carbs_g, fat_g, meal')
+      .eq('user_id', user.id)
+      .gte('logged_at', ninetyDaysAgo.toISOString())
+      .order('logged_at', { ascending: true }),
+    supabase
+      .from('exercise_logs')
+      .select('logged_at, activity, duration_min, calories')
+      .eq('user_id', user.id)
+      .gte('logged_at', ninetyDaysAgo.toISOString())
+      .order('logged_at', { ascending: false }),
+  ])
 
-  if (logsError) throw new Error(logsError.message)
+  if (logsResult.error) throw new Error(logsResult.error.message)
+  // Exercise logs are optional — table may not exist yet
+  const exerciseLogs = exerciseResult.error ? [] : (exerciseResult.data ?? [])
 
   return (
     <div className="min-h-screen bg-[#fff7ed] pb-24 dark:bg-slate-950">
@@ -49,7 +59,7 @@ export default async function HistoryPage() {
           <h1 className="text-2xl font-black text-foreground">History</h1>
           <p className="text-sm text-muted mt-0.5">Your nutrition over time</p>
         </div>
-        <HistoryClient logs={logs ?? []} profile={profile as Profile} />
+        <HistoryClient logs={logsResult.data ?? []} exerciseLogs={exerciseLogs} profile={profile as Profile} />
       </main>
       <BottomNav />
     </div>

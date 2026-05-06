@@ -2,9 +2,9 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { getBrowserSupabaseClient } from '../../lib/supabase/client'
-import type { FoodLog } from '../../types/index'
+import type { FoodLog, ExerciseLog } from '../../types/index'
 import { getUtcDayRange } from '../../lib/dateUtils'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Dumbbell, Flame } from 'lucide-react'
 
 const MEAL_CONFIG = {
   breakfast: { emoji: '🥣', label: 'Breakfast', color: 'text-amber-700' },
@@ -34,8 +34,30 @@ function useDayLogs(userId: string | null, date: Date) {
   })
 }
 
+function useDayExercise(userId: string | null, date: Date) {
+  const { start, end } = getUtcDayRange(date)
+  return useQuery({
+    queryKey: ['exercise-logs-diary', userId, start],
+    enabled: Boolean(userId),
+    queryFn: async () => {
+      if (!userId) return [] as ExerciseLog[]
+      const supabase = getBrowserSupabaseClient()
+      const { data, error } = await supabase
+        .from('exercise_logs')
+        .select('id, activity, duration_min, calories, logged_at')
+        .eq('user_id', userId)
+        .gte('logged_at', start)
+        .lt('logged_at', end)
+        .order('logged_at', { ascending: true })
+      if (error) return [] as ExerciseLog[] // table may not exist yet
+      return (data ?? []) as ExerciseLog[]
+    },
+  })
+}
+
 export function DayDiary({ userId, date }: { userId: string; date: Date }) {
   const { data: logs, isLoading } = useDayLogs(userId, date)
+  const { data: exerciseLogs = [] } = useDayExercise(userId, date)
 
   if (isLoading) {
     return (
@@ -115,6 +137,33 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
             </div>
           )
         })}
+
+      {/* Exercise for the day */}
+      {exerciseLogs.length > 0 && (
+        <div>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Dumbbell className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+            <span className="text-xs font-bold text-violet-700 dark:text-violet-400">Exercise</span>
+            <span className="text-[11px] text-muted font-medium ml-auto">
+              −{exerciseLogs.reduce((s, e) => s + e.calories, 0)} kcal burned
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            {exerciseLogs.map((log) => (
+              <div key={log.id} className="flex items-center justify-between rounded-xl bg-violet-50 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/30 px-3 py-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <Flame className="h-3 w-3 text-orange-500 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-foreground capitalize truncate">{log.activity}</p>
+                    <p className="text-[10px] text-muted">{log.duration_min} min</p>
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-violet-700 dark:text-violet-400 shrink-0">{log.calories} kcal</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

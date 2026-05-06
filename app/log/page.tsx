@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation'
 import { FoodSearch } from '../../components/log/FoodSearch'
 import { TodayProgressBar } from '../../components/log/TodayProgressBar'
+import { TodayFoodLog } from '../../components/log/TodayFoodLog'
 import { Navbar } from '../../components/layout/Navbar'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { createServerClient } from '../../lib/supabase/server'
-import type { Food } from '../../types/index'
+import type { Food, FoodLog } from '../../types/index'
 import { getUtcDayRange } from '../../lib/dateUtils'
 import Link from 'next/link'
 import { ChefHat } from 'lucide-react'
@@ -40,7 +41,7 @@ export default async function LogPage() {
   yesterday.setUTCDate(yesterday.getUTCDate() - 1)
   const { start: yStart, end: yEnd } = getUtcDayRange(yesterday)
 
-  const [logSnapshotResult, yesterdayResult, todayResult] = await Promise.all([
+  const [logSnapshotResult, yesterdayResult, todayResult, todayLogsResult] = await Promise.all([
     supabase
       .from('food_logs')
       .select(`food_id, food:foods(${FOOD_SELECT})`)
@@ -59,11 +60,20 @@ export default async function LogPage() {
       .eq('user_id', user.id)
       .gte('logged_at', start)
       .lt('logged_at', end),
+    supabase
+      .from('food_logs')
+      .select(`id, meal, grams, servings, kcal, protein_g, carbs_g, fat_g, logged_at, food:foods(${FOOD_SELECT})`)
+      .eq('user_id', user.id)
+      .gte('logged_at', start)
+      .lt('logged_at', end)
+      .order('logged_at', { ascending: true }),
   ])
 
   if (logSnapshotResult.error) throw new Error(logSnapshotResult.error.message)
   if (yesterdayResult.error) throw new Error(yesterdayResult.error.message)
   if (todayResult.error) throw new Error(todayResult.error.message)
+  // todayLogsResult failure is soft — show empty list, don't crash
+  const todayFoodLogs = (todayLogsResult.data ?? []) as unknown as FoodLog[]
 
   const logSnapshot = logSnapshotResult.data ?? []
   const yesterdayCount = yesterdayResult.count ?? 0
@@ -147,6 +157,12 @@ export default async function LogPage() {
             hasYesterdayLogs={hasYesterdayLogs}
           />
         </div>
+
+        {todayFoodLogs.length > 0 && (
+          <div className="mt-6">
+            <TodayFoodLog initialLogs={todayFoodLogs} />
+          </div>
+        )}
       </main>
       <BottomNav />
     </div>
