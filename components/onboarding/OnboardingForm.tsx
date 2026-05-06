@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { toast } from '../ui/use-toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronRight, ChevronLeft } from 'lucide-react'
+import { calculateTDEE } from '../../lib/tdee'
 
 const TOTAL_STEPS = 5
 
@@ -86,6 +87,23 @@ export function OnboardingForm() {
 
   const isMetric = form.watch('unit_system') === 'metric'
   const progress = (step / TOTAL_STEPS) * 100
+
+  // Live TDEE preview for Step 5
+  const watchedValues = form.watch()
+  let tdeePreview: { daily_calorie_target: number; protein_g_target: number; carbs_g_target: number; fat_g_target: number } | null = null
+  try {
+    if (watchedValues.height_cm > 0 && watchedValues.current_weight_kg > 0 && watchedValues.age > 0) {
+      tdeePreview = calculateTDEE({
+        weightKg: isMetric ? watchedValues.current_weight_kg : watchedValues.current_weight_kg * 0.453592,
+        heightCm: isMetric ? watchedValues.height_cm : watchedValues.height_cm * 2.54,
+        age: watchedValues.age,
+        sex: watchedValues.sex,
+        activity_level: watchedValues.activity_level,
+        goal: watchedValues.goal,
+        paceKgPerWeek: watchedValues.pace_kg_per_week,
+      })
+    }
+  } catch { /* ignore */ }
 
   return (
     <div>
@@ -300,6 +318,32 @@ export function OnboardingForm() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        )}
+
+        {/* Live TDEE preview on final step */}
+        {step === 5 && tdeePreview && (
+          <div className="rounded-2xl border border-orange-100 bg-gradient-to-r from-orange-50 to-amber-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-orange-600 mb-2">Your personalised targets</p>
+            <div className="flex items-baseline gap-1.5 mb-3">
+              <span className="text-3xl font-black text-orange-700">{tdeePreview.daily_calorie_target.toLocaleString()}</span>
+              <span className="text-sm text-orange-500 font-semibold">kcal / day</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-xl bg-blue-100 py-2 text-center">
+                <p className="text-sm font-black text-blue-800">{tdeePreview.protein_g_target}g</p>
+                <p className="text-[10px] font-semibold text-blue-600">Protein</p>
+              </div>
+              <div className="rounded-xl bg-amber-100 py-2 text-center">
+                <p className="text-sm font-black text-amber-800">{tdeePreview.carbs_g_target}g</p>
+                <p className="text-[10px] font-semibold text-amber-600">Carbs</p>
+              </div>
+              <div className="rounded-xl bg-rose-100 py-2 text-center">
+                <p className="text-sm font-black text-rose-800">{tdeePreview.fat_g_target}g</p>
+                <p className="text-[10px] font-semibold text-rose-600">Fat</p>
+              </div>
+            </div>
+            <p className="mt-2 text-[11px] text-orange-500">Calculated using Mifflin-St Jeor formula. You can adjust this anytime in settings.</p>
           </div>
         )}
 
