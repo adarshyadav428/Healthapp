@@ -21,6 +21,24 @@ export function WeightStats({ logs, profile }: { logs: WeightLog[] | null | unde
   const deltaLabel = delta < 0 ? `${Math.abs(delta)} kg lost` : delta > 0 ? `${delta} kg gained` : 'No change'
   const deltaColor = isLosing ? (delta < 0 ? 'text-emerald-600' : delta > 0 ? 'text-rose-500' : 'text-gray-500') : (delta > 0 ? 'text-emerald-600' : 'text-gray-500')
 
+  // Goal prediction: use actual rate of change if ≥2 entries, else use profile pace
+  let weeksToGoal: number | null = null
+  let rateLabel: string | null = null
+  const kgRemaining = Math.abs(current - target)
+  if (kgRemaining > 0.2) {
+    if (sorted.length >= 2) {
+      const firstEntry = sorted[0]
+      const lastEntry = sorted[sorted.length - 1]
+      const daysDiff = (new Date(lastEntry.measured_at).getTime() - new Date(firstEntry.measured_at).getTime()) / 86400000
+      const kgPerDay = daysDiff > 0 ? Math.abs(lastEntry.weight_kg - firstEntry.weight_kg) / daysDiff : 0
+      const movingRight = isLosing ? lastEntry.weight_kg < firstEntry.weight_kg : lastEntry.weight_kg > firstEntry.weight_kg
+      if (kgPerDay > 0.001 && movingRight) {
+        weeksToGoal = Math.ceil(kgRemaining / (kgPerDay * 7))
+        rateLabel = `at ${(kgPerDay * 7).toFixed(2)} kg/week`
+      }
+    }
+  }
+
   return (
     <div className="space-y-3">
       {/* Current weight hero */}
@@ -54,7 +72,14 @@ export function WeightStats({ logs, profile }: { logs: WeightLog[] | null | unde
                 style={{ width: `${progressToTarget}%` }}
               />
             </div>
-            <p className="text-xs text-emerald-600 font-semibold mt-1">{Math.round(progressToTarget)}% to goal</p>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-xs text-emerald-600 font-semibold">{Math.round(progressToTarget)}% to goal</p>
+              {weeksToGoal !== null && (
+                <p className="text-xs text-gray-400">
+                  ~{weeksToGoal < 52 ? `${weeksToGoal}w` : `${Math.round(weeksToGoal / 4.3)}mo`} {rateLabel}
+                </p>
+              )}
+            </div>
           </div>
         )}
       </div>

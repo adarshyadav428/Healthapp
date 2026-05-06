@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { CheckCircle } from 'lucide-react'
 
 export default function Home() {
   return (
@@ -25,19 +26,19 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero */}
       <main className="mx-auto w-full max-w-4xl px-5 pb-24">
-        <section className="py-12 text-center">
+        {/* Hero */}
+        <section className="py-10 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700 mb-6">
-            🇮🇳 India&apos;s food database included
+            🇮🇳 Built for Indian diets &middot; 600+ desi foods included
           </div>
           <h1 className="text-4xl font-black leading-tight text-gray-900 sm:text-5xl">
             Track calories the<br />
             <span className="text-orange-600">Indian way</span>
           </h1>
           <p className="mx-auto mt-4 max-w-md text-base text-gray-600">
-            Dal, roti, biryani, dosa — 300+ desi dishes with accurate nutrition.
-            Plus exercise tracking, water intake, and weight trends.
+            Dal, roti, biryani, dosa — with accurate IFCT 2017 nutrition data.
+            Log food in 5 seconds. See your macros, weight trend and calorie deficit — all in one place.
           </p>
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Link
@@ -53,7 +54,7 @@ export default function Home() {
               Sign in
             </Link>
           </div>
-          <p className="mt-3 text-xs text-gray-400">Free forever · No credit card</p>
+          <p className="mt-3 text-xs text-gray-400">Free forever · No credit card · Works offline</p>
         </section>
 
         {/* App preview mockup */}
@@ -79,7 +80,6 @@ export default function Home() {
                 </div>
               </div>
             </div>
-
             {/* Macro cards mock */}
             <div className="grid grid-cols-3 gap-2">
               {[
@@ -97,7 +97,6 @@ export default function Home() {
                 </div>
               ))}
             </div>
-
             {/* Recent meals mock */}
             <div className="rounded-2xl bg-gray-50 p-3 space-y-2">
               <p className="text-xs font-bold text-gray-500 flex items-center gap-1">🥣 Breakfast <span className="ml-auto bg-orange-50 border border-orange-100 rounded-full px-2 py-0.5 text-orange-600">486 kcal</span></p>
@@ -118,12 +117,12 @@ export default function Home() {
         {/* Features */}
         <section className="mt-16 grid gap-4 sm:grid-cols-2">
           {[
-            { emoji: '🍛', title: '300+ Indian foods', desc: 'Dal makhani, biryani, idli, paratha — all with authentic IFCT 2017 nutrition data. Searched in Hindi and English.' },
+            { emoji: '🍛', title: '600+ Indian foods', desc: 'Dal makhani, biryani, idli, paratha — all with authentic IFCT 2017 nutrition data. Searched in Hindi and English.' },
             { emoji: '⚡', title: 'Log in 5 seconds', desc: 'Recent foods + quick-add button. Copy yesterday\'s meals with one tap. Never type the same food twice.' },
-            { emoji: '🏋️', title: 'Exercise tracking', desc: 'Log workouts, walks, yoga. Burned calories offset your daily goal automatically.' },
-            { emoji: '💧', title: 'Water tracker', desc: 'Track glasses and bottles throughout the day with one-tap quick add. Never forget to hydrate.' },
-            { emoji: '📈', title: 'Weight trends', desc: 'Visualize your progress with a 14-day trend chart. See real movement, not just a number.' },
-            { emoji: '🔥', title: 'Daily streaks', desc: 'Build the logging habit with streak badges. 7 days, 30 days — watch the flames grow.' },
+            { emoji: '🏋️', title: 'Exercise tracking', desc: 'Log workouts, walks, yoga. Burned calories offset your daily goal automatically with MET-based calculation.' },
+            { emoji: '💧', title: 'Water tracker', desc: 'Track glasses and bottles throughout the day with one-tap quick add. Personalized daily goal.' },
+            { emoji: '📈', title: 'Weight trends', desc: 'Visualize your progress with a trend chart. See BMI, goal prediction, and weeks-to-target at a glance.' },
+            { emoji: '🔥', title: 'Daily streaks', desc: 'Build the logging habit with streak badges. Hit 7, 30, 100 days — with milestone celebrations.' },
           ].map((f) => (
             <div key={f.title} className="rounded-3xl border border-orange-100 bg-white/80 p-5 shadow-sm">
               <span className="text-2xl">{f.emoji}</span>
@@ -133,31 +132,125 @@ export default function Home() {
           ))}
         </section>
 
-        {/* Pricing teaser */}
+        {/* Free vs Pro comparison */}
+        <section className="mt-16">
+          <h2 className="text-2xl font-black text-gray-900 text-center mb-8">Simple, honest pricing</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Free */}
+            <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Free forever</p>
+              <p className="text-3xl font-black text-gray-900">₹0</p>
+              <p className="text-sm text-gray-500 mt-1 mb-5">No credit card required</p>
+              <ul className="space-y-2.5">
+                {[
+                  '5 food logs per day',
+                  'Weight tracking',
+                  'Exercise logging',
+                  'Water tracker',
+                  'Calorie + macro goals',
+                  '600+ Indian foods database',
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-sm text-gray-600">
+                    <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/auth/sign-up"
+                className="mt-6 block w-full rounded-2xl border border-orange-200 bg-orange-50 py-3 text-sm font-bold text-orange-700 text-center hover:bg-orange-100 transition-colors"
+              >
+                Start for free
+              </Link>
+            </div>
+            {/* Pro */}
+            <div className="rounded-3xl border-2 border-orange-400 bg-gradient-to-br from-orange-50 to-amber-50 p-6 shadow-md relative overflow-hidden">
+              <div className="absolute top-4 right-4 rounded-full bg-orange-600 px-2.5 py-1 text-[10px] font-black text-white uppercase tracking-wide">Popular</div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-orange-600 mb-1">Pro</p>
+              <p className="text-3xl font-black text-gray-900">₹499<span className="text-base font-semibold text-gray-500">/mo</span></p>
+              <p className="text-sm text-gray-500 mt-1 mb-5">or ₹3,999/year · Save 33%</p>
+              <ul className="space-y-2.5">
+                {[
+                  'Everything in Free',
+                  'Unlimited food logging',
+                  'Custom food & recipe builder',
+                  'Full nutrition history (30+ days)',
+                  'Data export (CSV)',
+                  'Priority support',
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-sm text-gray-700">
+                    <CheckCircle className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/upgrade"
+                className="mt-6 block w-full rounded-2xl bg-orange-600 py-3 text-sm font-bold text-white text-center hover:bg-orange-700 transition-colors shadow-sm"
+              >
+                Upgrade to Pro →
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section className="mt-16">
+          <h2 className="text-2xl font-black text-gray-900 text-center mb-8">Frequently asked questions</h2>
+          <div className="space-y-3">
+            {[
+              {
+                q: 'Does it have Indian food data?',
+                a: 'Yes — 600+ Indian dishes from IFCT 2017 (Indian Food Composition Tables) including regional foods like idli, dhokla, pav bhaji, chhole, rajma, biryani and much more.',
+              },
+              {
+                q: 'How is my calorie goal calculated?',
+                a: 'Using the Mifflin-St Jeor BMR formula + your activity level and goal (lose/maintain/gain). Protein is set at 2g/kg body weight, fat at 0.8g/kg — the rest goes to carbs.',
+              },
+              {
+                q: 'Is my data safe?',
+                a: 'Yes. All data is encrypted at rest and in transit via Supabase (PostgreSQL). Each user can only see their own data. You can export or delete everything from Settings.',
+              },
+              {
+                q: 'Does it work offline?',
+                a: 'The app is a PWA (Progressive Web App) so you can install it on your phone\'s home screen. Core features work offline and sync when you reconnect.',
+              },
+              {
+                q: 'Can I cancel my Pro subscription?',
+                a: 'Yes, anytime from Settings → Manage Subscription. No lock-in. You keep access until the end of the billing period.',
+              },
+            ].map((faq) => (
+              <details key={faq.q} className="group rounded-2xl border border-gray-100 bg-white/80 px-5 py-4 shadow-sm cursor-pointer">
+                <summary className="list-none flex items-center justify-between font-semibold text-sm text-gray-900">
+                  {faq.q}
+                  <span className="text-orange-600 text-lg leading-none group-open:rotate-45 transition-transform">+</span>
+                </summary>
+                <p className="mt-3 text-sm text-gray-600 leading-relaxed">{faq.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        {/* Final CTA */}
         <section className="mt-16 rounded-3xl border border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 p-8 text-center shadow-sm">
-          <h2 className="text-2xl font-black text-gray-900">Free for the basics. Pro for everything.</h2>
-          <p className="mt-2 text-sm text-gray-600">Free tier: 5 food logs per day. Pro: unlimited everything.</p>
+          <h2 className="text-2xl font-black text-gray-900">Ready to start?</h2>
+          <p className="mt-2 text-sm text-gray-600">Join CalTrack and take control of your nutrition — the Indian way.</p>
           <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Link
               href="/auth/sign-up"
               className="rounded-full bg-orange-600 px-8 py-3 text-sm font-bold text-white hover:bg-orange-700 transition-colors shadow-md"
             >
-              Start free
-            </Link>
-            <Link
-              href="/upgrade"
-              className="rounded-full border border-orange-200 bg-white px-8 py-3 text-sm font-semibold text-orange-700 hover:bg-orange-50 transition-colors"
-            >
-              See Pro plans →
+              Start for free →
             </Link>
           </div>
+          <p className="mt-3 text-xs text-gray-400">No credit card · Cancel anytime</p>
         </section>
       </main>
 
       {/* Footer */}
       <footer className="border-t border-orange-100 bg-white/60 px-5 py-8 text-center text-xs text-gray-400">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3">
-          <span>© 2026 CalTrack · hello@caltrack.app</span>
+          <span>© 2026 CalTrack · Made with ❤️ for India</span>
           <div className="flex gap-4">
             <Link href="/privacy" className="hover:text-gray-600">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-gray-600">Terms of Service</Link>
