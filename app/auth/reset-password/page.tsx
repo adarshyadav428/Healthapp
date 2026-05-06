@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { getBrowserSupabaseClient } from '../../../lib/supabase/client'
-import { useRouter } from 'next/navigation'
 import { Lock } from 'lucide-react'
 
 export default function ResetPasswordPage() {
@@ -11,7 +10,6 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
-  const router = useRouter()
 
   // Supabase sends the token via hash — we need to let the client lib pick it up
   useEffect(() => {
@@ -51,8 +49,6 @@ export default function ResetPasswordPage() {
       setLoading(false)
     }
   }
-
-  void router
 
   return (
     <div className="min-h-screen bg-[#fff7ed] flex flex-col items-center justify-center px-4">

@@ -12,8 +12,6 @@ import { calculateStreak } from '../../lib/streak'
 import { Navbar } from '../../components/layout/Navbar'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { DashboardClient } from '../../components/dashboard/DashboardClient'
-import Link from 'next/link'
-import { Button } from '../../components/ui/button'
 import { getUtcDayRange } from '../../lib/dateUtils'
 
 export const dynamic = 'force-dynamic'
@@ -56,7 +54,11 @@ export default async function DashboardPage() {
   const sixtyDaysAgo = new Date()
   sixtyDaysAgo.setUTCDate(sixtyDaysAgo.getUTCDate() - 60)
 
-  const [logsResult, exerciseResult, weightResult, streakResult] = await Promise.all([
+  const sevenDaysAgo = new Date()
+  sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 6)
+  sevenDaysAgo.setUTCHours(0, 0, 0, 0)
+
+  const [logsResult, exerciseResult, weightResult, streakResult, weekResult] = await Promise.all([
     supabase
       .from('food_logs')
       .select('id, food_id, meal, kcal, protein_g, carbs_g, fat_g, logged_at, food:foods(id,name)')
@@ -82,6 +84,12 @@ export default async function DashboardPage() {
       .select('logged_at')
       .eq('user_id', user.id)
       .gte('logged_at', sixtyDaysAgo.toISOString()),
+    supabase
+      .from('food_logs')
+      .select('kcal, logged_at')
+      .eq('user_id', user.id)
+      .gte('logged_at', sevenDaysAgo.toISOString())
+      .lt('logged_at', end),
   ])
 
   if (logsResult.error) throw new Error(logsResult.error.message)
@@ -93,6 +101,7 @@ export default async function DashboardPage() {
   const exerciseLogs = (!exerciseResult.error ? (exerciseResult.data ?? []) : []) as unknown as ExerciseLog[]
   const weightLogs = (weightResult.data ?? []) as unknown as WeightLog[]
   const streak = calculateStreak((streakResult.data ?? []) as unknown as FoodLog[])
+  const weekLogs = (!weekResult.error ? (weekResult.data ?? []) : []) as { kcal: number; logged_at: string }[]
 
   const firstName = profile.display_name?.split(' ')[0] ?? null
   const greeting = getGreeting()
@@ -117,6 +126,7 @@ export default async function DashboardPage() {
           streak={streak}
           weightLogs={weightLogs}
           initialExerciseLogs={exerciseLogs}
+          weekLogs={weekLogs}
         />
       </main>
       <BottomNav />

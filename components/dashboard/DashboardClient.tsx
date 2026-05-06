@@ -11,6 +11,7 @@ import { WaterCard } from './WaterCard'
 import { ExerciseCard } from '../exercise/ExerciseCard'
 import { ExerciseLogModal } from '../exercise/ExerciseLogModal'
 import { DailyInsight } from './DailyInsight'
+import { WeeklySummary } from './WeeklySummary'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
 import { getBrowserSupabaseClient } from '../../lib/supabase/client'
@@ -24,12 +25,14 @@ export function DashboardClient({
   streak,
   weightLogs,
   initialExerciseLogs,
+  weekLogs,
 }: {
   profile: Profile
   initialLogs: FoodLog[]
   streak: number
   weightLogs: WeightLog[]
   initialExerciseLogs: ExerciseLog[]
+  weekLogs: { kcal: number; logged_at: string }[]
 }) {
   const { user } = useUser()
   const queryClient = useQueryClient()
@@ -152,6 +155,11 @@ export function DashboardClient({
       {/* Daily Insight */}
       <div className="animate-fade-up" style={{ animationDelay: '160ms' }}>
         <DailyInsight totals={totals} profile={profile} />
+      </div>
+
+      {/* Weekly Summary */}
+      <div className="animate-fade-up" style={{ animationDelay: '190ms' }}>
+        <WeeklySummary weekLogs={weekLogs} kcalTarget={profile.daily_calorie_target} />
       </div>
 
       <section className="grid gap-4 sm:grid-cols-2">
