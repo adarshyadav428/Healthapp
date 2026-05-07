@@ -158,11 +158,9 @@ export default async function LogPage() {
           />
         </div>
 
-        {todayFoodLogs.length > 0 && (
-          <div className="mt-6">
-            <TodayFoodLog initialLogs={todayFoodLogs} />
-          </div>
-        )}
+        <div className="mt-6">
+          <TodayFoodLog initialLogs={todayFoodLogs} />
+        </div>
       </main>
       <BottomNav />
     </div>

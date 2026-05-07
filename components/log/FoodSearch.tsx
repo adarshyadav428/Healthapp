@@ -4,13 +4,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
-import type { Food } from '../../types/index'
+import type { Food, FoodLog } from '../../types/index'
+import { getUtcDayRange } from '../../lib/dateUtils'
 import { FoodResult } from './FoodResult'
 import { AddFoodModal } from './AddFoodModal'
 import { toast } from '../ui/use-toast'
 import { Clock, Copy, Star, Zap, PlusCircle, Search, X } from 'lucide-react'
 import { CreateFoodModal } from './CreateFoodModal'
-import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { useUser } from '../../hooks/useUser'
 import { useSubscription } from '../../hooks/useSubscription'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
@@ -91,49 +91,35 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
     setQuickAddingId(food.id)
     try {
       if (!user) throw new Error('You must be signed in to log food.')
-      const supabase = getBrowserSupabaseClient()
-      const today = new Date()
-      const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())).toISOString()
-      const endDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() + 1)).toISOString()
 
-      const { count, error: countError } = await supabase
-        .from('food_logs')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gte('logged_at', start)
-        .lt('logged_at', endDate)
-
-      if (countError) throw new Error(countError.message)
-
-      if (!subscription?.isPro && (count ?? 0) >= 5) {
-        setShowLimit(true)
-        return
+      // Free-plan gate: read from cache to avoid a blocking COUNT query
+      if (!subscription?.isPro) {
+        const { start } = getUtcDayRange()
+        const cached = queryClient.getQueryData<FoodLog[]>(['food-logs', user.id, start])
+        if (cached != null && cached.length >= 5) { setShowLimit(true); return }
       }
 
       const grams = food.serving_size_g
-      const factor = grams / 100
-      const round2 = (n: number) => Math.round(n * 100) / 100
-      const nutrition = {
-        kcal: round2(food.kcal_per_100g * factor),
-        protein: round2(food.protein_g_per_100g * factor),
-        carbs: round2(food.carbs_g_per_100g * factor),
-        fat: round2(food.fat_g_per_100g * factor),
-      }
-
-      const { error } = await supabase.from('food_logs').insert({
-        user_id: user.id,
-        food_id: food.id,
-        meal: defaultMeal,
-        servings: 1,
-        grams,
-        kcal: nutrition.kcal,
-        protein_g: nutrition.protein,
-        carbs_g: nutrition.carbs,
-        fat_g: nutrition.fat,
-        logged_at: new Date().toISOString(),
+      const res = await fetch('/api/logs/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          food_id: food.id,
+          meal: defaultMeal,
+          servings: 1,
+          grams,
+        }),
       })
 
-      if (error) throw new Error(error.message)
+      const body = await res.json().catch(() => ({} as { error?: string }))
+
+      if (!res.ok) {
+        if (res.status === 402 || body?.error === 'Free limit reached') {
+          setShowLimit(true)
+          return
+        }
+        throw new Error(body?.error || 'Quick add failed')
+      }
 
       toast({
         title: `Quick added ${food.name}`,

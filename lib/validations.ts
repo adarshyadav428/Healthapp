@@ -58,6 +58,11 @@ export const profileUpdateSchema = z.object({
   activity_level: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']),
   goal: z.enum(['lose', 'maintain', 'gain']),
   water_target_ml: z.number().min(500).max(8000).optional(),
+  // Manual target overrides — when present, skip TDEE recalculation
+  custom_calorie_target: z.number().int().min(500).max(10000).optional(),
+  custom_protein_target: z.number().int().min(0).max(500).optional(),
+  custom_carbs_target: z.number().int().min(0).max(1000).optional(),
+  custom_fat_target: z.number().int().min(0).max(500).optional(),
 })
 
 export const customFoodSchema = z.object({

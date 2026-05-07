@@ -14,7 +14,7 @@ import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { useSubscription } from '../../hooks/useSubscription'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Crown, Target, User, LogOut, Trash2, Download } from 'lucide-react'
+import { ChevronRight, Crown, Target, User, LogOut, Trash2, Download, Sliders } from 'lucide-react'
 
 const ACTIVITY_LABELS: Record<string, string> = {
   sedentary: 'Sedentary (desk job, no exercise)',
@@ -48,6 +48,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
   const [portalLoading, setPortalLoading] = useState(false)
   const [signOutLoading, setSignOutLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [useCustomTargets, setUseCustomTargets] = useState(false)
 
   const form = useForm<ProfileUpdateData>({
     resolver: zodResolver(profileUpdateSchema),
@@ -59,21 +60,37 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
       activity_level: profile.activity_level,
       goal: profile.goal,
       water_target_ml: profile.water_target_ml ?? 2500,
+      custom_calorie_target: profile.daily_calorie_target,
+      custom_protein_target: profile.protein_g_target,
+      custom_carbs_target:   profile.carbs_g_target,
+      custom_fat_target:     profile.fat_g_target,
     },
   })
 
   const onSubmit = async (values: ProfileUpdateData) => {
     try {
+      // Only send custom target fields when the user has opted in
+      const payload = useCustomTargets
+        ? values
+        : {
+            ...values,
+            custom_calorie_target: undefined,
+            custom_protein_target: undefined,
+            custom_carbs_target:   undefined,
+            custom_fat_target:     undefined,
+          }
+
       const res = await fetch('/api/profile/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       })
       if (!res.ok) {
         const body = await res.json().catch(() => null)
         throw new Error(body?.error || 'Failed to update profile')
       }
-      toast({ title: 'Profile updated ✓', description: 'Calorie targets recalculated.', duration: 3000 })
+      const desc = useCustomTargets ? 'Custom targets saved.' : 'Calorie targets recalculated.'
+      toast({ title: 'Profile updated ✓', description: desc, duration: 3000 })
     } catch (err) {
       toast({ title: 'Update failed', description: (err as Error).message, variant: 'error', duration: 4000 })
     }
@@ -194,6 +211,65 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
               </SelectContent>
             </Select>
           </Field>
+
+          {/* Custom targets toggle */}
+          <div className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 p-3">
+            <button
+              type="button"
+              onClick={() => setUseCustomTargets((v) => !v)}
+              className="flex w-full items-center justify-between"
+            >
+              <div className="flex items-center gap-2">
+                <Sliders className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                <span className="text-sm font-semibold text-foreground">Custom calorie &amp; macro targets</span>
+              </div>
+              <div className={`relative h-5 w-9 rounded-full transition-colors ${useCustomTargets ? 'bg-orange-500' : 'bg-gray-300 dark:bg-slate-600'}`}>
+                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${useCustomTargets ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </div>
+            </button>
+            <p className="mt-1.5 text-xs text-muted">
+              {useCustomTargets ? 'Targets below will be saved as-is — no auto-recalculation.' : 'Targets are auto-calculated from your stats above.'}
+            </p>
+
+            {useCustomTargets && (
+              <div className="mt-3 space-y-3">
+                <Field label="Daily calories (kcal)" error={form.formState.errors.custom_calorie_target?.message}>
+                  <Input
+                    type="number" min="500" max="10000" step="50"
+                    {...form.register('custom_calorie_target', { valueAsNumber: true })}
+                  />
+                </Field>
+                <div className="grid grid-cols-3 gap-2">
+                  <Field label="Protein (g)" error={form.formState.errors.custom_protein_target?.message}>
+                    <Input type="number" min="0" max="500" step="5" {...form.register('custom_protein_target', { valueAsNumber: true })} />
+                  </Field>
+                  <Field label="Carbs (g)" error={form.formState.errors.custom_carbs_target?.message}>
+                    <Input type="number" min="0" max="1000" step="5" {...form.register('custom_carbs_target', { valueAsNumber: true })} />
+                  </Field>
+                  <Field label="Fat (g)" error={form.formState.errors.custom_fat_target?.message}>
+                    <Input type="number" min="0" max="500" step="5" {...form.register('custom_fat_target', { valueAsNumber: true })} />
+                  </Field>
+                </div>
+                {/* Live kcal check */}
+                {(() => {
+                  const p = form.watch('custom_protein_target') ?? 0
+                  const c = form.watch('custom_carbs_target') ?? 0
+                  const f = form.watch('custom_fat_target') ?? 0
+                  const derivedKcal = p * 4 + c * 4 + f * 9
+                  const targetKcal = form.watch('custom_calorie_target') ?? 0
+                  const diff = Math.abs(derivedKcal - targetKcal)
+                  if (derivedKcal === 0) return null
+                  return (
+                    <p className={`text-xs font-medium ${diff > 100 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                      {derivedKcal} kcal from macros
+                      {diff > 100 ? ` — ${diff} kcal off from your calorie target` : ' ✓ matches calorie target'}
+                    </p>
+                  )
+                })()}
+              </div>
+            )}
+          </div>
+
           <Button type="submit" className="w-full bg-orange-600 hover:bg-orange-700" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting ? 'Saving...' : 'Save changes'}
           </Button>

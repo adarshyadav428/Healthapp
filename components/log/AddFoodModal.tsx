@@ -3,13 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import type { Food } from '../../types/index'
-import { getBrowserSupabaseClient } from '../../lib/supabase/client'
+import type { Food, FoodLog } from '../../types/index'
 import { useUser } from '../../hooks/useUser'
 import { useSubscription } from '../../hooks/useSubscription'
 import { toast } from '../ui/use-toast'
 import { addFoodSchema, type AddFoodData } from '../../lib/validations'
 import { useQueryClient } from '@tanstack/react-query'
+import { getUtcDayRange } from '../../lib/dateUtils'
 import Link from 'next/link'
 import { X, Zap } from 'lucide-react'
 
@@ -72,22 +72,36 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
     setIsSubmitting(true)
     try {
       if (!user) throw new Error('You must be signed in to log food.')
-      const supabase = getBrowserSupabaseClient()
-      const today = new Date()
-      const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())).toISOString()
-      const endDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() + 1)).toISOString()
-      const { count, error: countError } = await supabase
-        .from('food_logs').select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id).gte('logged_at', start).lt('logged_at', endDate)
-      if (countError) throw new Error(countError.message)
-      if (!subscription?.isPro && (count ?? 0) >= 5) { setShowLimit(true); return }
-      const { error } = await supabase.from('food_logs').insert({
-        user_id: user.id, food_id: food.id, meal: values.meal,
-        servings: values.servings, grams: values.grams,
-        kcal: nutrition.kcal, protein_g: nutrition.protein, carbs_g: nutrition.carbs, fat_g: nutrition.fat,
-        logged_at: new Date().toISOString(),
+
+      // Free-plan gate: read today's count from TanStack Query cache (already loaded)
+      // — avoids a separate COUNT round-trip before every insert
+      if (!subscription?.isPro) {
+        const { start } = getUtcDayRange()
+        const cached = queryClient.getQueryData<FoodLog[]>(['food-logs', user.id, start])
+        if (cached != null && cached.length >= 5) { setShowLimit(true); return }
+      }
+
+      const res = await fetch('/api/logs/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          food_id: values.food_id,
+          meal: values.meal,
+          servings: values.servings,
+          grams: values.grams,
+        }),
       })
-      if (error) throw new Error(error.message)
+
+      const body = await res.json().catch(() => ({} as { error?: string }))
+
+      if (!res.ok) {
+        if (res.status === 402 || body?.error === 'Free limit reached') {
+          setShowLimit(true)
+          return
+        }
+        throw new Error(body?.error || 'Failed to log food')
+      }
+
       toast({ title: '✅ Food logged!', description: 'Nice job staying consistent.', duration: 2500 })
       queryClient.invalidateQueries({ queryKey: ['food-logs'] })
       onClose()
