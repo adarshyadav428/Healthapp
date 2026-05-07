@@ -6,8 +6,6 @@ import { calculateStreak } from '../../lib/streak'
 import { Navbar } from '../../components/layout/Navbar'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { DashboardClient } from '../../components/dashboard/DashboardClient'
-import Link from 'next/link'
-import { Button } from '../../components/ui/button'
 import { getUtcDayRange } from '../../lib/dateUtils'
 
 export const metadata: Metadata = {
@@ -101,21 +99,17 @@ export default async function DashboardPage() {
   const greeting = getGreeting()
 
   return (
-    <div className="min-h-screen bg-[#fff7ed] pb-24 dark:bg-slate-950">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.25),_transparent_50%),radial-gradient(circle_at_20%_60%,_rgba(248,113,113,0.2),_transparent_55%),radial-gradient(circle_at_80%_20%,_rgba(16,185,129,0.18),_transparent_45%)] dark:opacity-20" />
+    <div className="min-h-screen bg-background pb-32 dark:bg-slate-950">
+      {/* Subtle ambient gradient */}
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,_rgba(249,115,22,0.07),_transparent_60%)] dark:opacity-40" />
       <Navbar />
-      <main className="relative mx-auto flex w-full max-w-md flex-col gap-6 px-4 py-6">
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-sm font-medium text-orange-600 dark:text-amber-400">
-              {greeting}{firstName ? `, ${firstName}` : ''} 👋
-            </p>
-            <h1 className="text-2xl font-black text-foreground mt-0.5">Today</h1>
-            <p className="text-xs text-muted mt-0.5">Your daily snapshot</p>
-          </div>
-          <div className="text-xs font-semibold text-orange-600 bg-white/80 border border-orange-100 px-2.5 py-1 rounded-full dark:bg-slate-900/80 dark:border-slate-800 dark:text-amber-300">
-            CalTrack
-          </div>
+      <main className="relative mx-auto w-full max-w-md px-4 py-5">
+        {/* Page header */}
+        <div className="mb-5">
+          <p className="text-sm font-semibold text-orange-500 dark:text-orange-400">
+            {greeting}{firstName ? `, ${firstName}` : ''} 👋
+          </p>
+          <h1 className="text-[28px] font-black text-foreground leading-tight">Today</h1>
         </div>
 
         <DashboardClient
@@ -126,10 +120,6 @@ export default async function DashboardPage() {
           initialExerciseLogs={exerciseLogs}
           weekLogs={weekLogs}
         />
-
-        <Button asChild className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-2xl shadow-md">
-          <Link href="/log">+ Add Food</Link>
-        </Button>
       </main>
       <BottomNav />
     </div>

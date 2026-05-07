@@ -1,8 +1,13 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { cn } from '../../lib/utils'
+
+const R = 52
+const STROKE = 11
+const CX = 64
+const CY = 64
+const CIRCUMFERENCE = 2 * Math.PI * R  // ≈ 326.7
 
 export function CalorieSummary({
   kcalEaten,
@@ -13,87 +18,143 @@ export function CalorieSummary({
   kcalBurned: number
   kcalTarget: number
 }) {
+  const [mounted, setMounted] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const celebratedRef = useRef(false)
-  const net = Math.max(kcalEaten - kcalBurned, 0)
-  const remaining = Math.max(kcalTarget - net, 0)
-  const over = net > kcalTarget ? net - kcalTarget : 0
-  const ratio = kcalTarget > 0 ? Math.min(net / kcalTarget, 1) : 0
 
+  const net       = Math.max(kcalEaten - kcalBurned, 0)
+  const remaining = Math.max(kcalTarget - net, 0)
+  const over      = net > kcalTarget ? net - kcalTarget : 0
+  const ratio     = kcalTarget > 0 ? Math.min(net / kcalTarget, 1) : 0
+
+  // Animate ring in on mount
+  useEffect(() => { setMounted(true) }, [])
+
+  // Confetti when goal hit
   useEffect(() => {
     if (kcalTarget <= 0) return
     if (net >= kcalTarget && !celebratedRef.current) {
       celebratedRef.current = true
       setShowConfetti(true)
-      const timer = setTimeout(() => setShowConfetti(false), 2200)
-      return () => clearTimeout(timer)
+      const t = setTimeout(() => setShowConfetti(false), 2200)
+      return () => clearTimeout(t)
     }
     if (net < kcalTarget) celebratedRef.current = false
-  }, [kcalEaten, kcalBurned, kcalTarget, net])
+  }, [net, kcalTarget])
 
-  const ringColor = ratio < 0.8 ? '#16a34a' : ratio <= 1 ? '#f59e0b' : '#ef4444'
-  const ringBg = '#1e293b' // dark-safe neutral fill (invisible in light mode since opacity)
+  const pct    = Math.round(ratio * 100)
+  const offset = mounted ? CIRCUMFERENCE * (1 - ratio) : CIRCUMFERENCE
 
-  const data = [
-    { name: 'Net', value: net },
-    { name: 'Remaining', value: Math.max(kcalTarget - net, 0) },
-  ]
+  // Ring changes colour: green → amber → red
+  const ringColor =
+    ratio < 0.8 ? '#22c55e' : ratio <= 1.0 ? '#f59e0b' : '#ef4444'
+  const glowOpacity = Math.min(ratio, 1) * 0.35
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-orange-100 dark:border-orange-900/30 bg-gradient-to-br from-orange-50 via-amber-50 to-rose-50 dark:from-orange-950/20 dark:via-amber-950/20 dark:to-rose-950/20 p-5 shadow-sm dark:bg-slate-900/80">
-      <div className="pointer-events-none absolute -top-10 -right-8 h-28 w-28 rounded-full bg-amber-200/40 dark:bg-amber-800/20 blur-2xl" />
-      <div className="pointer-events-none absolute -bottom-12 -left-10 h-32 w-32 rounded-full bg-rose-200/40 dark:bg-rose-800/20 blur-2xl" />
-      {showConfetti ? <ConfettiBurst /> : null}
+    <div className="relative overflow-hidden rounded-[28px] bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 shadow-sm">
+      {/* Colour blob behind the ring */}
+      <div
+        className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-44 w-44 rounded-full blur-3xl"
+        style={{ backgroundColor: ringColor, opacity: glowOpacity }}
+      />
 
-      <div className="relative flex items-center justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-orange-700 dark:text-orange-400">Net calories</p>
-          <p className="text-4xl font-black text-foreground leading-none">
-            {net.toLocaleString()}
+      {showConfetti && <ConfettiBurst />}
+
+      <div className="relative flex items-center gap-3 px-5 py-5">
+        {/* ── Left column ── */}
+        <div className="flex flex-col gap-2 flex-1 min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
+            Net calories
           </p>
-          <p className="text-sm text-muted">of {kcalTarget.toLocaleString()} goal</p>
 
-          <div className="mt-3 flex gap-4">
-            {over > 0 ? (
-              <Stat label="Over goal" value={`+${over.toLocaleString()}`} color="text-rose-600 dark:text-rose-400" />
-            ) : (
-              <Stat label="Remaining" value={remaining.toLocaleString()} color="text-emerald-600 dark:text-emerald-400" />
-            )}
+          <div>
+            <p className="text-5xl font-black tabular-nums leading-none text-foreground">
+              {net.toLocaleString()}
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              of {kcalTarget.toLocaleString()} goal
+            </p>
           </div>
 
-          <div className="mt-2 flex gap-4">
-            <Stat label="Eaten"  value={kcalEaten.toLocaleString()}  color="text-muted" />
-            <Stat label="Burned" value={kcalBurned.toLocaleString()} color="text-emerald-600 dark:text-emerald-400" />
+          {/* Remaining / Over pill */}
+          <span
+            className={cn(
+              'inline-flex w-fit items-center gap-1 rounded-full px-3 py-1 text-xs font-bold',
+              over > 0
+                ? 'bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400'
+                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+            )}
+          >
+            {over > 0
+              ? `+${over.toLocaleString()} kcal over`
+              : `${remaining.toLocaleString()} kcal left`}
+          </span>
+
+          {/* Eaten / Burned row */}
+          <div className="flex gap-4 pt-1">
+            <MiniStat label="Eaten"  value={kcalEaten}  />
+            {kcalBurned > 0 && (
+              <MiniStat label="Burned" value={kcalBurned} green />
+            )}
           </div>
         </div>
 
-        {/* Donut ring */}
-        <div className="relative h-32 w-32 flex-shrink-0">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data}
-                dataKey="value"
-                innerRadius={42}
-                outerRadius={58}
-                startAngle={90}
-                endAngle={-270}
-                paddingAngle={ratio < 1 ? 3 : 0}
-                strokeWidth={0}
-              >
-                <Cell fill={ringColor} />
-                <Cell fill={ringBg} fillOpacity={0.08} />
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className={cn('text-lg font-bold leading-none', over > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400')}>
-              {over > 0 ? `+${over}` : remaining}
+        {/* ── Right: SVG ring ── */}
+        <div className="relative flex-shrink-0" style={{ width: 128, height: 128 }}>
+          <svg
+            width={128}
+            height={128}
+            viewBox="0 0 128 128"
+            style={{ transform: 'rotate(-90deg)' }}
+          >
+            {/* Track */}
+            <circle
+              cx={CX} cy={CY} r={R}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={STROKE}
+              className="text-gray-100 dark:text-slate-800"
+            />
+            {/* Progress */}
+            <circle
+              cx={CX} cy={CY} r={R}
+              fill="none"
+              stroke={ringColor}
+              strokeWidth={STROKE}
+              strokeLinecap="round"
+              strokeDasharray={CIRCUMFERENCE}
+              strokeDashoffset={offset}
+              style={{
+                transition: mounted
+                  ? 'stroke-dashoffset 1s cubic-bezier(0.34,1.56,0.64,1), stroke 0.4s ease'
+                  : 'none',
+                filter: `drop-shadow(0 0 5px ${ringColor}55)`,
+              }}
+            />
+          </svg>
+
+          {/* Centre label */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-xl font-black text-foreground tabular-nums leading-none">
+              {pct}%
             </span>
-            <span className="text-[10px] text-muted mt-0.5">{over > 0 ? 'over' : 'left'}</span>
+            <span className="text-[9px] font-semibold text-muted mt-0.5">of goal</span>
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+/* ── Sub-components ── */
+
+function MiniStat({ label, value, green }: { label: string; value: number; green?: boolean }) {
+  return (
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">{label}</p>
+      <p className={cn('text-sm font-bold', green ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground')}>
+        {value.toLocaleString()} kcal
+      </p>
     </div>
   )
 }
@@ -110,25 +171,15 @@ function ConfettiBurst() {
     { left: '82%', delay: '140ms', color: 'bg-orange-300',  rotate: '-rotate-6' },
     { left: '92%', delay: '180ms', color: 'bg-amber-400',   rotate: 'rotate-12' },
   ]
-
   return (
-    <div className="pointer-events-none absolute inset-0">
-      {pieces.map((piece) => (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {pieces.map((p) => (
         <span
-          key={`${piece.left}-${piece.delay}`}
-          className={`confetti-piece ${piece.color} ${piece.rotate}`}
-          style={{ left: piece.left, animationDelay: piece.delay }}
+          key={p.left}
+          className={`confetti-piece ${p.color} ${p.rotate}`}
+          style={{ left: p.left, animationDelay: p.delay }}
         />
       ))}
-    </div>
-  )
-}
-
-function Stat({ label, value, color }: { label: string; value: string; color: string }) {
-  return (
-    <div>
-      <p className={cn('text-base font-bold', color)}>{value} kcal</p>
-      <p className="text-xs text-muted">{label}</p>
     </div>
   )
 }

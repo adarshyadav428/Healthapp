@@ -32,10 +32,12 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Trebuchet MS', 'Avenir Next', 'Segoe UI', sans-serif;
+    font-family: var(--font-sans, 'Inter', ui-sans-serif, system-ui, sans-serif);
+    -webkit-tap-highlight-color: transparent;
   }
   h1, h2, h3, h4 {
-    font-family: 'Georgia', 'Times New Roman', serif;
+    font-family: var(--font-sans, 'Inter', ui-sans-serif, system-ui, sans-serif);
+    @apply font-black tracking-tight;
   }
 }
 
@@ -90,6 +92,17 @@
     height: 10px;
     border-radius: 4px;
     animation: confettiBurst 1.8s ease-out both;
+  }
+
+  /* ── SVG ring progress animation ── */
+  @keyframes ringFill {
+    from { stroke-dashoffset: var(--ring-circumference); }
+    to   { stroke-dashoffset: var(--ring-offset); }
+  }
+
+  .ring-progress {
+    animation: ringFill 1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation-delay: 200ms;
   }
 
   /* ── Safe area for bottom nav ── */
