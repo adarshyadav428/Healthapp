@@ -38,11 +38,11 @@ export function WeeklySummary({ weekLogs, kcalTarget }: WeeklySummaryProps) {
   const onTrack = deficit !== null ? deficit >= -200 : null
 
   return (
-    <div className="rounded-3xl border border-orange-100 dark:border-orange-900/30 bg-white/90 dark:bg-slate-900/80 p-4 shadow-sm">
+    <div className="rounded-3xl border border-border bg-card p-4 shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-orange-600 dark:text-orange-400">This Week</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted">This Week</p>
           <p className="text-sm font-bold text-foreground mt-0.5">{daysLogged} of 7 days logged</p>
         </div>
         {onTrack !== null && (
@@ -66,14 +66,14 @@ export function WeeklySummary({ weekLogs, kcalTarget }: WeeklySummaryProps) {
             ? 'bg-rose-400'
             : day.kcal >= (kcalTarget ?? 0) * 0.8
             ? 'bg-emerald-500'
-            : 'bg-orange-400'
+            : 'bg-indigo-400'
 
           return (
             <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
               <span className="text-[10px] font-medium text-muted">{day.label}</span>
               <div
                 className={`relative w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-800 ${
-                  day.isToday ? 'ring-2 ring-orange-400 ring-offset-1 dark:ring-offset-slate-900' : ''
+                  day.isToday ? 'ring-2 ring-indigo-400 ring-offset-1 dark:ring-offset-slate-900' : ''
                 }`}
                 style={{ height: 36 }}
               >
@@ -93,7 +93,7 @@ export function WeeklySummary({ weekLogs, kcalTarget }: WeeklySummaryProps) {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 divide-x divide-gray-100 dark:divide-slate-700 text-center">
+      <div className="grid grid-cols-3 divide-x divide-border text-center">
         <div className="pr-2">
           <p className="text-lg font-black text-foreground leading-tight">
             {daysLogged}<span className="text-sm font-normal text-muted">/7</span>

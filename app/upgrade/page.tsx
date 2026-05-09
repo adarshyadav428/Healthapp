@@ -74,8 +74,7 @@ export default function UpgradePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff7ed] dark:bg-slate-950">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(251,191,36,0.25),_transparent_50%)] dark:opacity-40" />
+    <div className="min-h-screen bg-background dark:bg-slate-950">
 
       <div className="mx-auto w-full max-w-lg px-4 py-8">
         <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground mb-6">
@@ -85,7 +84,7 @@ export default function UpgradePage() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-orange-100 border border-orange-200 px-3 py-1 text-xs font-semibold text-orange-700 mb-3 dark:border-slate-700 dark:bg-slate-900 dark:text-amber-300">
+          <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-200 px-3 py-1 text-xs font-semibold text-indigo-700 mb-3 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-400">
             <Crown className="h-3.5 w-3.5" />
             CalTrack Pro
           </div>
@@ -94,9 +93,9 @@ export default function UpgradePage() {
         </div>
 
         {/* Features */}
-        <div className="rounded-3xl border border-orange-100 bg-white/90 p-5 mb-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
+        <div className="rounded-3xl border border-border bg-card p-5 mb-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
           <div className="flex items-center gap-2 mb-4">
-            <Zap className="h-4 w-4 text-orange-600" />
+            <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
             <p className="text-sm font-bold text-foreground">What you get with Pro</p>
           </div>
           <ul className="space-y-2">
@@ -118,8 +117,8 @@ export default function UpgradePage() {
               key={plan.id}
               className={`rounded-3xl border p-5 shadow-sm transition-all ${
                 plan.highlight
-                  ? 'border-orange-300 bg-gradient-to-br from-orange-50 to-amber-50 ring-2 ring-orange-200 dark:border-amber-500/60 dark:from-slate-900 dark:to-slate-800 dark:ring-amber-500/20'
-                  : 'border-gray-100 bg-white/90 dark:border-slate-800 dark:bg-slate-900/90'
+                  ? 'border-indigo-300 bg-gradient-to-br from-indigo-50 to-violet-50 ring-2 ring-indigo-200 dark:border-indigo-500/60 dark:from-indigo-950/30 dark:to-violet-950/30 dark:ring-indigo-500/20'
+                  : 'border-border bg-card dark:border-slate-800 dark:bg-slate-900/90'
               }`}
             >
               <div className="flex items-start justify-between">
@@ -132,7 +131,7 @@ export default function UpgradePage() {
                   <p className="text-xs text-muted mt-0.5">{plan.note}</p>
                 </div>
                 {plan.badge && (
-                  <span className="rounded-full bg-orange-600 px-2.5 py-1 text-xs font-bold text-white">
+                  <span className="rounded-full bg-indigo-600 px-2.5 py-1 text-xs font-bold text-white">
                     {plan.badge}
                   </span>
                 )}
@@ -140,7 +139,7 @@ export default function UpgradePage() {
               <Button
                 className={`mt-4 w-full rounded-full font-bold ${
                   plan.highlight
-                    ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-md'
+                    ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-500/25'
                     : 'bg-gray-900 hover:bg-gray-800 text-white dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-slate-100'
                 }`}
                 onClick={() => startCheckout(plan.id)}

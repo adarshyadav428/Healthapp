@@ -9,7 +9,7 @@ import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
 import Link from 'next/link'
-import { Flame, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 const MEAL_META: Record<string, { icon: string; label: string }> = {
@@ -210,5 +210,3 @@ function MacroChip({
   )
 }
 
-// Keeping this re-export so WeekSummary etc. can import Flame if needed
-export { Flame }

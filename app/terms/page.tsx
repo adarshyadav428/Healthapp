@@ -2,18 +2,18 @@ import Link from 'next/link'
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-[#fff7ed] px-4 py-10 dark:bg-slate-950">
+    <div className="min-h-screen bg-background px-4 py-10 dark:bg-slate-950">
       <div className="mx-auto w-full max-w-2xl">
         <div className="mb-6">
           <Link href="/" className="flex items-center gap-2 mb-8">
             <span className="text-2xl">🥗</span>
-            <span className="text-xl font-black text-orange-600">CalTrack</span>
+            <span className="text-xl font-black text-indigo-600">CalTrack</span>
           </Link>
           <h1 className="text-3xl font-black text-foreground">Terms of Service</h1>
           <p className="text-sm text-muted mt-1">Last updated: May 1, 2026</p>
         </div>
 
-        <div className="space-y-6 rounded-3xl border border-orange-100 bg-white/90 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
+        <div className="space-y-6 rounded-3xl border border-border bg-card p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
           <Section title="1. Acceptance of Terms">
             By creating an account or using CalTrack, you agree to these Terms of Service. If you do not
             agree, please do not use the app.
@@ -41,7 +41,7 @@ export default function TermsPage() {
 
           <Section title="5. Data and Privacy">
             We collect the minimum data necessary to provide CalTrack&apos;s features. We do not sell your
-            personal data. See our <Link href="/privacy" className="text-orange-600 hover:underline dark:text-amber-300">Privacy
+            personal data. See our <Link href="/privacy" className="text-indigo-600 hover:underline dark:text-indigo-400">Privacy
             Policy</Link> for full details.
           </Section>
 
@@ -63,7 +63,7 @@ export default function TermsPage() {
 
           <Section title="9. Contact">
             Questions? Reach us at{' '}
-            <a href="mailto:support@caltrack.app" className="text-orange-600 hover:underline dark:text-amber-300">
+            <a href="mailto:support@caltrack.app" className="text-indigo-600 hover:underline dark:text-indigo-400">
               support@caltrack.app
             </a>
           </Section>

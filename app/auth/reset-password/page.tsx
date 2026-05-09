@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { getBrowserSupabaseClient } from '../../../lib/supabase/client'
-import { Lock } from 'lucide-react'
+import Link from 'next/link'
+
+const inputClass =
+  'w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all placeholder:text-muted'
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
@@ -11,13 +14,11 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
 
-  // Supabase sends the token via hash — we need to let the client lib pick it up
   useEffect(() => {
     const supabase = getBrowserSupabaseClient()
-    // Listen for SIGNED_IN event triggered by the magic link / recovery link
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY') {
-        // The session is now active — nothing to do, user fills in the new password
+        // Session is now active — user can set new password
       }
     })
     return () => subscription.unsubscribe()
@@ -51,70 +52,69 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff7ed] flex flex-col items-center justify-center px-4 dark:bg-slate-950">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.2),_transparent_50%)]" />
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12 dark:bg-slate-950">
+      {/* Logo */}
+      <Link href="/" className="mb-10 flex items-center gap-2.5">
+        <span className="text-[26px] leading-none">🥗</span>
+        <span className="text-xl font-black tracking-tight text-foreground">CalTrack</span>
+      </Link>
 
       <div className="w-full max-w-sm">
-        <div className="rounded-3xl bg-white/90 border border-orange-100 p-7 shadow-xl dark:border-slate-800 dark:bg-slate-900/90">
-          <div className="mb-6 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100">
-              <Lock className="h-6 w-6 text-orange-600" />
-            </div>
-            <h1 className="text-xl font-black text-foreground">Set new password</h1>
-            <p className="text-sm text-muted mt-1">Choose a strong password for your account.</p>
+        <h1 className="text-2xl font-black text-foreground mb-1">Set new password</h1>
+        <p className="text-sm text-muted mb-7">Choose a strong password for your account.</p>
+
+        {done ? (
+          <div className="text-center py-8">
+            <div className="text-5xl mb-4">✅</div>
+            <p className="text-base font-bold text-foreground">Password updated!</p>
+            <p className="text-sm text-muted mt-2">Redirecting you to your dashboard…</p>
           </div>
-
-          {done ? (
-            <div className="text-center py-4">
-              <div className="text-5xl mb-3">✅</div>
-              <p className="text-sm font-semibold text-foreground">Password updated!</p>
-              <p className="text-xs text-muted mt-1">Redirecting you to your dashboard...</p>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide text-muted mb-1.5">
+                New password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="min. 8 characters"
+                autoComplete="new-password"
+                required
+                className={inputClass}
+              />
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1.5">
-                  New password
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Min. 8 characters"
-                  required
-                  className="w-full rounded-2xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all placeholder:text-muted"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1.5">
-                  Confirm password
-                </label>
-                <input
-                  type="password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  placeholder="Same as above"
-                  required
-                  className="w-full rounded-2xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all placeholder:text-muted"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide text-muted mb-1.5">
+                Confirm password
+              </label>
+              <input
+                type="password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="new-password"
+                required
+                className={inputClass}
+              />
+            </div>
 
-              {error && (
-                <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-2.5 text-xs text-red-600 dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-300">
-                  {error}
-                </div>
-              )}
+            {error && (
+              <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-2.5 text-xs text-red-600 dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-300">
+                {error}
+              </div>
+            )}
 
-              <button
-                type="submit"
-                disabled={loading || !password || !confirm}
-                className="w-full rounded-2xl bg-orange-600 py-3 text-sm font-bold text-white hover:bg-orange-700 active:scale-[.98] transition-all shadow-sm disabled:opacity-60"
-              >
-                {loading ? 'Updating...' : 'Update password'}
-              </button>
-            </form>
-          )}
-        </div>
+            <button
+              type="submit"
+              disabled={loading || !password || !confirm}
+              className="w-full rounded-2xl bg-orange-500 py-3.5 text-sm font-black text-white shadow-lg shadow-orange-500/25 hover:bg-orange-600 active:scale-[.98] transition-all disabled:opacity-50 mt-2"
+            >
+              {loading ? 'Updating…' : 'Update password'}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   )

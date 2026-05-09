@@ -1,8 +1,8 @@
 export default function DashboardLoading() {
   return (
-    <div className="min-h-screen bg-[#fff7ed] pb-24 dark:bg-slate-950">
+    <div className="min-h-screen bg-background pb-24 dark:bg-slate-950">
       {/* Navbar skeleton */}
-      <div className="sticky top-0 z-40 border-b border-orange-100/60 bg-white/80 backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-900/80">
+      <div className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-900/80">
         <div className="mx-auto flex h-14 max-w-md items-center justify-between px-4">
           <div className="h-6 w-24 rounded-lg bg-gray-200 animate-shimmer dark:bg-slate-700" />
           <div className="h-8 w-8 rounded-full bg-gray-200 animate-shimmer dark:bg-slate-700" />
@@ -18,7 +18,7 @@ export default function DashboardLoading() {
         </div>
 
         {/* Calorie ring skeleton */}
-        <div className="rounded-3xl bg-white p-5 shadow-sm border border-orange-100 dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-3xl bg-card p-5 shadow-sm border border-border dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center gap-5">
             <div className="h-28 w-28 rounded-full bg-gray-200 animate-shimmer flex-shrink-0 dark:bg-slate-700" />
             <div className="flex-1 space-y-3">
@@ -34,8 +34,8 @@ export default function DashboardLoading() {
 
         {/* Streak + weight cards skeleton */}
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-3xl bg-white p-4 shadow-sm border border-orange-100 h-24 animate-shimmer dark:border-slate-800 dark:bg-slate-900" />
-          <div className="rounded-3xl bg-white p-4 shadow-sm border border-orange-100 h-24 animate-shimmer dark:border-slate-800 dark:bg-slate-900" />
+          <div className="rounded-3xl bg-card p-4 shadow-sm border border-border h-24 animate-shimmer dark:border-slate-800 dark:bg-slate-900" />
+          <div className="rounded-3xl bg-card p-4 shadow-sm border border-border h-24 animate-shimmer dark:border-slate-800 dark:bg-slate-900" />
         </div>
 
         {/* Insight card skeleton */}

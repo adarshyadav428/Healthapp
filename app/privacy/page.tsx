@@ -2,18 +2,18 @@ import Link from 'next/link'
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-[#fff7ed] px-4 py-10 dark:bg-slate-950">
+    <div className="min-h-screen bg-background px-4 py-10 dark:bg-slate-950">
       <div className="mx-auto w-full max-w-2xl">
         <div className="mb-6">
           <Link href="/" className="flex items-center gap-2 mb-8">
             <span className="text-2xl">🥗</span>
-            <span className="text-xl font-black text-orange-600">CalTrack</span>
+            <span className="text-xl font-black text-indigo-600">CalTrack</span>
           </Link>
           <h1 className="text-3xl font-black text-foreground">Privacy Policy</h1>
           <p className="text-sm text-muted mt-1">Last updated: May 1, 2026</p>
         </div>
 
-        <div className="space-y-6 rounded-3xl border border-orange-100 bg-white/90 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
+        <div className="space-y-6 rounded-3xl border border-border bg-card p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
           <Section title="1. What We Collect">
             <ul className="list-disc ml-4 mt-1 space-y-1">
               <li><strong>Account info:</strong> email address and display name</li>
@@ -51,7 +51,7 @@ export default function PrivacyPage() {
           <Section title="5. Your Rights">
             You have the right to access, correct, or delete your personal data at any time.
             You can delete your account and all associated data from{' '}
-            <Link href="/settings" className="text-orange-600 hover:underline dark:text-amber-300">Settings → Delete account</Link>.
+            <Link href="/settings" className="text-indigo-600 hover:underline dark:text-indigo-400">Settings → Delete account</Link>.
             Deletion is permanent and cannot be undone.
           </Section>
 
@@ -72,7 +72,7 @@ export default function PrivacyPage() {
 
           <Section title="9. Contact">
             For privacy-related requests, email us at{' '}
-            <a href="mailto:privacy@caltrack.app" className="text-orange-600 hover:underline dark:text-amber-300">
+            <a href="mailto:privacy@caltrack.app" className="text-indigo-600 hover:underline dark:text-indigo-400">
               privacy@caltrack.app
             </a>
           </Section>

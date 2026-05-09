@@ -1,7 +1,7 @@
 export default function WeightLoading() {
   return (
-    <div className="min-h-screen bg-[#fff7ed] pb-24 dark:bg-slate-950">
-      <div className="sticky top-0 z-40 border-b border-orange-100/60 bg-white/80 backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-900/80">
+    <div className="min-h-screen bg-background pb-24 dark:bg-slate-950">
+      <div className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-900/80">
         <div className="mx-auto flex h-14 max-w-md items-center justify-between px-4">
           <div className="h-6 w-24 rounded-lg bg-gray-200 animate-shimmer dark:bg-slate-700" />
           <div className="h-8 w-8 rounded-full bg-gray-200 animate-shimmer dark:bg-slate-700" />
