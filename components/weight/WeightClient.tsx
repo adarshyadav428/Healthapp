@@ -7,8 +7,6 @@ import { WeightChart } from './WeightChart'
 import { WeightLogModal } from './WeightLogModal'
 import { BmiCard } from './BmiCard'
 import { useWeightLogs } from '../../hooks/useWeightLogs'
-import { useUser } from '../../hooks/useUser'
-import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
 import { Plus, Trash2 } from 'lucide-react'
@@ -17,20 +15,26 @@ export function WeightClient({ logs, profile }: { logs: WeightLog[]; profile: Pr
   const [open, setOpen] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const { data = logs } = useWeightLogs(profile.id, logs)
-  const { user } = useUser()
   const queryClient = useQueryClient()
 
   const sorted = [...data].sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime())
-  const recentEntries = [...data].slice(0, 10)
+  // Sort descending by measured_at so most-recent entry is always first
+  const recentEntries = [...data]
+    .sort((a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime())
+    .slice(0, 10)
 
   const deleteLog = async (id: string) => {
     if (deletingId) return
     try {
       setDeletingId(id)
-      const supabase = getBrowserSupabaseClient()
-      const { error } = await supabase.from('weight_logs').delete().eq('id', id).eq('user_id', user?.id ?? '')
-      if (error) throw new Error(error.message)
-      queryClient.invalidateQueries({ queryKey: ['weight-logs'] })
+      const res = await fetch('/api/weight/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Delete failed')
+      queryClient.setQueryData<WeightLog[]>(['weight-logs', profile.id], (old = []) => old.filter(w => w.id !== id))
       toast({ title: 'Entry deleted', duration: 2000 })
     } catch (err) {
       toast({ title: 'Delete failed', description: (err as Error).message, variant: 'error' })

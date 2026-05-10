@@ -5,12 +5,12 @@ import type { FoodLog, Profile } from '../../types/index'
 import { CalorieSummary } from './CalorieSummary'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
-import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { getUtcDayRange } from '../../lib/dateUtils'
 
 const MEAL_META: Record<string, { icon: string; label: string }> = {
   breakfast: { icon: '🥣', label: 'Breakfast' },
@@ -54,10 +54,15 @@ export function DashboardClient({
     if (deletingId) return
     setDeletingId(id)
     try {
-      const supabase = getBrowserSupabaseClient()
-      const { error } = await supabase.from('food_logs').delete().eq('id', id)
-      if (error) throw new Error(error.message)
-      queryClient.invalidateQueries({ queryKey: ['food-logs'] })
+      const res = await fetch('/api/logs/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Delete failed')
+      const { start } = getUtcDayRange(new Date())
+      queryClient.setQueryData<FoodLog[]>(['food-logs', user?.id, start], (old = []) => old.filter(f => f.id !== id))
     } catch (err) {
       toast({ title: 'Delete failed', description: (err as Error).message, variant: 'error' })
     } finally {
@@ -140,7 +145,7 @@ export function DashboardClient({
                             type="button"
                             disabled={deletingId === item.id}
                             onClick={() => deleteLog(item.id)}
-                            className="text-slate-300 dark:text-slate-600 hover:text-red-400 text-xs font-bold transition-colors disabled:opacity-40 px-1"
+                            className="text-slate-400 dark:text-slate-400 hover:text-red-400 dark:hover:text-red-400 text-xs font-bold transition-colors disabled:opacity-40 px-1"
                             aria-label={`Remove ${item.food?.name}`}
                           >
                             ×

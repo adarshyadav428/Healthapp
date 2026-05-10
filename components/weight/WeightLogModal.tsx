@@ -3,11 +3,11 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { toast } from '../ui/use-toast'
 import { useUser } from '../../hooks/useUser'
 import { useQueryClient } from '@tanstack/react-query'
 import { weightLogSchema, type WeightLogData } from '../../lib/validations'
+import type { WeightLog } from '../../types/index'
 import { Scale, X } from 'lucide-react'
 
 const QUICK_ADJUSTMENTS = [-1, -0.5, +0.5, +1]
@@ -40,23 +40,28 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
     try {
       if (!user) throw new Error('You must be signed in.')
       setIsSubmitting(true)
-      const supabase = getBrowserSupabaseClient()
 
       const measuredAt = new Date(`${date}T00:00:00.000Z`).toISOString()
       const weightKg = isImperial
         ? Math.round(values.weight_kg * 0.453592 * 10) / 10
         : values.weight_kg
 
-      const { error } = await supabase.from('weight_logs').insert({
-        user_id: user.id,
-        weight_kg: weightKg,
-        measured_at: measuredAt,
-        notes: values.notes,
+      const res = await fetch('/api/weight/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weight_kg: weightKg, measured_at: measuredAt, notes: values.notes ?? '' }),
       })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed to log weight')
 
-      if (error) throw new Error(error.message)
+      // Prepend the new row into the cache — no re-fetch needed
+      if (data.row) {
+        queryClient.setQueryData<WeightLog[]>(['weight-logs', user.id], (old = []) => [data.row, ...old])
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['weight-logs'] })
+      }
+
       toast({ title: '⚖️ Weight logged!', description: 'Keep it up.', duration: 2500 })
-      queryClient.invalidateQueries({ queryKey: ['weight-logs'] })
       onClose()
     } catch (err) {
       toast({ title: 'Failed to log weight', description: (err as Error).message, variant: 'error' })

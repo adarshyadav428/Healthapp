@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { FoodSearch } from '../../components/log/FoodSearch'
-import { TodayProgressBar } from '../../components/log/TodayProgressBar'
+import { LogProgressClient } from '../../components/log/LogProgressClient'
 import { TodayFoodLog } from '../../components/log/TodayFoodLog'
 import { LogPageShell } from '../../components/log/LogPageShell'
 import { Navbar } from '../../components/layout/Navbar'
@@ -129,15 +129,12 @@ export default async function LogPage() {
           <p className="text-sm text-muted">What did you eat?</p>
         </div>
 
-        {/* Calorie progress bar */}
-        <TodayProgressBar
-          kcalEaten={Math.round(totals.kcal)}
+        {/* Calorie progress bar — live, driven by TanStack Query cache */}
+        <LogProgressClient
+          initialLogs={todayFoodLogs}
           kcalTarget={profile.daily_calorie_target ?? 0}
-          proteinEaten={Math.round(totals.protein_g)}
           proteinTarget={profile.protein_g_target ?? 0}
-          carbsEaten={Math.round(totals.carbs_g)}
           carbsTarget={profile.carbs_g_target ?? 0}
-          fatEaten={Math.round(totals.fat_g)}
           fatTarget={profile.fat_g_target ?? 0}
         />
 

@@ -10,7 +10,6 @@ import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { toast } from '../ui/use-toast'
-import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { useSubscription } from '../../hooks/useSubscription'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -91,6 +90,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
       }
       const desc = useCustomTargets ? 'Custom targets saved.' : 'Calorie targets recalculated.'
       toast({ title: 'Profile updated ✓', description: desc, duration: 3000 })
+      router.refresh() // re-render server component so DAILY GOAL stat updates
     } catch (err) {
       toast({ title: 'Update failed', description: (err as Error).message, variant: 'error', duration: 4000 })
     }
@@ -112,9 +112,11 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
   const signOut = async () => {
     try {
       setSignOutLoading(true)
-      const supabase = getBrowserSupabaseClient()
-      const { error } = await supabase.auth.signOut()
-      if (error) throw new Error(error.message)
+      const res = await fetch('/api/auth/signout', { method: 'POST' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => null)
+        throw new Error(body?.error ?? 'Sign out failed')
+      }
       window.location.href = '/'
     } catch (err) {
       toast({ title: 'Sign out failed', description: (err as Error).message, variant: 'error', duration: 4000 })

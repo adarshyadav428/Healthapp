@@ -3,10 +3,10 @@
 import { useMemo, useState } from 'react'
 import type { FoodLog } from '../../types/index'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
-import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { useUser } from '../../hooks/useUser'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
+import { getUtcDayRange } from '../../lib/dateUtils'
 import { Trash2, ChevronDown, Pencil } from 'lucide-react'
 import { EditFoodLogModal } from './EditFoodLogModal'
 
@@ -113,10 +113,15 @@ export function TodayFoodLog({ initialLogs }: { initialLogs: FoodLog[] }) {
     if (deletingId) return
     setDeletingId(id)
     try {
-      const supabase = getBrowserSupabaseClient()
-      const { error } = await supabase.from('food_logs').delete().eq('id', id)
-      if (error) throw new Error(error.message)
-      queryClient.invalidateQueries({ queryKey: ['food-logs'] })
+      const res = await fetch('/api/logs/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Delete failed')
+      const { start } = getUtcDayRange(new Date())
+      queryClient.setQueryData<FoodLog[]>(['food-logs', user?.id, start], (old = []) => old.filter(f => f.id !== id))
       toast({ title: 'Entry deleted', duration: 2000 })
     } catch (err) {
       toast({ title: 'Delete failed', description: (err as Error).message, variant: 'error' })

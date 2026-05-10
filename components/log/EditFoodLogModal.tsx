@@ -2,10 +2,11 @@
 
 import { useMemo, useRef, useState } from 'react'
 import type { FoodLog } from '../../types/index'
-import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
 import { X } from 'lucide-react'
+import { getUtcDayRange } from '../../lib/dateUtils'
+import { useUser } from '../../hooks/useUser'
 
 const MEAL_OPTIONS = [
   { value: 'breakfast', label: '🥣 Breakfast' },
@@ -20,6 +21,7 @@ const round2 = (n: number) => Math.round(n * 100) / 100
 
 export function EditFoodLogModal({ log, onClose }: { log: FoodLog; onClose: () => void }) {
   const queryClient = useQueryClient()
+  const { user } = useUser()
   // DB stores grams-per-serving + servings count; edit as total grams for simplicity
   const [grams, setGrams] = useState(Math.round(log.grams * (log.servings || 1)))
   const [meal, setMeal] = useState<MealValue>(log.meal as MealValue)
@@ -49,21 +51,32 @@ export function EditFoodLogModal({ log, onClose }: { log: FoodLog; onClose: () =
     inFlight.current = true
     setSaving(true)
     try {
-      const supabase = getBrowserSupabaseClient()
-      const { error } = await supabase
-        .from('food_logs')
-        .update({
-          grams,        // store as total grams (servings normalised to 1)
+      const res = await fetch('/api/logs/edit', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: log.id,
+          grams,
           servings: 1,
           meal,
           kcal:      nutrition.kcal,
           protein_g: nutrition.protein,
           carbs_g:   nutrition.carbs,
           fat_g:     nutrition.fat,
-        })
-        .eq('id', log.id)
-      if (error) throw new Error(error.message)
-      queryClient.invalidateQueries({ queryKey: ['food-logs'] })
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Update failed')
+
+      // Update cache in-place — no re-fetch needed
+      const { start } = getUtcDayRange(new Date())
+      queryClient.setQueryData<FoodLog[]>(['food-logs', user?.id, start], (old = []) =>
+        old.map(f =>
+          f.id === log.id
+            ? { ...f, grams, servings: 1, meal, kcal: nutrition.kcal, protein_g: nutrition.protein, carbs_g: nutrition.carbs, fat_g: nutrition.fat }
+            : f
+        )
+      )
       toast({ title: 'Entry updated', duration: 2000 })
       onClose()
     } catch (err) {

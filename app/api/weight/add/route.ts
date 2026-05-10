@@ -1,0 +1,37 @@
+import { NextResponse } from 'next/server'
+import { createServerClient } from '../../../../lib/supabase/server'
+import { weightLogSchema } from '../../../../lib/validations'
+
+export async function POST(req: Request) {
+  try {
+    const supabase = createServerClient()
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession()
+
+    if (sessionError) throw new Error(sessionError.message)
+    const user = session?.user ?? null
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const json = await req.json()
+    const parsed = weightLogSchema.safeParse(json)
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.message }, { status: 400 })
+
+    const { data: row, error } = await supabase
+      .from('weight_logs')
+      .insert({
+        user_id: user.id,
+        weight_kg: parsed.data.weight_kg,
+        measured_at: parsed.data.measured_at,
+        notes: parsed.data.notes ?? '',
+      })
+      .select()
+      .single()
+
+    if (error) throw new Error(error.message)
+    return NextResponse.json({ ok: true, row })
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 })
+  }
+}
