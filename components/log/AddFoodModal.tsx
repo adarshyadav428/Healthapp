@@ -1,17 +1,14 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { useMemo, useRef, useState } from 'react'
 import type { Food, FoodLog } from '../../types/index'
 import { useUser } from '../../hooks/useUser'
 import { useSubscription } from '../../hooks/useSubscription'
 import { toast } from '../ui/use-toast'
-import { addFoodSchema, type AddFoodData } from '../../lib/validations'
 import { useQueryClient } from '@tanstack/react-query'
 import { getUtcDayRange } from '../../lib/dateUtils'
 import Link from 'next/link'
-import { X, Zap } from 'lucide-react'
+import { X, Zap, Minus, Plus } from 'lucide-react'
 
 const MEAL_OPTIONS = [
   { value: 'breakfast', label: '🥣 Breakfast' },
@@ -40,41 +37,43 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
   const inFlightRef = useRef(false)
   const queryClient = useQueryClient()
 
-  const form = useForm<AddFoodData>({
-    resolver: zodResolver(addFoodSchema),
-    defaultValues: { food_id: food.id, meal: defaultMeal(), servings: 1, grams: food.serving_size_g },
-  })
+  // Use string state so the user can freely clear and retype without NaN issues
+  const [gramsStr, setGramsStr] = useState(String(food.serving_size_g ?? 100))
+  const [meal, setMeal] = useState<MealValue>(defaultMeal())
 
-  const foodId = food.id
-  useEffect(() => {
-    form.reset({ food_id: foodId, meal: defaultMeal(), servings: 1, grams: food.serving_size_g })
-  }, [foodId]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const grams = form.watch('grams')
-  const servings = form.watch('servings')
-  const meal = form.watch('meal')
+  const gramsNum = Math.max(0, parseFloat(gramsStr) || 0)
 
   const nutrition = useMemo(() => {
-    const factor = (grams || 0) / 100
-    const s = servings || 1
+    const factor = gramsNum / 100
     return {
-      kcal:    round2(food.kcal_per_100g      * factor * s),
-      protein: round2(food.protein_g_per_100g * factor * s),
-      carbs:   round2(food.carbs_g_per_100g   * factor * s),
-      fat:     round2(food.fat_g_per_100g     * factor * s),
-      fiber:   food.fiber_g_per_100g != null ? round2(food.fiber_g_per_100g * factor * s) : null,
+      kcal:    round2(food.kcal_per_100g      * factor),
+      protein: round2(food.protein_g_per_100g * factor),
+      carbs:   round2(food.carbs_g_per_100g   * factor),
+      fat:     round2(food.fat_g_per_100g     * factor),
+      fiber:   food.fiber_g_per_100g != null ? round2(food.fiber_g_per_100g * factor) : null,
     }
-  }, [food, grams, servings])
+  }, [food, gramsNum])
 
-  const handleSubmit = async (values: AddFoodData) => {
-    if (inFlightRef.current) return
+  const servingSize = food.serving_size_g ?? 100
+  const SHORTCUTS = [
+    { label: '½', g: Math.round(servingSize * 0.5) },
+    { label: '1×', g: servingSize },
+    { label: '1½', g: Math.round(servingSize * 1.5) },
+    { label: '2×', g: servingSize * 2 },
+  ]
+
+  const handleSubmit = async () => {
+    if (inFlightRef.current || isSubmitting) return
+    if (gramsNum <= 0) {
+      toast({ title: 'Enter a valid amount', description: 'Grams must be greater than 0', variant: 'error' })
+      return
+    }
     inFlightRef.current = true
     setIsSubmitting(true)
     try {
       if (!user) throw new Error('You must be signed in to log food.')
 
-      // Free-plan gate: read today's count from TanStack Query cache (already loaded)
-      // — avoids a separate COUNT round-trip before every insert
+      // Free-plan gate: read today's count from TanStack Query cache
       if (!subscription?.isPro) {
         const { start } = getUtcDayRange()
         const cached = queryClient.getQueryData<FoodLog[]>(['food-logs', user.id, start])
@@ -85,14 +84,14 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          food_id: values.food_id,
-          meal: values.meal,
-          servings: values.servings,
-          grams: values.grams,
+          food_id: food.id,
+          meal,
+          servings: 1,
+          grams: gramsNum,
         }),
       })
 
-      const body = await res.json().catch(() => ({} as { error?: string }))
+      const body = await res.json().catch(() => ({} as { error?: string; row?: FoodLog }))
 
       if (!res.ok) {
         if (res.status === 402 || body?.error === 'Free limit reached') {
@@ -102,8 +101,15 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
         throw new Error(body?.error || 'Failed to log food')
       }
 
-      toast({ title: '✅ Food logged!', description: 'Nice job staying consistent.', duration: 2500 })
-      queryClient.invalidateQueries({ queryKey: ['food-logs'] })
+      // Optimistic cache update — avoid full re-fetch
+      if (body.row) {
+        const { start } = getUtcDayRange()
+        queryClient.setQueryData<FoodLog[]>(['food-logs', user.id, start], (old = []) => [body.row, ...old])
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['food-logs'] })
+      }
+
+      toast({ title: '✅ Food logged!', description: `${Math.round(nutrition.kcal)} kcal added to ${meal}.`, duration: 2500 })
       onClose()
     } catch (err) {
       toast({ title: 'Failed to log food', description: (err as Error).message, variant: 'error', duration: 4000 })
@@ -115,7 +121,6 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
 
   const sheetClass = "relative w-full max-w-md rounded-t-3xl bg-white dark:bg-slate-900 p-5 shadow-2xl max-h-[92vh] overflow-y-auto"
   const handleBar = "absolute top-3 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-gray-200 dark:bg-slate-700"
-  const inputClass = "w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-3 py-2.5 text-sm font-bold text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all text-center"
 
   if (showLimit) {
     return (
@@ -139,7 +144,9 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
+      {/* Backdrop — use pointer-events so it doesn't interfere with inputs */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+
       <div className={sheetClass}>
         <div className={handleBar} />
 
@@ -149,7 +156,11 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
             <h2 className="text-base font-black text-foreground truncate">{food.name}</h2>
             {food.brand && <p className="text-xs text-muted">{food.brand}</p>}
             {food.serving_description && (
-              <p className="text-xs text-muted mt-0.5">1 serving = {food.serving_size_g}g ({food.serving_description})</p>
+              <p className="text-xs text-muted mt-0.5">
+                1 serving = {food.serving_size_g}g
+                {food.serving_description && food.serving_description !== `${food.serving_size_g}g`
+                  ? ` (${food.serving_description})` : ''}
+              </p>
             )}
           </div>
           <button type="button" onClick={onClose} className="rounded-full p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors flex-shrink-0">
@@ -157,9 +168,7 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
           </button>
         </div>
 
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <input type="hidden" {...form.register('food_id')} />
-
+        <div className="space-y-4">
           {/* Meal selector */}
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Meal</p>
@@ -168,7 +177,7 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
                 <button
                   key={m.value}
                   type="button"
-                  onClick={() => form.setValue('meal', m.value, { shouldValidate: true })}
+                  onClick={() => setMeal(m.value)}
                   className={`rounded-xl py-2 text-xs font-semibold transition-all ${
                     meal === m.value
                       ? 'bg-orange-100 dark:bg-orange-950/50 text-orange-700 dark:text-orange-300 border border-orange-300 dark:border-orange-700'
@@ -181,17 +190,52 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
             </div>
           </div>
 
-          {/* Serving + grams */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-muted uppercase tracking-wide mb-1">Serving size (g)</label>
-              <input type="number" step="0.1" min="1" {...form.register('grams', { valueAsNumber: true })} className={inputClass} />
-              {form.formState.errors.grams && <p className="mt-1 text-xs text-red-500">{form.formState.errors.grams.message}</p>}
+          {/* Amount input with steppers */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Amount (grams)</p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setGramsStr(String(Math.max(5, Math.round(gramsNum - 10))))}
+                className="h-11 w-11 flex-shrink-0 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-slate-700 active:scale-95 transition-all"
+              >
+                <Minus className="h-4 w-4 text-muted" />
+              </button>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={gramsStr}
+                onChange={(e) => setGramsStr(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                placeholder="0"
+                className="flex-1 h-11 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground text-center text-base font-bold outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setGramsStr(String(Math.round(gramsNum + 10)))}
+                className="h-11 w-11 flex-shrink-0 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-slate-700 active:scale-95 transition-all"
+              >
+                <Plus className="h-4 w-4 text-muted" />
+              </button>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-muted uppercase tracking-wide mb-1">Servings</label>
-              <input type="number" step="0.25" min="0.25" {...form.register('servings', { valueAsNumber: true })} className={inputClass} />
-              {form.formState.errors.servings && <p className="mt-1 text-xs text-red-500">{form.formState.errors.servings.message}</p>}
+
+            {/* Serving shortcuts */}
+            <div className="flex gap-1.5 mt-2">
+              {SHORTCUTS.map((s) => (
+                <button
+                  key={s.label}
+                  type="button"
+                  onClick={() => setGramsStr(String(s.g))}
+                  className={`flex-1 rounded-xl py-1.5 text-xs font-semibold border transition-all ${
+                    gramsNum === s.g
+                      ? 'bg-orange-100 dark:bg-orange-950/50 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700'
+                      : 'bg-gray-50 dark:bg-slate-800 text-muted border-gray-100 dark:border-slate-700 hover:border-orange-200'
+                  }`}
+                >
+                  {s.label}
+                  <span className="block text-[10px] opacity-60">{s.g}g</span>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -212,14 +256,15 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
           </div>
 
           <button
-            type="submit"
-            disabled={isSubmitting}
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting || gramsNum <= 0}
             className="w-full rounded-2xl bg-orange-600 py-3.5 text-sm font-bold text-white hover:bg-orange-700 active:scale-[.98] transition-all shadow-md disabled:opacity-60 flex items-center justify-center gap-2"
           >
             <Zap className="h-4 w-4" />
-            {isSubmitting ? 'Logging...' : 'Log food'}
+            {isSubmitting ? 'Logging...' : `Log ${Math.round(nutrition.kcal)} kcal`}
           </button>
-        </form>
+        </div>
       </div>
     </div>
   )

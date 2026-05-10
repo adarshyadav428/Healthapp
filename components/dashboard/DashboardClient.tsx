@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import type { FoodLog, Profile } from '../../types/index'
 import { CalorieSummary } from './CalorieSummary'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
+import { useExerciseLogs } from '../../hooks/useExerciseLogs'
 import { useUser } from '../../hooks/useUser'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
@@ -29,6 +30,7 @@ export function DashboardClient({
   const { user } = useUser()
   const queryClient = useQueryClient()
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
+  const { totalCaloriesBurned } = useExerciseLogs(user?.id ?? null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const totals = useMemo(
@@ -77,7 +79,7 @@ export function DashboardClient({
       {/* ── Hero ring ── */}
       <CalorieSummary
         kcalEaten={Math.round(totals.kcal)}
-        kcalBurned={0}
+        kcalBurned={totalCaloriesBurned}
         kcalTarget={profile.daily_calorie_target}
       />
 

@@ -1,84 +1,65 @@
 'use client'
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { getBrowserSupabaseClient } from '../lib/supabase/client'
-import { getUtcDayRange } from '../lib/dateUtils'
 import type { WaterLog } from '../types/index'
 import { toast } from '../components/ui/use-toast'
 
-const MISSING_TABLE_RE = /water_logs/i
-
-type WaterQueryResult = {
-  logs: WaterLog[]
-  tableMissing: boolean
-}
-
-export function useWaterLogs(userId: string | null, date = new Date()) {
-  const { start, end } = getUtcDayRange(date)
+export function useWaterLogs(userId: string | null, initialData?: WaterLog[]) {
   const queryClient = useQueryClient()
 
-  const query = useQuery<WaterQueryResult>({
-    queryKey: ['water-logs', userId, start],
+  const query = useQuery<WaterLog[]>({
+    queryKey: ['water-logs', userId],
     enabled: Boolean(userId),
-    queryFn: async () => {
-      if (!userId) return { logs: [], tableMissing: false }
-      const supabase = getBrowserSupabaseClient()
-      const { data, error } = await supabase
-        .from('water_logs')
-        .select('id, user_id, ml, logged_at, created_at')
-        .eq('user_id', userId)
-        .gte('logged_at', start)
-        .lt('logged_at', end)
-        .order('logged_at', { ascending: false })
-
-      if (error) {
-        if (MISSING_TABLE_RE.test(error.message)) {
-          return { logs: [], tableMissing: true }
-        }
-        throw new Error(error.message)
+    initialData,
+    queryFn: async (): Promise<WaterLog[]> => {
+      const res = await fetch('/api/water/today')
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        // If table doesn't exist yet, return empty gracefully
+        return []
       }
-
-      return { logs: (data ?? []) as WaterLog[], tableMissing: false }
+      return res.json()
     },
   })
 
-  const totalMl = (query.data?.logs ?? []).reduce((sum, log) => sum + Number(log.ml), 0)
-  const latestId = query.data?.logs?.[0]?.id ?? null
+  const logs = query.data ?? []
+  const totalMl = logs.reduce((sum, l) => sum + Number(l.ml), 0)
+  const latestId = logs[0]?.id ?? null
 
-  const add = async (amount: number) => {
-    if (!userId || amount <= 0 || query.data?.tableMissing) return
+  const add = async (ml: number) => {
+    if (!userId || ml <= 0) return
     try {
-      const supabase = getBrowserSupabaseClient()
-      const { error } = await supabase.from('water_logs').insert({
-        user_id: userId,
-        ml: amount,
-        logged_at: new Date().toISOString(),
+      const res = await fetch('/api/water/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ml }),
       })
-      if (error) throw new Error(error.message)
-      queryClient.invalidateQueries({ queryKey: ['water-logs', userId, start] })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error ?? 'Failed to add water')
+      if (body.row) {
+        queryClient.setQueryData<WaterLog[]>(['water-logs', userId], (old = []) => [body.row, ...old])
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['water-logs', userId] })
+      }
     } catch (err) {
-      toast({ title: 'Water log failed', description: (err as Error).message, variant: 'error' })
+      toast({ title: 'Could not log water', description: (err as Error).message, variant: 'error' })
     }
   }
 
   const undo = async () => {
-    if (!userId || !latestId || query.data?.tableMissing) return
+    if (!userId || !latestId) return
     try {
-      const supabase = getBrowserSupabaseClient()
-      const { error } = await supabase.from('water_logs').delete().eq('id', latestId)
-      if (error) throw new Error(error.message)
-      queryClient.invalidateQueries({ queryKey: ['water-logs', userId, start] })
+      const res = await fetch('/api/water/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: latestId }),
+      })
+      if (!res.ok) throw new Error('Failed to undo')
+      queryClient.setQueryData<WaterLog[]>(['water-logs', userId], (old = []) => old.filter(l => l.id !== latestId))
     } catch (err) {
       toast({ title: 'Undo failed', description: (err as Error).message, variant: 'error' })
     }
   }
 
-  return {
-    logs: query.data?.logs ?? [],
-    totalMl,
-    tableMissing: query.data?.tableMissing ?? false,
-    isLoading: query.isLoading,
-    add,
-    undo,
-  }
+  return { logs, totalMl, isLoading: query.isLoading, add, undo }
 }
