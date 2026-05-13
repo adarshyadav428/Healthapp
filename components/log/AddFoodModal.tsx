@@ -37,11 +37,37 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
   const inFlightRef = useRef(false)
   const queryClient = useQueryClient()
 
-  // Use string state so the user can freely clear and retype without NaN issues
-  const [gramsStr, setGramsStr] = useState(String(food.serving_size_g ?? 100))
+  // Use string states so the user can freely clear and retype without NaN issues
+  const servingSize = food.serving_size_g ?? 100
+  const [gramsStr, setGramsStr] = useState(String(servingSize))
+  const [servingsStr, setServingsStr] = useState('1')
   const [meal, setMeal] = useState<MealValue>(defaultMeal())
 
   const gramsNum = Math.max(0, parseFloat(gramsStr) || 0)
+
+  // Keep grams and servings in sync without infinite loops
+  const handleGramsChange = (val: string) => {
+    setGramsStr(val)
+    const g = parseFloat(val)
+    if (servingSize > 0 && !isNaN(g) && g > 0) {
+      const sv = g / servingSize
+      setServingsStr(String(Math.round(sv * 100) / 100))
+    }
+  }
+
+  const handleServingsChange = (val: string) => {
+    setServingsStr(val)
+    const sv = parseFloat(val)
+    if (servingSize > 0 && !isNaN(sv) && sv > 0) {
+      setGramsStr(String(Math.round(sv * servingSize)))
+    }
+  }
+
+  const setServingsStep = (delta: number) => {
+    const current = Math.max(0, parseFloat(servingsStr) || 0)
+    const next = Math.max(0.5, Math.round((current + delta) * 4) / 4) // snap to 0.25 steps
+    handleServingsChange(String(next))
+  }
 
   const nutrition = useMemo(() => {
     const factor = gramsNum / 100
@@ -54,12 +80,11 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
     }
   }, [food, gramsNum])
 
-  const servingSize = food.serving_size_g ?? 100
   const SHORTCUTS = [
-    { label: '½', g: Math.round(servingSize * 0.5) },
-    { label: '1×', g: servingSize },
-    { label: '1½', g: Math.round(servingSize * 1.5) },
-    { label: '2×', g: servingSize * 2 },
+    { label: '½', sv: 0.5 },
+    { label: '1×', sv: 1 },
+    { label: '1½', sv: 1.5 },
+    { label: '2×', sv: 2 },
   ]
 
   const handleSubmit = async () => {
@@ -190,52 +215,91 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
             </div>
           </div>
 
-          {/* Amount input with steppers */}
+          {/* Amount input — servings + grams linked */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">Amount (grams)</p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setGramsStr(String(Math.max(5, Math.round(gramsNum - 10))))}
-                className="h-11 w-11 flex-shrink-0 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-slate-700 active:scale-95 transition-all"
-              >
-                <Minus className="h-4 w-4 text-muted" />
-              </button>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={gramsStr}
-                onChange={(e) => setGramsStr(e.target.value)}
-                onFocus={(e) => e.target.select()}
-                placeholder="0"
-                className="flex-1 h-11 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground text-center text-base font-bold outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setGramsStr(String(Math.round(gramsNum + 10)))}
-                className="h-11 w-11 flex-shrink-0 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-slate-700 active:scale-95 transition-all"
-              >
-                <Plus className="h-4 w-4 text-muted" />
-              </button>
+            {/* Servings row */}
+            <div className="mb-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">
+                Quantity{food.serving_description ? ` · 1 serving = ${food.serving_description}` : ''}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setServingsStep(-0.5)}
+                  className="h-11 w-11 flex-shrink-0 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-slate-700 active:scale-95 transition-all"
+                >
+                  <Minus className="h-4 w-4 text-muted" />
+                </button>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={servingsStr}
+                  onChange={(e) => handleServingsChange(e.target.value)}
+                  onFocus={(e) => e.target.select()}
+                  placeholder="1"
+                  className="flex-1 h-11 rounded-2xl border border-orange-200 dark:border-orange-800 bg-white dark:bg-slate-800 text-foreground text-center text-base font-bold outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setServingsStep(0.5)}
+                  className="h-11 w-11 flex-shrink-0 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-slate-700 active:scale-95 transition-all"
+                >
+                  <Plus className="h-4 w-4 text-muted" />
+                </button>
+              </div>
+
+              {/* Serving shortcuts */}
+              <div className="flex gap-1.5 mt-2">
+                {SHORTCUTS.map((s) => {
+                  const activeSv = Math.round((parseFloat(servingsStr) || 0) * 100) / 100
+                  return (
+                    <button
+                      key={s.label}
+                      type="button"
+                      onClick={() => handleServingsChange(String(s.sv))}
+                      className={`flex-1 rounded-xl py-1.5 text-xs font-semibold border transition-all ${
+                        activeSv === s.sv
+                          ? 'bg-orange-100 dark:bg-orange-950/50 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700'
+                          : 'bg-gray-50 dark:bg-slate-800 text-muted border-gray-100 dark:border-slate-700 hover:border-orange-200'
+                      }`}
+                    >
+                      {s.label}
+                      <span className="block text-[10px] opacity-60">{Math.round(s.sv * servingSize)}g</span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
-            {/* Serving shortcuts */}
-            <div className="flex gap-1.5 mt-2">
-              {SHORTCUTS.map((s) => (
+            {/* Grams row — secondary, smaller */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-1.5">Or enter grams directly</p>
+              <div className="flex items-center gap-2">
                 <button
-                  key={s.label}
                   type="button"
-                  onClick={() => setGramsStr(String(s.g))}
-                  className={`flex-1 rounded-xl py-1.5 text-xs font-semibold border transition-all ${
-                    gramsNum === s.g
-                      ? 'bg-orange-100 dark:bg-orange-950/50 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700'
-                      : 'bg-gray-50 dark:bg-slate-800 text-muted border-gray-100 dark:border-slate-700 hover:border-orange-200'
-                  }`}
+                  onClick={() => handleGramsChange(String(Math.max(5, Math.round(gramsNum - 10))))}
+                  className="h-9 w-9 flex-shrink-0 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-slate-700 active:scale-95 transition-all"
                 >
-                  {s.label}
-                  <span className="block text-[10px] opacity-60">{s.g}g</span>
+                  <Minus className="h-3.5 w-3.5 text-muted" />
                 </button>
-              ))}
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={gramsStr}
+                  onChange={(e) => handleGramsChange(e.target.value)}
+                  onFocus={(e) => e.target.select()}
+                  placeholder="0"
+                  className="flex-1 h-9 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-foreground text-center text-sm font-bold outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleGramsChange(String(Math.round(gramsNum + 10)))}
+                  className="h-9 w-9 flex-shrink-0 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-slate-700 active:scale-95 transition-all"
+                >
+                  <Plus className="h-3.5 w-3.5 text-muted" />
+                </button>
+                <span className="text-xs text-muted font-medium flex-shrink-0">g</span>
+              </div>
             </div>
           </div>
 
