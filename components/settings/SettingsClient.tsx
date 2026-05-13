@@ -190,6 +190,11 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
           </div>
           <Field label="Target weight (kg)" error={form.formState.errors.target_weight_kg?.message}>
             <Input id="target_weight_kg" type="number" step="0.1" min="1" {...form.register('target_weight_kg', { valueAsNumber: true })} />
+            <BmiRecommendation
+              heightCm={form.watch('height_cm')}
+              currentWeightKg={form.watch('current_weight_kg')}
+              onSelect={(kg) => form.setValue('target_weight_kg', kg, { shouldValidate: true })}
+            />
           </Field>
           <Field label="Daily water goal (ml)" error={form.formState.errors.water_target_ml?.message}>
             <div className="flex items-center gap-2">
@@ -364,6 +369,66 @@ function MacroChip({ label, g, color }: { label: string; g: number; color: strin
     <div className="flex items-center justify-between text-xs">
       <span className="text-muted">{label}</span>
       <span className={`font-bold ${color}`}>{g}g</span>
+    </div>
+  )
+}
+
+function BmiRecommendation({
+  heightCm,
+  currentWeightKg,
+  onSelect,
+}: {
+  heightCm: number
+  currentWeightKg: number
+  onSelect: (kg: number) => void
+}) {
+  if (!heightCm || !currentWeightKg || heightCm <= 0 || currentWeightKg <= 0) return null
+
+  const hM = heightCm / 100
+  const currentBmi = +(currentWeightKg / (hM * hM)).toFixed(1)
+  const bmiLabel =
+    currentBmi < 18.5 ? 'Underweight' :
+    currentBmi < 25   ? 'Healthy weight' :
+    currentBmi < 30   ? 'Overweight' : 'Obese'
+  const bmiColor =
+    currentBmi < 18.5 ? 'text-blue-600 dark:text-blue-400' :
+    currentBmi < 25   ? 'text-emerald-600 dark:text-emerald-400' :
+    currentBmi < 30   ? 'text-amber-600 dark:text-amber-400' :
+                        'text-rose-600 dark:text-rose-400'
+
+  const suggestions = [
+    { bmi: 20, kg: +(20 * hM * hM).toFixed(1) },
+    { bmi: 22, kg: +(22 * hM * hM).toFixed(1) },
+    { bmi: 24, kg: +(24 * hM * hM).toFixed(1) },
+  ]
+  const minHealthy = +(18.5 * hM * hM).toFixed(1)
+  const maxHealthy = +(24.9 * hM * hM).toFixed(1)
+
+  return (
+    <div className="mt-2 rounded-2xl border border-orange-100 dark:border-orange-900/30 bg-orange-50/50 dark:bg-orange-950/10 p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted">Your current BMI</span>
+        <span className={`text-xs font-bold ${bmiColor}`}>{currentBmi} · {bmiLabel}</span>
+      </div>
+      <p className="text-[11px] text-muted">
+        Healthy range: <span className="font-semibold text-foreground">{minHealthy}–{maxHealthy} kg</span> (BMI 18.5–24.9)
+      </p>
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted mb-1.5">Tap to set target</p>
+        <div className="flex gap-2">
+          {suggestions.map((s) => (
+            <button
+              key={s.bmi}
+              type="button"
+              onClick={() => onSelect(s.kg)}
+              className="flex-1 rounded-xl border border-orange-200 dark:border-orange-800 bg-white dark:bg-slate-800 py-1.5 text-center hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/20 active:scale-95 transition-all"
+            >
+              <p className="text-xs font-black text-orange-700 dark:text-orange-400">{s.kg} kg</p>
+              <p className="text-[10px] text-muted">BMI {s.bmi}</p>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

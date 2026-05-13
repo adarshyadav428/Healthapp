@@ -246,6 +246,52 @@ export function OnboardingForm() {
               {form.formState.errors.target_weight_kg && (
                 <p className="mt-1 text-xs text-red-500">{form.formState.errors.target_weight_kg.message}</p>
               )}
+
+              {/* BMI-based recommendation */}
+              {(() => {
+                const hCm = isMetric ? watchedValues.height_cm : watchedValues.height_cm * 2.54
+                const wKg = isMetric ? watchedValues.current_weight_kg : watchedValues.current_weight_kg * 0.453592
+                if (!hCm || !wKg || hCm <= 0 || wKg <= 0) return null
+                const hM = hCm / 100
+                const currentBmi = +(wKg / (hM * hM)).toFixed(1)
+                const bmiLabel = currentBmi < 18.5 ? 'Underweight' : currentBmi < 25 ? 'Healthy weight' : currentBmi < 30 ? 'Overweight' : 'Obese'
+                const bmiColor = currentBmi < 18.5 ? 'text-blue-600 dark:text-blue-400' : currentBmi < 25 ? 'text-emerald-600 dark:text-emerald-400' : currentBmi < 30 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'
+                const suggestions = [
+                  { bmi: 20, kg: +(20 * hM * hM).toFixed(1) },
+                  { bmi: 22, kg: +(22 * hM * hM).toFixed(1) },
+                  { bmi: 24, kg: +(24 * hM * hM).toFixed(1) },
+                ]
+                const minHealthy = +(18.5 * hM * hM).toFixed(1)
+                const maxHealthy = +(24.9 * hM * hM).toFixed(1)
+                const toDisplay = (kg: number) => isMetric ? kg : +(kg / 0.453592).toFixed(1)
+                return (
+                  <div className="mt-2 rounded-2xl border border-orange-100 dark:border-orange-900/30 bg-orange-50/50 dark:bg-orange-950/10 p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted">Your current BMI</span>
+                      <span className={`text-xs font-bold ${bmiColor}`}>{currentBmi} · {bmiLabel}</span>
+                    </div>
+                    <p className="text-[11px] text-muted">
+                      Healthy range for your height: <span className="font-semibold text-foreground">{toDisplay(minHealthy)}–{toDisplay(maxHealthy)} {isMetric ? 'kg' : 'lbs'}</span> (BMI 18.5–24.9)
+                    </p>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted mb-1.5">Suggested targets</p>
+                      <div className="flex gap-2">
+                        {suggestions.map((s) => (
+                          <button
+                            key={s.bmi}
+                            type="button"
+                            onClick={() => form.setValue('target_weight_kg', toDisplay(s.kg), { shouldValidate: true })}
+                            className="flex-1 rounded-xl border border-orange-200 dark:border-orange-800 bg-white dark:bg-slate-800 py-1.5 text-center hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/20 active:scale-95 transition-all"
+                          >
+                            <p className="text-xs font-black text-orange-700 dark:text-orange-400">{toDisplay(s.kg)} {isMetric ? 'kg' : 'lb'}</p>
+                            <p className="text-[10px] text-muted">BMI {s.bmi}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
             <div>
               <label className="block text-sm font-semibold text-foreground mb-1">Goal</label>
