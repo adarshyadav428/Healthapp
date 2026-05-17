@@ -6,6 +6,7 @@ import { WeeklySummary } from '../dashboard/WeeklySummary'
 import { StreakBadge } from '../dashboard/StreakBadge'
 import Link from 'next/link'
 import { Scale, ChevronRight } from 'lucide-react'
+import { MeasurementsCard } from './MeasurementsCard'
 
 type Props = {
   streak:     number
@@ -50,6 +51,22 @@ export function ProgressClient({ streak, weightLogs, weekLogs, kcalTarget, profi
                   )
                 })()}
               </div>
+              {/* Goal date prediction */}
+              {(() => {
+                const pace = profile.pace_kg_per_week ?? 0.5
+                const remaining = Math.abs(current - target)
+                if (remaining < 0.1) return <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-1.5">🎉 Goal reached!</p>
+                if (pace <= 0) return null
+                const daysLeft = Math.round((remaining / pace) * 7)
+                const goalDate = new Date()
+                goalDate.setDate(goalDate.getDate() + daysLeft)
+                const formatted = goalDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                return (
+                  <p className="text-[10px] text-muted mt-1.5">
+                    At current pace · <span className="font-semibold text-foreground">{formatted}</span>
+                  </p>
+                )
+              })()}
             </div>
             <div className="text-center">
               <p className="text-2xl font-black tabular-nums">{target}</p>
@@ -94,6 +111,9 @@ export function ProgressClient({ streak, weightLogs, weekLogs, kcalTarget, profi
           </Link>
         )}
       </div>
+
+      {/* ── Body measurements ── */}
+      <MeasurementsCard />
 
       {/* ── Macro targets (reference) ── */}
       <div className="rounded-2xl bg-card border border-border p-4">

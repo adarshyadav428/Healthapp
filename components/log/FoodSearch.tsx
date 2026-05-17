@@ -9,12 +9,20 @@ import { getUtcDayRange } from '../../lib/dateUtils'
 import { FoodResult } from './FoodResult'
 import { AddFoodModal } from './AddFoodModal'
 import { toast } from '../ui/use-toast'
-import { Clock, Copy, Star, Zap, PlusCircle, Search, X } from 'lucide-react'
+import { Clock, Copy, Star, Zap, PlusCircle, Search, X, BookOpen, Trash2 } from 'lucide-react'
 import { CreateFoodModal } from './CreateFoodModal'
 import { useUser } from '../../hooks/useUser'
 import { useSubscription } from '../../hooks/useSubscription'
+import { useFoodFavourites } from '../../hooks/useFoodFavourites'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
 import Link from 'next/link'
+
+type SavedMeal = {
+  id: string
+  name: string
+  created_at: string
+  saved_meal_items: { food_id: string; grams: number; servings: number; food: { name: string; kcal_per_100g: number } | null }[]
+}
 
 function useDebounce(value: string, delay: number) {
   const [debounced, setDebounced] = useState(value)
@@ -42,6 +50,56 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
   const queryClient = useQueryClient()
   const { user } = useUser()
   const { data: subscription } = useSubscription(user?.id ?? null)
+  const { favouriteFoods, favouriteIds, toggle: toggleFavourite } = useFoodFavourites(user?.id ?? null)
+
+  // Saved meals
+  const { data: savedMeals = [], refetch: refetchSavedMeals } = useQuery({
+    queryKey: ['saved-meals', user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: async () => {
+      const res = await fetch('/api/meals/saved')
+      if (!res.ok) return []
+      return res.json() as Promise<SavedMeal[]>
+    },
+  })
+  const [loggingMealId, setLoggingMealId] = useState<string | null>(null)
+  const [deletingSavedMealId, setDeletingSavedMealId] = useState<string | null>(null)
+
+  const logSavedMeal = async (mealId: string, mealType: string) => {
+    setLoggingMealId(mealId)
+    try {
+      const res = await fetch('/api/meals/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ meal_id: mealId, meal_type: mealType }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Failed to log meal')
+      toast({ title: `Logged ${json.logged} items`, duration: 2500 })
+      queryClient.invalidateQueries({ queryKey: ['food-logs'] })
+    } catch (err) {
+      toast({ title: 'Could not log meal', description: (err as Error).message, variant: 'error' })
+    } finally {
+      setLoggingMealId(null)
+    }
+  }
+
+  const deleteSavedMeal = async (mealId: string) => {
+    setDeletingSavedMealId(mealId)
+    try {
+      const res = await fetch('/api/meals/saved', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: mealId }),
+      })
+      if (!res.ok) throw new Error('Failed')
+      refetchSavedMeals()
+    } catch (err) {
+      toast({ title: 'Delete failed', description: (err as Error).message, variant: 'error' })
+    } finally {
+      setDeletingSavedMealId(null)
+    }
+  }
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['foods-search', debounced],
@@ -177,16 +235,81 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
         </button>
       )}
 
-      {/* Recent foods */}
+      {/* Saved meal templates */}
+      {!isSearching && savedMeals.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+            <BookOpen className="h-3.5 w-3.5" />
+            <span>Saved meals</span>
+          </div>
+          <div className="space-y-2">
+            {savedMeals.map((meal) => {
+              const totalKcal = meal.saved_meal_items.reduce((sum, item) => {
+                const kcal = item.food ? (item.food.kcal_per_100g * item.grams) / 100 : 0
+                return sum + kcal
+              }, 0)
+              return (
+                <div key={meal.id} className="flex items-center gap-2 rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-900/80 px-4 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-foreground truncate">{meal.name}</p>
+                    <p className="text-[11px] text-muted">{meal.saved_meal_items.length} items · {Math.round(totalKcal)} kcal</p>
+                  </div>
+                  <select
+                    defaultValue={defaultMeal}
+                    onChange={(e) => logSavedMeal(meal.id, e.target.value)}
+                    disabled={loggingMealId === meal.id}
+                    className="text-xs rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-2 py-1.5 text-foreground outline-none focus:border-orange-400 transition-all disabled:opacity-50"
+                  >
+                    <option value="breakfast">Breakfast</option>
+                    <option value="lunch">Lunch</option>
+                    <option value="dinner">Dinner</option>
+                    <option value="snack">Snack</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => deleteSavedMeal(meal.id)}
+                    disabled={deletingSavedMealId === meal.id}
+                    className="rounded-full p-1 text-muted hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 disabled:opacity-40 transition-colors"
+                    aria-label="Delete saved meal"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Favourites */}
+      {!isSearching && favouriteFoods.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+            <span>Favourites</span>
+          </div>
+          <div className="space-y-2">
+            {favouriteFoods.map((food) => (
+              <FoodResult
+                key={food.id}
+                food={food}
+                onSelect={setSelected}
+                onQuickAdd={quickAdd}
+                isQuickAdding={quickAddingId === food.id}
+                isFavourite={favouriteIds.has(food.id)}
+                onToggleFavourite={toggleFavourite}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Frequent foods */}
       {showFrequent && (
         <div className="space-y-2">
           <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
-            <Star className="h-3.5 w-3.5" />
-            <span>Frequent</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted">
             <Zap className="h-3.5 w-3.5" />
-            <span>Tap + to quick add</span>
+            <span>Frequent · tap + to quick add</span>
           </div>
           <div className="space-y-2">
             {frequentFoods.map((food) => (
@@ -196,6 +319,8 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
                 onSelect={setSelected}
                 onQuickAdd={quickAdd}
                 isQuickAdding={quickAddingId === food.id}
+                isFavourite={favouriteIds.has(food.id)}
+                onToggleFavourite={toggleFavourite}
               />
             ))}
           </div>
@@ -217,6 +342,8 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
                 onSelect={setSelected}
                 onQuickAdd={quickAdd}
                 isQuickAdding={quickAddingId === food.id}
+                isFavourite={favouriteIds.has(food.id)}
+                onToggleFavourite={toggleFavourite}
               />
             ))}
           </div>
@@ -256,6 +383,8 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
                 onSelect={setSelected}
                 onQuickAdd={quickAdd}
                 isQuickAdding={quickAddingId === food.id}
+                isFavourite={favouriteIds.has(food.id)}
+                onToggleFavourite={toggleFavourite}
               />
             ))
           )}

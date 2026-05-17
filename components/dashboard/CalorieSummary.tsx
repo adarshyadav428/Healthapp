@@ -113,7 +113,7 @@ export function CalorieSummary({
       </div>
 
       {/* ── Stats row below ring ── */}
-      <div className="flex items-center gap-6 mt-5">
+      <div className="flex items-center gap-4 mt-5">
         <StatCol label="Eaten"  value={kcalEaten}  />
         <div className="h-8 w-px bg-border" />
         <StatCol label="Goal"   value={kcalTarget} />
@@ -121,6 +121,8 @@ export function CalorieSummary({
           <>
             <div className="h-8 w-px bg-border" />
             <StatCol label="Burned" value={kcalBurned} green />
+            <div className="h-8 w-px bg-border" />
+            <StatCol label="Net" value={Math.max(0, net)} />
           </>
         )}
       </div>

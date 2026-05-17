@@ -13,8 +13,9 @@ export type Profile = {
   protein_g_target: number
   carbs_g_target: number
   fat_g_target: number
-  water_target_ml?: number | null
   unit_system: 'metric' | 'imperial'
+  pace_kg_per_week: number | null
+  water_target_ml: number | null
   created_at: string
   updated_at: string
 }
@@ -79,6 +80,17 @@ export type DailyTotals = {
   protein_g: number
   carbs_g: number
   fat_g: number
+}
+
+export type MeasurementLog = {
+  id: string
+  user_id: string
+  waist_cm: number | null
+  chest_cm: number | null
+  hips_cm: number | null
+  arms_cm: number | null
+  measured_at: string
+  created_at: string
 }
 
 export type Subscription = {

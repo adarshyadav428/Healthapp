@@ -1,5 +1,5 @@
 import type { Food } from '../../types/index'
-import { Loader2, Plus } from 'lucide-react'
+import { Loader2, Plus, Star } from 'lucide-react'
 
 const SOURCE_BADGE: Record<string, { label: string; color: string }> = {
   ifct:     { label: '🇮🇳 Indian', color: 'bg-orange-100 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400' },
@@ -14,11 +14,15 @@ export function FoodResult({
   onSelect,
   onQuickAdd,
   isQuickAdding,
+  isFavourite,
+  onToggleFavourite,
 }: {
   food: Food
   onSelect: (food: Food) => void
   onQuickAdd?: (food: Food) => void
   isQuickAdding?: boolean
+  isFavourite?: boolean
+  onToggleFavourite?: (food: Food) => void
 }) {
   const badge = SOURCE_BADGE[food.source] ?? SOURCE_BADGE.off
 
@@ -45,6 +49,23 @@ export function FoodResult({
           <span className="text-[10px] text-muted">per 100g</span>
         </div>
       </button>
+
+      {onToggleFavourite && (
+        <button
+          type="button"
+          onClick={() => onToggleFavourite(food)}
+          className="h-8 w-8 flex-shrink-0 flex items-center justify-center rounded-xl transition-colors hover:bg-amber-50 dark:hover:bg-amber-950/20"
+          aria-label={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
+        >
+          <Star
+            className={`h-4 w-4 transition-colors ${
+              isFavourite
+                ? 'fill-amber-400 text-amber-400'
+                : 'text-gray-300 dark:text-slate-600 hover:text-amber-400'
+            }`}
+          />
+        </button>
+      )}
 
       {onQuickAdd ? (
         <button

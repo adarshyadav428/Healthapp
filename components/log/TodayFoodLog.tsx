@@ -7,7 +7,7 @@ import { useUser } from '../../hooks/useUser'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
 import { getUtcDayRange } from '../../lib/dateUtils'
-import { Trash2, ChevronDown, Pencil } from 'lucide-react'
+import { Trash2, ChevronDown, Pencil, BookmarkPlus, Check, X } from 'lucide-react'
 import { EditFoodLogModal } from './EditFoodLogModal'
 
 const MEAL_CONFIG: Record<string, { label: string; emoji: string; accent: string }> = {
@@ -25,8 +25,35 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
   onEdit: (log: FoodLog) => void
 }) {
   const [open, setOpen] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [savingName, setSavingName] = useState(false)
+  const [mealName, setMealName] = useState('')
   const cfg = MEAL_CONFIG[meal] ?? { label: meal, emoji: '🍽️', accent: 'text-muted' }
   const totalKcal = logs.reduce((s, l) => s + l.kcal, 0)
+
+  const saveMeal = async () => {
+    const name = mealName.trim() || cfg.label
+    setSaving(true)
+    try {
+      const res = await fetch('/api/meals/saved', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          items: logs.map((l) => ({ food_id: l.food_id, grams: l.grams, servings: l.servings ?? 1 })),
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Failed to save')
+      toast({ title: `"${name}" saved!`, description: 'Log it again anytime from the search screen.', duration: 3000 })
+      setSavingName(false)
+      setMealName('')
+    } catch (err) {
+      toast({ title: 'Save failed', description: (err as Error).message, variant: 'error' })
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <div className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-900/80 shadow-sm overflow-hidden">
@@ -45,6 +72,7 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
           <ChevronDown className={`h-3.5 w-3.5 text-muted transition-transform ${open ? 'rotate-180' : ''}`} />
         </div>
       </button>
+
       {open && (
         <div className="px-3 pb-2 space-y-1.5 border-t border-gray-50 dark:border-slate-800 pt-1.5">
           {logs.map((log) => (
@@ -79,6 +107,38 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
               </div>
             </div>
           ))}
+
+          {/* Save as meal */}
+          {savingName ? (
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                type="text"
+                value={mealName}
+                onChange={(e) => setMealName(e.target.value)}
+                placeholder={`Name (e.g. "${cfg.label} usual")`}
+                className="flex-1 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-3 py-1.5 text-xs text-foreground outline-none focus:border-orange-400 transition-all"
+                onKeyDown={(e) => e.key === 'Enter' && saveMeal()}
+                autoFocus
+              />
+              <button type="button" onClick={saveMeal} disabled={saving}
+                className="rounded-xl bg-orange-600 px-2.5 py-1.5 text-white hover:bg-orange-700 disabled:opacity-50 transition-colors">
+                <Check className="h-3.5 w-3.5" />
+              </button>
+              <button type="button" onClick={() => setSavingName(false)}
+                className="rounded-xl px-2.5 py-1.5 text-muted hover:text-foreground hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setSavingName(true)}
+              className="flex w-full items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-semibold text-muted hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-colors"
+            >
+              <BookmarkPlus className="h-3.5 w-3.5" />
+              Save as meal template
+            </button>
+          )}
         </div>
       )}
     </div>
