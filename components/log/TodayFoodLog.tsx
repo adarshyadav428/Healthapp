@@ -84,6 +84,11 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
                   <span className="text-[10px] text-blue-500 dark:text-blue-400">P{Math.round(log.protein_g)}g</span>
                   <span className="text-[10px] text-amber-500 dark:text-amber-400">C{Math.round(log.carbs_g)}g</span>
                   <span className="text-[10px] text-rose-500 dark:text-rose-400">F{Math.round(log.fat_g)}g</span>
+                  {log.food?.fiber_g_per_100g != null && log.food.fiber_g_per_100g > 0 && (
+                    <span className="text-[10px] text-emerald-500 dark:text-emerald-400">
+                      Fi{Math.round(log.food.fiber_g_per_100g * log.grams / 100)}g
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">

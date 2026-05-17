@@ -144,14 +144,14 @@ export function RecipeBuilder() {
   return (
     <div className="space-y-4">
       {/* Recipe name + servings */}
-      <div className="rounded-3xl border border-orange-100 dark:border-orange-900/30 bg-white/90 dark:bg-slate-900/80 p-4 shadow-sm space-y-3">
+      <div className="rounded-3xl border border-indigo-100 dark:border-indigo-900/30 bg-white/90 dark:bg-slate-900/80 p-4 shadow-sm space-y-3">
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">Recipe name</label>
           <input
             value={recipeName}
             onChange={(e) => setRecipeName(e.target.value)}
             placeholder="e.g. Dal Makhani, Palak Paneer..."
-            className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+            className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all"
           />
         </div>
         <div>
@@ -190,7 +190,7 @@ export function RecipeBuilder() {
             value={query}
             onChange={(e) => { setQuery(e.target.value); setSearchOpen(true) }}
             onFocus={() => setSearchOpen(true)}
-            className="w-full pl-9 pr-9 h-10 text-sm rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+            className="w-full pl-9 pr-9 h-10 text-sm rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all"
           />
           {query && (
             <button type="button" onClick={() => { setQuery(''); setSearchOpen(false) }} className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -214,13 +214,13 @@ export function RecipeBuilder() {
                   key={food.id}
                   type="button"
                   onClick={() => addIngredient(food)}
-                  className="w-full flex items-center justify-between rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-left hover:border-orange-200 dark:hover:border-orange-800 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-all group"
+                  className="w-full flex items-center justify-between rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-left hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-all group"
                 >
                   <div className="min-w-0 flex-1 mr-2">
                     <p className="text-sm font-semibold text-foreground truncate">{food.name}</p>
                     <p className="text-[11px] text-muted">{Math.round(food.kcal_per_100g)} kcal · {Math.round(food.protein_g_per_100g)}P {Math.round(food.carbs_g_per_100g)}C {Math.round(food.fat_g_per_100g)}F per 100g</p>
                   </div>
-                  <Plus className="h-4 w-4 text-orange-600 dark:text-orange-400 flex-shrink-0" />
+                  <Plus className="h-4 w-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
                 </button>
               ))
             )}
@@ -244,7 +244,7 @@ export function RecipeBuilder() {
                     value={ing.grams}
                     min={1}
                     onChange={(e) => updateGrams(index, Math.max(1, Number(e.target.value)))}
-                    className="w-16 text-center text-xs font-bold rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-foreground px-2 py-1.5 outline-none focus:border-orange-400"
+                    className="w-16 text-center text-xs font-bold rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-foreground px-2 py-1.5 outline-none focus:border-indigo-400"
                   />
                   <span className="text-[10px] text-muted">g</span>
                   <button
@@ -296,7 +296,7 @@ export function RecipeBuilder() {
         type="button"
         onClick={saveAsCustomFood}
         disabled={saving || ingredients.length === 0}
-        className="flex w-full items-center justify-center gap-2 rounded-3xl bg-orange-600 py-4 text-sm font-bold text-white hover:bg-orange-700 active:scale-[.98] transition-all shadow-md disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-3xl bg-indigo-600 py-4 text-sm font-bold text-white hover:bg-indigo-700 active:scale-[.98] transition-all shadow-md disabled:opacity-50"
       >
         {saving ? (
           <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>

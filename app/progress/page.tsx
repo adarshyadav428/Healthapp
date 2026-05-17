@@ -60,9 +60,10 @@ export default async function ProgressPage() {
       .lte('logged_at', todayEnd.toISOString()),
   ])
 
-  const streak     = calculateStreak((streakResult.data ?? []) as unknown as FoodLog[])
-  const weightLogs = (weightResult.data ?? []) as unknown as WeightLog[]
-  const weekLogs   = (!weekResult.error ? (weekResult.data ?? []) : []) as { kcal: number; logged_at: string }[]
+  const streak      = calculateStreak((streakResult.data ?? []) as unknown as FoodLog[])
+  const weightLogs  = (weightResult.data ?? []) as unknown as WeightLog[]
+  const weekLogs    = (!weekResult.error ? (weekResult.data ?? []) : []) as { kcal: number; logged_at: string }[]
+  const loggedDates = (streakResult.data ?? []).map((r) => r.logged_at as string)
 
   return (
     <div className="min-h-screen bg-background pb-32 dark:bg-slate-950">
@@ -78,6 +79,7 @@ export default async function ProgressPage() {
           weekLogs={weekLogs}
           kcalTarget={profile.daily_calorie_target}
           profile={profile}
+          loggedDates={loggedDates}
         />
       </main>
       <BottomNav />

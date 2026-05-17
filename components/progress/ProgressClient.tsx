@@ -7,16 +7,18 @@ import { StreakBadge } from '../dashboard/StreakBadge'
 import Link from 'next/link'
 import { Scale, ChevronRight } from 'lucide-react'
 import { MeasurementsCard } from './MeasurementsCard'
+import { StreakCalendar } from './StreakCalendar'
 
 type Props = {
-  streak:     number
-  weightLogs: WeightLog[]
-  weekLogs:   { kcal: number; logged_at: string }[]
-  kcalTarget: number | null
-  profile:    Profile
+  streak:      number
+  weightLogs:  WeightLog[]
+  weekLogs:    { kcal: number; logged_at: string }[]
+  kcalTarget:  number | null
+  profile:     Profile
+  loggedDates: string[]
 }
 
-export function ProgressClient({ streak, weightLogs, weekLogs, kcalTarget, profile }: Props) {
+export function ProgressClient({ streak, weightLogs, weekLogs, kcalTarget, profile, loggedDates }: Props) {
   const current = weightLogs[0]?.weight_kg ?? null
   const target  = profile.target_weight_kg ?? null
   const toGo    = current !== null && target !== null
@@ -78,6 +80,9 @@ export function ProgressClient({ streak, weightLogs, weekLogs, kcalTarget, profi
 
       {/* ── Streak ── */}
       <StreakBadge streak={streak} />
+
+      {/* ── Habit calendar ── */}
+      <StreakCalendar loggedDates={loggedDates} />
 
       {/* ── Weekly summary ── */}
       <WeeklySummary weekLogs={weekLogs} kcalTarget={kcalTarget} />

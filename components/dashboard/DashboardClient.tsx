@@ -12,6 +12,8 @@ import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { getUtcDayRange } from '../../lib/dateUtils'
+import { DailyInsight } from './DailyInsight'
+import { WeightWidget } from './WeightWidget'
 
 const MEAL_META: Record<string, { icon: string; label: string }> = {
   breakfast: { icon: '🥣', label: 'Breakfast' },
@@ -83,8 +85,16 @@ export function DashboardClient({
         kcalTarget={profile.daily_calorie_target}
       />
 
+      {/* ── Daily insight ── */}
+      <div className="mt-5 mb-1">
+        <DailyInsight
+          totals={{ kcal: Math.round(totals.kcal), protein_g: Math.round(totals.protein_g), carbs_g: Math.round(totals.carbs_g), fat_g: Math.round(totals.fat_g) }}
+          profile={profile}
+        />
+      </div>
+
       {/* ── Macro row ── */}
-      <div className="flex gap-2 mt-6 mb-7">
+      <div className="flex gap-2 mt-5 mb-5">
         <MacroChip
           label="Protein"
           value={Math.round(totals.protein_g)}
@@ -170,11 +180,16 @@ export function DashboardClient({
         </div>
       )}
 
+      {/* ── Weight quick-log widget ── */}
+      <div className="mt-4">
+        <WeightWidget currentWeightKg={profile.current_weight_kg ?? null} />
+      </div>
+
       {/* ── Sticky Log CTA (above floating nav) ── */}
       <div className="fixed inset-x-4 bottom-[90px] z-30 mx-auto max-w-md">
         <Link
           href="/log"
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 py-4 text-[15px] font-black text-white shadow-xl shadow-orange-500/30 active:scale-[.98] transition-transform"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 py-4 text-[15px] font-black text-white shadow-xl shadow-indigo-500/30 active:scale-[.98] transition-transform hover:bg-indigo-700"
         >
           <Plus className="h-5 w-5" />
           Log Food
