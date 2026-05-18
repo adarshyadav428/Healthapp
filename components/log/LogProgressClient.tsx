@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
 import { TodayProgressBar } from './TodayProgressBar'
+import { MacroPieChart } from './MacroPieChart'
 import type { FoodLog } from '../../types/index'
 
 type Props = {
@@ -34,15 +35,24 @@ export function LogProgressClient({ initialLogs, kcalTarget, proteinTarget, carb
   )
 
   return (
-    <TodayProgressBar
-      kcalEaten={Math.round(totals.kcal)}
-      kcalTarget={kcalTarget}
-      proteinEaten={Math.round(totals.protein)}
-      proteinTarget={proteinTarget}
-      carbsEaten={Math.round(totals.carbs)}
-      carbsTarget={carbsTarget}
-      fatEaten={Math.round(totals.fat)}
-      fatTarget={fatTarget}
-    />
+    <div>
+      <TodayProgressBar
+        kcalEaten={Math.round(totals.kcal)}
+        kcalTarget={kcalTarget}
+        proteinEaten={Math.round(totals.protein)}
+        proteinTarget={proteinTarget}
+        carbsEaten={Math.round(totals.carbs)}
+        carbsTarget={carbsTarget}
+        fatEaten={Math.round(totals.fat)}
+        fatTarget={fatTarget}
+      />
+      {totals.kcal > 0 && (
+        <MacroPieChart
+          protein={Math.round(totals.protein)}
+          carbs={Math.round(totals.carbs)}
+          fat={Math.round(totals.fat)}
+        />
+      )}
+    </div>
   )
 }

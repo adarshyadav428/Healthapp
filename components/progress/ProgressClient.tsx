@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { Scale, ChevronRight } from 'lucide-react'
 import { MeasurementsCard } from './MeasurementsCard'
 import { StreakCalendar } from './StreakCalendar'
+import { WaterHistoryCard } from './WaterHistoryCard'
 
 type Props = {
   streak:      number
@@ -116,6 +117,9 @@ export function ProgressClient({ streak, weightLogs, weekLogs, kcalTarget, profi
           </Link>
         )}
       </div>
+
+      {/* ── Water history ── */}
+      <WaterHistoryCard targetMl={profile.water_target_ml ?? 2500} />
 
       {/* ── Body measurements ── */}
       <MeasurementsCard />

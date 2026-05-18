@@ -5,6 +5,7 @@ import { TodayFoodLog } from '../../components/log/TodayFoodLog'
 import { LogPageShell } from '../../components/log/LogPageShell'
 import { WaterTracker } from '../../components/log/WaterTracker'
 import { ExerciseLogger } from '../../components/log/ExerciseLogger'
+import { FastingTimer } from '../../components/log/FastingTimer'
 import { DateNav } from '../../components/log/DateNav'
 import { Navbar } from '../../components/layout/Navbar'
 import { BottomNav } from '../../components/layout/BottomNav'
@@ -199,7 +200,7 @@ export default async function LogPage({
           <TodayFoodLog initialLogs={dayFoodLogs} />
         </div>
 
-        {/* Water & exercise — always today-specific */}
+        {/* Water, exercise & fasting — always today-specific */}
         {isToday && (
           <>
             <div className="mt-4">
@@ -207,6 +208,9 @@ export default async function LogPage({
             </div>
             <div className="mt-4">
               <ExerciseLogger weightKg={profile.current_weight_kg ?? 70} />
+            </div>
+            <div className="mt-4">
+              <FastingTimer />
             </div>
           </>
         )}

@@ -155,10 +155,10 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
 
       {/* Targets summary */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-3xl border border-orange-100 dark:border-orange-900/30 bg-orange-50 dark:bg-orange-950/20 p-4">
-          <p className="text-xs text-orange-600 dark:text-orange-400 font-semibold uppercase tracking-wide">Daily goal</p>
-          <p className="text-3xl font-black text-orange-700 dark:text-orange-400 mt-1">{profile.daily_calorie_target.toLocaleString()}</p>
-          <p className="text-xs text-orange-500 dark:text-orange-500">kcal / day</p>
+        <div className="rounded-3xl border border-indigo-100 dark:border-indigo-900/30 bg-indigo-50 dark:bg-indigo-950/20 p-4">
+          <p className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold uppercase tracking-wide">Daily goal</p>
+          <p className="text-3xl font-black text-indigo-700 dark:text-indigo-400 mt-1">{profile.daily_calorie_target.toLocaleString()}</p>
+          <p className="text-xs text-indigo-500 dark:text-indigo-500">kcal / day</p>
         </div>
         <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4 space-y-1.5">
           <MacroChip label="Protein" g={profile.protein_g_target} color="text-blue-600" />
@@ -227,10 +227,10 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
               className="flex w-full items-center justify-between"
             >
               <div className="flex items-center gap-2">
-                <Sliders className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                <Sliders className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                 <span className="text-sm font-semibold text-foreground">Custom calorie &amp; macro targets</span>
               </div>
-              <div className={`relative h-5 w-9 rounded-full transition-colors ${useCustomTargets ? 'bg-orange-500' : 'bg-gray-300 dark:bg-slate-600'}`}>
+              <div className={`relative h-5 w-9 rounded-full transition-colors ${useCustomTargets ? 'bg-indigo-500' : 'bg-gray-300 dark:bg-slate-600'}`}>
                 <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${useCustomTargets ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </div>
             </button>
@@ -277,7 +277,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
             )}
           </div>
 
-          <Button type="submit" className="w-full bg-orange-600 hover:bg-orange-700" disabled={form.formState.isSubmitting}>
+          <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting ? 'Saving...' : 'Save changes'}
           </Button>
         </form>
@@ -299,7 +299,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
         ) : (
           <div className="space-y-3">
             <p className="text-sm text-muted">Free plan — 5 food logs per day</p>
-            <Button asChild className="w-full bg-orange-600 hover:bg-orange-700">
+            <Button asChild className="w-full bg-indigo-600 hover:bg-indigo-700">
               <Link href="/upgrade">
                 <Crown className="mr-1.5 h-4 w-4" />
                 Upgrade to Pro
@@ -405,7 +405,7 @@ function BmiRecommendation({
   const maxHealthy = +(24.9 * hM * hM).toFixed(1)
 
   return (
-    <div className="mt-2 rounded-2xl border border-orange-100 dark:border-orange-900/30 bg-orange-50/50 dark:bg-orange-950/10 p-3 space-y-2">
+    <div className="mt-2 rounded-2xl border border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/50 dark:bg-indigo-950/10 p-3 space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted">Your current BMI</span>
         <span className={`text-xs font-bold ${bmiColor}`}>{currentBmi} · {bmiLabel}</span>
@@ -421,9 +421,9 @@ function BmiRecommendation({
               key={s.bmi}
               type="button"
               onClick={() => onSelect(s.kg)}
-              className="flex-1 rounded-xl border border-orange-200 dark:border-orange-800 bg-white dark:bg-slate-800 py-1.5 text-center hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/20 active:scale-95 transition-all"
+              className="flex-1 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-800 py-1.5 text-center hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 active:scale-95 transition-all"
             >
-              <p className="text-xs font-black text-orange-700 dark:text-orange-400">{s.kg} kg</p>
+              <p className="text-xs font-black text-indigo-700 dark:text-indigo-400">{s.kg} kg</p>
               <p className="text-[10px] text-muted">BMI {s.bmi}</p>
             </button>
           ))}
