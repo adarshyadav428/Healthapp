@@ -39,8 +39,8 @@ export function BottomNav() {
           className={cn(
             'mx-3 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all duration-200 active:scale-90',
             pathname === '/log'
-              ? 'bg-orange-600 shadow-orange-500/40'
-              : 'bg-orange-500 shadow-orange-500/30 hover:bg-orange-600'
+              ? 'bg-indigo-700 shadow-indigo-600/40'
+              : 'bg-indigo-600 shadow-indigo-500/30 hover:bg-indigo-700'
           )}
         >
           <Plus className="h-7 w-7 text-white" strokeWidth={2.5} />

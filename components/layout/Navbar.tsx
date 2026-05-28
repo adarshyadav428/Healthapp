@@ -41,7 +41,7 @@ export function Navbar() {
         <Link
           href="/settings"
           aria-label="Settings"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 dark:bg-slate-800 text-xs font-black text-orange-700 dark:text-slate-200 hover:bg-orange-200 dark:hover:bg-slate-700 transition-colors"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 dark:bg-slate-800 text-xs font-black text-indigo-700 dark:text-slate-200 hover:bg-indigo-200 dark:hover:bg-slate-700 transition-colors"
           title={profile?.display_name ?? user?.email ?? 'Settings'}
         >
           {initials}

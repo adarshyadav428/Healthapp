@@ -6,6 +6,7 @@ import { LogPageShell } from '../../components/log/LogPageShell'
 import { WaterTracker } from '../../components/log/WaterTracker'
 import { ExerciseLogger } from '../../components/log/ExerciseLogger'
 import { FastingTimer } from '../../components/log/FastingTimer'
+import { SleepTracker } from '../../components/log/SleepTracker'
 import { DateNav } from '../../components/log/DateNav'
 import { Navbar } from '../../components/layout/Navbar'
 import { BottomNav } from '../../components/layout/BottomNav'
@@ -211,6 +212,9 @@ export default async function LogPage({
             </div>
             <div className="mt-4">
               <FastingTimer />
+            </div>
+            <div className="mt-4">
+              <SleepTracker />
             </div>
           </>
         )}

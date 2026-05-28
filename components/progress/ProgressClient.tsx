@@ -9,6 +9,7 @@ import { Scale, ChevronRight } from 'lucide-react'
 import { MeasurementsCard } from './MeasurementsCard'
 import { StreakCalendar } from './StreakCalendar'
 import { WaterHistoryCard } from './WaterHistoryCard'
+import { SleepHistoryCard } from './SleepHistoryCard'
 
 type Props = {
   streak:      number
@@ -120,6 +121,9 @@ export function ProgressClient({ streak, weightLogs, weekLogs, kcalTarget, profi
 
       {/* ── Water history ── */}
       <WaterHistoryCard targetMl={profile.water_target_ml ?? 2500} />
+
+      {/* ── Sleep history ── */}
+      <SleepHistoryCard />
 
       {/* ── Body measurements ── */}
       <MeasurementsCard />
