@@ -27,22 +27,31 @@ export default async function HistoryPage() {
   if (profileError) throw new Error(profileError.message)
   if (!profile || profile.height_cm === null) redirect('/onboarding')
 
-  // Fetch last 90 days of food logs + exercise logs in parallel
-  const ninetyDaysAgo = new Date()
-  ninetyDaysAgo.setUTCDate(ninetyDaysAgo.getUTCDate() - 90)
+  // Check Pro status — free users only see last 7 days
+  const { data: sub } = await supabase
+    .from('subscriptions')
+    .select('status')
+    .eq('user_id', user.id)
+    .maybeSingle()
+  const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
+
+  // Free → 7 days, Pro → 90 days
+  const lookbackDays = isPro ? 90 : 7
+  const cutoff = new Date()
+  cutoff.setUTCDate(cutoff.getUTCDate() - lookbackDays)
 
   const [logsResult, exerciseResult] = await Promise.all([
     supabase
       .from('food_logs')
       .select('logged_at, kcal, protein_g, carbs_g, fat_g, meal')
       .eq('user_id', user.id)
-      .gte('logged_at', ninetyDaysAgo.toISOString())
+      .gte('logged_at', cutoff.toISOString())
       .order('logged_at', { ascending: true }),
     supabase
       .from('exercise_logs')
       .select('logged_at, activity, duration_min, calories')
       .eq('user_id', user.id)
-      .gte('logged_at', ninetyDaysAgo.toISOString())
+      .gte('logged_at', cutoff.toISOString())
       .order('logged_at', { ascending: false }),
   ])
 
@@ -59,7 +68,12 @@ export default async function HistoryPage() {
           <h1 className="text-2xl font-black text-foreground">History</h1>
           <p className="text-sm text-muted mt-0.5">Your nutrition over time</p>
         </div>
-        <HistoryClient logs={logsResult.data ?? []} exerciseLogs={exerciseLogs} profile={profile as Profile} />
+        <HistoryClient
+          logs={logsResult.data ?? []}
+          exerciseLogs={exerciseLogs}
+          profile={profile as Profile}
+          isPro={isPro}
+        />
       </main>
       <BottomNav />
     </div>

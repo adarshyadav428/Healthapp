@@ -135,6 +135,41 @@ export default function Home() {
           ))}
         </section>
 
+        {/* Founder story */}
+        <section className="mt-16">
+          <div className="rounded-3xl border border-border bg-card p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/80 relative overflow-hidden">
+            {/* Subtle orange glow */}
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(234,88,12,0.07),_transparent_60%)]" />
+            <div className="relative">
+              <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700 mb-4 dark:border-orange-900/40 dark:bg-orange-950/20 dark:text-orange-400">
+                👤 Why I built this
+              </div>
+              <blockquote className="text-lg font-black text-foreground leading-snug mb-4">
+                &ldquo;Every app I tried had generic food data. My dal, my roti, my sabzi — none of it was there.&rdquo;
+              </blockquote>
+              <p className="text-sm text-muted leading-relaxed mb-4">
+                I&apos;m Adarsh — engineering student, running a medical store in UP, and on a personal mission to
+                lose weight the right way. HealthifyMe didn&apos;t have accurate data for the food I actually eat.
+                MyFitnessPal is built for the West. So I built CalTrack: 600+ Indian foods from IFCT 2017,
+                the same database nutrition researchers use.
+              </p>
+              <p className="text-sm text-muted leading-relaxed mb-5">
+                I&apos;m using this app every single day. Every bug I fix, every food I add — it&apos;s because
+                I need it myself. That&apos;s the only way to build something that actually works.
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-black text-sm shrink-0">
+                  A
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-foreground">Adarsh Yadav</p>
+                  <p className="text-xs text-muted">Founder · Azamgarh, UP 🇮🇳</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Free vs Pro comparison */}
         <section className="mt-16">
           <h2 className="text-2xl font-black text-foreground text-center mb-8">Simple, honest pricing</h2>
@@ -146,7 +181,7 @@ export default function Home() {
               <p className="text-sm text-muted mt-1 mb-5">No credit card required</p>
               <ul className="space-y-2.5">
                 {[
-                  '5 food logs per day',
+                  'Full calorie & macro tracking',
                   'Weight tracking',
                   'Exercise logging',
                   'Water tracker',

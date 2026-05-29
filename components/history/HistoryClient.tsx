@@ -6,7 +6,8 @@ import type { Profile } from '../../types/index'
 import { format, parseISO, startOfDay, subDays, eachDayOfInterval, parse, isWithinInterval } from 'date-fns'
 import { DayDiary } from './DayDiary'
 import { useUser } from '../../hooks/useUser'
-import { CalendarDays, X, Flame, Dumbbell } from 'lucide-react'
+import { CalendarDays, X, Flame, Dumbbell, Lock, Crown } from 'lucide-react'
+import Link from 'next/link'
 
 // Defer recharts — saves ~95KB on initial /history load.
 const HistoryBarChart = dynamic(() => import('./HistoryBarChart').then(m => m.HistoryBarChart), {
@@ -46,7 +47,7 @@ const RANGES = [
   { label: '30 days', days: 30 },
 ]
 
-export function HistoryClient({ logs, profile, exerciseLogs = [] }: { logs: LogRow[]; profile: Profile; exerciseLogs?: ExerciseRow[] }) {
+export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false }: { logs: LogRow[]; profile: Profile; exerciseLogs?: ExerciseRow[]; isPro?: boolean }) {
   const [range, setRange] = useState(14)
   const [metric, setMetric] = useState<'kcal' | 'protein' | 'carbs' | 'fat'>('kcal')
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -128,6 +129,25 @@ export function HistoryClient({ logs, profile, exerciseLogs = [] }: { logs: LogR
 
   return (
     <div className="space-y-4">
+      {/* Free-tier upgrade banner */}
+      {!isPro && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20 p-3.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-amber-900 dark:text-amber-200">Showing last 7 days</p>
+              <p className="text-[11px] text-amber-700 dark:text-amber-400">Pro unlocks full history</p>
+            </div>
+          </div>
+          <Link
+            href="/upgrade?reason=history"
+            className="shrink-0 flex items-center gap-1 rounded-full bg-orange-500 hover:bg-orange-600 px-3 py-1.5 text-xs font-bold text-white transition-colors"
+          >
+            <Crown className="h-3 w-3" />
+            Upgrade
+          </Link>
+        </div>
+      )}
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-3">
         <StatCard
@@ -184,18 +204,30 @@ export function HistoryClient({ logs, profile, exerciseLogs = [] }: { logs: LogR
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">{cfg.label} trend</p>
           <div className="flex gap-1 rounded-xl bg-gray-100 dark:bg-slate-800 p-0.5">
-            {RANGES.map((r) => (
-              <button
-                key={r.days}
-                type="button"
-                onClick={() => setRange(r.days)}
-                className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
-                  range === r.days ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm' : 'text-muted'
-                }`}
-              >
-                {r.label}
-              </button>
-            ))}
+            {RANGES.map((r) => {
+              const locked = !isPro && r.days > 7
+              return locked ? (
+                <Link
+                  key={r.days}
+                  href="/upgrade?reason=history"
+                  className="rounded-lg px-2.5 py-1 text-xs font-semibold text-muted flex items-center gap-1 opacity-60 hover:opacity-80 transition-opacity"
+                >
+                  <Lock className="h-3 w-3" />
+                  {r.label}
+                </Link>
+              ) : (
+                <button
+                  key={r.days}
+                  type="button"
+                  onClick={() => setRange(r.days)}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+                    range === r.days ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm' : 'text-muted'
+                  }`}
+                >
+                  {r.label}
+                </button>
+              )
+            })}
           </div>
         </div>
 

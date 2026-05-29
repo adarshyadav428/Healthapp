@@ -298,7 +298,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-sm text-muted">Free plan — 5 food logs per day</p>
+            <p className="text-sm text-muted">Free plan — last 7 days of history</p>
             <Button asChild className="w-full bg-indigo-600 hover:bg-indigo-700">
               <Link href="/upgrade">
                 <Crown className="mr-1.5 h-4 w-4" />
