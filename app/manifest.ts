@@ -5,10 +5,10 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'CalTrack — Calorie & Health Tracker',
     short_name: 'CalTrack',
     description: 'Track calories, macros, weight, water and more',
-    start_url: '/dashboard',
+    start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',
-    theme_color: '#6366f1',
+    theme_color: '#ea580c',
     orientation: 'portrait',
     icons: [
       {

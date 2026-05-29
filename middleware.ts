@@ -2,16 +2,13 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+  const pathname = request.nextUrl.pathname
+  const publicFiles = ['/sw.js', '/manifest.webmanifest']
+  const publicPrefixes = ['/icons/', '/.well-known/', '/workbox-', '/fallback-']
 
-  // Skip auth for PWA static files
   if (
-    pathname.startsWith('/icons/') ||
-    pathname.startsWith('/.well-known/') ||
-    pathname === '/sw.js' ||
-    pathname === '/manifest.webmanifest' ||
-    pathname.startsWith('/workbox-') ||
-    pathname.startsWith('/fallback-')
+    publicFiles.includes(pathname) ||
+    publicPrefixes.some(prefix => pathname.startsWith(prefix))
   ) {
     return NextResponse.next()
   }
@@ -85,7 +82,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|icons/|sw.js|workbox-|manifest.webmanifest|.well-known/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|sw\\.js|workbox-.*|manifest\\.webmanifest|icons/.*|\\.well-known/.*).*)',],
 }
