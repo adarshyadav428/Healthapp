@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import dynamic from 'next/dynamic'
 import type { FoodLog, Profile } from '../../types/index'
 import { CalorieSummary } from './CalorieSummary'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
@@ -12,8 +13,11 @@ import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { getUtcDayRange } from '../../lib/dateUtils'
-import { DailyInsight } from './DailyInsight'
-import { WeightWidget } from './WeightWidget'
+
+// Below-fold widgets — defer until after first paint.
+const SkeletonCard = () => <div className="h-24 rounded-2xl bg-card border border-border animate-pulse" />
+const DailyInsight = dynamic(() => import('./DailyInsight').then(m => m.DailyInsight), { ssr: false, loading: SkeletonCard })
+const WeightWidget = dynamic(() => import('./WeightWidget').then(m => m.WeightWidget), { ssr: false, loading: SkeletonCard })
 
 const MEAL_META: Record<string, { icon: string; label: string }> = {
   breakfast: { icon: '🥣', label: 'Breakfast' },

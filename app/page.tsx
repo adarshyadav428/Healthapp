@@ -170,8 +170,8 @@ export default function Home() {
             <div className="rounded-3xl border-2 border-indigo-400 bg-gradient-to-br from-indigo-50 to-violet-50 p-6 shadow-md relative overflow-hidden dark:border-indigo-500/60 dark:from-indigo-950/30 dark:to-violet-950/30">
               <div className="absolute top-4 right-4 rounded-full bg-indigo-600 px-2.5 py-1 text-[10px] font-black text-white uppercase tracking-wide">Popular</div>
               <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-400 mb-1">Pro</p>
-              <p className="text-3xl font-black text-foreground">$4.99<span className="text-base font-semibold text-muted">/mo</span></p>
-              <p className="text-sm text-muted mt-1 mb-5">billed $59.99/year · 7-day free trial</p>
+              <p className="text-3xl font-black text-foreground">₹199<span className="text-base font-semibold text-muted">/mo</span></p>
+              <p className="text-sm text-muted mt-1 mb-5">or ₹699/year · save 71%</p>
               <ul className="space-y-2.5">
                 {[
                   'Everything in Free',

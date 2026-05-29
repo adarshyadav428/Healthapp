@@ -61,6 +61,10 @@ export function CreateFoodModal({
         body: JSON.stringify(values),
       })
       const json = await res.json()
+      if (res.status === 402) {
+        window.location.href = '/upgrade?reason=custom_foods'
+        return
+      }
       if (!res.ok) throw new Error(json.error ?? 'Failed to create food')
       toast({ title: 'Custom food created!', description: 'Now log it from search.', duration: 3000 })
       onCreated(json.food as Food)

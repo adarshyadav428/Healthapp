@@ -1,21 +1,18 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Input } from '../ui/input'
-import { Button } from '../ui/button'
-import type { Food, FoodLog } from '../../types/index'
-import { getUtcDayRange } from '../../lib/dateUtils'
+import type { Food } from '../../types/index'
 import { FoodResult } from './FoodResult'
-import { AddFoodModal } from './AddFoodModal'
 import { toast } from '../ui/use-toast'
 import { Clock, Copy, Star, Zap, PlusCircle, Search, X, BookOpen, Trash2 } from 'lucide-react'
-import { CreateFoodModal } from './CreateFoodModal'
 import { useUser } from '../../hooks/useUser'
-import { useSubscription } from '../../hooks/useSubscription'
 import { useFoodFavourites } from '../../hooks/useFoodFavourites'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
-import Link from 'next/link'
+
+// Modals are only opened on user action — defer their JS until then.
+const AddFoodModal    = dynamic(() => import('./AddFoodModal').then(m => m.AddFoodModal),       { ssr: false })
+const CreateFoodModal = dynamic(() => import('./CreateFoodModal').then(m => m.CreateFoodModal), { ssr: false })
 
 type SavedMeal = {
   id: string
@@ -44,12 +41,10 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
   const [selected, setSelected] = useState<Food | null>(null)
   const [copying, setCopying] = useState(false)
   const [quickAddingId, setQuickAddingId] = useState<string | null>(null)
-  const [showLimit, setShowLimit] = useState(false)
   const [showCreateFood, setShowCreateFood] = useState(false)
   const debounced = useDebounce(query, 300)
   const queryClient = useQueryClient()
   const { user } = useUser()
-  const { data: subscription } = useSubscription(user?.id ?? null)
   const { favouriteFoods, favouriteIds, toggle: toggleFavourite } = useFoodFavourites(user?.id ?? null)
 
   // Saved meals
@@ -150,13 +145,6 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
     try {
       if (!user) throw new Error('You must be signed in to log food.')
 
-      // Free-plan gate: read from cache to avoid a blocking COUNT query
-      if (!subscription?.isPro) {
-        const { start } = getUtcDayRange()
-        const cached = queryClient.getQueryData<FoodLog[]>(['food-logs', user.id, start])
-        if (cached != null && cached.length >= 5) { setShowLimit(true); return }
-      }
-
       const grams = food.serving_size_g
       const res = await fetch('/api/logs/add', {
         method: 'POST',
@@ -171,13 +159,7 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
 
       const body = await res.json().catch(() => ({} as { error?: string }))
 
-      if (!res.ok) {
-        if (res.status === 402 || body?.error === 'Free limit reached') {
-          setShowLimit(true)
-          return
-        }
-        throw new Error(body?.error || 'Quick add failed')
-      }
+      if (!res.ok) throw new Error(body?.error || 'Quick add failed')
 
       toast({
         title: `Quick added ${food.name}`,
@@ -419,29 +401,6 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
           }}
         />
       ) : null}
-      <FoodSearchLimitDialog open={showLimit} onOpenChange={setShowLimit} />
     </div>
-  )
-}
-
-// Limit dialog rendered at sibling level — not nested — to avoid focus/portal conflicts
-function FoodSearchLimitDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Upgrade to keep logging</DialogTitle>
-          <DialogDescription>
-            You&apos;ve logged 5 meals today. Upgrade to Pro for unlimited logs.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Close</Button>
-          <Button asChild>
-            <Link href="/upgrade">Upgrade to Pro →</Link>
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }

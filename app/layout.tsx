@@ -12,11 +12,14 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'CalTrack — Indian Calorie & Macro Tracker',
   description: 'Log Indian & global foods, track macros, water, exercise and weight. Built for desi diets.',
-  manifest: '/manifest.json',
+  manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'CalTrack',
+  },
+  icons: {
+    apple: '/icons/icon-192x192.png',
   },
   formatDetection: { telephone: false },
   openGraph: {
@@ -52,7 +55,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`h-full ${inter.variable}`} suppressHydrationWarning>
       <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full bg-background text-foreground">

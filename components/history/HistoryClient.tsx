@@ -1,14 +1,18 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import {
-  BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine, Cell,
-} from 'recharts'
+import dynamic from 'next/dynamic'
 import type { Profile } from '../../types/index'
 import { format, parseISO, startOfDay, subDays, eachDayOfInterval, parse, isWithinInterval } from 'date-fns'
 import { DayDiary } from './DayDiary'
 import { useUser } from '../../hooks/useUser'
 import { CalendarDays, X, Flame, Dumbbell } from 'lucide-react'
+
+// Defer recharts — saves ~95KB on initial /history load.
+const HistoryBarChart = dynamic(() => import('./HistoryBarChart').then(m => m.HistoryBarChart), {
+  ssr: false,
+  loading: () => <div className="h-[180px] rounded-2xl bg-card border border-border animate-pulse" />,
+})
 
 type LogRow = {
   logged_at: string
@@ -214,58 +218,17 @@ export function HistoryClient({ logs, profile, exerciseLogs = [] }: { logs: LogR
           ))}
         </div>
 
-        {/* Bar chart */}
-        <div className="h-[180px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} barSize={range <= 7 ? 28 : range <= 14 ? 16 : 8}>
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 10, fill: '#9ca3af' }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis hide />
-              {metricTargets[metric] > 0 && (
-                <ReferenceLine
-                  y={metricTargets[metric]}
-                  stroke={cfg.color}
-                  strokeDasharray="4 2"
-                  strokeWidth={1.5}
-                  label={{ value: 'Goal', position: 'right', fontSize: 9, fill: cfg.color }}
-                />
-              )}
-              <Tooltip
-                cursor={{ fill: 'rgba(0,0,0,0.04)', radius: 6 }}
-                content={({ active, payload, label }) => {
-                  if (!active || !payload?.length) return null
-                  const val = payload[0]?.value as number
-                  return (
-                    <div className="rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 shadow-md text-xs">
-                      <p className="font-semibold text-muted mb-0.5">{label}</p>
-                      <p style={{ color: cfg.color }} className="font-bold">
-                        {val > 0 ? `${val.toLocaleString()} ${cfg.unit}` : 'Not logged'}
-                      </p>
-                    </div>
-                  )
-                }}
-              />
-              <Bar
-                dataKey={metric}
-                radius={[4, 4, 0, 0]}
-                onClick={(data: DayData) => setSelectedDate(data.date === selectedDate ? null : data.date)}
-                style={{ cursor: 'pointer' }}
-              >
-                {chartData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={entry.date === selectedDate ? '#9333ea' : entry.kcal === 0 ? 'rgba(100,116,139,0.2)' : cfg.color}
-                    opacity={entry.kcal === 0 ? 1 : entry.date === selectedDate ? 1 : 0.85}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {/* Bar chart (recharts lazy-loaded) */}
+        <HistoryBarChart
+          chartData={chartData}
+          range={range}
+          metric={metric}
+          metricTarget={metricTargets[metric]}
+          color={cfg.color}
+          unit={cfg.unit}
+          selectedDate={selectedDate}
+          onSelect={setSelectedDate}
+        />
 
         <p className="mt-2 text-[10px] text-muted text-center">
           Tap a bar to view that day&apos;s food diary

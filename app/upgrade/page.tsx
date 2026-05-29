@@ -1,16 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Button } from '../../components/ui/button'
 import { toast } from '../../components/ui/use-toast'
 import Link from 'next/link'
-import { Check, Crown, Zap, ArrowLeft } from 'lucide-react'
+import { Check, Crown, Zap, ArrowLeft, Lock } from 'lucide-react'
+
+const REASON_COPY: Record<string, { title: string; description: string }> = {
+  history:      { title: 'Unlock your full history', description: 'Free users can view the last 7 days. Pro shows everything.' },
+  custom_foods: { title: 'Create custom foods',      description: 'Log your home-cooked dishes and family recipes with Pro.' },
+  ai_insights:  { title: 'See your AI Weekly Insights', description: 'Personal analysis of your eating patterns, every Sunday.' },
+  exports:      { title: 'Export your data',         description: 'Download your full log as CSV with Pro.' },
+}
 
 const plans = [
   {
     id: 'monthly' as const,
     title: 'Monthly',
-    price: '$9.99',
+    price: '₹199',
     per: '/month',
     note: 'Cancel anytime',
     badge: null,
@@ -20,42 +28,46 @@ const plans = [
   {
     id: 'annual' as const,
     title: 'Annual',
-    price: '$4.99',
-    per: '/month',
-    note: 'Billed $59.99/year · 7-day free trial',
-    badge: 'Best value — Save 50%',
-    cta: 'Start Annual Free Trial',
+    price: '₹699',
+    per: '/year',
+    note: 'Billed ₹699/year · Save ₹1,689',
+    badge: 'Best value — Save 71%',
+    cta: 'Get Annual Plan',
     highlight: true,
-  },
-  {
-    id: 'lifetime' as const,
-    title: 'Lifetime',
-    price: '$129.99',
-    per: 'one time',
-    note: 'Pay once, use forever',
-    badge: null,
-    cta: 'Get Lifetime Access',
-    highlight: false,
   },
 ]
 
 const FEATURES = [
-  'Unlimited food logs (free = 5/day)',
-  'Exercise & workout logging',
-  'Full Indian food database (300+ dishes)',
-  'Weight trend charts',
-  'Copy yesterday\'s meals',
-  'Water intake tracking',
-  'Advanced macro analytics',
-  'Export data to CSV',
+  'AI Weekly Insights — personal analysis every Sunday',
+  'Full history — beyond the last 7 days',
+  'Custom foods & recipes — log your home-cooked dishes',
+  'Advanced trends — body measurements, sleep, fasting analytics',
+  'Export your data to CSV',
+  'Saved meal templates — log a whole meal in one tap',
   'Priority support',
   'No ads, ever',
 ]
 
+function ReasonBanner() {
+  const searchParams = useSearchParams()
+  const reason = searchParams.get('reason')
+  const reasonCopy = reason ? REASON_COPY[reason] : null
+  if (!reasonCopy) return null
+  return (
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20 p-4 mb-6 flex items-start gap-3">
+      <Lock className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+      <div>
+        <p className="text-sm font-bold text-amber-900 dark:text-amber-200">{reasonCopy.title}</p>
+        <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">{reasonCopy.description}</p>
+      </div>
+    </div>
+  )
+}
+
 export default function UpgradePage() {
   const [loading, setLoading] = useState<string | null>(null)
 
-  const startCheckout = async (plan: typeof plans[number]['id']) => {
+  const startCheckout = async (plan: 'monthly' | 'annual') => {
     if (loading) return
     setLoading(plan)
     try {
@@ -82,6 +94,11 @@ export default function UpgradePage() {
           Back to dashboard
         </Link>
 
+        {/* Contextual banner from gating (Suspense-wrapped because it reads URL params) */}
+        <Suspense fallback={null}>
+          <ReasonBanner />
+        </Suspense>
+
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-200 px-3 py-1 text-xs font-semibold text-indigo-700 mb-3 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-400">
@@ -89,7 +106,7 @@ export default function UpgradePage() {
             CalTrack Pro
           </div>
           <h1 className="text-3xl font-black text-foreground">Upgrade to Pro</h1>
-          <p className="mt-2 text-sm text-muted">Everything you need to hit your goals, nothing you don&apos;t.</p>
+          <p className="mt-2 text-sm text-muted">Log freely. Get deeper insights when you&apos;re ready.</p>
         </div>
 
         {/* Features */}

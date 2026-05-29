@@ -11,6 +11,14 @@ export async function POST(request: Request) {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    // Pro-only feature: creating custom foods
+    const { data: sub } = await supabase
+      .from('subscriptions').select('status').eq('user_id', session.user.id).maybeSingle()
+    const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
+    if (!isPro) {
+      return NextResponse.json({ error: 'Pro required', upgrade: 'custom_foods' }, { status: 402 })
+    }
+
     const body = await request.json()
     const parsed = customFoodSchema.safeParse(body)
     if (!parsed.success) {

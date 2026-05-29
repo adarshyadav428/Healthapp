@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient } from '../../../../lib/supabase/server'
-import { getUtcDayRange } from '../../../../lib/dateUtils'
 
 export const runtime = 'nodejs'
 
@@ -12,8 +11,6 @@ const schema = z.object({
   fat:     z.number().min(0).max(500).optional().default(0),
   meal:    z.enum(['breakfast', 'lunch', 'dinner', 'snack']).optional().default('snack'),
 })
-
-const FREE_LIMIT = 5
 
 export async function POST(req: Request) {
   try {
@@ -28,21 +25,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: parsed.error.errors[0]?.message ?? 'Invalid data' }, { status: 400 })
     }
     const { kcal, protein, carbs, fat, meal } = parsed.data
-
-    // Free-plan limit check
-    const { data: sub } = await supabase
-      .from('subscriptions').select('status').eq('user_id', userId).maybeSingle()
-    const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
-
-    if (!isPro) {
-      const { start, end } = getUtcDayRange()
-      const { count } = await supabase
-        .from('food_logs').select('id', { count: 'exact', head: true })
-        .eq('user_id', userId).gte('logged_at', start).lt('logged_at', end)
-      if ((count ?? 0) >= FREE_LIMIT) {
-        return NextResponse.json({ error: 'Free limit reached' }, { status: 402 })
-      }
-    }
 
     // Create a one-off food record (serving = 100g, so kcal_per_100g = entered kcal)
     const { data: food, error: foodError } = await supabase

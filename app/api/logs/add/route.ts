@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '../../../../lib/supabase/server'
 import { addFoodSchema } from '../../../../lib/validations'
-import { getUtcDayRange } from '../../../../lib/dateUtils'
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
@@ -21,28 +20,6 @@ export async function POST(req: Request) {
     const json = await req.json()
     const parsed = addFoodSchema.safeParse(json)
     if (!parsed.success) return NextResponse.json({ error: parsed.error.message }, { status: 400 })
-
-    const { data: sub, error: subError } = await supabase
-      .from('subscriptions')
-      .select('status')
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    const isPro = !subError && (sub?.status === 'active' || sub?.status === 'trialing')
-
-    if (!isPro) {
-      const { start, end } = getUtcDayRange()
-      const { count, error: countError } = await supabase
-        .from('food_logs')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gte('logged_at', start)
-        .lt('logged_at', end)
-      if (countError) throw new Error(countError.message)
-      if ((count ?? 0) >= 5) {
-        return NextResponse.json({ error: 'Free limit reached' }, { status: 402 })
-      }
-    }
 
     const { data: food, error: foodError } = await supabase
       .from('foods')

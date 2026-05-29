@@ -1,15 +1,18 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import type { WeightLog, Profile } from '../../types/index'
 import { WeightStats } from './WeightStats'
-import { WeightChart } from './WeightChart'
-import { WeightLogModal } from './WeightLogModal'
 import { BmiCard } from './BmiCard'
 import { useWeightLogs } from '../../hooks/useWeightLogs'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
 import { Plus, Trash2 } from 'lucide-react'
+
+// Charts and modal — split into their own chunks (recharts ships ~95KB).
+const WeightChart    = dynamic(() => import('./WeightChart').then(m => m.WeightChart),       { ssr: false, loading: () => <div className="h-48 rounded-2xl bg-card border border-border animate-pulse" /> })
+const WeightLogModal = dynamic(() => import('./WeightLogModal').then(m => m.WeightLogModal), { ssr: false })
 
 export function WeightClient({ logs, profile }: { logs: WeightLog[]; profile: Profile }) {
   const [open, setOpen] = useState(false)

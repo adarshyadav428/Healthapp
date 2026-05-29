@@ -4,7 +4,7 @@ import Stripe from 'stripe'
 import { getStripeClient } from '../../../../lib/stripe/client'
 import { createServerClient } from '../../../../lib/supabase/server'
 
-type Plan = 'monthly' | 'annual' | 'lifetime'
+type Plan = 'monthly' | 'annual'
 
 export async function POST(req: Request) {
   try {
@@ -12,7 +12,6 @@ export async function POST(req: Request) {
     const priceMap: Record<Plan, string | undefined> = {
       monthly: process.env.STRIPE_MONTHLY_PRICE_ID,
       annual: process.env.STRIPE_ANNUAL_PRICE_ID,
-      lifetime: process.env.STRIPE_LIFETIME_PRICE_ID,
     }
 
     const stripe = getStripeClient()
@@ -34,23 +33,15 @@ export async function POST(req: Request) {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL
     if (!appUrl) throw new Error('NEXT_PUBLIC_APP_URL environment variable is not set')
-    const isSubscription = plan !== 'lifetime'
 
     const params: Stripe.Checkout.SessionCreateParams = {
       customer: customer.id,
-      mode: isSubscription ? 'subscription' : 'payment',
+      mode: 'subscription',
       line_items: [{ price: priceMap[plan] as string, quantity: 1 }],
       success_url: `${appUrl}/dashboard?upgraded=true`,
       cancel_url: `${appUrl}/upgrade`,
       metadata: { user_id: user.id, plan },
-    }
-
-    if (isSubscription) {
-      const subData: Stripe.Checkout.SessionCreateParams.SubscriptionData = {
-        metadata: { user_id: user.id, plan },
-      }
-      if (plan === 'annual') subData.trial_period_days = 7
-      params.subscription_data = subData
+      subscription_data: { metadata: { user_id: user.id, plan } },
     }
 
     const session = await stripe.checkout.sessions.create(params)

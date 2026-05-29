@@ -1,11 +1,18 @@
 'use client'
 
 import { useMemo } from 'react'
+import dynamic from 'next/dynamic'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
 import { TodayProgressBar } from './TodayProgressBar'
-import { MacroPieChart } from './MacroPieChart'
 import type { FoodLog } from '../../types/index'
+
+// Recharts is ~95KB gzipped — keep it out of the initial /log bundle.
+// Only loads when the user has actually logged calories.
+const MacroPieChart = dynamic(() => import('./MacroPieChart').then(m => m.MacroPieChart), {
+  ssr: false,
+  loading: () => <div className="h-32 mt-4 rounded-2xl bg-card border border-border animate-pulse" />,
+})
 
 type Props = {
   initialLogs: FoodLog[]

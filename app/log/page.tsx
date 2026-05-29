@@ -1,18 +1,22 @@
 import { redirect } from 'next/navigation'
+import nextDynamic from 'next/dynamic'
 import { FoodSearch } from '../../components/log/FoodSearch'
 import { LogProgressClient } from '../../components/log/LogProgressClient'
 import { TodayFoodLog } from '../../components/log/TodayFoodLog'
 import { LogPageShell } from '../../components/log/LogPageShell'
-import { WaterTracker } from '../../components/log/WaterTracker'
-import { ExerciseLogger } from '../../components/log/ExerciseLogger'
-import { FastingTimer } from '../../components/log/FastingTimer'
-import { SleepTracker } from '../../components/log/SleepTracker'
 import { DateNav } from '../../components/log/DateNav'
 import { Navbar } from '../../components/layout/Navbar'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { createServerClient } from '../../lib/supabase/server'
 import type { Food, FoodLog } from '../../types/index'
 import { getUtcDayRange } from '../../lib/dateUtils'
+
+// Below-fold widgets — split into separate chunks so they don't block initial JS parse.
+const SkeletonCard = () => <div className="h-32 rounded-2xl bg-card border border-border animate-pulse" />
+const WaterTracker   = nextDynamic(() => import('../../components/log/WaterTracker').then(m => m.WaterTracker),     { ssr: false, loading: SkeletonCard })
+const ExerciseLogger = nextDynamic(() => import('../../components/log/ExerciseLogger').then(m => m.ExerciseLogger), { ssr: false, loading: SkeletonCard })
+const FastingTimer   = nextDynamic(() => import('../../components/log/FastingTimer').then(m => m.FastingTimer),     { ssr: false, loading: SkeletonCard })
+const SleepTracker   = nextDynamic(() => import('../../components/log/SleepTracker').then(m => m.SleepTracker),     { ssr: false, loading: SkeletonCard })
 
 export const dynamic = 'force-dynamic'
 export const metadata = { robots: { index: false } }
@@ -64,7 +68,24 @@ export default async function LogPage({
   if (profileError) throw new Error(profileError.message)
   if (!profile || profile.height_cm === null) redirect('/onboarding')
 
+  // Check Pro status — free users can only view the last 7 days of history
+  const { data: sub } = await supabase
+    .from('subscriptions').select('status').eq('user_id', user.id).maybeSingle()
+  const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
+
   const { date: viewDate, dateStr } = parseDateParam(searchParams?.date)
+
+  // Free-tier history gate: clamp dates older than 7 days
+  if (!isPro && searchParams?.date) {
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7)
+    const cutoffStr = [
+      sevenDaysAgo.getUTCFullYear(),
+      String(sevenDaysAgo.getUTCMonth() + 1).padStart(2, '0'),
+      String(sevenDaysAgo.getUTCDate()).padStart(2, '0'),
+    ].join('-')
+    if (dateStr < cutoffStr) redirect('/upgrade?reason=history')
+  }
 
   // Today's UTC string for comparison
   const nowUtc = new Date()
