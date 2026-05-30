@@ -8,7 +8,7 @@ import { DashboardClient } from '../../components/dashboard/DashboardClient'
 import { getUtcDayRange } from '../../lib/dateUtils'
 
 export const metadata: Metadata = {
-  title: 'Home — CalTrack',
+  title: 'Home — GetInShape',
   description: 'Your daily calorie snapshot.',
   robots: { index: false },
 }

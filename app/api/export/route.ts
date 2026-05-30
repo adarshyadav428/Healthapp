@@ -37,7 +37,7 @@ export async function GET() {
 
     // Build CSV
     const rows: string[] = [
-      '# CalTrack Food Log Export (last 90 days)',
+      '# GetInShape Food Log Export (last 90 days)',
       '# Generated: ' + new Date().toISOString(),
       '',
       'Date,Time,Meal,Food,Brand,Grams,Calories,Protein(g),Carbs(g),Fat(g)',

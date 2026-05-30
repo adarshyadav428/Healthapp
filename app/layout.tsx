@@ -10,13 +10,13 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'CalTrack — Indian Calorie & Macro Tracker',
-  description: 'Log Indian & global foods, track macros, water, exercise and weight. Built for desi diets.',
+  title: 'GetInShape — Weight Loss & Calorie Tracker',
+  description: 'Lose weight the Indian way. Track food, monitor progress, get AI insights.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'CalTrack',
+    title: 'GetInShape',
   },
   icons: {
     apple: '/icons/icon-192x192.png',
@@ -24,9 +24,9 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
   openGraph: {
     type: 'website',
-    title: 'CalTrack — Indian Calorie & Macro Tracker',
-    description: 'Track calories the Indian way. 600+ desi foods, exercise logging, weight trends.',
-    siteName: 'CalTrack',
+    title: 'GetInShape — Weight Loss & Calorie Tracker',
+    description: 'Lose weight the Indian way. Track food, monitor progress, get AI insights.',
+    siteName: 'GetInShape',
   },
 }
 

@@ -8,7 +8,7 @@ import { BottomNav } from '../../components/layout/BottomNav'
 import { ProgressClient } from '../../components/progress/ProgressClient'
 
 export const metadata: Metadata = {
-  title: 'Progress — CalTrack',
+  title: 'Progress — GetInShape',
   description: 'Your weight trend, streaks and weekly overview.',
   robots: { index: false },
 }

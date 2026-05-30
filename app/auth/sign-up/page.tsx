@@ -78,7 +78,7 @@ export default function SignUpPage() {
       {/* Logo */}
       <Link href="/" className="mb-10 flex items-center gap-2.5">
         <span className="text-[26px] leading-none">🥗</span>
-        <span className="text-xl font-black tracking-tight text-foreground">CalTrack</span>
+        <span className="text-xl font-black tracking-tight text-foreground">GetInShape</span>
       </Link>
 
       <div className="w-full max-w-sm">

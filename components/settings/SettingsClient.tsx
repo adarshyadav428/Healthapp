@@ -348,7 +348,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
             <ChevronRight className="h-4 w-4 text-rose-300 dark:text-rose-700" />
           </button>
         </div>
-        <p className="mt-3 text-center text-xs text-muted">CalTrack v{version}</p>
+        <p className="mt-3 text-center text-xs text-muted">GetInShape v{version}</p>
       </SectionCard>
     </div>
   )

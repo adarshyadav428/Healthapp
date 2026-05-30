@@ -78,7 +78,7 @@ export function OnboardingForm() {
       }
 
       queryClient.invalidateQueries({ queryKey: ['profile'] })
-      toast({ title: 'Profile saved!', description: 'Welcome to CalTrack 🎉' })
+      toast({ title: 'Profile saved!', description: 'Welcome to GetInShape 🎉' })
       window.location.href = '/dashboard'
     } catch (err) {
       toast({ title: 'Onboarding failed', description: (err as Error).message, variant: 'error' })

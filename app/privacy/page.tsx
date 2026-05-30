@@ -7,7 +7,7 @@ export default function PrivacyPage() {
         <div className="mb-6">
           <Link href="/" className="flex items-center gap-2 mb-8">
             <span className="text-2xl">🥗</span>
-            <span className="text-xl font-black text-indigo-600">CalTrack</span>
+            <span className="text-xl font-black text-indigo-600">GetInShape</span>
           </Link>
           <h1 className="text-3xl font-black text-foreground">Privacy Policy</h1>
           <p className="text-sm text-muted mt-1">Last updated: May 1, 2026</p>
@@ -27,7 +27,7 @@ export default function PrivacyPage() {
           </Section>
 
           <Section title="2. How We Use Your Data">
-            We use your data solely to provide CalTrack&apos;s features: calculating your calorie targets,
+            We use your data solely to provide GetInShape&apos;s features: calculating your calorie targets,
             showing your food and weight history, and managing your subscription. We do not use your data
             for advertising or sell it to third parties.
           </Section>
@@ -56,12 +56,12 @@ export default function PrivacyPage() {
           </Section>
 
           <Section title="6. Cookies">
-            CalTrack uses essential cookies for authentication (session management). We do not use
+            GetInShape uses essential cookies for authentication (session management). We do not use
             tracking or advertising cookies.
           </Section>
 
           <Section title="7. Children">
-            CalTrack is not intended for users under the age of 13. If you believe a child has
+            GetInShape is not intended for users under the age of 13. If you believe a child has
             created an account, please contact us to have it removed.
           </Section>
 

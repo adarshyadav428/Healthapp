@@ -103,7 +103,7 @@ export default function UpgradePage() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-200 px-3 py-1 text-xs font-semibold text-indigo-700 mb-3 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-400">
             <Crown className="h-3.5 w-3.5" />
-            CalTrack Pro
+            GetInShape Pro
           </div>
           <h1 className="text-3xl font-black text-foreground">Upgrade to Pro</h1>
           <p className="mt-2 text-sm text-muted">Log freely. Get deeper insights when you&apos;re ready.</p>

@@ -2,9 +2,9 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'CalTrack — Calorie & Health Tracker',
-    short_name: 'CalTrack',
-    description: 'Track calories, macros, weight, water and more',
+    name: 'GetInShape — Weight Loss Tracker',
+    short_name: 'GetInShape',
+    description: 'Lose weight the Indian way. Track food, monitor progress, get AI insights.',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',

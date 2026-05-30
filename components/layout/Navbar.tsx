@@ -19,7 +19,7 @@ export function Navbar() {
       <Link href="/dashboard" className="flex items-center gap-2">
         <span className="text-[22px] leading-none">🥗</span>
         <span className="text-[17px] font-black tracking-tight text-foreground">
-          CalTrack
+          GetInShape
         </span>
       </Link>
 

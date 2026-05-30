@@ -1,6 +1,6 @@
 {
-  "name": "CalTrack — Indian Calorie Tracker",
-  "short_name": "CalTrack",
+  "name": "GetInShape — Indian Calorie Tracker",
+  "short_name": "GetInShape",
   "description": "Log Indian & global foods, track macros, water, exercise and weight. Built for Indian diets.",
   "start_url": "/dashboard",
   "display": "standalone",

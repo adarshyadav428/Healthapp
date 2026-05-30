@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
         {/* Logo */}
         <Link href="/" className="mb-8 flex items-center gap-2.5">
           <span className="text-[26px] leading-none">🥗</span>
-          <span className="text-xl font-black tracking-tight text-foreground">CalTrack</span>
+          <span className="text-xl font-black tracking-tight text-foreground">GetInShape</span>
         </Link>
 
         <h1 className="text-2xl font-black text-foreground mb-1">Forgot password?</h1>

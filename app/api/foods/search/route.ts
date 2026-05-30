@@ -137,7 +137,7 @@ async function fetchOpenFoodFacts(query: string): Promise<ExternalFood[]> {
       `&page_size=15&sort_by=unique_scans_n`
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { 'User-Agent': 'CalTrack/1.0 (calorie tracking app)' },
+      headers: { 'User-Agent': 'GetInShape/1.0 (calorie tracking app)' },
     })
     clearTimeout(timeoutId)
     if (!res.ok) return []

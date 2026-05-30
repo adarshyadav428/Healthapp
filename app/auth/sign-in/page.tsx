@@ -55,7 +55,7 @@ export default function SignInPage() {
       {/* Logo */}
       <Link href="/" className="mb-10 flex items-center gap-2.5">
         <span className="text-[26px] leading-none">🥗</span>
-        <span className="text-xl font-black tracking-tight text-foreground">CalTrack</span>
+        <span className="text-xl font-black tracking-tight text-foreground">GetInShape</span>
       </Link>
 
       <div className="w-full max-w-sm">
@@ -132,7 +132,7 @@ export default function SignInPage() {
         </button>
 
         <p className="mt-7 text-center text-sm text-muted">
-          New to CalTrack?{' '}
+          New to GetInShape?{' '}
           <Link href="/auth/sign-up" className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
             Create account
           </Link>

@@ -11,7 +11,7 @@ export default function Home() {
       <header className="mx-auto flex w-full max-w-4xl items-center justify-between px-5 py-5">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🥗</span>
-          <span className="text-xl font-black text-foreground tracking-tight">CalTrack</span>
+          <span className="text-xl font-black text-foreground tracking-tight">GetInShape</span>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/auth/sign-in" className="text-sm font-medium text-muted hover:text-foreground transition-colors">
@@ -150,7 +150,7 @@ export default function Home() {
               <p className="text-sm text-muted leading-relaxed mb-4">
                 I&apos;m Adarsh — engineering student, running a medical store in UP, and on a personal mission to
                 lose weight the right way. HealthifyMe didn&apos;t have accurate data for the food I actually eat.
-                MyFitnessPal is built for the West. So I built CalTrack: 600+ Indian foods from IFCT 2017,
+                MyFitnessPal is built for the West. So I built GetInShape: 600+ Indian foods from IFCT 2017,
                 the same database nutrition researchers use.
               </p>
               <p className="text-sm text-muted leading-relaxed mb-5">
@@ -272,7 +272,7 @@ export default function Home() {
         {/* Final CTA */}
         <section className="mt-16 rounded-3xl border border-border bg-card p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
           <h2 className="text-2xl font-black text-foreground">Ready to start?</h2>
-          <p className="mt-2 text-sm text-muted">Join CalTrack and take control of your nutrition — the Indian way.</p>
+          <p className="mt-2 text-sm text-muted">Join GetInShape and take control of your nutrition — the Indian way.</p>
           <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Link
               href="/auth/sign-up"
@@ -288,7 +288,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-border bg-card/60 px-5 py-8 text-center text-xs text-muted dark:border-slate-800 dark:bg-slate-900/70">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3">
-          <span>© 2026 CalTrack · Made with ❤️ for India</span>
+          <span>© 2026 GetInShape · Made with ❤️ for India</span>
           <div className="flex gap-4">
             <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
