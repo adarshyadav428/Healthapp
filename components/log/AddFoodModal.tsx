@@ -61,56 +61,520 @@ function foodEmoji(name: string): string {
 
 type Unit = { key: string; label: string; toGrams: (q: number) => number }
 
-/** Build unit options from common_portions (IFCT Indian foods) or fall back to name-inference. */
+/**
+ * Smart portion lookup — takes precedence over serving_size_g and common_portions.
+ * Covers any food source (USDA, OFF, IFCT, custom) by matching the food name.
+ * Each entry has size variants so users pick Small / Medium / Large, not a mystery "Serving".
+ */
+type SmartPortion = { key: string; label: string; grams: number }
+type SmartEntry   = { pattern: RegExp; portions: SmartPortion[]; defaultKey: string }
+
+const SMART_PORTIONS: SmartEntry[] = [
+  // ── EGGS ──────────────────────────────────────────────────────────────────
+  {
+    pattern: /\begg\b|\banda\b/i,
+    portions: [
+      { key: 'small',  label: 'Small egg (38g)',       grams: 38 },
+      { key: 'medium', label: 'Medium egg (44g)',      grams: 44 },
+      { key: 'large',  label: 'Large egg (50g)',       grams: 50 },
+      { key: 'xl',     label: 'Extra large egg (56g)', grams: 56 },
+    ],
+    defaultKey: 'large',
+  },
+  // ── BREADS ────────────────────────────────────────────────────────────────
+  {
+    pattern: /roti|chapati|chapathi/i,
+    portions: [
+      { key: 'small',  label: 'Small roti (25g)',  grams: 25 },
+      { key: 'medium', label: 'Medium roti (35g)', grams: 35 },
+      { key: 'large',  label: 'Large roti (45g)',  grams: 45 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /paratha/i,
+    portions: [
+      { key: 'small',  label: 'Small paratha (60g)',  grams: 60 },
+      { key: 'medium', label: 'Medium paratha (80g)', grams: 80 },
+      { key: 'large',  label: 'Large paratha (100g)', grams: 100 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /naan/i,
+    portions: [
+      { key: 'small',  label: 'Small naan (70g)',  grams: 70 },
+      { key: 'medium', label: 'Medium naan (90g)', grams: 90 },
+      { key: 'large',  label: 'Large naan (120g)', grams: 120 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /bhatura|bhature/i,
+    portions: [
+      { key: '1', label: '1 bhatura (80g)',   grams: 80 },
+      { key: '2', label: '2 bhature (160g)',  grams: 160 },
+    ],
+    defaultKey: '1',
+  },
+  {
+    pattern: /puri|poori/i,
+    portions: [
+      { key: '1', label: '1 puri (25g)',   grams: 25 },
+      { key: '3', label: '3 puris (75g)',  grams: 75 },
+      { key: '5', label: '5 puris (125g)', grams: 125 },
+    ],
+    defaultKey: '1',
+  },
+  {
+    pattern: /thepla|makki|missi/i,
+    portions: [
+      { key: 'small',  label: 'Small (30g)',  grams: 30 },
+      { key: 'medium', label: 'Medium (40g)', grams: 40 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /bread|toast/i,
+    portions: [
+      { key: '1', label: '1 slice (25g)',  grams: 25 },
+      { key: '2', label: '2 slices (50g)', grams: 50 },
+    ],
+    defaultKey: '1',
+  },
+  // ── SOUTH INDIAN ──────────────────────────────────────────────────────────
+  {
+    pattern: /idli/i,
+    portions: [
+      { key: '1', label: '1 idli (40g)',   grams: 40 },
+      { key: '2', label: '2 idlis (80g)',  grams: 80 },
+      { key: '3', label: '3 idlis (120g)', grams: 120 },
+      { key: '4', label: '4 idlis (160g)', grams: 160 },
+    ],
+    defaultKey: '2',
+  },
+  {
+    pattern: /dosa/i,
+    portions: [
+      { key: 'small',  label: 'Small dosa (60g)',   grams: 60 },
+      { key: 'medium', label: 'Medium dosa (80g)',  grams: 80 },
+      { key: 'large',  label: 'Large dosa (120g)',  grams: 120 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /vada|wada/i,
+    portions: [
+      { key: '1', label: '1 vada (30g)',  grams: 30 },
+      { key: '2', label: '2 vadas (60g)', grams: 60 },
+    ],
+    defaultKey: '1',
+  },
+  {
+    pattern: /uttapam/i,
+    portions: [
+      { key: 'small',  label: 'Small uttapam (70g)',  grams: 70 },
+      { key: 'medium', label: 'Medium uttapam (90g)', grams: 90 },
+    ],
+    defaultKey: 'medium',
+  },
+  // ── RICE ──────────────────────────────────────────────────────────────────
+  {
+    pattern: /biryani/i,
+    portions: [
+      { key: 'half',  label: 'Half plate (200g)',   grams: 200 },
+      { key: 'plate', label: 'Full plate (350g)',   grams: 350 },
+      { key: 'katori',label: '1 katori (150g)',     grams: 150 },
+    ],
+    defaultKey: 'plate',
+  },
+  {
+    pattern: /pulao|pilaf/i,
+    portions: [
+      { key: 'katori', label: '1 katori (150g)', grams: 150 },
+      { key: 'plate',  label: '1 plate (250g)',  grams: 250 },
+    ],
+    defaultKey: 'katori',
+  },
+  {
+    pattern: /rice|chawal/i,
+    portions: [
+      { key: 'katori',  label: '1 katori cooked (150g)', grams: 150 },
+      { key: '2katori', label: '2 katori (300g)',         grams: 300 },
+      { key: 'plate',   label: '1 plate (250g)',          grams: 250 },
+    ],
+    defaultKey: 'katori',
+  },
+  // ── DAL / CURRY ───────────────────────────────────────────────────────────
+  {
+    pattern: /dal|daal|lentil|sambh?ar|rasam/i,
+    portions: [
+      { key: 'small',  label: 'Small katori (120ml)', grams: 120 },
+      { key: 'medium', label: 'Katori (200ml)',        grams: 200 },
+      { key: 'large',  label: 'Large katori (300ml)', grams: 300 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /paneer/i,
+    portions: [
+      { key: 'small',  label: 'Small katori (100g)',  grams: 100 },
+      { key: 'medium', label: 'Katori (150g)',         grams: 150 },
+      { key: 'large',  label: 'Large katori (200g)',  grams: 200 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /sabzi|subzi|bhaji|curry|masala|aloo|gobi|palak|bhindi|baingan|lauki|karela|methi|rajma|chole|chana/i,
+    portions: [
+      { key: 'small',  label: 'Small katori (100g)',  grams: 100 },
+      { key: 'medium', label: 'Katori (150g)',         grams: 150 },
+      { key: 'large',  label: 'Large katori (200g)',  grams: 200 },
+    ],
+    defaultKey: 'medium',
+  },
+  // ── BREAKFAST DISHES ──────────────────────────────────────────────────────
+  {
+    pattern: /poha/i,
+    portions: [
+      { key: 'small',  label: 'Small plate (150g)',  grams: 150 },
+      { key: 'medium', label: 'Medium plate (200g)', grams: 200 },
+      { key: 'large',  label: 'Large plate (300g)',  grams: 300 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /upma/i,
+    portions: [
+      { key: 'small',  label: 'Small plate (150g)',  grams: 150 },
+      { key: 'medium', label: 'Medium plate (200g)', grams: 200 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /khichdi|khichri/i,
+    portions: [
+      { key: 'katori', label: '1 katori (200g)', grams: 200 },
+      { key: 'plate',  label: '1 plate (300g)',  grams: 300 },
+    ],
+    defaultKey: 'katori',
+  },
+  // ── SNACKS ────────────────────────────────────────────────────────────────
+  {
+    pattern: /samosa/i,
+    portions: [
+      { key: 'small',  label: 'Small samosa (40g)',  grams: 40 },
+      { key: 'medium', label: 'Medium samosa (60g)', grams: 60 },
+      { key: 'large',  label: 'Large samosa (80g)',  grams: 80 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /kachori/i,
+    portions: [
+      { key: 'small',  label: 'Small kachori (40g)',  grams: 40 },
+      { key: 'medium', label: 'Medium kachori (60g)', grams: 60 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /pakora|pakoda/i,
+    portions: [
+      { key: '2',  label: '2 pieces (40g)',  grams: 40 },
+      { key: '4',  label: '4 pieces (80g)',  grams: 80 },
+      { key: '6',  label: '6 pieces (120g)', grams: 120 },
+    ],
+    defaultKey: '4',
+  },
+  {
+    pattern: /biscuit|cookie/i,
+    portions: [
+      { key: '1', label: '1 biscuit (10g)', grams: 10 },
+      { key: '2', label: '2 biscuits (20g)',grams: 20 },
+      { key: '4', label: '4 biscuits (40g)',grams: 40 },
+    ],
+    defaultKey: '2',
+  },
+  // ── MEAT / CHICKEN ────────────────────────────────────────────────────────
+  {
+    pattern: /chicken breast/i,
+    portions: [
+      { key: 'small',  label: 'Small piece (80g)',   grams: 80 },
+      { key: 'medium', label: 'Medium piece (120g)', grams: 120 },
+      { key: 'large',  label: 'Large piece (170g)',  grams: 170 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /chicken|murgh|tandoori/i,
+    portions: [
+      { key: 'katori', label: 'Katori / curry (150g)', grams: 150 },
+      { key: 'piece',  label: '1 piece / drumstick (80g)', grams: 80 },
+      { key: 'half',   label: 'Half portion (200g)',   grams: 200 },
+    ],
+    defaultKey: 'katori',
+  },
+  {
+    pattern: /mutton|gosht|lamb/i,
+    portions: [
+      { key: 'small',  label: 'Small katori (100g)',  grams: 100 },
+      { key: 'medium', label: 'Katori (150g)',         grams: 150 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /fish|machli|rohu|pomfret|salmon/i,
+    portions: [
+      { key: 'small',  label: 'Small piece (80g)',   grams: 80 },
+      { key: 'medium', label: 'Medium piece (120g)', grams: 120 },
+      { key: 'large',  label: 'Large piece (160g)',  grams: 160 },
+    ],
+    defaultKey: 'medium',
+  },
+  // ── DAIRY ─────────────────────────────────────────────────────────────────
+  {
+    pattern: /milk|doodh/i,
+    portions: [
+      { key: 'half',  label: 'Half glass (100ml)', grams: 100 },
+      { key: 'glass', label: '1 glass (200ml)',    grams: 200 },
+      { key: 'cup',   label: '1 cup (240ml)',      grams: 240 },
+    ],
+    defaultKey: 'glass',
+  },
+  {
+    pattern: /curd|dahi|yogurt/i,
+    portions: [
+      { key: 'small',  label: 'Small katori (80g)',  grams: 80 },
+      { key: 'medium', label: 'Katori (150g)',        grams: 150 },
+      { key: 'large',  label: 'Large katori (200g)', grams: 200 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /lassi|chaas|buttermilk/i,
+    portions: [
+      { key: 'glass',  label: '1 glass (200ml)', grams: 200 },
+      { key: 'large',  label: 'Large (300ml)',   grams: 300 },
+    ],
+    defaultKey: 'glass',
+  },
+  {
+    pattern: /ghee|butter/i,
+    portions: [
+      { key: 'tsp',   label: '1 tsp (5g)',   grams: 5 },
+      { key: 'tbsp',  label: '1 tbsp (15g)', grams: 15 },
+    ],
+    defaultKey: 'tsp',
+  },
+  // ── DRINKS ────────────────────────────────────────────────────────────────
+  {
+    pattern: /chai|tea/i,
+    portions: [
+      { key: 'cutting', label: 'Cutting chai (100ml)', grams: 100 },
+      { key: 'cup',     label: '1 cup (150ml)',         grams: 150 },
+      { key: 'mug',     label: 'Mug (250ml)',           grams: 250 },
+    ],
+    defaultKey: 'cup',
+  },
+  {
+    pattern: /coffee/i,
+    portions: [
+      { key: 'cup',  label: '1 cup (150ml)',  grams: 150 },
+      { key: 'mug',  label: 'Mug (250ml)',    grams: 250 },
+    ],
+    defaultKey: 'cup',
+  },
+  {
+    pattern: /juice|nimbu|panna|sharbat/i,
+    portions: [
+      { key: 'glass',  label: '1 glass (200ml)', grams: 200 },
+      { key: 'large',  label: 'Large (300ml)',   grams: 300 },
+    ],
+    defaultKey: 'glass',
+  },
+  // ── SWEETS ────────────────────────────────────────────────────────────────
+  {
+    pattern: /ladoo|laddoo/i,
+    portions: [
+      { key: 'small',  label: 'Small ladoo (25g)',  grams: 25 },
+      { key: 'medium', label: 'Medium ladoo (40g)', grams: 40 },
+      { key: 'large',  label: 'Large ladoo (55g)',  grams: 55 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /gulab jamun/i,
+    portions: [
+      { key: '1', label: '1 piece (40g)', grams: 40 },
+      { key: '2', label: '2 pieces (80g)',grams: 80 },
+    ],
+    defaultKey: '1',
+  },
+  {
+    pattern: /jalebi/i,
+    portions: [
+      { key: 'small',  label: 'Small serving (40g)',  grams: 40 },
+      { key: 'medium', label: 'Medium serving (80g)', grams: 80 },
+    ],
+    defaultKey: 'small',
+  },
+  {
+    pattern: /halwa/i,
+    portions: [
+      { key: 'small',  label: 'Small katori (80g)',  grams: 80 },
+      { key: 'medium', label: 'Katori (150g)',        grams: 150 },
+    ],
+    defaultKey: 'small',
+  },
+  {
+    pattern: /kheer|payasam/i,
+    portions: [
+      { key: 'small',  label: 'Small katori (100g)',  grams: 100 },
+      { key: 'medium', label: 'Katori (150g)',         grams: 150 },
+    ],
+    defaultKey: 'small',
+  },
+  // ── FRUITS ────────────────────────────────────────────────────────────────
+  {
+    pattern: /banana|kela/i,
+    portions: [
+      { key: 'small',  label: 'Small banana (80g)',   grams: 80 },
+      { key: 'medium', label: 'Medium banana (120g)', grams: 120 },
+      { key: 'large',  label: 'Large banana (150g)',  grams: 150 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /mango|aam/i,
+    portions: [
+      { key: 'small',  label: 'Small mango (150g)',  grams: 150 },
+      { key: 'medium', label: 'Medium mango (200g)', grams: 200 },
+      { key: 'large',  label: 'Large mango (300g)',  grams: 300 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /apple/i,
+    portions: [
+      { key: 'small',  label: 'Small apple (120g)',  grams: 120 },
+      { key: 'medium', label: 'Medium apple (150g)', grams: 150 },
+      { key: 'large',  label: 'Large apple (200g)',  grams: 200 },
+    ],
+    defaultKey: 'medium',
+  },
+  {
+    pattern: /orange|mosambi/i,
+    portions: [
+      { key: 'small',  label: 'Small (100g)',  grams: 100 },
+      { key: 'medium', label: 'Medium (130g)', grams: 130 },
+      { key: 'large',  label: 'Large (180g)',  grams: 180 },
+    ],
+    defaultKey: 'medium',
+  },
+  // ── NUTS ──────────────────────────────────────────────────────────────────
+  {
+    pattern: /almond|badam/i,
+    portions: [
+      { key: '6',      label: '6 almonds (8g)',      grams: 8 },
+      { key: '12',     label: '12 almonds (15g)',     grams: 15 },
+      { key: 'small',  label: 'Small handful (20g)', grams: 20 },
+    ],
+    defaultKey: '12',
+  },
+  {
+    pattern: /cashew|kaju/i,
+    portions: [
+      { key: '5',     label: '5 cashews (8g)',       grams: 8 },
+      { key: '10',    label: '10 cashews (16g)',      grams: 16 },
+      { key: 'small', label: 'Small handful (25g)',  grams: 25 },
+    ],
+    defaultKey: '10',
+  },
+  {
+    pattern: /peanut|moongfali/i,
+    portions: [
+      { key: 'small',  label: 'Small handful (20g)', grams: 20 },
+      { key: 'medium', label: 'Medium handful (30g)',grams: 30 },
+    ],
+    defaultKey: 'small',
+  },
+  // ── STREET FOOD ───────────────────────────────────────────────────────────
+  {
+    pattern: /pav bhaji/i,
+    portions: [
+      { key: 'plate',  label: '1 plate — bhaji + 2 pav (280g)', grams: 280 },
+      { key: 'half',   label: 'Half plate (150g)',               grams: 150 },
+    ],
+    defaultKey: 'plate',
+  },
+  {
+    pattern: /pav/i,
+    portions: [
+      { key: '1', label: '1 pav (40g)',  grams: 40 },
+      { key: '2', label: '2 pav (80g)',  grams: 80 },
+    ],
+    defaultKey: '1',
+  },
+  {
+    pattern: /momo/i,
+    portions: [
+      { key: '6',  label: '6 momos (120g)', grams: 120 },
+      { key: '10', label: '10 momos (200g)',grams: 200 },
+    ],
+    defaultKey: '6',
+  },
+]
+
 function buildUnits(food: Food): Unit[] {
   const units: Unit[] = []
 
-  // Always offer grams first
+  // Always offer grams first (raw input)
   units.push({ key: 'g', label: 'Grams', toGrams: (q) => q })
 
-  if (food.common_portions && food.common_portions.length > 0) {
-    // Use structured portion data (Indian foods from migration 008)
+  // 1. Smart lookup — works for ALL sources (USDA, OFF, IFCT, custom)
+  //    This fixes the root cause: serving_size_g = 100 in nutrition DBs ≠ 1 real serving
+  const smartMatch = SMART_PORTIONS.find((e) => e.pattern.test(food.name))
+  if (smartMatch) {
+    for (const p of smartMatch.portions) {
+      units.push({ key: p.key, label: p.label, toGrams: (q) => q * p.grams })
+    }
+  }
+  // 2. Fall back to common_portions from DB (IFCT migration 008)
+  else if (food.common_portions && food.common_portions.length > 0) {
     for (const p of food.common_portions) {
-      if (p.unit === 'gram') continue // skip 100g entry — covered by Grams above
+      if (p.unit === 'gram') continue
       units.push({
         key: `portion_${p.unit}_${p.grams}`,
         label: p.label,
         toGrams: (q) => q * p.grams,
       })
     }
-  } else {
-    // Fallback: infer piece/serving unit from food name + serving_description
-    const servingG = food.serving_size_g ?? 100
-    if (servingG > 0) {
-      const desc = food.serving_description?.toLowerCase() ?? ''
-      const n = food.name.toLowerCase()
-      let pieceLabel = 'Serving'
-      if (/roti|chapati|paratha|naan|puri|bhatura|thepla|makki/.test(n)) pieceLabel = 'Roti / Piece'
-      else if (/idli|dosa|uttapam|vada|samosa|kachori|momo|appam|modak|peda|ladoo|jalebi|barfi|gulab|rasgulla|chikki/.test(n)) pieceLabel = 'Piece'
-      else if (/egg|anda/.test(n)) pieceLabel = 'Egg'
-      else if (/biscuit/.test(n)) pieceLabel = 'Biscuit'
-      else if (/glass/.test(desc)) pieceLabel = 'Glass'
-      else if (/cup/.test(desc)) pieceLabel = 'Cup'
-      else if (/katori/.test(desc)) pieceLabel = 'Katori'
-      units.push({ key: 'piece', label: pieceLabel, toGrams: (q) => q * servingG })
-    }
+  }
+  // 3. Last resort: use serving_size_g only if it's a realistic single serving (<= 250g and not the default 100g)
+  else if (food.serving_size_g > 0 && food.serving_size_g !== 100) {
+    units.push({
+      key: 'serving',
+      label: `1 serving (${food.serving_size_g}g)`,
+      toGrams: (q) => q * food.serving_size_g,
+    })
   }
 
-  // Always offer ounces
+  // Always offer ounces at the end
   units.push({ key: 'oz', label: 'Ounce (oz)', toGrams: (q) => q * 28.3495 })
 
   return units
 }
 
 function pickDefaultUnit(units: Unit[], food: Food): Unit {
-  // For foods with common_portions, default to the first non-gram option (e.g. "1 katori")
-  if (food.common_portions && food.common_portions.length > 0) {
-    const first = units.find((u) => u.key !== 'g' && u.key !== 'oz')
-    if (first) return first
+  // Smart lookup: default to the specific size variant defined in the entry
+  const smartMatch = SMART_PORTIONS.find((e) => e.pattern.test(food.name))
+  if (smartMatch) {
+    const def = units.find((u) => u.key === smartMatch.defaultKey)
+    if (def) return def
   }
-  // Otherwise default to piece/serving if serving_size_g is realistic
-  const piece = units.find((u) => u.key === 'piece')
-  if (piece && (food.serving_size_g ?? 0) > 0 && (food.serving_size_g ?? 0) <= 250) return piece
+  // Otherwise first non-gram, non-oz option
+  const first = units.find((u) => u.key !== 'g' && u.key !== 'oz')
+  if (first) return first
   return units[0]
 }
 
