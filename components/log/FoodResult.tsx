@@ -2,11 +2,11 @@ import type { Food } from '../../types/index'
 import { Loader2, Plus, Star } from 'lucide-react'
 
 const SOURCE_BADGE: Record<string, { label: string; color: string }> = {
-  ifct:     { label: '🇮🇳 Indian', color: 'bg-orange-100 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400' },
-  usda:     { label: '🇺🇸 USDA',   color: 'bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400' },
-  user:     { label: '👤 Custom',  color: 'bg-purple-100 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400' },
-  off:      { label: '🌍 Global',  color: 'bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400' },
-  estimate: { label: '📊 Est.',    color: 'bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400' },
+  ifct:     { label: '🇮🇳 IFCT',          color: 'bg-orange-100 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400' },
+  usda:     { label: '🇺🇸 USDA',          color: 'bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400' },
+  user:     { label: '👤 Custom',         color: 'bg-purple-100 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400' },
+  off:      { label: '✓ Open Food Facts', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' },
+  estimate: { label: '📊 Est.',           color: 'bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400' },
 }
 
 export function FoodResult({
