@@ -20,6 +20,12 @@ export type Profile = {
   updated_at: string
 }
 
+export type FoodPortion = {
+  unit: string
+  grams: number
+  label: string
+}
+
 export type Food = {
   id: string
   source: 'usda' | 'off' | 'user' | 'ifct' | 'estimate'
@@ -33,6 +39,7 @@ export type Food = {
   carbs_g_per_100g: number
   fat_g_per_100g: number
   fiber_g_per_100g: number | null
+  common_portions: FoodPortion[] | null
 }
 
 export type FoodLog = {

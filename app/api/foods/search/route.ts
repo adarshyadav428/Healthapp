@@ -10,7 +10,7 @@ const searchCache = new Map<string, { data: Food[]; expires: number }>()
 const CACHE_TTL_MS = 120_000
 const CACHE_MAX = 200
 const FOOD_SELECT =
-  'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g'
+  'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions'
 
 function rateLimit(ip: string, limit = 30, windowMs = 60_000) {
   const now = Date.now()
@@ -74,6 +74,7 @@ function offToExternal(f: Awaited<ReturnType<typeof searchOpenFoodFacts>>[number
     carbs_g_per_100g: f.carbs_per_100g,
     fat_g_per_100g: f.fat_per_100g,
     fiber_g_per_100g: f.fiber_per_100g || null,
+    common_portions: null, // OFF foods use name-based unit inference in AddFoodModal
   }
 }
 

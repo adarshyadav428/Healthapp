@@ -61,24 +61,39 @@ function foodEmoji(name: string): string {
 
 type Unit = { key: string; label: string; toGrams: (q: number) => number }
 
+/** Build unit options from common_portions (IFCT Indian foods) or fall back to name-inference. */
 function buildUnits(food: Food): Unit[] {
-  const servingG = food.serving_size_g ?? 100
   const units: Unit[] = []
 
-  // Always offer grams
+  // Always offer grams first
   units.push({ key: 'g', label: 'Grams', toGrams: (q) => q })
 
-  // Per-piece unit if the food has a defined serving
-  if (servingG > 0) {
-    const desc = food.serving_description?.toLowerCase() ?? ''
-    let pieceLabel = 'Serving'
-    if (/roti|chapati|paratha|naan|puri|bhatura|thepla|makki/.test(food.name.toLowerCase())) pieceLabel = 'Roti / Piece'
-    else if (/idli|dosa|uttapam|vada|samosa|kachori|momo|appam|modak|peda|ladoo|jalebi|barfi|gulab|rasgulla|chikki|momos/.test(food.name.toLowerCase())) pieceLabel = 'Piece'
-    else if (/egg|anda/.test(food.name.toLowerCase())) pieceLabel = 'Egg'
-    else if (/biscuit/.test(food.name.toLowerCase())) pieceLabel = 'Biscuit'
-    else if (/glass|cup|katori/.test(desc)) pieceLabel = desc.includes('glass') ? 'Glass' : desc.includes('cup') ? 'Cup' : 'Katori'
-    else pieceLabel = 'Serving'
-    units.push({ key: 'piece', label: pieceLabel, toGrams: (q) => q * servingG })
+  if (food.common_portions && food.common_portions.length > 0) {
+    // Use structured portion data (Indian foods from migration 008)
+    for (const p of food.common_portions) {
+      if (p.unit === 'gram') continue // skip 100g entry — covered by Grams above
+      units.push({
+        key: `portion_${p.unit}_${p.grams}`,
+        label: p.label,
+        toGrams: (q) => q * p.grams,
+      })
+    }
+  } else {
+    // Fallback: infer piece/serving unit from food name + serving_description
+    const servingG = food.serving_size_g ?? 100
+    if (servingG > 0) {
+      const desc = food.serving_description?.toLowerCase() ?? ''
+      const n = food.name.toLowerCase()
+      let pieceLabel = 'Serving'
+      if (/roti|chapati|paratha|naan|puri|bhatura|thepla|makki/.test(n)) pieceLabel = 'Roti / Piece'
+      else if (/idli|dosa|uttapam|vada|samosa|kachori|momo|appam|modak|peda|ladoo|jalebi|barfi|gulab|rasgulla|chikki/.test(n)) pieceLabel = 'Piece'
+      else if (/egg|anda/.test(n)) pieceLabel = 'Egg'
+      else if (/biscuit/.test(n)) pieceLabel = 'Biscuit'
+      else if (/glass/.test(desc)) pieceLabel = 'Glass'
+      else if (/cup/.test(desc)) pieceLabel = 'Cup'
+      else if (/katori/.test(desc)) pieceLabel = 'Katori'
+      units.push({ key: 'piece', label: pieceLabel, toGrams: (q) => q * servingG })
+    }
   }
 
   // Always offer ounces
@@ -88,10 +103,15 @@ function buildUnits(food: Food): Unit[] {
 }
 
 function pickDefaultUnit(units: Unit[], food: Food): Unit {
-  // If there's a piece/serving unit and serving_size_g <= 250g, default to it
+  // For foods with common_portions, default to the first non-gram option (e.g. "1 katori")
+  if (food.common_portions && food.common_portions.length > 0) {
+    const first = units.find((u) => u.key !== 'g' && u.key !== 'oz')
+    if (first) return first
+  }
+  // Otherwise default to piece/serving if serving_size_g is realistic
   const piece = units.find((u) => u.key === 'piece')
   if (piece && (food.serving_size_g ?? 0) > 0 && (food.serving_size_g ?? 0) <= 250) return piece
-  return units[0] // Grams
+  return units[0]
 }
 
 export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => void }) {

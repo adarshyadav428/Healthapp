@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { createServerClient } from '../../../../lib/supabase/server'
 
 const FOOD_SELECT =
-  'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g'
+  'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions'
 
 const schema = z.object({ food_id: z.string().uuid() })
 

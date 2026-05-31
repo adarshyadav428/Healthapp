@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic'
 export const metadata = { robots: { index: false } }
 
 const FOOD_SELECT =
-  'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g'
+  'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions'
 
 /** Parse a YYYY-MM-DD string (UTC) into a Date. Returns today on invalid input. */
 function parseDateParam(raw: string | undefined): { date: Date; dateStr: string } {
