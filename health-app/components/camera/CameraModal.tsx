@@ -85,7 +85,7 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
     if (mode !== 'barcode' || !barcodeSupport || barcodeLoading || captured) return
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
 
-    const BarcodeDetectorAPI = (window as Record<string, unknown>).BarcodeDetector
+    const BarcodeDetectorAPI = (window as unknown as Record<string, unknown>).BarcodeDetector
     if (!BarcodeDetectorAPI) return
 
     const detector = new BarcodeDetectorAPI({
