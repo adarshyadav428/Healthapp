@@ -375,8 +375,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
           </Field>
           <Field label="Activity level" error={form.formState.errors.activity_level?.message}>
             <select
-              value={form.watch('activity_level')}
-              onChange={(e) => form.setValue('activity_level', e.target.value as Profile['activity_level'])}
+              {...form.register('activity_level')}
               className="w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 transition-all"
             >
               {Object.entries(ACTIVITY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
@@ -384,8 +383,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
           </Field>
           <Field label="Goal" error={form.formState.errors.goal?.message}>
             <select
-              value={form.watch('goal')}
-              onChange={(e) => form.setValue('goal', e.target.value as Profile['goal'])}
+              {...form.register('goal')}
               className="w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 transition-all"
             >
               {Object.entries(GOAL_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
@@ -393,8 +391,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
           </Field>
           <Field label="Weekly loss goal" error={form.formState.errors.pace_kg_per_week?.message}>
             <select
-              value={String(form.watch('pace_kg_per_week') ?? 0.5)}
-              onChange={(e) => form.setValue('pace_kg_per_week', Number(e.target.value))}
+              {...form.register('pace_kg_per_week', { valueAsNumber: true })}
               className="w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 transition-all"
             >
               <option value="0.25">0.25 kg/week — 275 kcal/day deficit</option>
