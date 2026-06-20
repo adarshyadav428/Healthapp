@@ -62,20 +62,21 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
 
     let cancelled = false
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: 'environment' } })
+      .getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } })
       .then((stream) => {
         if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return }
         streamRef.current = stream
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream
-          videoRef.current.play().catch((e) => {
-            setCamError(`Camera failed to start: ${e.message}. Try refreshing.`)
-          })
+        const video = videoRef.current
+        if (video) {
+          video.srcObject = stream
+          video.onloadedmetadata = () => {
+            video.play().catch(() => {})
+          }
         }
       })
       .catch((e: Error) => {
         if (e.name === 'NotAllowedError') {
-          setCamError('Camera permission denied. Go to your browser settings and allow camera access for this site.')
+          setCamError('Camera permission denied. Open your browser settings and allow camera access for this site, then refresh.')
         } else if (e.name === 'NotFoundError') {
           setCamError('No camera found on this device.')
         } else {

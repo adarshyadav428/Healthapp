@@ -124,7 +124,7 @@ export async function POST(req: Request) {
 
     // No match — upsert an estimate food so we have a stable food_id to log against
     const source_id = `est_${item.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 50)}`
-    const { data: created } = await admin
+    const { data: created, error: upsertErr } = await admin
       .from('foods')
       .upsert(
         {
@@ -145,6 +145,10 @@ export async function POST(req: Request) {
       )
       .select('id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions')
       .single()
+
+    if (upsertErr) {
+      return NextResponse.json({ error: `DB upsert failed: ${upsertErr.message}` }, { status: 500 })
+    }
 
     if (created) {
       enrichedFoods.push({ ...created, estimated_grams: item.estimated_grams || created.serving_size_g || 100 })
