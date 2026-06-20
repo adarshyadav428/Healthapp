@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Food } from '../../types/index'
 import { FoodResult } from './FoodResult'
 import { toast } from '../ui/use-toast'
-import { Clock, Copy, Star, Zap, PlusCircle, Search, X, BookOpen, Trash2, ScanLine } from 'lucide-react'
+import { Clock, Copy, Star, Zap, PlusCircle, Search, X, BookOpen, Trash2, ScanLine, MessageSquarePlus } from 'lucide-react'
 import { useUser } from '../../hooks/useUser'
 import { useFoodFavourites } from '../../hooks/useFoodFavourites'
 
@@ -14,6 +14,7 @@ import { useFoodFavourites } from '../../hooks/useFoodFavourites'
 const AddFoodModal    = dynamic(() => import('./AddFoodModal').then(m => m.AddFoodModal),       { ssr: false })
 const CreateFoodModal = dynamic(() => import('./CreateFoodModal').then(m => m.CreateFoodModal), { ssr: false })
 const CameraModal     = dynamic(() => import('../camera/CameraModal').then(m => m.CameraModal), { ssr: false })
+const ChatLogModal    = dynamic(() => import('../chat/ChatLogModal').then(m => m.ChatLogModal),  { ssr: false })
 
 type SavedMeal = {
   id: string
@@ -41,6 +42,7 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Food | null>(null)
   const [showCamera, setShowCamera] = useState(false)
+  const [showChat, setShowChat] = useState(false)
   const [copying, setCopying] = useState(false)
   const [quickAddingId, setQuickAddingId] = useState<string | null>(null)
   const [showCreateFood, setShowCreateFood] = useState(false)
@@ -185,7 +187,7 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
           placeholder="Search dal makhani, roti, paneer..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full pl-10 pr-20 h-12 text-sm rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-foreground placeholder:text-muted shadow-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+          className="w-full pl-10 pr-28 h-12 text-sm rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-foreground placeholder:text-muted shadow-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
@@ -200,6 +202,14 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
               <X className="h-4 w-4 text-muted" />
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => setShowChat(true)}
+            className="rounded-full p-1.5 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-600 transition-colors"
+            aria-label="Log meal with AI chat"
+          >
+            <MessageSquarePlus className="h-4 w-4" />
+          </button>
           <button
             type="button"
             onClick={() => setShowCamera(true)}
@@ -402,6 +412,7 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
         </div>
       )}
 
+      {showChat ? <ChatLogModal onClose={() => setShowChat(false)} /> : null}
       {selected ? <AddFoodModal food={selected} onClose={() => setSelected(null)} /> : null}
       {showCamera ? (
         <CameraModal

@@ -1,0 +1,327 @@
+'use client'
+
+import { useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { X, Send, Loader2, RotateCcw, CheckCircle, MessageSquarePlus } from 'lucide-react'
+import { toast } from '../ui/use-toast'
+
+type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+
+type FoodItem = {
+  food: {
+    id: string
+    name: string
+    kcal_per_100g: number
+    protein_g_per_100g: number
+    carbs_g_per_100g: number
+    fat_g_per_100g: number
+  }
+  grams: number
+  portion_desc: string
+}
+
+type State =
+  | { type: 'idle' }
+  | { type: 'analyzing'; message: string }
+  | { type: 'confirm'; message: string; meal: Meal; items: FoodItem[] }
+  | { type: 'logging'; meal: Meal; items: FoodItem[]; message: string }
+  | { type: 'done'; logged: number; kcal: number; meal: Meal }
+
+const MEAL_OPTIONS: { value: Meal; label: string }[] = [
+  { value: 'breakfast', label: '🌅 Breakfast' },
+  { value: 'lunch', label: '🍱 Lunch' },
+  { value: 'dinner', label: '🌙 Dinner' },
+  { value: 'snack', label: '🍎 Snack' },
+]
+
+function inferMeal(): Meal {
+  const h = new Date().getHours()
+  if (h < 11) return 'breakfast'
+  if (h < 16) return 'lunch'
+  if (h < 20) return 'dinner'
+  return 'snack'
+}
+
+function round1(n: number) { return Math.round(n * 10) / 10 }
+
+export function ChatLogModal({ onClose }: { onClose: () => void }) {
+  const queryClient = useQueryClient()
+  const [state, setState] = useState<State>({ type: 'idle' })
+  const [input, setInput] = useState('')
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const handleSend = async () => {
+    const message = input.trim()
+    if (!message) return
+    setState({ type: 'analyzing', message })
+    setInput('')
+
+    try {
+      const now = new Date()
+      const currentTime = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+      const res = await fetch('/api/chat/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, currentTime }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast({ title: 'Could not analyse meal', description: data.error, variant: 'error' })
+        setState({ type: 'idle' })
+        setInput(message)
+        return
+      }
+      const meal = (data.meal?.toLowerCase() ?? inferMeal()) as Meal
+      setState({ type: 'confirm', message, meal, items: data.items })
+    } catch {
+      toast({ title: 'Network error', description: 'Please try again.', variant: 'error' })
+      setState({ type: 'idle' })
+      setInput(message)
+    }
+  }
+
+  const updateGrams = (idx: number, grams: number) => {
+    if (state.type !== 'confirm') return
+    const items = state.items.map((item, i) => i === idx ? { ...item, grams } : item)
+    setState({ ...state, items })
+  }
+
+  const removeItem = (idx: number) => {
+    if (state.type !== 'confirm') return
+    const items = state.items.filter((_, i) => i !== idx)
+    if (!items.length) { setState({ type: 'idle' }); return }
+    setState({ ...state, items })
+  }
+
+  const handleLog = async () => {
+    if (state.type !== 'confirm') return
+    const { meal, items, message } = state
+    setState({ type: 'logging', meal, items, message })
+    try {
+      const res = await fetch('/api/logs/add-bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: items.map(i => ({ food_id: i.food.id, grams: i.grams, meal })),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      queryClient.invalidateQueries({ queryKey: ['logs'] })
+      queryClient.invalidateQueries({ queryKey: ['dailyTotals'] })
+      const totalKcal = Math.round(items.reduce((sum, i) => sum + (i.food.kcal_per_100g * i.grams / 100), 0))
+      setState({ type: 'done', logged: items.length, kcal: totalKcal, meal })
+    } catch (err) {
+      toast({ title: 'Log failed', description: (err as Error).message, variant: 'error' })
+      setState(s => s.type === 'logging' ? { type: 'confirm', message: s.message, meal: s.meal, items: s.items } : s)
+    }
+  }
+
+  const totalKcal = state.type === 'confirm'
+    ? Math.round(state.items.reduce((sum, i) => sum + (i.food.kcal_per_100g * i.grams / 100), 0))
+    : 0
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm">
+      <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl flex flex-col max-h-[90vh]">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <MessageSquarePlus className="h-5 w-5 text-orange-600" />
+            <h2 className="text-base font-bold text-foreground">Log with AI</h2>
+          </div>
+          <button onClick={onClose} className="rounded-full p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+            <X className="h-4 w-4 text-muted" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+
+          {/* User message bubble */}
+          {'message' in state && (
+            <div className="flex justify-end">
+              <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-orange-600 px-4 py-2.5 text-sm text-white">
+                {(state as { message: string }).message}
+              </div>
+            </div>
+          )}
+
+          {/* Analyzing state */}
+          {state.type === 'analyzing' && (
+            <div className="flex items-center gap-2.5 text-sm text-muted">
+              <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+              <span>Analysing your meal...</span>
+            </div>
+          )}
+
+          {/* Confirm state */}
+          {(state.type === 'confirm' || state.type === 'logging') && (
+            <div className="space-y-3">
+              {/* Meal selector */}
+              <div className="flex gap-2 flex-wrap">
+                {MEAL_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => state.type === 'confirm' && setState({ ...state, meal: opt.value })}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                      state.type === 'confirm' && state.meal === opt.value
+                        ? 'border-orange-500 bg-orange-50 text-orange-700'
+                        : state.type === 'logging' && state.meal === opt.value
+                        ? 'border-orange-500 bg-orange-50 text-orange-700'
+                        : 'border-gray-200 dark:border-slate-700 text-muted bg-gray-50 dark:bg-slate-800'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Item list */}
+              <div className="space-y-2">
+                {state.type === 'confirm' && state.items.map((item, idx) => {
+                  const itemKcal = Math.round(item.food.kcal_per_100g * item.grams / 100)
+                  return (
+                    <div key={idx} className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">{item.food.name}</p>
+                          <p className="text-xs text-muted mt-0.5">{item.portion_desc}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-sm font-bold text-orange-600">{itemKcal} kcal</span>
+                          <button
+                            onClick={() => removeItem(idx)}
+                            className="rounded-full p-1 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+                          >
+                            <X className="h-3.5 w-3.5 text-muted" />
+                          </button>
+                        </div>
+                      </div>
+                      {/* Grams slider */}
+                      <div className="mt-2.5 flex items-center gap-2.5">
+                        <input
+                          type="range"
+                          min={10}
+                          max={600}
+                          step={5}
+                          value={item.grams}
+                          onChange={(e) => updateGrams(idx, Number(e.target.value))}
+                          className="flex-1 accent-orange-600"
+                        />
+                        <span className="text-xs font-bold text-foreground w-12 text-right">{item.grams}g</span>
+                      </div>
+                      <div className="mt-1 flex gap-3 text-[11px] text-muted">
+                        <span>P {round1(item.food.protein_g_per_100g * item.grams / 100)}g</span>
+                        <span>C {round1(item.food.carbs_g_per_100g * item.grams / 100)}g</span>
+                        <span>F {round1(item.food.fat_g_per_100g * item.grams / 100)}g</span>
+                      </div>
+                    </div>
+                  )
+                })}
+
+                {state.type === 'logging' && (
+                  <div className="flex items-center gap-2 text-sm text-muted py-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                    <span>Logging your meal...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Total + actions */}
+              {state.type === 'confirm' && (
+                <div className="rounded-2xl bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/30 p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-semibold text-orange-700 dark:text-orange-300">Total</span>
+                    <span className="text-lg font-black text-orange-700 dark:text-orange-300">{totalKcal} kcal</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleLog}
+                      className="flex-1 flex items-center justify-center gap-1.5 rounded-2xl bg-orange-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-orange-700 active:scale-[.98] transition-all"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      Log {state.items.length} item{state.items.length > 1 ? 's' : ''}
+                    </button>
+                    <button
+                      onClick={() => setState({ type: 'idle' })}
+                      className="flex items-center justify-center gap-1.5 rounded-2xl border border-gray-200 dark:border-slate-700 px-4 py-2.5 text-sm font-semibold text-muted hover:bg-gray-50 dark:hover:bg-slate-800 transition-all"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Redo
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Done state */}
+          {state.type === 'done' && (
+            <div className="space-y-3">
+              <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 p-4 text-center">
+                <CheckCircle className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
+                <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
+                  Logged {state.logged} item{state.logged > 1 ? 's' : ''} · {state.kcal} kcal
+                </p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5 capitalize">Added to {state.meal}</p>
+              </div>
+              <button
+                onClick={() => setState({ type: 'idle' })}
+                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 py-2.5 text-sm font-semibold text-foreground hover:bg-gray-50 dark:hover:bg-slate-800 transition-all"
+              >
+                Log another meal
+              </button>
+            </div>
+          )}
+
+          {/* Idle hint */}
+          {state.type === 'idle' && (
+            <div className="rounded-2xl bg-gray-50 dark:bg-slate-800 p-4">
+              <p className="text-xs font-semibold text-muted mb-2">Try saying:</p>
+              {[
+                '4 medium roti, aloo beans sabzi, 1 katori dal, 3 katori chawal',
+                '2 paratha with curd and achar',
+                'Poha with chai for breakfast',
+              ].map(ex => (
+                <button
+                  key={ex}
+                  onClick={() => setInput(ex)}
+                  className="block w-full text-left text-xs text-orange-700 dark:text-orange-400 py-1.5 hover:underline"
+                >
+                  &ldquo;{ex}&rdquo;
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Input area */}
+        {(state.type === 'idle' || state.type === 'done') && (
+          <div className="px-5 pb-6 pt-3 border-t border-gray-100 dark:border-slate-800">
+            <div className="flex gap-2 items-end">
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
+                placeholder="Describe what you ate — e.g. 4 roti, dal, sabzi..."
+                rows={2}
+                className="flex-1 resize-none rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+              />
+              <button
+                onClick={handleSend}
+                disabled={!input.trim()}
+                className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-40 active:scale-95 transition-all"
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
