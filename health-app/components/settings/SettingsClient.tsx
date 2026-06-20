@@ -382,12 +382,26 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
             </select>
           </Field>
           <Field label="Goal" error={form.formState.errors.goal?.message}>
-            <select
-              {...form.register('goal')}
-              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 transition-all"
-            >
-              {Object.entries(GOAL_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                { value: 'lose', label: 'Lose', emoji: '📉' },
+                { value: 'maintain', label: 'Maintain', emoji: '⚖️' },
+                { value: 'gain', label: 'Gain', emoji: '📈' },
+              ] as const).map((g) => (
+                <button
+                  key={g.value}
+                  type="button"
+                  onClick={() => form.setValue('goal', g.value, { shouldDirty: true })}
+                  className={`rounded-xl border py-2.5 text-sm font-semibold transition-all ${
+                    form.watch('goal') === g.value
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300'
+                      : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground hover:border-indigo-200'
+                  }`}
+                >
+                  {g.emoji} {g.label}
+                </button>
+              ))}
+            </div>
           </Field>
           <Field label="Weekly loss goal" error={form.formState.errors.pace_kg_per_week?.message}>
             <select
