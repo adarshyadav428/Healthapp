@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       .from('profiles')
       .update({
         display_name: data.display_name,
-        unit_system: data.unit_system,
+        unit_system: 'metric',
         age: data.age,
         sex: data.sex,
         height_cm: data.height_cm,

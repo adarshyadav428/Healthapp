@@ -13,7 +13,6 @@ export const signUpSchema = signInSchema.extend({
 
 export const onboardingSchema = z.object({
   display_name: z.string().min(1),
-  unit_system: z.enum(['metric', 'imperial']),
   age: z.number().int().min(13).max(120),
   sex: z.enum(['male', 'female', 'other']),
   height_cm: z.number().positive(),

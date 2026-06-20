@@ -20,20 +20,11 @@ function ftInToCm(ft: number, inches: number): number {
   return Math.round((ft * 12 + inches) * 2.54)
 }
 
-// Convert cm to { ft, in }
-function cmToFtIn(cm: number): { ft: number; inches: number } {
-  const totalInches = cm / 2.54
-  const ft = Math.floor(totalInches / 12)
-  const inches = Math.round(totalInches % 12)
-  return { ft, inches }
-}
 
 export function OnboardingForm() {
   const queryClient = useQueryClient()
   const [step, setStep] = useState(1)
   const [isNavigating, setIsNavigating] = useState(false)
-  // Local ft/in state for the height picker (Step 3)
-  const [heightUnit, setHeightUnit] = useState<'cm' | 'ftin'>('ftin')
   const [heightFt, setHeightFt] = useState(5)
   const [heightIn, setHeightIn] = useState(7)
 
@@ -41,10 +32,9 @@ export function OnboardingForm() {
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
       display_name: '',
-      unit_system: 'metric',
       age: 25,
       sex: 'female',
-      height_cm: 170,
+      height_cm: ftInToCm(5, 7),
       current_weight_kg: 70,
       target_weight_kg: 65,
       goal: 'lose',
@@ -56,7 +46,7 @@ export function OnboardingForm() {
   const nextStep = async () => {
     if (isNavigating) return
     const fieldsByStep: Record<number, (keyof OnboardingData)[]> = {
-      1: ['display_name', 'unit_system'],
+      1: ['display_name'],
       2: ['age', 'sex'],
       3: ['height_cm', 'current_weight_kg'],
       4: ['target_weight_kg', 'goal'],
@@ -75,18 +65,10 @@ export function OnboardingForm() {
 
   const onSubmit = async (values: OnboardingData) => {
     try {
-      const payload: OnboardingData = { ...values }
-
-      if (values.unit_system === 'imperial') {
-        payload.height_cm = Math.round(values.height_cm * 2.54)
-        payload.current_weight_kg = Math.round(values.current_weight_kg * 0.453592 * 10) / 10
-        payload.target_weight_kg = Math.round(values.target_weight_kg * 0.453592 * 10) / 10
-      }
-
       const res = await fetch('/api/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(values),
       })
 
       if (!res.ok) {
@@ -102,7 +84,6 @@ export function OnboardingForm() {
     }
   }
 
-  const isMetric = form.watch('unit_system') === 'metric'
   const progress = (step / TOTAL_STEPS) * 100
 
   // Live TDEE preview for Step 5
@@ -111,8 +92,8 @@ export function OnboardingForm() {
   try {
     if (watchedValues.height_cm > 0 && watchedValues.current_weight_kg > 0 && watchedValues.age > 0) {
       tdeePreview = calculateTDEE({
-        weightKg: isMetric ? watchedValues.current_weight_kg : watchedValues.current_weight_kg * 0.453592,
-        heightCm: isMetric ? watchedValues.height_cm : watchedValues.height_cm * 2.54,
+        weightKg: watchedValues.current_weight_kg,
+        heightCm: watchedValues.height_cm,
         age: watchedValues.age,
         sex: watchedValues.sex,
         activity_level: watchedValues.activity_level,
@@ -140,7 +121,7 @@ export function OnboardingForm() {
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {/* Step 1: Name + Units */}
+        {/* Step 1: Name */}
         {step === 1 && (
           <div className="space-y-4">
             <div>
@@ -153,25 +134,6 @@ export function OnboardingForm() {
               {form.formState.errors.display_name && (
                 <p className="mt-1 text-xs text-red-500">{form.formState.errors.display_name.message}</p>
               )}
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-foreground mb-1">Preferred units</label>
-              <div className="grid grid-cols-2 gap-2">
-                {(['metric', 'imperial'] as const).map((u) => (
-                  <button
-                    key={u}
-                    type="button"
-                    onClick={() => form.setValue('unit_system', u)}
-                    className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition-all ${
-                      form.watch('unit_system') === u
-                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300'
-                        : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-foreground hover:border-orange-200 dark:hover:border-orange-800'
-                    }`}
-                  >
-                    {u === 'metric' ? '📐 Metric (cm, kg)' : '📏 Imperial (in, lbs)'}
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
         )}
@@ -217,100 +179,50 @@ export function OnboardingForm() {
         {step === 3 && (
           <div className="space-y-4">
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-semibold text-foreground">Height</label>
-                {/* Toggle between ft/in and cm */}
-                <div className="flex rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 text-xs font-semibold">
-                  {(['ftin', 'cm'] as const).map((u) => (
-                    <button
-                      key={u}
-                      type="button"
-                      onClick={() => {
-                        if (u === heightUnit) return
-                        setHeightUnit(u)
-                        if (u === 'ftin') {
-                          const { ft, inches } = cmToFtIn(form.getValues('height_cm') || 170)
-                          setHeightFt(ft)
-                          setHeightIn(inches)
-                        } else {
-                          form.setValue('height_cm', ftInToCm(heightFt, heightIn), { shouldValidate: true })
-                        }
-                      }}
-                      className={`px-3 py-1.5 transition-all ${
-                        heightUnit === u
-                          ? 'bg-orange-500 text-white'
-                          : 'bg-gray-50 dark:bg-slate-800 text-muted hover:bg-gray-100 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      {u === 'ftin' ? 'ft / in' : 'cm'}
-                    </button>
-                  ))}
+              <label className="block text-sm font-semibold text-foreground mb-1.5">Height</label>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <select
+                    value={heightFt}
+                    onChange={(e) => {
+                      const ft = Number(e.target.value)
+                      setHeightFt(ft)
+                      form.setValue('height_cm', ftInToCm(ft, heightIn), { shouldValidate: true })
+                    }}
+                    className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm font-bold text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+                  >
+                    {[3,4,5,6,7,8].map(ft => (
+                      <option key={ft} value={ft}>{ft} ft</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <select
+                    value={heightIn}
+                    onChange={(e) => {
+                      const inches = Number(e.target.value)
+                      setHeightIn(inches)
+                      form.setValue('height_cm', ftInToCm(heightFt, inches), { shouldValidate: true })
+                    }}
+                    className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm font-bold text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+                  >
+                    {[0,1,2,3,4,5,6,7,8,9,10,11].map(i => (
+                      <option key={i} value={i}>{i} in</option>
+                    ))}
+                  </select>
                 </div>
               </div>
-
-              {heightUnit === 'ftin' ? (
-                <div className="flex gap-2">
-                  {/* Feet selector */}
-                  <div className="flex-1">
-                    <select
-                      value={heightFt}
-                      onChange={(e) => {
-                        const ft = Number(e.target.value)
-                        setHeightFt(ft)
-                        form.setValue('height_cm', ftInToCm(ft, heightIn), { shouldValidate: true })
-                      }}
-                      className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm font-bold text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
-                    >
-                      {[3,4,5,6,7,8].map(ft => (
-                        <option key={ft} value={ft}>{ft} ft</option>
-                      ))}
-                    </select>
-                  </div>
-                  {/* Inches selector */}
-                  <div className="flex-1">
-                    <select
-                      value={heightIn}
-                      onChange={(e) => {
-                        const inches = Number(e.target.value)
-                        setHeightIn(inches)
-                        form.setValue('height_cm', ftInToCm(heightFt, inches), { shouldValidate: true })
-                      }}
-                      className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm font-bold text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
-                    >
-                      {[0,1,2,3,4,5,6,7,8,9,10,11].map(i => (
-                        <option key={i} value={i}>{i} in</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              ) : (
-                <input
-                  type="number"
-                  {...form.register('height_cm', { valueAsNumber: true })}
-                  className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
-                  placeholder="170"
-                />
-              )}
-
-              {/* Live cm preview when using ft/in */}
-              {heightUnit === 'ftin' && (
-                <p className="mt-1 text-xs text-muted">
-                  = {ftInToCm(heightFt, heightIn)} cm
-                </p>
-              )}
               {form.formState.errors.height_cm && (
                 <p className="mt-1 text-xs text-red-500">{form.formState.errors.height_cm.message}</p>
               )}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-1">
-                Current weight ({isMetric ? 'kg' : 'lbs'})
-              </label>
+              <label className="block text-sm font-semibold text-foreground mb-1">Current weight (kg)</label>
               <input
                 type="number"
                 {...form.register('current_weight_kg', { valueAsNumber: true })}
                 className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
-                placeholder={isMetric ? '70' : '154'}
+                placeholder="70"
               />
               {form.formState.errors.current_weight_kg && (
                 <p className="mt-1 text-xs text-red-500">{form.formState.errors.current_weight_kg.message}</p>
@@ -323,9 +235,7 @@ export function OnboardingForm() {
         {step === 4 && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-1">
-                Target weight ({isMetric ? 'kg' : 'lbs'})
-              </label>
+              <label className="block text-sm font-semibold text-foreground mb-1">Target weight (kg)</label>
               <input
                 type="number"
                 {...form.register('target_weight_kg', { valueAsNumber: true })}
@@ -338,8 +248,8 @@ export function OnboardingForm() {
 
               {/* BMI-based recommendation */}
               {(() => {
-                const hCm = isMetric ? watchedValues.height_cm : watchedValues.height_cm * 2.54
-                const wKg = isMetric ? watchedValues.current_weight_kg : watchedValues.current_weight_kg * 0.453592
+                const hCm = watchedValues.height_cm
+                const wKg = watchedValues.current_weight_kg
                 if (!hCm || !wKg || hCm <= 0 || wKg <= 0) return null
                 const hM = hCm / 100
                 const currentBmi = +(wKg / (hM * hM)).toFixed(1)
@@ -352,7 +262,6 @@ export function OnboardingForm() {
                 ]
                 const minHealthy = +(18.5 * hM * hM).toFixed(1)
                 const maxHealthy = +(24.9 * hM * hM).toFixed(1)
-                const toDisplay = (kg: number) => isMetric ? kg : +(kg / 0.453592).toFixed(1)
                 return (
                   <div className="mt-2 rounded-2xl border border-orange-100 dark:border-orange-900/30 bg-orange-50/50 dark:bg-orange-950/10 p-3 space-y-2">
                     <div className="flex items-center justify-between">
@@ -360,7 +269,7 @@ export function OnboardingForm() {
                       <span className={`text-xs font-bold ${bmiColor}`}>{currentBmi} · {bmiLabel}</span>
                     </div>
                     <p className="text-[11px] text-muted">
-                      Healthy range for your height: <span className="font-semibold text-foreground">{toDisplay(minHealthy)}–{toDisplay(maxHealthy)} {isMetric ? 'kg' : 'lbs'}</span> (BMI 18.5–24.9)
+                      Healthy range for your height: <span className="font-semibold text-foreground">{minHealthy}–{maxHealthy} kg</span> (BMI 18.5–24.9)
                     </p>
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-muted mb-1.5">Suggested targets</p>
@@ -369,10 +278,10 @@ export function OnboardingForm() {
                           <button
                             key={s.bmi}
                             type="button"
-                            onClick={() => form.setValue('target_weight_kg', toDisplay(s.kg), { shouldValidate: true })}
+                            onClick={() => form.setValue('target_weight_kg', s.kg, { shouldValidate: true })}
                             className="flex-1 rounded-xl border border-orange-200 dark:border-orange-800 bg-white dark:bg-slate-800 py-1.5 text-center hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/20 active:scale-95 transition-all"
                           >
-                            <p className="text-xs font-black text-orange-700 dark:text-orange-400">{toDisplay(s.kg)} {isMetric ? 'kg' : 'lb'}</p>
+                            <p className="text-xs font-black text-orange-700 dark:text-orange-400">{s.kg} kg</p>
                             <p className="text-[10px] text-muted">BMI {s.bmi}</p>
                           </button>
                         ))}
