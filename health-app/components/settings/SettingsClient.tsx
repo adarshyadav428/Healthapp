@@ -374,34 +374,34 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
             </div>
           </Field>
           <Field label="Activity level" error={form.formState.errors.activity_level?.message}>
-            <Select value={form.watch('activity_level')} onValueChange={(v) => form.setValue('activity_level', v as Profile['activity_level'])}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(ACTIVITY_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <select
+              value={form.watch('activity_level')}
+              onChange={(e) => form.setValue('activity_level', e.target.value as Profile['activity_level'])}
+              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 transition-all"
+            >
+              {Object.entries(ACTIVITY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
           </Field>
           <Field label="Goal" error={form.formState.errors.goal?.message}>
-            <Select value={form.watch('goal')} onValueChange={(v) => form.setValue('goal', v as Profile['goal'])}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(GOAL_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <select
+              value={form.watch('goal')}
+              onChange={(e) => form.setValue('goal', e.target.value as Profile['goal'])}
+              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 transition-all"
+            >
+              {Object.entries(GOAL_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
           </Field>
           <Field label="Weekly loss goal" error={form.formState.errors.pace_kg_per_week?.message}>
-            <Select
+            <select
               value={String(form.watch('pace_kg_per_week') ?? 0.5)}
-              onValueChange={(v) => form.setValue('pace_kg_per_week', Number(v))}
+              onChange={(e) => form.setValue('pace_kg_per_week', Number(e.target.value))}
+              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 transition-all"
             >
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0.25">0.25 kg/week — 275 kcal/day deficit</SelectItem>
-                <SelectItem value="0.5">0.50 kg/week — 550 kcal/day deficit</SelectItem>
-                <SelectItem value="0.75">0.75 kg/week — 825 kcal/day deficit</SelectItem>
-                <SelectItem value="1">1.00 kg/week — 1,100 kcal/day deficit</SelectItem>
-              </SelectContent>
-            </Select>
+              <option value="0.25">0.25 kg/week — 275 kcal/day deficit</option>
+              <option value="0.5">0.50 kg/week — 550 kcal/day deficit</option>
+              <option value="0.75">0.75 kg/week — 825 kcal/day deficit</option>
+              <option value="1">1.00 kg/week — 1,100 kcal/day deficit</option>
+            </select>
           </Field>
 
           {/* Custom targets toggle */}
