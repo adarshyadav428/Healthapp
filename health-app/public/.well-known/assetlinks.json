@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.getinshape.app",
+    "sha256_cert_fingerprints": ["41:BD:A6:3D:49:B2:64:D8:B3:40:68:34:BF:3C:68:4F:A5:6D:55:92:C3:2C:9D:2A:B0:36:36:9D:78:1C:8B:D3"]
+  }
+}]

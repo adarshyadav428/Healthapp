@@ -2,12 +2,16 @@ import { redirect } from 'next/navigation'
 import { OnboardingForm } from '../../components/onboarding/OnboardingForm'
 import { createServerClient } from '../../lib/supabase/server'
 
+export const dynamic = 'force-dynamic'
+export const metadata = { robots: { index: false } }
+
 export default async function OnboardingPage() {
   const supabase = createServerClient()
   const {
-    data: { user },
+    data: { session },
     error,
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getSession()
+  const user = session?.user ?? null
 
   if (error || !user) {
     redirect('/auth/sign-in')
@@ -28,9 +32,16 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-10">
-      <div className="mx-auto w-full max-w-md rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-        <OnboardingForm />
+    <div className="min-h-screen bg-background px-4 py-10 dark:bg-slate-950">
+      <div className="mx-auto w-full max-w-md">
+        <div className="mb-8 text-center">
+          <span className="text-3xl">🥗</span>
+          <h1 className="mt-2 text-2xl font-black text-foreground">Let&apos;s set up your goals</h1>
+          <p className="mt-1 text-sm text-muted">Takes less than 2 minutes.</p>
+        </div>
+        <div className="rounded-3xl border border-border bg-card p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
+          <OnboardingForm />
+        </div>
       </div>
     </div>
   )

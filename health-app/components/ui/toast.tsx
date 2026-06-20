@@ -27,7 +27,7 @@ const Toast = React.forwardRef<
   <ToastPrimitives.Root
     ref={ref}
     className={cn(
-      'relative flex w-full items-start gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-lg',
+      'relative flex w-full items-start gap-3 rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-lg',
       className
     )}
     {...props}
@@ -49,7 +49,7 @@ const ToastDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Description
     ref={ref}
-    className={cn('text-sm text-gray-500', className)}
+    className={cn('text-sm text-muted', className)}
     {...props}
   />
 ))
@@ -61,7 +61,7 @@ const ToastClose = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Close
     ref={ref}
-    className={cn('absolute right-3 top-3 rounded-full p-1 text-gray-400 hover:text-gray-600', className)}
+    className={cn('absolute right-3 top-3 rounded-full p-1 text-muted hover:text-foreground', className)}
     {...props}
   >
     <X className="h-4 w-4" />

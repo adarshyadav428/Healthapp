@@ -1,79 +1,86 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import { updateSupabaseSession } from './lib/supabase/middleware'
+import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-const PUBLIC_PATHS = ['/', '/auth', '/api', '/_next', '/favicon.ico']
-
-function isPublic(pathname: string) {
-  return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
-}
-
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+  const pathname = request.nextUrl.pathname
+  const publicFiles = ['/sw.js', '/manifest.webmanifest']
+  const publicPrefixes = ['/icons/', '/.well-known/', '/workbox-', '/fallback-']
 
-  const response = await updateSupabaseSession(request)
+  if (
+    publicFiles.includes(pathname) ||
+    publicPrefixes.some(prefix => pathname.startsWith(prefix))
+  ) {
+    return NextResponse.next()
+  }
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url || !anonKey) return response
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  const supabase = createServerClient(url, anonKey, {
+  if (!supabaseUrl || !supabaseAnonKey) return NextResponse.next()
+
+  let response = NextResponse.next({ request })
+
+  // NOTE: @supabase/ssr@0.2.0 only calls cookies.get(name) internally —
+  // getAll/setAll are silently ignored. We must provide get/set/remove.
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
-      get(name) {
+      get(name: string) {
         return request.cookies.get(name)?.value
       },
-      set(name, value, options) {
-        response.cookies.set({ name, value, ...options })
+      set(name: string, value: string, options: Record<string, unknown>) {
+        request.cookies.set(name, value)
+        response = NextResponse.next({ request })
+        response.cookies.set(name, value, options as Parameters<typeof response.cookies.set>[2])
       },
-      remove(name, options) {
-        response.cookies.set({ name, value: '', ...options })
+      remove(name: string, options: Record<string, unknown>) {
+        request.cookies.set(name, '')
+        response = NextResponse.next({ request })
+        response.cookies.set(name, '', options as Parameters<typeof response.cookies.set>[2])
       },
     },
   })
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user ?? null
+  const { origin } = request.nextUrl
 
-  // Public routes
-  if (isPublic(pathname)) {
-    if (user && pathname.startsWith('/auth')) {
-      const redirectUrl = request.nextUrl.clone()
-      redirectUrl.pathname = '/dashboard'
-      return NextResponse.redirect(redirectUrl)
-    }
-    return response
-  }
+  const isAuthRoute = pathname.startsWith('/auth/')
+  const isApiRoute = pathname.startsWith('/api/')
+  const isNextInternal = pathname.startsWith('/_next/')
+  const isPublic = pathname === '/' || pathname === '/privacy' || pathname === '/terms' || pathname === '/upgrade'
 
-  // Protected routes require auth
+  // Let API routes and Next.js internals pass through
+  if (isApiRoute || isNextInternal) return response
+
   if (!user) {
-    const signInUrl = request.nextUrl.clone()
-    signInUrl.pathname = '/auth/sign-in'
-    signInUrl.search = `returnTo=${encodeURIComponent(request.nextUrl.pathname)}`
+    // Unauthenticated: allow public pages and auth routes, redirect everything else
+    if (isPublic || isAuthRoute) return response
+    const signInUrl = new URL('/auth/sign-in', origin)
+    signInUrl.searchParams.set('returnTo', pathname)
     return NextResponse.redirect(signInUrl)
   }
 
-  // Authenticated users without profile should go to onboarding
-  const { data: profile, error } = await supabase
-    .from('profiles')
-    .select('height_cm')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (error) {
-    return response
+  // Authenticated user on auth pages → redirect to dashboard
+  if (isAuthRoute) {
+    return NextResponse.redirect(new URL('/dashboard', origin))
   }
 
-  if ((!profile || profile.height_cm === null) && !pathname.startsWith('/onboarding')) {
-    const onboardingUrl = request.nextUrl.clone()
-    onboardingUrl.pathname = '/onboarding'
-    return NextResponse.redirect(onboardingUrl)
+  // Check profile completeness for non-onboarding protected routes
+  if (!isPublic && pathname !== '/onboarding') {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('height_cm')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || profile.height_cm === null) {
+      return NextResponse.redirect(new URL('/onboarding', origin))
+    }
   }
 
   return response
 }
 
 export const config = {
-  matcher: '/((?!_next/static|_next/image|favicon.ico).*)',
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|sw\\.js|workbox-.*|manifest\\.webmanifest|icons/.*|\\.well-known/.*).*)',],
 }

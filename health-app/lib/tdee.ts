@@ -11,7 +11,11 @@ export function calculateBMR({ weightKg, heightCm, age, sex }: { weightKg: numbe
   if (sex === 'male') {
     return 10 * weightKg + 6.25 * heightCm - 5 * age + 5
   }
-  return 10 * weightKg + 6.25 * heightCm - 5 * age - 161
+  if (sex === 'female') {
+    return 10 * weightKg + 6.25 * heightCm - 5 * age - 161
+  }
+  // 'other': use the average of male (+5) and female (-161) constants = -78
+  return 10 * weightKg + 6.25 * heightCm - 5 * age - 78
 }
 
 export function activityMultiplier(level: Profile['activity_level']): number {
@@ -36,9 +40,10 @@ export function calculateTDEE(profile: { weightKg: number; heightCm: number; age
   const bmr = calculateBMR({ weightKg, heightCm, age, sex })
   const tdee = Math.round(bmr * activityMultiplier(activity_level))
 
+  // 1 kg fat = 7,700 kcal → daily deficit = pace × 7700 ÷ 7
   let delta = 0
-  if (goal === 'lose') delta = -500 * (paceKgPerWeek / 0.5)
-  else if (goal === 'gain') delta = 500 * (paceKgPerWeek / 0.5)
+  if (goal === 'lose') delta = -Math.round(paceKgPerWeek * 7700 / 7)
+  else if (goal === 'gain') delta = Math.round(paceKgPerWeek * 7700 / 7)
 
   const daily_calorie_target = Math.max(1200, Math.round(tdee + delta))
 

@@ -26,6 +26,8 @@ export function useSubscription(userId: string | null) {
         subscription: data,
         isPro,
         plan: data?.plan ?? null,
+        provider: data?.provider ?? 'stripe',
+        playProductId: data?.play_product_id ?? null,
         expiresAt: data?.current_period_end ?? null,
       }
     },

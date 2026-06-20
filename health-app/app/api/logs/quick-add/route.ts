@@ -1,0 +1,47 @@
+import { NextResponse } from 'next/server'
+import { z } from 'zod'
+import { createServerClient } from '../../../../lib/supabase/server'
+
+export const runtime = 'nodejs'
+
+const schema = z.object({
+  kcal:    z.number().int().min(1).max(5000),
+  protein: z.number().min(0).max(500).optional().default(0),
+  carbs:   z.number().min(0).max(1000).optional().default(0),
+  fat:     z.number().min(0).max(500).optional().default(0),
+  meal:    z.enum(['breakfast', 'lunch', 'dinner', 'snack']).optional().default('snack'),
+})
+
+export async function POST(req: Request) {
+  try {
+    const supabase = createServerClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const userId = session.user.id
+
+    const body = await req.json()
+    const parsed = schema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.errors[0]?.message ?? 'Invalid data' }, { status: 400 })
+    }
+    const { kcal, protein, carbs, fat, meal } = parsed.data
+
+    const { error: logError } = await supabase.from('food_logs').insert({
+      user_id:   userId,
+      food_id:   null,
+      meal,
+      servings:  1,
+      grams:     0,
+      kcal,
+      protein_g: protein,
+      carbs_g:   carbs,
+      fat_g:     fat,
+      logged_at: new Date().toISOString(),
+    })
+
+    if (logError) throw new Error(logError.message)
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 })
+  }
+}

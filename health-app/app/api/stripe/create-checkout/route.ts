@@ -1,23 +1,26 @@
 import { NextResponse } from 'next/server'
 export const runtime = 'nodejs'
-import { stripe } from '../../../../lib/stripe/client'
+import Stripe from 'stripe'
+import { getStripeClient } from '../../../../lib/stripe/client'
 import { createServerClient } from '../../../../lib/supabase/server'
 
-const priceMap = {
-  monthly: process.env.STRIPE_MONTHLY_PRICE_ID,
-  annual: process.env.STRIPE_ANNUAL_PRICE_ID,
-  lifetime: process.env.STRIPE_LIFETIME_PRICE_ID,
-} as const
-
-type Plan = keyof typeof priceMap
+type Plan = 'monthly' | 'annual'
 
 export async function POST(req: Request) {
   try {
+    // Read price IDs at request time so new env vars take effect without redeploying
+    const priceMap: Record<Plan, string | undefined> = {
+      monthly: process.env.STRIPE_MONTHLY_PRICE_ID,
+      annual: process.env.STRIPE_ANNUAL_PRICE_ID,
+    }
+
+    const stripe = getStripeClient()
     const supabase = createServerClient()
     const {
-      data: { user },
+      data: { session: authSession },
       error: userError,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getSession()
+    const user = authSession?.user ?? null
 
     if (userError) throw new Error(userError.message)
     if (!user || !user.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -28,17 +31,20 @@ export async function POST(req: Request) {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 })
     const customer = customers.data[0] ?? (await stripe.customers.create({ email: user.email }))
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    const session = await stripe.checkout.sessions.create({
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL
+    if (!appUrl) throw new Error('NEXT_PUBLIC_APP_URL environment variable is not set')
+
+    const params: Stripe.Checkout.SessionCreateParams = {
       customer: customer.id,
-      mode: plan === 'lifetime' ? 'payment' : 'subscription',
+      mode: 'subscription',
       line_items: [{ price: priceMap[plan] as string, quantity: 1 }],
       success_url: `${appUrl}/dashboard?upgraded=true`,
       cancel_url: `${appUrl}/upgrade`,
-      trial_period_days: plan === 'annual' ? 7 : undefined,
-      subscription_data: plan === 'lifetime' ? undefined : { metadata: { user_id: user.id, plan } },
       metadata: { user_id: user.id, plan },
-    })
+      subscription_data: { metadata: { user_id: user.id, plan } },
+    }
+
+    const session = await stripe.checkout.sessions.create(params)
 
     return NextResponse.json({ url: session.url })
   } catch (err) {

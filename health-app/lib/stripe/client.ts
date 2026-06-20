@@ -1,9 +1,17 @@
 import Stripe from 'stripe'
 
-const secretKey = process.env.STRIPE_SECRET_KEY
-if (!secretKey) throw new Error('Missing STRIPE_SECRET_KEY')
+let stripeInstance: Stripe | null = null
 
-export const stripe = new Stripe(secretKey, {
-  apiVersion: '2024-04-10',
-  typescript: true,
-})
+export function getStripeClient(): Stripe {
+  if (stripeInstance) return stripeInstance
+
+  const secretKey = process.env.STRIPE_SECRET_KEY
+  if (!secretKey) throw new Error('Missing STRIPE_SECRET_KEY')
+
+  stripeInstance = new Stripe(secretKey, {
+    apiVersion: '2023-10-16',
+    typescript: true,
+  })
+
+  return stripeInstance
+}

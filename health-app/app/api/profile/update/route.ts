@@ -7,9 +7,10 @@ export async function POST(req: Request) {
   try {
     const supabase = createServerClient()
     const {
-      data: { user },
+      data: { session },
       error: userError,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getSession()
+    const user = session?.user ?? null
 
     if (userError) throw new Error(userError.message)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -30,31 +31,59 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Profile missing age or sex' }, { status: 400 })
     }
 
-    const macros = calculateTDEE({
-      weightKg: parsed.data.current_weight_kg,
-      heightCm: parsed.data.height_cm,
-      age: currentProfile.age,
-      sex: currentProfile.sex,
-      activity_level: parsed.data.activity_level,
-      goal: parsed.data.goal,
-    })
+    const hasCustomTargets =
+      parsed.data.custom_calorie_target !== undefined &&
+      parsed.data.custom_protein_target !== undefined &&
+      parsed.data.custom_carbs_target  !== undefined &&
+      parsed.data.custom_fat_target    !== undefined
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        display_name: parsed.data.display_name,
-        height_cm: parsed.data.height_cm,
-        current_weight_kg: parsed.data.current_weight_kg,
-        activity_level: parsed.data.activity_level,
-        goal: parsed.data.goal,
-        daily_calorie_target: macros.daily_calorie_target,
-        protein_g_target: macros.protein_g_target,
-        carbs_g_target: macros.carbs_g_target,
-        fat_g_target: macros.fat_g_target,
-      })
-      .eq('id', user.id)
+    // Use custom targets when all four are provided; otherwise recalculate from TDEE
+    const targets = hasCustomTargets
+      ? {
+          daily_calorie_target: parsed.data.custom_calorie_target!,
+          protein_g_target:     parsed.data.custom_protein_target!,
+          carbs_g_target:       parsed.data.custom_carbs_target!,
+          fat_g_target:         parsed.data.custom_fat_target!,
+        }
+      : calculateTDEE({
+          weightKg:        parsed.data.current_weight_kg,
+          heightCm:        parsed.data.height_cm,
+          age:             currentProfile.age,
+          sex:             currentProfile.sex,
+          activity_level:  parsed.data.activity_level,
+          goal:            parsed.data.goal,
+          paceKgPerWeek:   parsed.data.pace_kg_per_week,
+        })
 
-    if (error) throw new Error(error.message)
+    const payload = {
+      display_name:         parsed.data.display_name,
+      height_cm:            parsed.data.height_cm,
+      current_weight_kg:    parsed.data.current_weight_kg,
+      target_weight_kg:     parsed.data.target_weight_kg,
+      activity_level:       parsed.data.activity_level,
+      goal:                 parsed.data.goal,
+      daily_calorie_target: targets.daily_calorie_target,
+      protein_g_target:     targets.protein_g_target,
+      carbs_g_target:       targets.carbs_g_target,
+      fat_g_target:         targets.fat_g_target,
+      ...(parsed.data.water_target_ml !== undefined ? { water_target_ml: parsed.data.water_target_ml } : {}),
+      ...(parsed.data.pace_kg_per_week !== undefined ? { pace_kg_per_week: parsed.data.pace_kg_per_week } : {}),
+    }
+
+    const { error } = await supabase.from('profiles').update(payload).eq('id', user.id)
+
+    if (error) {
+      if (String(error.message).includes('water_target_ml')) {
+        const { water_target_ml: _ignored, ...fallback } = payload as Record<string, unknown>
+        const { error: retryError } = await supabase
+          .from('profiles')
+          .update(fallback)
+          .eq('id', user.id)
+        if (retryError) throw new Error(retryError.message)
+      } else {
+        throw new Error(error.message)
+      }
+    }
 
     return NextResponse.json({ ok: true })
   } catch (err) {

@@ -1,42 +1,13 @@
-const withPWA = require('next-pwa')({
+const withPWA = require('@ducanh2912/next-pwa').default({
   dest: 'public',
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  swcMinify: true,
   disable: process.env.NODE_ENV === 'development',
-  runtimeCaching: [
-    {
-      urlPattern: /^https?:.*\/(api|auth)\//,
-      handler: 'NetworkFirst',
-      options: {
-        cacheName: 'api-cache',
-        networkTimeoutSeconds: 10,
-        expiration: {
-          maxEntries: 50,
-          maxAgeSeconds: 60 * 60,
-        },
-      },
-    },
-    {
-      urlPattern: /^https?:.*\.(?:png|jpg|jpeg|svg|gif|webp)$/,
-      handler: 'CacheFirst',
-      options: {
-        cacheName: 'image-cache',
-        expiration: {
-          maxEntries: 100,
-          maxAgeSeconds: 60 * 60 * 24 * 7,
-        },
-      },
-    },
-    {
-      urlPattern: ({ url }) => url.pathname.startsWith('/api/foods/search'),
-      handler: 'CacheFirst',
-      options: {
-        cacheName: 'food-search-cache',
-        expiration: {
-          maxEntries: 100,
-          maxAgeSeconds: 60 * 60 * 24,
-        },
-      },
-    },
-  ],
+  workboxOptions: {
+    disableDevLogs: true,
+  },
 })
 
 /** @type {import('next').NextConfig} */
@@ -44,6 +15,18 @@ const nextConfig = {
   reactStrictMode: true,
   images: {
     domains: [],
+  },
+  async headers() {
+    return [
+      {
+        source: '/.well-known/assetlinks.json',
+        headers: [{ key: 'Content-Type', value: 'application/json' }],
+      },
+      {
+        source: '/manifest.webmanifest',
+        headers: [{ key: 'Content-Type', value: 'application/manifest+json' }],
+      },
+    ]
   },
 }
 

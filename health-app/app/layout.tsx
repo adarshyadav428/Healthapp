@@ -1,30 +1,53 @@
-import type { Metadata } from 'next'
-import { Space_Grotesk, Fraunces } from 'next/font/google'
+import type { Metadata, Viewport } from 'next'
+import { DM_Sans } from 'next/font/google'
 import './globals.css'
 import Providers from './providers'
 
-const spaceGrotesk = Space_Grotesk({
+const dmSans = DM_Sans({
+  subsets: ['latin'],
   variable: '--font-sans',
-  subsets: ['latin'],
-})
-
-const fraunces = Fraunces({
-  variable: '--font-display',
-  subsets: ['latin'],
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
-  title: 'Cal Track — Weight Loss & Calorie Tracker',
-  description: 'Track calories, log meals, and build habits with streaks.',
+  title: 'GetInShape — Weight Loss & Calorie Tracker',
+  description: 'Lose weight the Indian way. Track food, monitor progress, get AI insights.',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'GetInShape',
+  },
+  icons: {
+    apple: '/icons/icon-192x192.png',
+  },
+  formatDetection: { telephone: false },
+  openGraph: {
+    type: 'website',
+    title: 'GetInShape — Weight Loss & Calorie Tracker',
+    description: 'Lose weight the Indian way. Track food, monitor progress, get AI insights.',
+    siteName: 'GetInShape',
+  },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#ea580c',
 }
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${fraunces.variable} h-full`}>
+    <html lang="en" className={`h-full ${dmSans.variable}`}>
+      <head>
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+      </head>
       <body className="min-h-full bg-background text-foreground">
         <Providers>{children}</Providers>
       </body>

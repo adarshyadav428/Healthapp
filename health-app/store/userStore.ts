@@ -10,7 +10,6 @@ type UserState = {
   setProfile: (p: Profile | null) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
-  logout: () => Promise<void>
 }
 
 export const useUserStore = create<UserState>((set) => ({
@@ -22,16 +21,6 @@ export const useUserStore = create<UserState>((set) => ({
   setProfile: (profile) => set({ profile }),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
-  logout: async () => {
-    try {
-      set({ isLoading: true })
-      // Sign out handled by a client utility (supabase) in components; here we just clear state
-      set({ user: null, profile: null, isLoading: false })
-      // Client-side redirect performed by caller
-    } catch (err) {
-      set({ error: (err as Error).message, isLoading: false })
-    }
-  },
 }))
 
 export default useUserStore

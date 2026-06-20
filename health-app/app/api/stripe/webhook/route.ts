@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 export const runtime = 'nodejs'
-import { stripe } from '../../../../lib/stripe/client'
+import { getStripeClient } from '../../../../lib/stripe/client'
 import { createAdminClient } from '../../../../lib/supabase/server'
 import type Stripe from 'stripe'
 
 export async function POST(req: Request) {
+  const stripe = getStripeClient()
   const sig = req.headers.get('stripe-signature')
   const secret = process.env.STRIPE_WEBHOOK_SECRET
 
@@ -34,13 +35,21 @@ export async function POST(req: Request) {
         const session = event.data.object as Stripe.Checkout.Session
         const userId = session.metadata?.user_id
         if (userId) {
+          const plan = session.metadata?.plan
+          // For one-time lifetime purchase: mode === 'payment' → status is 'active', no expiry.
+          // For subscriptions: annual has a 7-day trial ('trialing'), monthly goes straight to 'active'.
+          // current_period_end for subscriptions will be filled in by customer.subscription.updated.
+          const isLifetime = session.mode === 'payment'
+          const status = isLifetime ? 'active' : plan === 'annual' ? 'trialing' : 'active'
+          const current_period_end = isLifetime ? null : null // subscription events update this
+
           await admin.from('subscriptions').upsert({
             user_id: userId,
             stripe_customer_id: session.customer?.toString() ?? null,
             stripe_subscription_id: session.subscription?.toString() ?? null,
-            status: session.mode === 'payment' ? 'active' : 'trialing',
-            plan: normalizePlan(session.metadata?.plan),
-            current_period_end: session.expires_at ? new Date(session.expires_at * 1000).toISOString() : null,
+            status,
+            plan: normalizePlan(plan),
+            current_period_end,
           })
         }
         break
