@@ -15,6 +15,14 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, Crown, Target, User, LogOut, Trash2, Download, Sliders, Pencil, Check, X, Zap } from 'lucide-react'
 
+function ftInToCm(ft: number, inches: number) {
+  return Math.round((ft * 12 + inches) * 2.54)
+}
+function cmToFtIn(cm: number) {
+  const totalIn = cm / 2.54
+  return { ft: Math.floor(totalIn / 12), inches: Math.round(totalIn % 12) }
+}
+
 const ACTIVITY_LABELS: Record<string, string> = {
   sedentary: 'Sedentary (desk job, no exercise)',
   light: 'Light (1–3 days/week)',
@@ -48,6 +56,9 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
   const [signOutLoading, setSignOutLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [useCustomTargets, setUseCustomTargets] = useState(false)
+  const initHeight = cmToFtIn(profile.height_cm ?? 170)
+  const [heightFt, setHeightFt] = useState(initHeight.ft)
+  const [heightIn, setHeightIn] = useState(initHeight.inches)
   // Quick calorie editor state
   const [editingCalories, setEditingCalories] = useState(false)
   const [quickKcal, setQuickKcal] = useState(String(profile.daily_calorie_target))
@@ -319,14 +330,35 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
           <Field label="Display name" error={form.formState.errors.display_name?.message}>
             <Input id="display_name" {...form.register('display_name')} />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Height (cm)" error={form.formState.errors.height_cm?.message}>
-              <Input id="height_cm" type="number" {...form.register('height_cm', { valueAsNumber: true })} />
-            </Field>
-            <Field label="Current weight (kg)" error={form.formState.errors.current_weight_kg?.message}>
-              <Input id="current_weight_kg" type="number" step="0.1" min="1" {...form.register('current_weight_kg', { valueAsNumber: true })} />
-            </Field>
-          </div>
+          <Field label="Height" error={form.formState.errors.height_cm?.message}>
+            <div className="flex gap-2">
+              <select
+                value={heightFt}
+                onChange={(e) => {
+                  const ft = Number(e.target.value)
+                  setHeightFt(ft)
+                  form.setValue('height_cm', ftInToCm(ft, heightIn), { shouldValidate: true })
+                }}
+                className="flex-1 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all"
+              >
+                {[3,4,5,6,7,8].map(ft => <option key={ft} value={ft}>{ft} ft</option>)}
+              </select>
+              <select
+                value={heightIn}
+                onChange={(e) => {
+                  const inches = Number(e.target.value)
+                  setHeightIn(inches)
+                  form.setValue('height_cm', ftInToCm(heightFt, inches), { shouldValidate: true })
+                }}
+                className="flex-1 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all"
+              >
+                {[0,1,2,3,4,5,6,7,8,9,10,11].map(i => <option key={i} value={i}>{i} in</option>)}
+              </select>
+            </div>
+          </Field>
+          <Field label="Current weight (kg)" error={form.formState.errors.current_weight_kg?.message}>
+            <Input id="current_weight_kg" type="number" step="0.1" min="1" {...form.register('current_weight_kg', { valueAsNumber: true })} />
+          </Field>
           <Field label="Target weight (kg)" error={form.formState.errors.target_weight_kg?.message}>
             <Input id="target_weight_kg" type="number" step="0.1" min="1" {...form.register('target_weight_kg', { valueAsNumber: true })} />
             <BmiRecommendation
