@@ -89,7 +89,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `Gemini error: ${errMsg}` }, { status: 500 })
     }
     const raw = stripMarkdown(apiJson.candidates?.[0]?.content?.parts?.[0]?.text ?? '')
-    geminiResult = JSON.parse(raw)
+    try {
+      geminiResult = JSON.parse(raw)
+    } catch {
+      // Gemini returned text instead of JSON (refusal, apology, etc.)
+      return NextResponse.json(
+        { error: 'Could not identify any food in the image. Try better lighting or point at food directly.' },
+        { status: 422 }
+      )
+    }
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Unknown error'
     return NextResponse.json({ error: `AI analysis failed: ${msg}` }, { status: 500 })
