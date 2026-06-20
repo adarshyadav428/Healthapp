@@ -69,7 +69,7 @@ export async function POST(req: Request) {
   let geminiResult: { foods: Array<{ name: string; estimated_grams: number; kcal_per_100g: number; protein_g_per_100g: number; carbs_g_per_100g: number; fat_g_per_100g: number }>; confidence: string }
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
     const result = await model.generateContent({
       contents: [{
         role: 'user',
@@ -81,8 +81,9 @@ export async function POST(req: Request) {
     })
     const raw = stripMarkdown(result.response.text())
     geminiResult = JSON.parse(raw)
-  } catch {
-    return NextResponse.json({ error: 'AI analysis failed. Please try again.' }, { status: 500 })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Unknown error'
+    return NextResponse.json({ error: `AI analysis failed: ${msg}` }, { status: 500 })
   }
 
   if (!geminiResult.foods?.length) {
