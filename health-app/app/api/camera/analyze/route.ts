@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
 
 const FREE_DAILY_LIMIT = 5
@@ -65,21 +64,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 })
   }
 
-  // Call Gemini Flash
+  // Call Gemini 1.5 Flash via direct REST API (avoids SDK v1beta routing issues)
   let geminiResult: { foods: Array<{ name: string; estimated_grams: number; kcal_per_100g: number; protein_g_per_100g: number; carbs_g_per_100g: number; fat_g_per_100g: number }>; confidence: string }
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-    const model = genAI.getGenerativeModel({ model: 'models/gemini-1.5-flash' })
-    const result = await model.generateContent({
-      contents: [{
-        role: 'user',
-        parts: [
-          { inlineData: { mimeType, data: imageBase64 } },
-          { text: PROMPT },
-        ],
-      }],
-    })
-    const raw = stripMarkdown(result.response.text())
+    const apiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { inline_data: { mime_type: mimeType, data: imageBase64 } },
+              { text: PROMPT },
+            ],
+          }],
+          generationConfig: { maxOutputTokens: 400, temperature: 0.1 },
+        }),
+      }
+    )
+    const apiJson = await apiRes.json()
+    if (!apiRes.ok) {
+      const errMsg = apiJson?.error?.message ?? JSON.stringify(apiJson)
+      return NextResponse.json({ error: `Gemini error: ${errMsg}` }, { status: 500 })
+    }
+    const raw = stripMarkdown(apiJson.candidates?.[0]?.content?.parts?.[0]?.text ?? '')
     geminiResult = JSON.parse(raw)
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Unknown error'
