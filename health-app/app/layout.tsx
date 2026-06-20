@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { DM_Sans } from 'next/font/google'
 import './globals.css'
 import Providers from './providers'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -50,6 +51,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full bg-background text-foreground">
         <Providers>{children}</Providers>
+        <SpeedInsights />
       </body>
     </html>
   )
