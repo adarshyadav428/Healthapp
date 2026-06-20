@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { onboardingSchema, type OnboardingData } from '../../lib/validations'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { toast } from '../ui/use-toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronRight, ChevronLeft } from 'lucide-react'
@@ -240,7 +239,7 @@ export function OnboardingForm() {
                 type="number"
                 {...form.register('target_weight_kg', { valueAsNumber: true })}
                 className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
-                placeholder={isMetric ? '65' : '143'}
+                placeholder="65"
               />
               {form.formState.errors.target_weight_kg && (
                 <p className="mt-1 text-xs text-red-500">{form.formState.errors.target_weight_kg.message}</p>
@@ -347,20 +346,15 @@ export function OnboardingForm() {
             </div>
             <div>
               <label className="block text-sm font-semibold text-foreground mb-1">Goal pace (kg/week)</label>
-              <Select
-                value={String(form.watch('pace_kg_per_week'))}
-                onValueChange={(v) => form.setValue('pace_kg_per_week', Number(v))}
+              <select
+                {...form.register('pace_kg_per_week', { valueAsNumber: true })}
+                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 transition-all"
               >
-                <SelectTrigger className="rounded-2xl border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0.25">0.25 kg/week — Slow & steady</SelectItem>
-                  <SelectItem value="0.5">0.5 kg/week — Recommended</SelectItem>
-                  <SelectItem value="0.75">0.75 kg/week — Aggressive</SelectItem>
-                  <SelectItem value="1">1.0 kg/week — Maximum</SelectItem>
-                </SelectContent>
-              </Select>
+                <option value="0.25">0.25 kg/week — Slow &amp; steady</option>
+                <option value="0.5">0.5 kg/week — Recommended</option>
+                <option value="0.75">0.75 kg/week — Aggressive</option>
+                <option value="1">1.0 kg/week — Maximum</option>
+              </select>
             </div>
           </div>
         )}
