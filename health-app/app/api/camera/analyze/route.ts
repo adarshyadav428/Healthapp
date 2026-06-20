@@ -69,7 +69,7 @@ export async function POST(req: Request) {
   let geminiResult: { foods: Array<{ name: string; estimated_grams: number; kcal_per_100g: number; protein_g_per_100g: number; carbs_g_per_100g: number; fat_g_per_100g: number }>; confidence: string }
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+    const model = genAI.getGenerativeModel({ model: 'models/gemini-1.5-flash' })
     const result = await model.generateContent({
       contents: [{
         role: 'user',
