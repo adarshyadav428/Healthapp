@@ -19,7 +19,7 @@ type MealValue = (typeof MEAL_OPTIONS)[number]['value']
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
-export function EditFoodLogModal({ log, onClose }: { log: FoodLog; onClose: () => void }) {
+export function EditFoodLogModal({ log, onClose, onSaved }: { log: FoodLog; onClose: () => void; onSaved?: () => void }) {
   const queryClient = useQueryClient()
   const { user } = useUser()
   // DB stores grams-per-serving + servings count; edit as total grams for simplicity
@@ -78,6 +78,7 @@ export function EditFoodLogModal({ log, onClose }: { log: FoodLog; onClose: () =
         )
       )
       toast({ title: 'Entry updated', duration: 2000 })
+      onSaved?.()
       onClose()
     } catch (err) {
       toast({ title: 'Update failed', description: (err as Error).message, variant: 'error' })

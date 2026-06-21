@@ -1,10 +1,13 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import type { FoodLog, ExerciseLog } from '../../types/index'
 import { getUtcDayRange } from '../../lib/dateUtils'
-import { Loader2, Dumbbell, Flame } from 'lucide-react'
+import { Loader2, Dumbbell, Flame, Pencil, Trash2 } from 'lucide-react'
+import { toast } from '../ui/use-toast'
+import { EditFoodLogModal } from '../log/EditFoodLogModal'
 
 const MEAL_CONFIG = {
   breakfast: { emoji: '🥣', label: 'Breakfast', color: 'text-amber-700' },
@@ -58,6 +61,30 @@ function useDayExercise(userId: string | null, date: Date) {
 export function DayDiary({ userId, date }: { userId: string; date: Date }) {
   const { data: logs, isLoading } = useDayLogs(userId, date)
   const { data: exerciseLogs = [] } = useDayExercise(userId, date)
+  const queryClient = useQueryClient()
+  const [editingLog, setEditingLog] = useState<FoodLog | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const { start } = getUtcDayRange(date)
+
+  const deleteLog = async (id: string) => {
+    if (deletingId) return
+    setDeletingId(id)
+    try {
+      const res = await fetch('/api/logs/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Delete failed')
+      queryClient.setQueryData<FoodLog[]>(['food-logs-diary', userId, start], (old = []) => old.filter(f => f.id !== id))
+      toast({ title: 'Entry deleted', duration: 2000 })
+    } catch (err) {
+      toast({ title: 'Delete failed', description: (err as Error).message, variant: 'error' })
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -130,13 +157,40 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
                       <p className="text-xs font-semibold text-foreground truncate">{log.food?.name ?? 'Food item'}</p>
                       <p className="text-[10px] text-muted">{Math.round(log.grams)}g · {Math.round(log.protein_g)}P {Math.round(log.carbs_g)}C {Math.round(log.fat_g)}F</p>
                     </div>
-                    <span className="text-xs font-bold text-foreground shrink-0">{Math.round(log.kcal)} kcal</span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-xs font-bold text-foreground mr-1">{Math.round(log.kcal)} kcal</span>
+                      <button
+                        type="button"
+                        onClick={() => setEditingLog(log)}
+                        className="rounded-full p-1 text-muted hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors"
+                        aria-label="Edit"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteLog(log.id)}
+                        disabled={deletingId === log.id}
+                        className="rounded-full p-1 text-muted hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 disabled:opacity-40 transition-colors"
+                        aria-label="Delete"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           )
         })}
+
+      {editingLog && (
+        <EditFoodLogModal
+          log={editingLog}
+          onClose={() => setEditingLog(null)}
+          onSaved={() => queryClient.invalidateQueries({ queryKey: ['food-logs-diary', userId, start] })}
+        />
+      )}
 
       {/* Exercise for the day */}
       {exerciseLogs.length > 0 && (
