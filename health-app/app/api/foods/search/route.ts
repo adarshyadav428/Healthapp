@@ -21,20 +21,17 @@ let autoSeedDone = false
 
 async function autoSeedIfNeeded(): Promise<void> {
   if (autoSeedDone) return
-  autoSeedDone = true // optimistic — prevents parallel calls
+  autoSeedDone = true // optimistic — prevents parallel calls within one server instance
   try {
     const admin = createAdminClient()
-    const { count } = await admin
-      .from('foods')
-      .select('id', { count: 'exact', head: true })
-      .eq('source', 'ifct')
-    if ((count ?? 0) >= INDIAN_FOODS.length) return // already seeded
-
+    // Always upsert all seed entries — idempotent via ON CONFLICT source,source_id.
+    // Previously this was gated on count >= INDIAN_FOODS.length, but that caused
+    // items added to the seed file after migrations ran to never reach the DB.
     const BATCH = 50
     for (let i = 0; i < INDIAN_FOODS.length; i += BATCH) {
       await admin
         .from('foods')
-        .upsert(INDIAN_FOODS.slice(i, i + BATCH), { onConflict: 'source,source_id', ignoreDuplicates: false })
+        .upsert(INDIAN_FOODS.slice(i, i + BATCH), { onConflict: 'source,source_id', ignoreDuplicates: true })
     }
   } catch (e) {
     autoSeedDone = false // allow retry next request
