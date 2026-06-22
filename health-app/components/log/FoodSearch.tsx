@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Food } from '../../types/index'
 import { FoodResult } from './FoodResult'
 import { toast } from '../ui/use-toast'
-import { Clock, Copy, Star, Zap, PlusCircle, Search, X, BookOpen, Trash2, ScanLine, MessageSquarePlus } from 'lucide-react'
+import { Clock, Copy, Star, Zap, PlusCircle, Search, X, BookOpen, Trash2, ScanLine, MessageSquarePlus, RotateCcw, Plus, Loader2 } from 'lucide-react'
 import { useUser } from '../../hooks/useUser'
 import { useFoodFavourites } from '../../hooks/useFoodFavourites'
 
@@ -32,13 +32,16 @@ function useDebounce(value: string, delay: number) {
   return debounced
 }
 
+type RecentLogItem = { food: Food; grams: number; kcal: number; meal: string }
+
 type Props = {
   recentFoods: Food[]
+  recentLogItems?: RecentLogItem[]
   frequentFoods: Food[]
   hasYesterdayLogs: boolean
 }
 
-export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Props) {
+export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, hasYesterdayLogs }: Props) {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Food | null>(null)
   const [showCamera, setShowCamera] = useState(false)
@@ -178,6 +181,27 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
     }
   }
 
+  const reLogItem = async (item: RecentLogItem) => {
+    if (quickAddingId) return
+    setQuickAddingId(item.food.id)
+    try {
+      if (!user) throw new Error('You must be signed in.')
+      const res = await fetch('/api/logs/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ food_id: item.food.id, meal: item.meal, servings: 1, grams: item.grams }),
+      })
+      const body = await res.json().catch(() => ({} as { error?: string }))
+      if (!res.ok) throw new Error(body?.error || 'Re-log failed')
+      toast({ title: `Re-logged ${item.food.name}`, description: `${Math.round(item.grams)}g → ${item.meal}.`, duration: 2500 })
+      queryClient.invalidateQueries({ queryKey: ['food-logs'] })
+    } catch (err) {
+      toast({ title: 'Re-log failed', description: (err as Error).message, variant: 'error' })
+    } finally {
+      setQuickAddingId(null)
+    }
+  }
+
   return (
     <div className="space-y-5">
       {/* Search input */}
@@ -220,6 +244,39 @@ export function FoodSearch({ recentFoods, frequentFoods, hasYesterdayLogs }: Pro
           </button>
         </div>
       </div>
+
+      {/* Re-log chips — compact horizontal scroll, logs at exact last portion */}
+      {!isSearching && recentLogItems.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Re-log · same portion as last time</span>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {recentLogItems.map((item) => {
+              const isAdding = quickAddingId === item.food.id
+              return (
+                <button
+                  key={item.food.id}
+                  type="button"
+                  onClick={() => reLogItem(item)}
+                  disabled={isAdding}
+                  className="flex-shrink-0 flex items-center gap-2 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-left hover:border-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950/20 active:scale-95 disabled:opacity-50 transition-all shadow-sm"
+                >
+                  <div>
+                    <p className="text-xs font-bold text-foreground max-w-[120px] truncate leading-tight">{item.food.name}</p>
+                    <p className="text-[10px] text-muted leading-tight">{Math.round(item.grams)}g · {Math.round(item.kcal)} kcal</p>
+                  </div>
+                  {isAdding
+                    ? <Loader2 className="h-3.5 w-3.5 text-orange-500 animate-spin flex-shrink-0" />
+                    : <Plus className="h-3.5 w-3.5 text-orange-500 flex-shrink-0" />
+                  }
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Copy yesterday banner */}
       {hasYesterdayLogs && !isSearching && (

@@ -105,7 +105,7 @@ export default async function LogPage({
   const [logSnapshotResult, yesterdayResult, dayResult, dayLogsResult] = await Promise.all([
     supabase
       .from('food_logs')
-      .select(`food_id, food:foods(${FOOD_SELECT})`)
+      .select(`food_id, grams, kcal, meal, food:foods(${FOOD_SELECT})`)
       .eq('user_id', user.id)
       .order('logged_at', { ascending: false })
       .limit(200),
@@ -140,21 +140,26 @@ export default async function LogPage({
   const dayLogs = dayResult.data ?? []
 
   // Build recent + frequent foods from all-time history
+  type SnapshotRow = { food_id: string | null; grams: number; kcal: number; meal: string; food: Food | null }
+  type RecentLogItem = { food: Food; grams: number; kcal: number; meal: string }
+  const typedSnapshot = (logSnapshot as unknown as SnapshotRow[])
   const seenIds = new Set<string>()
   const recentFoods: Food[] = []
+  const recentLogItems: RecentLogItem[] = []
   const frequentMap = new Map<string, { food: Food; count: number; lastIndex: number }>()
   let index = 0
-  for (const log of logSnapshot) {
+  for (const log of typedSnapshot) {
     if (log.food && log.food_id && !seenIds.has(log.food_id) && recentFoods.length < 5) {
       seenIds.add(log.food_id)
-      recentFoods.push(log.food as unknown as Food)
+      recentFoods.push(log.food)
+      recentLogItems.push({ food: log.food, grams: log.grams ?? log.food.serving_size_g, kcal: log.kcal ?? 0, meal: log.meal ?? 'snack' })
     }
     if (log.food && log.food_id) {
       const existing = frequentMap.get(log.food_id)
       if (existing) {
         existing.count += 1
       } else {
-        frequentMap.set(log.food_id, { food: log.food as unknown as Food, count: 1, lastIndex: index })
+        frequentMap.set(log.food_id, { food: log.food, count: 1, lastIndex: index })
       }
     }
     index += 1
@@ -210,6 +215,7 @@ export default async function LogPage({
             <div className="mt-4">
               <FoodSearch
                 recentFoods={recentFoods}
+                recentLogItems={recentLogItems}
                 frequentFoods={frequentFoods}
                 hasYesterdayLogs={hasYesterdayLogs}
               />
