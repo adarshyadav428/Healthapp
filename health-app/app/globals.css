@@ -3,28 +3,28 @@
 @tailwind utilities;
 
 :root {
-  --background: #F8F7FF;
-  --foreground: #1A1A2E;
-  --muted: #6B7280;
-  --border: #F0F0F0;
+  --background: #FAFAF7;
+  --foreground: #16181D;
+  --muted: #9CA3AF;
+  --border: #F1EFE9;
   --card: #FFFFFF;
-  --primary: #EA580C;
+  --primary: #FB7445;
   --success: #22C55E;
-  --warning: #F59E0B;
-  --danger: #EF4444;
+  --warning: #E89316;
+  --danger: #E0554D;
 }
 
-/* Dark mode disabled — mirror light tokens so dark: classes are inert */
+/* Dark mode disabled — mirror light tokens */
 .dark {
-  --background: #F8F7FF;
-  --foreground: #1A1A2E;
-  --muted: #6B7280;
-  --border: #F0F0F0;
+  --background: #FAFAF7;
+  --foreground: #16181D;
+  --muted: #9CA3AF;
+  --border: #F1EFE9;
   --card: #FFFFFF;
-  --primary: #EA580C;
+  --primary: #FB7445;
   --success: #22C55E;
-  --warning: #F59E0B;
-  --danger: #EF4444;
+  --warning: #E89316;
+  --danger: #E0554D;
 }
 
 @layer base {
@@ -33,11 +33,11 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: var(--font-sans, 'DM Sans', ui-sans-serif, system-ui, sans-serif);
+    font-family: var(--font-sans, 'Sora', ui-sans-serif, system-ui, sans-serif);
     -webkit-tap-highlight-color: transparent;
   }
   h1, h2, h3, h4 {
-    font-family: var(--font-sans, 'DM Sans', ui-sans-serif, system-ui, sans-serif);
+    font-family: var(--font-sans, 'Sora', ui-sans-serif, system-ui, sans-serif);
     @apply font-bold tracking-tight;
   }
 }
@@ -100,5 +100,18 @@
   /* ── Safe area for bottom nav ── */
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom, 8px);
+  }
+
+  /* ── Tabular numerals for all number displays ── */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Active press scale for tappable elements ── */
+  .tap-scale {
+    transition: transform 140ms ease;
+  }
+  .tap-scale:active {
+    transform: scale(0.96);
   }
 }

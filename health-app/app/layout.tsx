@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from 'next'
-import { DM_Sans } from 'next/font/google'
+import { Sora } from 'next/font/google'
 import './globals.css'
 import Providers from './providers'
 
-const dmSans = DM_Sans({
+const sora = Sora({
   subsets: ['latin'],
   variable: '--font-sans',
   display: 'swap',
+  weight: ['400', '500', '600', '700'],
 })
 
 export const metadata: Metadata = {
@@ -44,7 +45,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`h-full ${dmSans.variable}`}>
+    <html lang="en" className={`h-full ${sora.variable}`}>
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
