@@ -13,7 +13,6 @@ import { getUtcDayRange } from '../../lib/dateUtils'
 
 // Below-fold widgets — split into separate chunks so they don't block initial JS parse.
 const SkeletonCard = () => <div className="h-32 rounded-2xl bg-card border border-border animate-pulse" />
-const WaterTracker   = nextDynamic(() => import('../../components/log/WaterTracker').then(m => m.WaterTracker),     { ssr: false, loading: SkeletonCard })
 const ExerciseLogger = nextDynamic(() => import('../../components/log/ExerciseLogger').then(m => m.ExerciseLogger), { ssr: false, loading: SkeletonCard })
 const FastingTimer   = nextDynamic(() => import('../../components/log/FastingTimer').then(m => m.FastingTimer),     { ssr: false, loading: SkeletonCard })
 const SleepTracker   = nextDynamic(() => import('../../components/log/SleepTracker').then(m => m.SleepTracker),     { ssr: false, loading: SkeletonCard })
@@ -228,12 +227,9 @@ export default async function LogPage({
           <TodayFoodLog initialLogs={dayFoodLogs} />
         </div>
 
-        {/* Water, exercise & fasting — always today-specific */}
+        {/* Exercise & fasting — always today-specific */}
         {isToday && (
           <>
-            <div className="mt-4">
-              <WaterTracker waterTargetMl={profile.water_target_ml ?? 2500} />
-            </div>
             <div className="mt-4">
               <ExerciseLogger weightKg={profile.current_weight_kg ?? 70} />
             </div>

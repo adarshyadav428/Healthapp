@@ -7,7 +7,6 @@ import { CalorieRing } from '../home/CalorieRing'
 import { MacroRow } from '../home/MacroRow'
 import { MealGroup } from '../home/MealGroup'
 import { EmptyMeals } from '../home/EmptyMeals'
-import { HomeWaterTracker } from '../home/WaterTracker'
 import { PlanStrip } from '../home/PlanStrip'
 import { EditFoodLogModal } from '../log/EditFoodLogModal'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
@@ -169,9 +168,6 @@ export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
           <EmptyMeals />
         )}
       </div>
-
-      {/* ── Water tracker ── */}
-      <HomeWaterTracker targetMl={profile.water_target_ml ?? 2500} />
 
       {/* ── Plan strip ── */}
       <PlanStrip

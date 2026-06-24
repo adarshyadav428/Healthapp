@@ -12,7 +12,6 @@ import { StreakCalendar } from './StreakCalendar'
 // All three of these render recharts SVG charts — defer to keep initial /progress chunk small.
 const SkeletonChart     = () => <div className="h-40 rounded-2xl bg-card border border-border animate-pulse" />
 const WeightTrendCard   = dynamic(() => import('../dashboard/WeightTrendCard').then(m => m.WeightTrendCard),   { ssr: false, loading: SkeletonChart })
-const WaterHistoryCard  = dynamic(() => import('./WaterHistoryCard').then(m => m.WaterHistoryCard),            { ssr: false, loading: SkeletonChart })
 const SleepHistoryCard  = dynamic(() => import('./SleepHistoryCard').then(m => m.SleepHistoryCard),            { ssr: false, loading: SkeletonChart })
 
 type Props = {
@@ -122,9 +121,6 @@ export function ProgressClient({ streak, weightLogs, weekLogs, kcalTarget, profi
           </Link>
         )}
       </div>
-
-      {/* ── Water history ── */}
-      <WaterHistoryCard targetMl={profile.water_target_ml ?? 2500} />
 
       {/* ── Sleep history ── */}
       <SleepHistoryCard />
