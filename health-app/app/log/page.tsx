@@ -5,7 +5,7 @@ import { LogProgressClient } from '../../components/log/LogProgressClient'
 import { TodayFoodLog } from '../../components/log/TodayFoodLog'
 import { LogPageShell } from '../../components/log/LogPageShell'
 import { DateNav } from '../../components/log/DateNav'
-import { Navbar } from '../../components/layout/Navbar'
+import { HomeHeader } from '../../components/layout/HomeHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { createServerClient } from '../../lib/supabase/server'
 import type { Food, FoodLog } from '../../types/index'
@@ -58,7 +58,7 @@ export default async function LogPage({
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('height_cm, daily_calorie_target, protein_g_target, carbs_g_target, fat_g_target, current_weight_kg, water_target_ml')
+    .select('height_cm, daily_calorie_target, protein_g_target, carbs_g_target, fat_g_target, current_weight_kg, water_target_ml, display_name')
     .eq('id', user.id)
     .maybeSingle()
 
@@ -181,13 +181,13 @@ export default async function LogPage({
   )
 
   return (
-    <div className="min-h-screen bg-background pb-32">
-      <Navbar />
-      <main className="mx-auto w-full max-w-md px-4 pt-4 pb-6">
+    <div className="min-h-screen" style={{ background: '#FAFAF7' }}>
+      <HomeHeader displayName={profile.display_name ?? null} />
+      <main className="mx-auto w-full max-w-md px-[18px] pt-4" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}>
         {/* Header */}
-        <div className="mb-2">
-          <h1 className="text-[28px] font-black text-foreground leading-tight">Food Diary</h1>
-          <p className="text-sm text-muted">{isToday ? 'What did you eat today?' : 'Viewing past entry'}</p>
+        <div className="mb-3">
+          <h1 className="text-[26px] font-black leading-tight" style={{ color: '#16181D' }}>Food Diary</h1>
+          <p className="text-[13px] font-medium mt-0.5" style={{ color: '#9CA3AF' }}>{isToday ? 'What did you eat today?' : 'Viewing past entry'}</p>
         </div>
 
         {/* Date navigation */}

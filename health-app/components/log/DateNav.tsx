@@ -1,12 +1,11 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 type Props = { dateStr: string /* YYYY-MM-DD in UTC */ }
 
 function formatDisplay(dateStr: string): string {
-  // dateStr is YYYY-MM-DD
   const [year, month, day] = dateStr.split('-').map(Number)
   const d = new Date(Date.UTC(year, month - 1, day))
 
@@ -71,29 +70,40 @@ export function DateNav({ dateStr }: Props) {
       <button
         type="button"
         onClick={() => go(shiftDate(dateStr, -1))}
-        className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800 text-muted hover:text-foreground hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+        className="flex h-9 w-9 items-center justify-center rounded-full tap-scale transition-colors"
+        style={{ background: '#F1EFE9' }}
         aria-label="Previous day"
       >
-        <ChevronLeft className="h-4 w-4" />
+        <ChevronLeft className="h-4 w-4" style={{ color: '#16181D' }} />
       </button>
 
       <button
         type="button"
         onClick={() => !isToday && go(todayStr)}
-        className="flex items-center gap-1.5 text-sm font-bold text-foreground"
+        className="flex flex-col items-center gap-0.5"
       >
-        <CalendarDays className="h-3.5 w-3.5 text-muted" />
-        {formatDisplay(dateStr)}
+        <span
+          className="text-[16px] font-bold leading-tight"
+          style={{ color: isToday ? '#FB7445' : '#16181D' }}
+        >
+          {formatDisplay(dateStr)}
+        </span>
+        {!isToday && (
+          <span className="text-[11px] font-medium" style={{ color: '#9CA3AF' }}>
+            tap to return to today
+          </span>
+        )}
       </button>
 
       <button
         type="button"
-        onClick={() => !isFuture && go(shiftDate(dateStr, 1))}
+        onClick={() => !isToday && !isFuture && go(shiftDate(dateStr, 1))}
         disabled={isToday}
-        className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800 text-muted hover:text-foreground hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        className="flex h-9 w-9 items-center justify-center rounded-full tap-scale transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        style={{ background: '#F1EFE9' }}
         aria-label="Next day"
       >
-        <ChevronRight className="h-4 w-4" />
+        <ChevronRight className="h-4 w-4" style={{ color: '#16181D' }} />
       </button>
     </div>
   )

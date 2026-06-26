@@ -10,11 +10,11 @@ import { getUtcDayRange } from '../../lib/dateUtils'
 import { Trash2, ChevronDown, Pencil, BookmarkPlus, Check, X } from 'lucide-react'
 import { EditFoodLogModal } from './EditFoodLogModal'
 
-const MEAL_CONFIG: Record<string, { label: string; emoji: string; accent: string }> = {
-  breakfast: { label: 'Breakfast', emoji: '🥣', accent: 'text-orange-700 dark:text-orange-400' },
-  lunch:     { label: 'Lunch',     emoji: '🍛', accent: 'text-emerald-700 dark:text-emerald-400' },
-  dinner:    { label: 'Dinner',    emoji: '🍲', accent: 'text-rose-700 dark:text-rose-400' },
-  snack:     { label: 'Snacks',    emoji: '🥜', accent: 'text-amber-700 dark:text-amber-400' },
+const MEAL_CONFIG: Record<string, { label: string; emoji: string; dot: string }> = {
+  breakfast: { label: 'Breakfast', emoji: '🥣', dot: '#FB7445' },
+  lunch:     { label: 'Lunch',     emoji: '🍛', dot: '#2F6FE0' },
+  dinner:    { label: 'Dinner',    emoji: '🍲', dot: '#E0554D' },
+  snack:     { label: 'Snacks',    emoji: '🥜', dot: '#E89316' },
 }
 
 function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
@@ -28,7 +28,7 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
   const [saving, setSaving] = useState(false)
   const [savingName, setSavingName] = useState(false)
   const [mealName, setMealName] = useState('')
-  const cfg = MEAL_CONFIG[meal] ?? { label: meal, emoji: '🍽️', accent: 'text-muted' }
+  const cfg = MEAL_CONFIG[meal] ?? { label: meal, emoji: '🍽️', dot: '#9CA3AF' }
   const totalKcal = logs.reduce((s, l) => s + l.kcal, 0)
 
   const saveMeal = async () => {
@@ -56,36 +56,42 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
   }
 
   return (
-    <div className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-900/80 shadow-sm overflow-hidden">
+    <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #F1EFE9' }}>
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
         className="w-full flex items-center justify-between px-3 py-2.5 text-left"
       >
         <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: cfg.dot }} />
           <span className="text-sm">{cfg.emoji}</span>
-          <span className={`text-xs font-bold ${cfg.accent}`}>{cfg.label}</span>
-          <span className="text-xs text-muted">· {logs.length} item{logs.length !== 1 ? 's' : ''}</span>
+          <span className="text-[13px] font-bold" style={{ color: '#16181D' }}>{cfg.label}</span>
+          <span className="text-[12px]" style={{ color: '#9CA3AF' }}>· {logs.length} item{logs.length !== 1 ? 's' : ''}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-muted">{Math.round(totalKcal)} kcal</span>
-          <ChevronDown className={`h-3.5 w-3.5 text-muted transition-transform ${open ? 'rotate-180' : ''}`} />
+          <span className="text-[12px] font-semibold" style={{ color: '#9CA3AF' }}>{Math.round(totalKcal)} kcal</span>
+          <ChevronDown
+            className="h-3.5 w-3.5 transition-transform"
+            style={{ color: '#9CA3AF', transform: open ? 'rotate(180deg)' : 'none' }}
+          />
         </div>
       </button>
 
       {open && (
-        <div className="px-3 pb-2 space-y-1.5 border-t border-gray-50 dark:border-slate-800 pt-1.5">
+        <div className="px-3 pb-2 space-y-1.5 pt-1.5" style={{ borderTop: '1px solid #F1EFE9' }}>
           {logs.map((log) => (
-            <div key={log.id} className="flex items-center justify-between rounded-xl bg-gray-50 dark:bg-slate-800 px-3 py-2">
+            <div key={log.id} className="flex items-center justify-between rounded-xl px-3 py-2" style={{ background: '#FAFAF7' }}>
               <div className="min-w-0 flex-1 mr-2">
-                <p className="text-xs font-semibold text-foreground truncate">{log.food?.name ?? (log.food_id == null ? 'Quick Add' : 'Food item')}</p>
+                <p className="text-xs font-semibold truncate" style={{ color: '#16181D' }}>
+                  {log.food?.name ?? (log.food_id == null ? 'Quick Add' : 'Food item')}
+                </p>
                 <div className="flex gap-2 mt-0.5 flex-wrap">
-                  <span className="text-[10px] font-bold text-foreground">{Math.round(log.kcal)} kcal</span>
-                  <span className="text-[10px] text-blue-500 dark:text-blue-400">P{Math.round(log.protein_g)}g</span>
-                  <span className="text-[10px] text-amber-500 dark:text-amber-400">C{Math.round(log.carbs_g)}g</span>
-                  <span className="text-[10px] text-rose-500 dark:text-rose-400">F{Math.round(log.fat_g)}g</span>
+                  <span className="text-[10px] font-bold" style={{ color: '#16181D' }}>{Math.round(log.kcal)} kcal</span>
+                  <span className="text-[10px] font-semibold" style={{ color: '#2F6FE0' }}>P{Math.round(log.protein_g)}g</span>
+                  <span className="text-[10px] font-semibold" style={{ color: '#E89316' }}>C{Math.round(log.carbs_g)}g</span>
+                  <span className="text-[10px] font-semibold" style={{ color: '#E0554D' }}>F{Math.round(log.fat_g)}g</span>
                   {log.food?.fiber_g_per_100g != null && log.food.fiber_g_per_100g > 0 && (
-                    <span className="text-[10px] text-emerald-500 dark:text-emerald-400">
+                    <span className="text-[10px] font-semibold" style={{ color: '#10B981' }}>
                       Fi{Math.round(log.food.fiber_g_per_100g * log.grams / 100)}g
                     </span>
                   )}
@@ -95,7 +101,8 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
                 <button
                   type="button"
                   onClick={() => onEdit(log)}
-                  className="rounded-full p-1 text-muted hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors"
+                  className="rounded-full p-1 transition-colors"
+                  style={{ color: '#9CA3AF' }}
                   aria-label="Edit"
                 >
                   <Pencil className="h-3.5 w-3.5" />
@@ -104,7 +111,8 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
                   type="button"
                   onClick={() => onDelete(log.id)}
                   disabled={deletingId === log.id}
-                  className="rounded-full p-1 text-muted hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 disabled:opacity-40 transition-colors"
+                  className="rounded-full p-1 disabled:opacity-40 transition-colors"
+                  style={{ color: '#9CA3AF' }}
                   aria-label="Delete"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -121,16 +129,28 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
                 value={mealName}
                 onChange={(e) => setMealName(e.target.value)}
                 placeholder={`Name (e.g. "${cfg.label} usual")`}
-                className="flex-1 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-3 py-1.5 text-xs text-foreground outline-none focus:border-orange-400 transition-all"
+                className="flex-1 rounded-xl px-3 py-1.5 text-xs outline-none transition-all"
+                style={{ background: '#FAFAF7', border: '1px solid #F1EFE9', color: '#16181D' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#FB7445' }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = '#F1EFE9' }}
                 onKeyDown={(e) => e.key === 'Enter' && saveMeal()}
                 autoFocus
               />
-              <button type="button" onClick={saveMeal} disabled={saving}
-                className="rounded-xl bg-orange-600 px-2.5 py-1.5 text-white hover:bg-orange-700 disabled:opacity-50 transition-colors">
+              <button
+                type="button"
+                onClick={saveMeal}
+                disabled={saving}
+                className="rounded-xl px-2.5 py-1.5 text-white disabled:opacity-50 transition-colors"
+                style={{ background: '#FB7445' }}
+              >
                 <Check className="h-3.5 w-3.5" />
               </button>
-              <button type="button" onClick={() => setSavingName(false)}
-                className="rounded-xl px-2.5 py-1.5 text-muted hover:text-foreground hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+              <button
+                type="button"
+                onClick={() => setSavingName(false)}
+                className="rounded-xl px-2.5 py-1.5 transition-colors"
+                style={{ color: '#9CA3AF' }}
+              >
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -138,7 +158,8 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
             <button
               type="button"
               onClick={() => setSavingName(true)}
-              className="flex w-full items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-semibold text-muted hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-colors"
+              className="flex w-full items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-semibold transition-colors"
+              style={{ color: '#9CA3AF' }}
             >
               <BookmarkPlus className="h-3.5 w-3.5" />
               Save as meal template
@@ -201,12 +222,12 @@ export function TodayFoodLog({ initialLogs }: { initialLogs: FoodLog[] }) {
     <div className="space-y-2">
       {/* Summary row */}
       <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">Today&apos;s log</p>
-        <div className="flex gap-3 text-[11px]">
-          <span className="font-bold text-foreground">{Math.round(totals.kcal)} kcal</span>
-          <span className="text-blue-500 dark:text-blue-400">P{Math.round(totals.protein)}g</span>
-          <span className="text-amber-500 dark:text-amber-400">C{Math.round(totals.carbs)}g</span>
-          <span className="text-rose-500 dark:text-rose-400">F{Math.round(totals.fat)}g</span>
+        <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#9CA3AF' }}>Today&apos;s log</p>
+        <div className="flex gap-3 text-[11px] tabular-nums">
+          <span className="font-bold" style={{ color: '#16181D' }}>{Math.round(totals.kcal)} kcal</span>
+          <span className="font-semibold" style={{ color: '#2F6FE0' }}>P{Math.round(totals.protein)}g</span>
+          <span className="font-semibold" style={{ color: '#E89316' }}>C{Math.round(totals.carbs)}g</span>
+          <span className="font-semibold" style={{ color: '#E0554D' }}>F{Math.round(totals.fat)}g</span>
         </div>
       </div>
       {byMeal.map(({ meal, logs: mealLogs }) => (
