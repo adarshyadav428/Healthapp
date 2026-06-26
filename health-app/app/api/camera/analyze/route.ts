@@ -4,7 +4,29 @@ import { createServerClient, createAdminClient } from '../../../../lib/supabase/
 const FREE_DAILY_LIMIT = 5
 
 const PROMPT = `You are a nutrition expert specializing in Indian food. Analyze this food image.
-Use IFCT 2017 values for traditional Indian foods, and standard global values for packaged/international foods.
+Use IFCT 2017 values for traditional Indian foods and standard global values for packaged/international foods.
+
+INDIAN PORTION SIZE REFERENCE — use these as starting baselines, then adjust up or down based on what you actually see in the image:
+- Chapati/roti: 1 piece = 40g | Paratha: 1 piece = 85g | Naan: 1 piece = 90g | Puri: 1 piece = 30g
+- Rice (cooked): 1 home plate = 200g | 1 restaurant plate = 300g | 1 katori = 150g
+- Dal / sambar / curry (liquid): 1 katori = 150ml | 1 bowl = 250ml
+- Dry sabzi (potato, paneer, mixed veg): 1 katori = 110g
+- Idli: 1 piece = 45g | Dosa (plain): 1 piece = 110g | Medu vada: 1 piece = 55g
+- Samosa: 1 piece = 115g | Kachori: 1 piece = 80g | Vada pav: 1 = 145g | Pav bhaji (plate) = 280g
+- Biryani: home plate = 300g | restaurant portion = 420g
+- Chole / rajma / dal makhani: 1 katori = 150g
+- Paneer dish (e.g. paneer butter masala): 1 katori = 160g
+- Poha / upma / khichdi: 1 plate = 200g
+- Chai: 1 cup = 150ml | Coffee: 1 cup = 150ml
+- Gulab jamun: 1 piece = 50g | Jalebi: 1 piece = 35g | Rasgulla: 1 piece = 60g
+
+RULES:
+1. Be specific with names: prefer "Aloo Paratha" over "Paratha", "Paneer Butter Masala" over "Curry".
+2. For a thali or plate with multiple distinct items, list the 3 most calorie-significant ones separately.
+3. Adjust estimated_grams based on plate/bowl size visible in the image. A restaurant plate is 30-50% larger than a home katori.
+4. When no size reference is visible, default to standard home-cooked Indian portions (NOT Western restaurant sizes).
+5. Set confidence "low" if the image is blurry, partially obscured, or you are genuinely unsure of the dish.
+
 Respond ONLY with valid JSON (no markdown, no code blocks):
 {
   "foods": [
@@ -19,7 +41,7 @@ Respond ONLY with valid JSON (no markdown, no code blocks):
   ],
   "confidence": "low|medium|high"
 }
-List up to 3 distinct food items if multiple are visible. If you cannot identify any food, return {"foods":[],"confidence":"low"}.`
+List up to 3 distinct food items. If you cannot identify any food, return {"foods":[],"confidence":"low"}.`
 
 function stripMarkdown(text: string): string {
   return text.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim()
@@ -79,7 +101,7 @@ export async function POST(req: Request) {
               { text: PROMPT },
             ],
           }],
-          generationConfig: { maxOutputTokens: 400, temperature: 0.1 },
+          generationConfig: { maxOutputTokens: 512, temperature: 0.05 },
         }),
       }
     )
