@@ -6,14 +6,11 @@ import { WeeklySummary } from '../dashboard/WeeklySummary'
 import { StreakBadge } from '../dashboard/StreakBadge'
 import Link from 'next/link'
 import { Scale, ChevronRight } from 'lucide-react'
-import { MeasurementsCard } from './MeasurementsCard'
 import { StreakCalendar } from './StreakCalendar'
 
 // All three of these render recharts SVG charts — defer to keep initial /progress chunk small.
 const SkeletonChart     = () => <div className="h-40 rounded-2xl bg-card border border-border animate-pulse" />
 const WeightTrendCard   = dynamic(() => import('../dashboard/WeightTrendCard').then(m => m.WeightTrendCard),   { ssr: false, loading: SkeletonChart })
-const SleepHistoryCard  = dynamic(() => import('./SleepHistoryCard').then(m => m.SleepHistoryCard),            { ssr: false, loading: SkeletonChart })
-
 type Props = {
   streak:      number
   weightLogs:  WeightLog[]
@@ -122,11 +119,6 @@ export function ProgressClient({ streak, weightLogs, weekLogs, kcalTarget, profi
         )}
       </div>
 
-      {/* ── Sleep history ── */}
-      <SleepHistoryCard />
-
-      {/* ── Body measurements ── */}
-      <MeasurementsCard />
 
       {/* ── Macro targets (reference) ── */}
       <div className="rounded-2xl bg-card border border-border p-4">

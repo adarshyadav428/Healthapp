@@ -45,7 +45,7 @@ const FEATURES = [
   'AI Weekly Insights — personal analysis every Sunday',
   'Full history — beyond the last 7 days',
   'Custom foods & recipes — log your home-cooked dishes',
-  'Advanced trends — body measurements, sleep, fasting analytics',
+  'Advanced trends — full weight history, macro breakdown charts',
   'Export your data to CSV',
   'Saved meal templates — log a whole meal in one tap',
   'Priority support',

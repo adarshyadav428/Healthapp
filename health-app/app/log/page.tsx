@@ -14,8 +14,6 @@ import { getUtcDayRange } from '../../lib/dateUtils'
 // Below-fold widgets — split into separate chunks so they don't block initial JS parse.
 const SkeletonCard = () => <div className="h-32 rounded-2xl bg-card border border-border animate-pulse" />
 const ExerciseLogger = nextDynamic(() => import('../../components/log/ExerciseLogger').then(m => m.ExerciseLogger), { ssr: false, loading: SkeletonCard })
-const FastingTimer   = nextDynamic(() => import('../../components/log/FastingTimer').then(m => m.FastingTimer),     { ssr: false, loading: SkeletonCard })
-const SleepTracker   = nextDynamic(() => import('../../components/log/SleepTracker').then(m => m.SleepTracker),     { ssr: false, loading: SkeletonCard })
 
 export const dynamic = 'force-dynamic'
 export const metadata = { robots: { index: false } }
@@ -227,19 +225,11 @@ export default async function LogPage({
           <TodayFoodLog initialLogs={dayFoodLogs} />
         </div>
 
-        {/* Exercise & fasting — always today-specific */}
+        {/* Exercise — always today-specific */}
         {isToday && (
-          <>
-            <div className="mt-4">
-              <ExerciseLogger weightKg={profile.current_weight_kg ?? 70} />
-            </div>
-            <div className="mt-4">
-              <FastingTimer />
-            </div>
-            <div className="mt-4">
-              <SleepTracker />
-            </div>
-          </>
+          <div className="mt-4">
+            <ExerciseLogger weightKg={profile.current_weight_kg ?? 70} />
+          </div>
         )}
       </main>
       <BottomNav />
