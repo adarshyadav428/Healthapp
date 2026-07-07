@@ -8,7 +8,8 @@ export async function middleware(request: NextRequest) {
 
   if (
     publicFiles.includes(pathname) ||
-    publicPrefixes.some(prefix => pathname.startsWith(prefix))
+    publicPrefixes.some(prefix => pathname.startsWith(prefix)) ||
+    (pathname.startsWith('/google') && pathname.endsWith('.html'))
   ) {
     return NextResponse.next()
   }
