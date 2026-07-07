@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createServerClient } from '../../lib/supabase/server'
 import type { FoodLog, WeightLog } from '../../types/index'
 import { calculateStreak } from '../../lib/streak'
+import { getIstDayRange } from '../../lib/dateUtils'
 import { Navbar } from '../../components/layout/Navbar'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { ProgressClient } from '../../components/progress/ProgressClient'
@@ -17,8 +18,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function ProgressPage() {
   const supabase = createServerClient()
-  const { data: { session }, error: userError } = await supabase.auth.getSession()
-  const user = session?.user ?? null
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
   if (userError || !user) redirect('/auth/sign-in')
 
   const { data: profile, error: profileError } = await supabase
@@ -30,15 +30,12 @@ export default async function ProgressPage() {
   if (profileError) throw new Error(profileError.message)
   if (!profile || profile.height_cm === null) redirect('/onboarding')
 
-  // Date windows
+  // Date windows (IST-aware — "today"/"7 days" match what the user sees on their clock)
   const now = new Date()
   const sixtyDaysAgo = new Date()
   sixtyDaysAgo.setUTCDate(now.getUTCDate() - 60)
-  const sevenDaysAgo = new Date()
-  sevenDaysAgo.setUTCDate(now.getUTCDate() - 6)
-  sevenDaysAgo.setUTCHours(0, 0, 0, 0)
-  const todayEnd = new Date()
-  todayEnd.setUTCHours(23, 59, 59, 999)
+  const { start: sevenDaysAgoIst } = getIstDayRange(new Date(now.getTime() - 6 * 86_400_000))
+  const { end: todayIstEnd } = getIstDayRange(now)
 
   const [streakResult, weightResult, weekResult] = await Promise.all([
     supabase
@@ -56,8 +53,8 @@ export default async function ProgressPage() {
       .from('food_logs')
       .select('kcal, logged_at')
       .eq('user_id', user.id)
-      .gte('logged_at', sevenDaysAgo.toISOString())
-      .lte('logged_at', todayEnd.toISOString()),
+      .gte('logged_at', sevenDaysAgoIst)
+      .lt('logged_at', todayIstEnd),
   ])
 
   const streak      = calculateStreak((streakResult.data ?? []) as unknown as FoodLog[])

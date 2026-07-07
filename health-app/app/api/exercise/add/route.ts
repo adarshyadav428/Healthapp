@@ -11,8 +11,8 @@ const schema = z.object({
 export async function POST(req: Request) {
   try {
     const supabase = createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
     const parsed = schema.safeParse(body)
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
     const { data, error } = await supabase
       .from('exercise_logs')
-      .insert({ user_id: session.user.id, ...parsed.data })
+      .insert({ user_id: user.id, ...parsed.data })
       .select('id, activity, duration_min, calories, logged_at')
       .single()
 

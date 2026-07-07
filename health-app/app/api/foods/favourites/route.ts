@@ -10,13 +10,13 @@ const schema = z.object({ food_id: z.string().uuid() })
 export async function GET() {
   try {
     const supabase = createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { data, error } = await supabase
       .from('food_favourites')
       .select(`id, food_id, food:foods(${FOOD_SELECT})`)
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
     if (error) throw new Error(error.message)
@@ -29,8 +29,8 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const supabase = createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
     const parsed = schema.safeParse(body)
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
 
     const { error } = await supabase
       .from('food_favourites')
-      .insert({ user_id: session.user.id, food_id: parsed.data.food_id })
+      .insert({ user_id: user.id, food_id: parsed.data.food_id })
 
     if (error && error.code !== '23505') throw new Error(error.message) // ignore duplicate
     return NextResponse.json({ ok: true })
@@ -50,8 +50,8 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const supabase = createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
     const parsed = schema.safeParse(body)
@@ -60,7 +60,7 @@ export async function DELETE(req: Request) {
     const { error } = await supabase
       .from('food_favourites')
       .delete()
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .eq('food_id', parsed.data.food_id)
 
     if (error) throw new Error(error.message)

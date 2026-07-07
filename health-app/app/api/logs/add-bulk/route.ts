@@ -15,9 +15,9 @@ const round2 = (n: number) => Math.round(n * 100) / 100
 export async function POST(req: Request) {
   try {
     const supabase = createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const userId = session.user.id
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const userId = user.id
 
     const json = await req.json()
     const parsed = bulkLogSchema.safeParse(json)

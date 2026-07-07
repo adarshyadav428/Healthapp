@@ -5,14 +5,14 @@ import { getUtcDayRange } from '../../../../lib/dateUtils'
 export async function GET() {
   try {
     const supabase = createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { start, end } = getUtcDayRange()
     const { data, error } = await supabase
       .from('exercise_logs')
       .select('id, activity, duration_min, calories, logged_at')
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .gte('logged_at', start)
       .lt('logged_at', end)
       .order('logged_at', { ascending: false })

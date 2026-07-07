@@ -18,9 +18,8 @@ export async function POST(req: Request) {
   try {
     const supabase = createServerClient()
     const {
-      data: { session },
-    } = await supabase.auth.getSession()
-    const user = session?.user ?? null
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const parsed = schema.safeParse(await req.json())

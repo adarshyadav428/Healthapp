@@ -16,13 +16,13 @@ function toIstDateKey(iso: string) {
 
 export default async function DeficitPage() {
   const supabase = createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) redirect('/auth/sign-in')
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/auth/sign-in')
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', session.user.id)
+    .eq('id', user.id)
     .maybeSingle()
 
   if (!profile || !profile.height_cm) redirect('/onboarding')
@@ -49,7 +49,7 @@ export default async function DeficitPage() {
   const { data: logs } = await supabase
     .from('food_logs')
     .select('kcal, logged_at')
-    .eq('user_id', session.user.id)
+    .eq('user_id', user.id)
     .gte('logged_at', since)
     .order('logged_at', { ascending: true })
 
@@ -69,7 +69,7 @@ export default async function DeficitPage() {
   const { data: allLogs } = await supabase
     .from('food_logs')
     .select('kcal, logged_at')
-    .eq('user_id', session.user.id)
+    .eq('user_id', user.id)
 
   const allByDate = new Map<string, number>()
   for (const log of allLogs ?? []) {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
+import { getIstDayRange } from '../../../../lib/dateUtils'
 
 const FREE_DAILY_LIMIT = 5
 
@@ -49,24 +50,23 @@ function stripMarkdown(text: string): string {
 
 export async function POST(req: Request) {
   const supabase = createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const userId = session.user.id
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = user.id
 
   // Check Pro status
   const { data: sub } = await supabase
     .from('subscriptions').select('status').eq('user_id', userId).maybeSingle()
   const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
 
-  // Rate limit: free users get 5 photo AI scans per UTC day
+  // Rate limit: free users get 5 photo AI scans per IST day
   if (!isPro) {
-    const todayStart = new Date()
-    todayStart.setUTCHours(0, 0, 0, 0)
+    const { start: todayStart } = getIstDayRange()
     const { count } = await supabase
       .from('camera_photo_logs')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
-      .gte('created_at', todayStart.toISOString())
+      .gte('created_at', todayStart)
 
     if ((count ?? 0) >= FREE_DAILY_LIMIT) {
       return NextResponse.json(

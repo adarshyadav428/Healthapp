@@ -17,12 +17,11 @@ export async function PATCH(req: Request) {
   try {
     const supabase = createServerClient()
     const {
-      data: { session },
+      data: { user },
       error: sessionError,
-    } = await supabase.auth.getSession()
+    } = await supabase.auth.getUser()
 
     if (sessionError) throw new Error(sessionError.message)
-    const user = session?.user ?? null
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const json = await req.json()

@@ -7,8 +7,8 @@ const schema = z.object({ id: z.string().uuid() })
 export async function DELETE(req: Request) {
   try {
     const supabase = createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
     const parsed = schema.safeParse(body)
@@ -18,7 +18,7 @@ export async function DELETE(req: Request) {
       .from('exercise_logs')
       .delete()
       .eq('id', parsed.data.id)
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
 
     if (error) throw new Error(error.message)
     return NextResponse.json({ ok: true })

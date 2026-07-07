@@ -11,10 +11,9 @@ export const metadata = { robots: { index: false } }
 export default async function WeightPage() {
   const supabase = createServerClient()
   const {
-    data: { session },
+    data: { user },
     error,
-  } = await supabase.auth.getSession()
-  const user = session?.user ?? null
+  } = await supabase.auth.getUser()
 
   if (error || !user) redirect('/auth/sign-in')
 

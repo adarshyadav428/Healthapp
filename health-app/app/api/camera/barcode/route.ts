@@ -7,8 +7,8 @@ export async function GET(req: Request) {
   if (!barcode) return NextResponse.json({ error: 'No barcode provided' }, { status: 400 })
 
   const supabase = createServerClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   // Check local DB first — covers pre-seeded OFF items and previously scanned products
   const { data: existing } = await supabase

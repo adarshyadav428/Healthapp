@@ -153,8 +153,8 @@ export async function GET(request: Request) {
     if (rateLimit(ip)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
     const supabase = createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const cached = getCached(normalizedQuery)
     if (cached) return NextResponse.json(cached)

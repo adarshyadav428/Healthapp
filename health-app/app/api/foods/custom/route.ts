@@ -8,12 +8,12 @@ export const runtime = 'nodejs'
 export async function POST(request: Request) {
   try {
     const supabase = createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     // Pro-only feature: creating custom foods
     const { data: sub } = await supabase
-      .from('subscriptions').select('status').eq('user_id', session.user.id).maybeSingle()
+      .from('subscriptions').select('status').eq('user_id', user.id).maybeSingle()
     const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
     if (!isPro) {
       return NextResponse.json({ error: 'Pro required', upgrade: 'custom_foods' }, { status: 402 })
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       .from('foods')
       .insert({
         source: 'user',
-        source_id: `user_${session.user.id}_${Date.now()}`,
+        source_id: `user_${user.id}_${Date.now()}`,
         name: parsed.data.name,
         brand: parsed.data.brand ?? null,
         serving_size_g: parsed.data.serving_size_g,
@@ -67,8 +67,8 @@ const patchSchema = z.object({
 export async function PATCH(request: Request) {
   try {
     const supabase = createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
     const parsed = patchSchema.safeParse(body)
@@ -86,7 +86,7 @@ export async function PATCH(request: Request) {
       .maybeSingle()
 
     if (!existing) return NextResponse.json({ error: 'Food not found' }, { status: 404 })
-    if (existing.source !== 'user' || !existing.source_id?.includes(session.user.id)) {
+    if (existing.source !== 'user' || !existing.source_id?.includes(user.id)) {
       return NextResponse.json({ error: 'Cannot edit this food' }, { status: 403 })
     }
 
@@ -107,8 +107,8 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const supabase = createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { id } = await request.json()
     if (!id || typeof id !== 'string') return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
@@ -120,7 +120,7 @@ export async function DELETE(request: Request) {
       .maybeSingle()
 
     if (!existing) return NextResponse.json({ error: 'Food not found' }, { status: 404 })
-    if (existing.source !== 'user' || !existing.source_id?.includes(session.user.id)) {
+    if (existing.source !== 'user' || !existing.source_id?.includes(user.id)) {
       return NextResponse.json({ error: 'Cannot delete this food' }, { status: 403 })
     }
 

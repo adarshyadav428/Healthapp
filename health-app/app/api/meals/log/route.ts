@@ -10,8 +10,8 @@ const schema = z.object({
 export async function POST(req: Request) {
   try {
     const supabase = createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
     const parsed = schema.safeParse(body)
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       .from('saved_meals')
       .select('id, saved_meal_items(food_id, grams, servings, food:foods(kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g))')
       .eq('id', parsed.data.meal_id)
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .single()
 
     if (mealErr || !meal) return NextResponse.json({ error: 'Meal not found' }, { status: 404 })
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       .map((item) => {
         const factor = item.grams / 100
         return {
-          user_id: session.user.id,
+          user_id: user.id,
           food_id: item.food_id,
           meal: parsed.data.meal_type,
           grams: item.grams,

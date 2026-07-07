@@ -19,13 +19,13 @@ function getMondayOfWeek(dateKey: string): string {
 export async function GET() {
   try {
     const supabase = createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { data: profile } = await supabase
       .from('profiles')
       .select('current_weight_kg, height_cm, age, sex, activity_level, pace_kg_per_week, target_weight_kg, daily_calorie_target')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .maybeSingle()
 
     if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
@@ -56,7 +56,7 @@ export async function GET() {
     const { data: logs } = await supabase
       .from('food_logs')
       .select('kcal, logged_at')
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .gte('logged_at', since)
 
     // Group by IST date
