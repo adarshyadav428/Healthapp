@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { getBrowserSupabaseClient } from '../lib/supabase/client'
 import { useUserStore } from '../store/userStore'
+import { identifyUser, resetIdentity } from '../lib/posthog/client'
 import type { Profile } from '../types/index'
 
 export function useUser() {
@@ -50,6 +51,7 @@ export function useUser() {
         }
 
         setUser({ id: sessionUser.id, email: sessionUser.email ?? '' })
+        identifyUser(sessionUser.id, { email: sessionUser.email })
         await fetchProfile(sessionUser.id, reqId)
       } catch (err) {
         if (isMounted && reqId === reqIdRef.current) setError((err as Error).message)
@@ -69,10 +71,12 @@ export function useUser() {
         setUser(null)
         setProfile(null)
         setLoading(false)
+        resetIdentity()
         return
       }
 
       setUser({ id: session.user.id, email: session.user.email ?? '' })
+      identifyUser(session.user.id, { email: session.user.email })
       await fetchProfile(session.user.id, reqId)
     })
 

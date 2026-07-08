@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '../../../../lib/supabase/server'
 import { getUtcDayRange } from '../../../../lib/dateUtils'
+import { captureServerEvent } from '../../../../lib/posthog/server'
 
 export const runtime = 'nodejs'
 
@@ -50,6 +51,8 @@ export async function POST() {
 
     const { error: insertError } = await supabase.from('food_logs').insert(newLogs)
     if (insertError) throw new Error(insertError.message)
+
+    captureServerEvent(userId, 'meal_logged', { source: 'copy_yesterday', items: newLogs.length })
 
     return NextResponse.json({
       ok: true,

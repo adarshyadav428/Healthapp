@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 export const runtime = 'nodejs'
 import { getStripeClient } from '../../../../lib/stripe/client'
 import { createAdminClient } from '../../../../lib/supabase/server'
+import { captureServerEvent } from '../../../../lib/posthog/server'
 import type Stripe from 'stripe'
 
 export async function POST(req: Request) {
@@ -51,6 +52,8 @@ export async function POST(req: Request) {
             plan: normalizePlan(plan),
             current_period_end,
           })
+
+          captureServerEvent(userId, 'subscription_started', { provider: 'stripe', plan, lifetime: isLifetime })
         }
         break
       }

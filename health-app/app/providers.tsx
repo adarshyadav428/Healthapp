@@ -1,8 +1,23 @@
 'use client'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { Toaster } from '../components/ui/toaster'
+import { capturePageview } from '../lib/posthog/client'
+
+function PostHogPageView() {
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    if (!pathname) return
+    const url = searchParams?.size ? `${pathname}?${searchParams.toString()}` : pathname
+    capturePageview(url)
+  }, [pathname, searchParams])
+
+  return null
+}
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -19,6 +34,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <Suspense fallback={null}>
+        <PostHogPageView />
+      </Suspense>
       {children}
       <Toaster />
     </QueryClientProvider>

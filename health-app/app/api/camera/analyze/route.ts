@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
 import { getIstDayRange } from '../../../../lib/dateUtils'
+import { captureServerEvent } from '../../../../lib/posthog/server'
 
 const FREE_DAILY_LIMIT = 5
 
@@ -69,6 +70,7 @@ export async function POST(req: Request) {
       .gte('created_at', todayStart)
 
     if ((count ?? 0) >= FREE_DAILY_LIMIT) {
+      captureServerEvent(userId, 'paywall_viewed', { reason: 'camera_scan_limit' })
       return NextResponse.json(
         { error: `You've used all ${FREE_DAILY_LIMIT} free photo scans for today.`, upgrade: true },
         { status: 429 }
@@ -191,6 +193,8 @@ export async function POST(req: Request) {
 
   // Record the scan (for rate limiting)
   await supabase.from('camera_photo_logs').insert({ user_id: userId })
+
+  captureServerEvent(userId, 'ai_scan_completed', { type: 'camera', confidence: geminiResult.confidence })
 
   return NextResponse.json({ foods: enrichedFoods, confidence: geminiResult.confidence })
 }

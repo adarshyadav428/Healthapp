@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '../../../../lib/supabase/server'
 import { z } from 'zod'
+import { captureServerEvent } from '../../../../lib/posthog/server'
 
 const bulkLogSchema = z.object({
   items: z.array(z.object({
@@ -54,6 +55,8 @@ export async function POST(req: Request) {
 
     const { error: insertError } = await supabase.from('food_logs').insert(rows)
     if (insertError) throw new Error(insertError.message)
+
+    captureServerEvent(userId, 'meal_logged', { source: 'chat', items: rows.length })
 
     return NextResponse.json({ ok: true, logged: rows.length })
   } catch (err) {

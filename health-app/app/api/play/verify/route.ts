@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
 import { getPlaySubscription, acknowledgePlaySubscription } from '../../../../lib/play/verify'
 import { planForProductId } from '../../../../lib/play/products'
+import { captureServerEvent } from '../../../../lib/posthog/server'
 
 export const runtime = 'nodejs'
 
@@ -53,6 +54,8 @@ export async function POST(req: Request) {
       stripe_subscription_id: null,
     })
     if (error) throw new Error(error.message)
+
+    captureServerEvent(user.id, 'subscription_started', { provider: 'google_play', plan })
 
     return NextResponse.json({ ok: true, status: sub.status })
   } catch (err) {

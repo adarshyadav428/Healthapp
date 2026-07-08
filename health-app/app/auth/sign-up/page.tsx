@@ -7,6 +7,7 @@ import { signUpSchema, type SignUpData } from '../../../lib/validations'
 import { getBrowserSupabaseClient } from '../../../lib/supabase/client'
 import { toast } from '../../../components/ui/use-toast'
 import { useState } from 'react'
+import { captureEvent, identifyUser } from '../../../lib/posthog/client'
 
 const inputClass =
   'w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition-all placeholder:text-muted focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900'
@@ -31,6 +32,11 @@ export default function SignUpPage() {
       if (!auth.session) {
         setEmailSent(true)
         return
+      }
+
+      if (auth.user) {
+        identifyUser(auth.user.id, { email: auth.user.email })
+        captureEvent('user_signed_up', { method: 'email' })
       }
 
       window.location.href = '/onboarding'

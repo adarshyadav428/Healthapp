@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '../../../lib/supabase/server'
+import { captureServerEvent } from '../../../lib/posthog/server'
 
 /**
  * OAuth / Magic-link callback handler.
@@ -14,8 +15,14 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = createServerClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
+      // Heuristic for "just signed up via OAuth" vs. a returning sign-in:
+      // account created within the last minute of this callback firing.
+      const user = data.user
+      if (user && Date.now() - new Date(user.created_at).getTime() < 60_000) {
+        captureServerEvent(user.id, 'user_signed_up', { method: 'google' })
+      }
       // Redirect to the intended destination (default: dashboard)
       return NextResponse.redirect(`${origin}${next}`)
     }

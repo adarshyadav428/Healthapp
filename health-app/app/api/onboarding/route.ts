@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { onboardingSchema } from '../../../lib/validations'
 import { createServerClient } from '../../../lib/supabase/server'
 import { calculateTDEE } from '../../../lib/tdee'
+import { captureServerEvent } from '../../../lib/posthog/server'
 
 export async function POST(req: Request) {
   try {
@@ -51,6 +52,8 @@ export async function POST(req: Request) {
       .eq('id', user.id)
 
     if (error) throw new Error(error.message)
+
+    captureServerEvent(user.id, 'onboarding_completed', { goal: data.goal })
 
     return NextResponse.json({ ok: true })
   } catch (err) {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient } from '../../../../lib/supabase/server'
 import { customFoodSchema } from '../../../../lib/validations'
+import { captureServerEvent } from '../../../../lib/posthog/server'
 
 export const runtime = 'nodejs'
 
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
       .from('subscriptions').select('status').eq('user_id', user.id).maybeSingle()
     const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
     if (!isPro) {
+      captureServerEvent(user.id, 'paywall_viewed', { reason: 'custom_foods' })
       return NextResponse.json({ error: 'Pro required', upgrade: 'custom_foods' }, { status: 402 })
     }
 

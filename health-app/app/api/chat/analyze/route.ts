@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
 import { CHAT_LOG_PROMPT, stripMarkdown } from '../../../../lib/chat-prompt'
 import { getIstDayRange } from '../../../../lib/dateUtils'
+import { captureServerEvent } from '../../../../lib/posthog/server'
 
 const FREE_DAILY_LIMIT = 10
 
@@ -33,6 +34,7 @@ export async function POST(req: Request) {
       .eq('user_id', userId)
       .gte('created_at', todayStart)
     if ((count ?? 0) >= FREE_DAILY_LIMIT) {
+      captureServerEvent(userId, 'paywall_viewed', { reason: 'chat_scan_limit' })
       return NextResponse.json(
         { error: `You've used all ${FREE_DAILY_LIMIT} free AI meal logs for today. Upgrade to Pro for unlimited.`, upgrade: true },
         { status: 429 }
@@ -141,6 +143,8 @@ export async function POST(req: Request) {
   }
 
   await supabase.from('chat_logs').insert({ user_id: userId })
+
+  captureServerEvent(userId, 'ai_scan_completed', { type: 'chat', items: validItems.length })
 
   return NextResponse.json({ meal: parsed.meal, items: validItems })
 }

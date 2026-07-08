@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient } from '../../../../lib/supabase/server'
+import { captureServerEvent } from '../../../../lib/posthog/server'
 
 export const runtime = 'nodejs'
 
@@ -40,6 +41,9 @@ export async function POST(req: Request) {
     })
 
     if (logError) throw new Error(logError.message)
+
+    captureServerEvent(userId, 'meal_logged', { source: 'quick_add', meal, kcal })
+
     return NextResponse.json({ ok: true })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })

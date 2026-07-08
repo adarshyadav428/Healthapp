@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '../../../../lib/supabase/server'
 import { addFoodSchema } from '../../../../lib/validations'
+import { captureServerEvent } from '../../../../lib/posthog/server'
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
@@ -56,6 +57,8 @@ export async function POST(req: Request) {
       .single()
 
     if (insertError) throw new Error(insertError.message)
+
+    captureServerEvent(user.id, 'meal_logged', { source: 'add', meal: parsed.data.meal, kcal })
 
     return NextResponse.json({ ok: true, row: inserted })
   } catch (err) {

@@ -8,6 +8,7 @@ import { toast } from '../ui/use-toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronRight, ChevronLeft } from 'lucide-react'
 import { calculateTDEE } from '../../lib/tdee'
+import { captureEvent } from '../../lib/posthog/client'
 
 const TOTAL_STEPS = 5
 
@@ -54,7 +55,10 @@ export function OnboardingForm() {
     setIsNavigating(true)
     try {
       const ok = await form.trigger(fieldsByStep[step])
-      if (ok) setStep((s) => Math.min(TOTAL_STEPS, s + 1))
+      if (ok) {
+        captureEvent('onboarding_step_completed', { step, label: STEP_LABELS[step - 1] })
+        setStep((s) => Math.min(TOTAL_STEPS, s + 1))
+      }
     } finally {
       setIsNavigating(false)
     }
