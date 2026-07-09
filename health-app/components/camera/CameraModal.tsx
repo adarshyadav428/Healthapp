@@ -8,6 +8,7 @@ import {
 import type { Food } from '../../types/index'
 import { toast } from '../ui/use-toast'
 import { Button } from '../ui/button'
+import { captureEvent } from '../../lib/posthog/client'
 import { useQueryClient } from '@tanstack/react-query'
 
 type Mode = 'barcode' | 'photo' | 'manual'
@@ -223,6 +224,21 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
       })
       if (!res.ok) { const j = await res.json(); throw new Error(j.error ?? 'Log failed') }
       queryClient.invalidateQueries({ queryKey: ['food-logs'] })
+
+      // Correction signal: did the user change what the AI suggested before confirming?
+      const gramsCorrected = grams !== selected.estimated_grams
+      const nameCorrected = customName.trim() !== selected.food.name
+      captureEvent('ai_estimate_corrected', {
+        type: 'camera',
+        corrected: gramsCorrected || nameCorrected,
+        original_name: selected.food.name,
+        corrected_name: customName.trim(),
+        original_grams: selected.estimated_grams,
+        corrected_grams: grams,
+        delta_grams: grams - selected.estimated_grams,
+        confidence,
+      })
+
       toast({ title: `Logged ${customName || selected.food.name}`, description: `${grams}g · ${meal}`, duration: 2500 })
       onClose()
     } catch (e) {
@@ -230,7 +246,7 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
     } finally {
       setLogging(false)
     }
-  }, [selected, logging, meal, grams, customName, queryClient, onClose])
+  }, [selected, logging, meal, grams, customName, confidence, queryClient, onClose])
 
   // ── Derived nutrition values ──────────────────────────────────────────────────
   const factor  = grams / 100

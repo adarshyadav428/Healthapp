@@ -6,6 +6,7 @@ import { X, Send, Loader2, RotateCcw, CheckCircle, MessageSquarePlus } from 'luc
 import { toast } from '../ui/use-toast'
 import { Sheet, SheetContent } from '../ui/sheet'
 import { Button } from '../ui/button'
+import { captureEvent } from '../../lib/posthog/client'
 
 type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
@@ -19,6 +20,8 @@ type FoodItem = {
     fat_g_per_100g: number
   }
   grams: number
+  /** AI's original suggestion — kept alongside `grams` so we can tell if the user corrected it. */
+  originalGrams: number
   portion_desc: string
 }
 
@@ -74,7 +77,8 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
         return
       }
       const meal = (data.meal?.toLowerCase() ?? inferMeal()) as Meal
-      setState({ type: 'confirm', message, meal, items: data.items })
+      const items: FoodItem[] = (data.items as FoodItem[]).map((item) => ({ ...item, originalGrams: item.grams }))
+      setState({ type: 'confirm', message, meal, items })
     } catch {
       toast({ title: 'Network error', description: 'Please try again.', variant: 'error' })
       setState({ type: 'idle' })
@@ -111,6 +115,19 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
       if (!res.ok) throw new Error(data.error)
       queryClient.invalidateQueries({ queryKey: ['logs'] })
       queryClient.invalidateQueries({ queryKey: ['dailyTotals'] })
+
+      // Correction signal per item: did the user adjust the AI's suggested portion?
+      for (const item of items) {
+        captureEvent('ai_estimate_corrected', {
+          type: 'chat',
+          corrected: item.grams !== item.originalGrams,
+          original_name: item.food.name,
+          original_grams: item.originalGrams,
+          corrected_grams: item.grams,
+          delta_grams: item.grams - item.originalGrams,
+        })
+      }
+
       const totalKcal = Math.round(items.reduce((sum, i) => sum + (i.food.kcal_per_100g * i.grams / 100), 0))
       setState({ type: 'done', logged: items.length, kcal: totalKcal, meal })
     } catch (err) {
