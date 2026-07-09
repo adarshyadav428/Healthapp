@@ -2,18 +2,18 @@ import Link from 'next/link'
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-background px-4 py-10">
+    <div className="min-h-screen bg-canvas px-4 py-10">
       <div className="mx-auto w-full max-w-2xl">
         <div className="mb-6">
           <Link href="/" className="flex items-center gap-2 mb-8">
             <span className="text-2xl">🥗</span>
-            <span className="text-xl font-black text-indigo-600">GetInShape</span>
+            <span className="font-display text-xl font-bold text-brand-ink">GetInShape</span>
           </Link>
-          <h1 className="text-3xl font-black text-foreground">Terms of Service</h1>
-          <p className="text-sm text-muted mt-1">Last updated: May 1, 2026</p>
+          <h1 className="font-display text-3xl font-bold text-ink">Terms of Service</h1>
+          <p className="text-sm text-ink-2 mt-1">Last updated: May 1, 2026</p>
         </div>
 
-        <div className="space-y-6 rounded-3xl border border-border bg-card p-6 shadow-sm">
+        <div className="space-y-6 rounded-sheet border border-hairline bg-surface p-6 shadow-rest">
           <Section title="1. Acceptance of Terms">
             By creating an account or using GetInShape, you agree to these Terms of Service. If you do not
             agree, please do not use the app.
@@ -41,7 +41,7 @@ export default function TermsPage() {
 
           <Section title="5. Data and Privacy">
             We collect the minimum data necessary to provide GetInShape&apos;s features. We do not sell your
-            personal data. See our <Link href="/privacy" className="text-indigo-600 hover:underline">Privacy
+            personal data. See our <Link href="/privacy" className="text-brand-ink hover:underline">Privacy
             Policy</Link> for full details.
           </Section>
 
@@ -63,7 +63,7 @@ export default function TermsPage() {
 
           <Section title="9. Contact">
             Questions? Reach us at{' '}
-            <a href="mailto:support@caltrack.app" className="text-indigo-600 hover:underline">
+            <a href="mailto:support@caltrack.app" className="text-brand-ink hover:underline">
               support@caltrack.app
             </a>
           </Section>
@@ -76,8 +76,8 @@ export default function TermsPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="text-base font-bold text-foreground mb-2">{title}</h2>
-      <p className="text-sm text-muted leading-relaxed">{children}</p>
+      <h2 className="font-display text-base font-bold text-ink mb-2">{title}</h2>
+      <p className="text-sm text-ink-2 leading-relaxed">{children}</p>
     </div>
   )
 }

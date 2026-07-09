@@ -2,27 +2,27 @@ import Link from 'next/link'
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-background px-4 py-10">
+    <div className="min-h-screen bg-canvas px-4 py-10">
       <div className="mx-auto w-full max-w-2xl">
         <div className="mb-6">
           <Link href="/" className="flex items-center gap-2 mb-8">
             <span className="text-2xl">🥗</span>
-            <span className="text-xl font-black text-indigo-600">GetInShape</span>
+            <span className="font-display text-xl font-bold text-brand-ink">GetInShape</span>
           </Link>
-          <h1 className="text-3xl font-black text-foreground">Privacy Policy</h1>
-          <p className="text-sm text-muted mt-1">Last updated: May 1, 2026</p>
+          <h1 className="font-display text-3xl font-bold text-ink">Privacy Policy</h1>
+          <p className="text-sm text-ink-2 mt-1">Last updated: May 1, 2026</p>
         </div>
 
-        <div className="space-y-6 rounded-3xl border border-border bg-card p-6 shadow-sm">
+        <div className="space-y-6 rounded-sheet border border-hairline bg-surface p-6 shadow-rest">
           <Section title="1. What We Collect">
             <ul className="list-disc ml-4 mt-1 space-y-1">
               <li><strong>Account info:</strong> email address and display name</li>
               <li><strong>Profile data:</strong> age, height, weight, activity level, and dietary goal — to calculate your personalised calorie target</li>
-              <li><strong>Food logs:</strong> foods you log and their nutritional data</li>
+              <li><strong>Food logs:</strong> foods you log and their nutritional data, including photos you scan for AI analysis</li>
               <li><strong>Weight logs:</strong> your recorded weigh-ins</li>
               <li><strong>Exercise logs:</strong> activities and duration you track</li>
-              <li><strong>Subscription data:</strong> plan type and billing status (handled by Stripe — we never see your card details)</li>
-              <li><strong>Water tracking:</strong> stored locally in your browser, never sent to our servers</li>
+              <li><strong>Subscription data:</strong> plan type and billing status (handled by Stripe or Google Play — we never see your card details)</li>
+              <li><strong>Product analytics:</strong> in-app usage events (e.g. which features you use) via PostHog, to help us improve the app</li>
             </ul>
           </Section>
 
@@ -41,9 +41,11 @@ export default function PrivacyPage() {
             We use the following trusted providers:
             <ul className="list-disc ml-4 mt-1 space-y-1">
               <li><strong>Supabase</strong> — database and authentication</li>
-              <li><strong>Stripe</strong> — payment processing (PCI-compliant)</li>
+              <li><strong>Stripe / Google Play Billing</strong> — payment processing (PCI-compliant)</li>
               <li><strong>Vercel</strong> — hosting and edge functions</li>
-              <li><strong>USDA FoodData Central</strong> — food nutrition data</li>
+              <li><strong>IFCT 2017 (NIN Hyderabad) &amp; Open Food Facts</strong> — food nutrition data</li>
+              <li><strong>Google Gemini</strong> — AI photo and natural-language meal analysis</li>
+              <li><strong>PostHog</strong> — in-app product analytics</li>
             </ul>
             Each provider has their own privacy policy and security practices.
           </Section>
@@ -51,13 +53,14 @@ export default function PrivacyPage() {
           <Section title="5. Your Rights">
             You have the right to access, correct, or delete your personal data at any time.
             You can delete your account and all associated data from{' '}
-            <Link href="/settings" className="text-indigo-600 hover:underline">Settings → Delete account</Link>.
+            <Link href="/settings" className="text-brand-ink hover:underline">Settings → Delete account</Link>.
             Deletion is permanent and cannot be undone.
           </Section>
 
           <Section title="6. Cookies">
-            GetInShape uses essential cookies for authentication (session management). We do not use
-            tracking or advertising cookies.
+            GetInShape uses essential cookies for authentication (session management) and
+            product-analytics identifiers to understand feature usage. We do not use advertising cookies
+            or sell data to advertisers.
           </Section>
 
           <Section title="7. Children">
@@ -72,7 +75,7 @@ export default function PrivacyPage() {
 
           <Section title="9. Contact">
             For privacy-related requests, email us at{' '}
-            <a href="mailto:privacy@caltrack.app" className="text-indigo-600 hover:underline">
+            <a href="mailto:privacy@caltrack.app" className="text-brand-ink hover:underline">
               privacy@caltrack.app
             </a>
           </Section>
@@ -85,8 +88,8 @@ export default function PrivacyPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="text-base font-bold text-foreground mb-2">{title}</h2>
-      <div className="text-sm text-muted leading-relaxed">{children}</div>
+      <h2 className="font-display text-base font-bold text-ink mb-2">{title}</h2>
+      <div className="text-sm text-ink-2 leading-relaxed">{children}</div>
     </div>
   )
 }
