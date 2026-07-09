@@ -27,13 +27,13 @@ function MacroBar({
   return (
     <div className="flex-1 min-w-0">
       <div className="flex items-center justify-between mb-0.5">
-        <span className="text-[10px] font-semibold text-muted">{label}</span>
-        <span className="text-[10px] font-bold text-foreground">{eaten}g</span>
+        <span className="text-[10px] font-semibold text-ink-2">{label}</span>
+        <span className="text-[10px] font-bold text-ink tabular-nums">{eaten}g</span>
       </div>
-      <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+      <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all ${color}`}
-          style={{ width: `${pct}%` }}
+          className="h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, background: color }}
         />
       </div>
     </div>
@@ -55,26 +55,25 @@ export function TodayProgressBar({
   const kcalPct = Math.min((kcalEaten / kcalTarget) * 100, 100)
   const remaining = Math.max(kcalTarget - kcalEaten, 0)
   const over = kcalEaten > kcalTarget ? kcalEaten - kcalTarget : 0
-  const ringColor =
-    kcalPct < 80 ? 'bg-emerald-500' : kcalPct <= 100 ? 'bg-amber-500' : 'bg-rose-500'
+  const ringColor = kcalPct < 80 ? 'var(--good)' : kcalPct <= 100 ? 'var(--energy)' : 'var(--bad)'
 
   return (
-    <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-slate-50 px-4 py-3 shadow-sm">
+    <div className="rounded-card border border-hairline bg-brand-soft px-4 py-3 shadow-rest">
       {/* Calorie row */}
       <div className="flex items-center gap-3 mb-2.5">
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-bold text-indigo-700">
-              {kcalEaten.toLocaleString()} <span className="font-normal text-indigo-500">/ {kcalTarget.toLocaleString()} kcal</span>
+            <span className="text-xs font-bold text-brand-ink tabular-nums">
+              {kcalEaten.toLocaleString()} <span className="font-normal text-ink-2">/ {kcalTarget.toLocaleString()} kcal</span>
             </span>
-            <span className={`text-xs font-bold ${over > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+            <span className="text-xs font-bold tabular-nums" style={{ color: over > 0 ? 'var(--bad)' : 'var(--good)' }}>
               {over > 0 ? `+${over} over` : `${remaining} left`}
             </span>
           </div>
-          <div className="h-2 rounded-full bg-indigo-100 overflow-hidden">
+          <div className="h-2 rounded-full bg-surface overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${ringColor}`}
-              style={{ width: `${kcalPct}%` }}
+              className="h-full rounded-full transition-all"
+              style={{ width: `${kcalPct}%`, background: ringColor }}
             />
           </div>
         </div>
@@ -82,9 +81,9 @@ export function TodayProgressBar({
 
       {/* Macro bars */}
       <div className="flex gap-3">
-        <MacroBar label="Protein" eaten={proteinEaten} target={proteinTarget} color="bg-blue-400" />
-        <MacroBar label="Carbs" eaten={carbsEaten} target={carbsTarget} color="bg-amber-400" />
-        <MacroBar label="Fat" eaten={fatEaten} target={fatTarget} color="bg-rose-400" />
+        <MacroBar label="Protein" eaten={proteinEaten} target={proteinTarget} color="var(--protein)" />
+        <MacroBar label="Carbs" eaten={carbsEaten} target={carbsTarget} color="var(--carbs)" />
+        <MacroBar label="Fat" eaten={fatEaten} target={fatTarget} color="var(--fat)" />
       </div>
     </div>
   )

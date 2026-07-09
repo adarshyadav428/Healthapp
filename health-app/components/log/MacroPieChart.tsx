@@ -9,9 +9,9 @@ type Props = {
 }
 
 const SLICES = [
-  { key: 'protein', label: 'Protein', color: '#6366f1' },
-  { key: 'carbs',   label: 'Carbs',   color: '#f59e0b' },
-  { key: 'fat',     label: 'Fat',     color: '#f43f5e' },
+  { key: 'protein', label: 'Protein', color: '#3566C4' },
+  { key: 'carbs',   label: 'Carbs',   color: '#C98A1B' },
+  { key: 'fat',     label: 'Fat',     color: '#C7554B' },
 ] as const
 
 export function MacroPieChart({ protein, carbs, fat }: Props) {
@@ -19,9 +19,9 @@ export function MacroPieChart({ protein, carbs, fat }: Props) {
   if (total <= 0) return null
 
   const data = [
-    { name: 'Protein', value: Math.round(protein * 4), g: protein, color: '#6366f1' },
-    { name: 'Carbs',   value: Math.round(carbs * 4),   g: carbs,   color: '#f59e0b' },
-    { name: 'Fat',     value: Math.round(fat * 9),     g: fat,     color: '#f43f5e' },
+    { name: 'Protein', value: Math.round(protein * 4), g: protein, color: '#3566C4' },
+    { name: 'Carbs',   value: Math.round(carbs * 4),   g: carbs,   color: '#C98A1B' },
+    { name: 'Fat',     value: Math.round(fat * 9),     g: fat,     color: '#C7554B' },
   ].filter((d) => d.g > 0)
 
   return (
@@ -50,9 +50,9 @@ export function MacroPieChart({ protein, carbs, fat }: Props) {
                 if (!active || !payload?.length) return null
                 const d = payload[0]?.payload as typeof data[0]
                 return (
-                  <div className="rounded-xl bg-white border border-gray-100 px-2.5 py-1.5 shadow text-xs">
+                  <div className="rounded-control bg-surface border border-hairline px-2.5 py-1.5 shadow-float text-xs">
                     <p style={{ color: d.color }} className="font-bold">{d.name}</p>
-                    <p className="text-muted">{d.g}g · {d.value} kcal</p>
+                    <p className="text-ink-2">{d.g}g · {d.value} kcal</p>
                   </div>
                 )
               }}
@@ -71,13 +71,13 @@ export function MacroPieChart({ protein, carbs, fat }: Props) {
           return (
             <div key={key} className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: color }} />
-              <span className="text-[11px] text-muted flex-1">{label}</span>
-              <span className="text-[11px] font-bold text-foreground">{Math.round(g)}g</span>
-              <span className="text-[10px] text-muted w-8 text-right">{pct}%</span>
+              <span className="text-[11px] text-ink-2 flex-1">{label}</span>
+              <span className="text-[11px] font-bold text-ink tabular-nums">{Math.round(g)}g</span>
+              <span className="text-[10px] text-ink-2 w-8 text-right tabular-nums">{pct}%</span>
             </div>
           )
         })}
-        <p className="text-[10px] text-muted mt-0.5">Total: {Math.round(total)} kcal from macros</p>
+        <p className="text-[10px] text-ink-2 mt-0.5">Total: {Math.round(total)} kcal from macros</p>
       </div>
     </div>
   )

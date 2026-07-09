@@ -4,6 +4,8 @@ import { useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { X, Send, Loader2, RotateCcw, CheckCircle, MessageSquarePlus } from 'lucide-react'
 import { toast } from '../ui/use-toast'
+import { Sheet, SheetContent } from '../ui/sheet'
+import { Button } from '../ui/button'
 
 type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
@@ -122,17 +124,17 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
     : 0
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-white rounded-t-3xl shadow-2xl flex flex-col max-h-[90vh]">
+    <Sheet open onOpenChange={(v) => !v && onClose()}>
+      <SheetContent className="sm:max-w-lg flex flex-col max-h-[90vh] p-0 pt-3">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
+        <div className="flex items-center justify-between px-5 pb-3 border-b border-hairline">
           <div className="flex items-center gap-2">
-            <MessageSquarePlus className="h-5 w-5 text-orange-600" />
-            <h2 className="text-base font-bold text-foreground">Log with AI</h2>
+            <MessageSquarePlus className="h-5 w-5 text-brand" />
+            <h2 className="font-display text-base font-bold text-ink">Log with AI</h2>
           </div>
-          <button onClick={onClose} className="rounded-full p-1.5 hover:bg-gray-100 transition-colors">
-            <X className="h-4 w-4 text-muted" />
+          <button onClick={onClose} className="rounded-full p-1.5 hover:bg-surface-2 transition-colors">
+            <X className="h-4 w-4 text-ink-2" />
           </button>
         </div>
 
@@ -142,7 +144,7 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
           {/* User message bubble */}
           {'message' in state && (
             <div className="flex justify-end">
-              <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-orange-600 px-4 py-2.5 text-sm text-white">
+              <div className="max-w-[85%] rounded-card rounded-tr-sm bg-brand px-4 py-2.5 text-sm text-white">
                 {(state as { message: string }).message}
               </div>
             </div>
@@ -150,8 +152,8 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
 
           {/* Analyzing state */}
           {state.type === 'analyzing' && (
-            <div className="flex items-center gap-2.5 text-sm text-muted">
-              <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+            <div className="flex items-center gap-2.5 text-sm text-ink-2">
+              <Loader2 className="h-4 w-4 animate-spin text-brand" />
               <span>Analysing your meal...</span>
             </div>
           )}
@@ -166,12 +168,10 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
                     key={opt.value}
                     type="button"
                     onClick={() => state.type === 'confirm' && setState({ ...state, meal: opt.value })}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                      state.type === 'confirm' && state.meal === opt.value
-                        ? 'border-orange-500 bg-orange-50 text-orange-700'
-                        : state.type === 'logging' && state.meal === opt.value
-                        ? 'border-orange-500 bg-orange-50 text-orange-700'
-                        : 'border-gray-200 text-muted bg-gray-50'
+                    className={`px-3 py-1.5 rounded-control text-xs font-semibold border transition-all ${
+                      state.meal === opt.value
+                        ? 'border-brand bg-brand-soft text-brand-ink'
+                        : 'border-hairline text-ink-2 bg-surface-2'
                     }`}
                   >
                     {opt.label}
@@ -184,19 +184,19 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
                 {state.type === 'confirm' && state.items.map((item, idx) => {
                   const itemKcal = Math.round(item.food.kcal_per_100g * item.grams / 100)
                   return (
-                    <div key={idx} className="rounded-2xl border border-gray-100 bg-gray-50 p-3">
+                    <div key={idx} className="rounded-card border border-hairline bg-surface-2 p-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-foreground truncate">{item.food.name}</p>
-                          <p className="text-xs text-muted mt-0.5">{item.portion_desc}</p>
+                          <p className="text-sm font-semibold text-ink truncate">{item.food.name}</p>
+                          <p className="text-xs text-ink-2 mt-0.5">{item.portion_desc}</p>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-sm font-bold text-orange-600">{itemKcal} kcal</span>
+                          <span className="text-sm font-bold text-brand-ink tabular-nums">{itemKcal} kcal</span>
                           <button
                             onClick={() => removeItem(idx)}
-                            className="rounded-full p-1 hover:bg-gray-200 transition-colors"
+                            className="rounded-full p-1 hover:bg-hairline/40 transition-colors"
                           >
-                            <X className="h-3.5 w-3.5 text-muted" />
+                            <X className="h-3.5 w-3.5 text-ink-2" />
                           </button>
                         </div>
                       </div>
@@ -209,22 +209,22 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
                           step={5}
                           value={item.grams}
                           onChange={(e) => updateGrams(idx, Number(e.target.value))}
-                          className="flex-1 accent-orange-600"
+                          className="flex-1 accent-brand"
                         />
-                        <span className="text-xs font-bold text-foreground w-12 text-right">{item.grams}g</span>
+                        <span className="text-xs font-bold text-ink w-12 text-right tabular-nums">{item.grams}g</span>
                       </div>
-                      <div className="mt-1 flex gap-3 text-[11px] text-muted">
-                        <span>P {round1(item.food.protein_g_per_100g * item.grams / 100)}g</span>
-                        <span>C {round1(item.food.carbs_g_per_100g * item.grams / 100)}g</span>
-                        <span>F {round1(item.food.fat_g_per_100g * item.grams / 100)}g</span>
+                      <div className="mt-1 flex gap-3 text-[11px] text-ink-2 tabular-nums">
+                        <span style={{ color: 'var(--protein)' }}>P {round1(item.food.protein_g_per_100g * item.grams / 100)}g</span>
+                        <span style={{ color: 'var(--carbs)' }}>C {round1(item.food.carbs_g_per_100g * item.grams / 100)}g</span>
+                        <span style={{ color: 'var(--fat)' }}>F {round1(item.food.fat_g_per_100g * item.grams / 100)}g</span>
                       </div>
                     </div>
                   )
                 })}
 
                 {state.type === 'logging' && (
-                  <div className="flex items-center gap-2 text-sm text-muted py-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                  <div className="flex items-center gap-2 text-sm text-ink-2 py-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-brand" />
                     <span>Logging your meal...</span>
                   </div>
                 )}
@@ -232,26 +232,20 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
 
               {/* Total + actions */}
               {state.type === 'confirm' && (
-                <div className="rounded-2xl bg-orange-50 border border-orange-100 p-3">
+                <div className="rounded-card bg-energy-soft border border-hairline p-3">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold text-orange-700">Total</span>
-                    <span className="text-lg font-black text-orange-700">{totalKcal} kcal</span>
+                    <span className="text-xs font-semibold text-energy-ink">Total</span>
+                    <span className="font-display text-lg font-bold text-ink tabular-nums">{totalKcal} kcal</span>
                   </div>
                   <div className="flex gap-2">
-                    <button
-                      onClick={handleLog}
-                      className="flex-1 flex items-center justify-center gap-1.5 rounded-2xl bg-orange-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-orange-700 active:scale-[.98] transition-all"
-                    >
+                    <Button onClick={handleLog} className="flex-1 gap-1.5 tap-scale">
                       <CheckCircle className="h-4 w-4" />
                       Log {state.items.length} item{state.items.length > 1 ? 's' : ''}
-                    </button>
-                    <button
-                      onClick={() => setState({ type: 'idle' })}
-                      className="flex items-center justify-center gap-1.5 rounded-2xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-muted hover:bg-gray-50 transition-all"
-                    >
+                    </Button>
+                    <Button variant="outline" onClick={() => setState({ type: 'idle' })} className="gap-1.5 tap-scale">
                       <RotateCcw className="h-3.5 w-3.5" />
                       Redo
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -261,26 +255,23 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
           {/* Done state */}
           {state.type === 'done' && (
             <div className="space-y-3">
-              <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 text-center">
-                <CheckCircle className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
-                <p className="text-sm font-bold text-emerald-800">
+              <div className="rounded-card border border-hairline p-4 text-center" style={{ background: 'rgba(46,125,79,0.08)' }}>
+                <CheckCircle className="h-8 w-8 text-good mx-auto mb-2" />
+                <p className="text-sm font-bold text-good">
                   Logged {state.logged} item{state.logged > 1 ? 's' : ''} · {state.kcal} kcal
                 </p>
-                <p className="text-xs text-emerald-600 mt-0.5 capitalize">Added to {state.meal}</p>
+                <p className="text-xs text-good mt-0.5 capitalize opacity-80">Added to {state.meal}</p>
               </div>
-              <button
-                onClick={() => setState({ type: 'idle' })}
-                className="w-full rounded-2xl border border-gray-200 py-2.5 text-sm font-semibold text-foreground hover:bg-gray-50 transition-all"
-              >
+              <Button variant="outline" size="lg" onClick={() => setState({ type: 'idle' })} className="w-full tap-scale">
                 Log another meal
-              </button>
+              </Button>
             </div>
           )}
 
           {/* Idle hint */}
           {state.type === 'idle' && (
-            <div className="rounded-2xl bg-gray-50 p-4">
-              <p className="text-xs font-semibold text-muted mb-2">Try saying:</p>
+            <div className="rounded-card bg-surface-2 p-4">
+              <p className="text-xs font-semibold text-ink-2 mb-2">Try saying:</p>
               {[
                 '4 medium roti, aloo beans sabzi, 1 katori dal, 3 katori chawal',
                 '2 paratha with curd and achar',
@@ -289,7 +280,7 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
                 <button
                   key={ex}
                   onClick={() => setInput(ex)}
-                  className="block w-full text-left text-xs text-orange-700 py-1.5 hover:underline"
+                  className="block w-full text-left text-xs text-brand-ink py-1.5 hover:underline"
                 >
                   &ldquo;{ex}&rdquo;
                 </button>
@@ -300,7 +291,7 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
 
         {/* Input area */}
         {(state.type === 'idle' || state.type === 'done') && (
-          <div className="px-5 pb-6 pt-3 border-t border-gray-100">
+          <div className="px-5 pb-6 pt-3 border-t border-hairline">
             <div className="flex gap-2 items-end">
               <textarea
                 ref={textareaRef}
@@ -309,19 +300,19 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
                 placeholder="Describe what you ate — e.g. 4 roti, dal, sabzi..."
                 rows={2}
-                className="flex-1 resize-none rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+                className="flex-1 resize-none rounded-control border border-hairline bg-surface-2 px-4 py-2.5 text-sm text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim()}
-                className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-40 active:scale-95 transition-all"
+                className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-brand text-white hover:opacity-90 disabled:opacity-40 active:scale-95 transition-all"
               >
                 <Send className="h-4 w-4" />
               </button>
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   )
 }

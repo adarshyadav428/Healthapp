@@ -3,6 +3,8 @@
 import { useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
+import { Sheet, SheetContent, SheetTitle } from '../ui/sheet'
+import { Button } from '../ui/button'
 import { X, Zap, ChevronDown } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
@@ -65,24 +67,17 @@ export function QuickAddModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-
-      {/* Sheet */}
-      <div className="relative w-full max-w-md rounded-t-[28px] bg-white px-5 pt-4 pb-8 shadow-2xl animate-fade-up">
-        {/* Handle */}
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-slate-200" />
-
+    <Sheet open onOpenChange={(v) => !v && onClose()}>
+      <SheetContent className="pt-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-black">Quick Add</h2>
+          <SheetTitle>Quick Add</SheetTitle>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1.5 hover:bg-slate-100 transition-colors"
+            className="rounded-full p-1.5 hover:bg-surface-2 transition-colors"
           >
-            <X className="h-5 w-5 text-muted" />
+            <X className="h-5 w-5 text-ink-2" />
           </button>
         </div>
 
@@ -98,12 +93,12 @@ export function QuickAddModal({ onClose }: { onClose: () => void }) {
               value={kcal}
               onChange={(e) => setKcal(e.target.value)}
               autoFocus
-              className="w-40 bg-transparent text-center text-7xl font-black tabular-nums text-foreground outline-none placeholder:text-slate-200"
+              className="font-display w-40 bg-transparent text-center text-7xl font-bold tabular-nums text-ink outline-none placeholder:text-hairline"
             />
-            <span className="text-xl font-bold text-muted">kcal</span>
+            <span className="text-xl font-bold text-ink-2">kcal</span>
           </div>
           {kcalNum > 5000 && (
-            <p className="text-xs text-red-500 mt-1">Max 5,000 kcal</p>
+            <p className="text-xs text-danger mt-1">Max 5,000 kcal</p>
           )}
         </div>
 
@@ -115,10 +110,10 @@ export function QuickAddModal({ onClose }: { onClose: () => void }) {
               type="button"
               onClick={() => setMeal(m.value)}
               className={cn(
-                'rounded-xl py-2 text-xs font-semibold transition-all',
+                'rounded-control py-2 text-xs font-semibold transition-all border',
                 meal === m.value
-                  ? 'bg-indigo-100 text-indigo-700 border border-indigo-300'
-                  : 'bg-slate-50 text-slate-500 border border-slate-100'
+                  ? 'bg-brand-soft text-brand-ink border-brand'
+                  : 'bg-surface-2 text-ink-2 border-hairline'
               )}
             >
               {m.label}
@@ -130,7 +125,7 @@ export function QuickAddModal({ onClose }: { onClose: () => void }) {
         <button
           type="button"
           onClick={() => setShowMacros((v) => !v)}
-          className="flex items-center gap-1 text-xs font-semibold text-muted mb-3"
+          className="flex items-center gap-1 text-xs font-semibold text-ink-2 mb-3"
         >
           <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', showMacros && 'rotate-180')} />
           {showMacros ? 'Hide macros' : 'Add macros (optional)'}
@@ -144,14 +139,14 @@ export function QuickAddModal({ onClose }: { onClose: () => void }) {
               { label: 'Fat (g)',     value: fat,     set: setFat },
             ].map(({ label, value, set }) => (
               <div key={label}>
-                <label className="block text-[10px] font-semibold text-muted uppercase tracking-wide mb-1">{label}</label>
+                <label className="block text-[10px] font-semibold text-ink-2 uppercase tracking-wide mb-1">{label}</label>
                 <input
                   type="number"
                   inputMode="decimal"
                   value={value}
                   onChange={(e) => set(e.target.value)}
                   placeholder="0"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-bold text-center outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
+                  className="w-full rounded-control border border-hairline bg-surface-2 px-3 py-2.5 text-sm font-bold text-center text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
                 />
               </div>
             ))}
@@ -159,16 +154,17 @@ export function QuickAddModal({ onClose }: { onClose: () => void }) {
         )}
 
         {/* CTA */}
-        <button
+        <Button
           type="button"
+          size="lg"
           disabled={!valid || loading}
           onClick={handleAdd}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 py-4 text-[15px] font-black text-white shadow-lg shadow-orange-500/30 active:scale-[.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full gap-2 tap-scale"
         >
           <Zap className="h-5 w-5" />
           {loading ? 'Adding…' : `Add ${valid ? kcalNum.toLocaleString() : '—'} kcal`}
-        </button>
-      </div>
-    </div>
+        </Button>
+      </SheetContent>
+    </Sheet>
   )
 }
