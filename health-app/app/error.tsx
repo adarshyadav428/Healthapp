@@ -14,7 +14,7 @@ export default function GlobalError({
   }, [error])
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center dark:bg-slate-950">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
       <div className="mb-6 text-7xl select-none">😵</div>
 
       <h1 className="text-2xl font-black text-foreground mb-2">Something went wrong</h1>
@@ -34,7 +34,7 @@ export default function GlobalError({
         </button>
         <a
           href="/dashboard"
-          className="w-full rounded-2xl border border-border bg-card py-3 text-sm font-bold text-foreground text-center hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+          className="w-full rounded-2xl border border-border bg-card py-3 text-sm font-bold text-foreground text-center hover:bg-slate-50 transition-all"
         >
           Back to Dashboard
         </a>

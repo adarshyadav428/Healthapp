@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '../../lib/supabase/server'
-import { Navbar } from '../../components/layout/Navbar'
+import { AppHeader } from '../../components/layout/AppHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { DeficitPageClient } from '../../components/progress/DeficitPageClient'
 import { calculateBMR, activityMultiplier } from '../../lib/tdee'
@@ -81,8 +81,8 @@ export default async function DeficitPage() {
   const totalFatKg   = Math.max(0, totalDeficit / 7700)
 
   return (
-    <div className="min-h-screen bg-background pb-32 dark:bg-slate-950">
-      <Navbar />
+    <div className="min-h-screen bg-background pb-32">
+      <AppHeader title="Deficit" />
       <main className="mx-auto w-full max-w-md px-4 pt-4 pb-6">
         <div className="mb-4">
           <h1 className="text-[28px] font-black text-foreground leading-tight">Deficit Tracker</h1>

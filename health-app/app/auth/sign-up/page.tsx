@@ -10,7 +10,7 @@ import { useState } from 'react'
 import { captureEvent, identifyUser } from '../../../lib/posthog/client'
 
 const inputClass =
-  'w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition-all placeholder:text-muted focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900'
+  'w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition-all placeholder:text-muted focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100'
 
 export default function SignUpPage() {
   const [emailSent, setEmailSent] = useState(false)
@@ -61,7 +61,7 @@ export default function SignUpPage() {
 
   if (emailSent) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12 dark:bg-slate-950">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm text-center">
           <div className="text-5xl mb-5">📬</div>
           <h2 className="text-2xl font-black text-foreground">Check your inbox</h2>
@@ -80,7 +80,7 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12 dark:bg-slate-950">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12">
       {/* Logo */}
       <Link href="/" className="mb-10 flex items-center gap-2.5">
         <span className="text-[26px] leading-none">🥗</span>
@@ -158,7 +158,7 @@ export default function SignUpPage() {
             <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-background px-3 text-xs text-muted dark:bg-slate-950">or</span>
+            <span className="bg-background px-3 text-xs text-muted">or</span>
           </div>
         </div>
 
@@ -166,7 +166,7 @@ export default function SignUpPage() {
         <button
           type="button"
           onClick={handleGoogle}
-          className="w-full rounded-2xl border border-border bg-card py-3.5 text-sm font-semibold text-foreground hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[.98] transition-all flex items-center justify-center gap-2.5"
+          className="w-full rounded-2xl border border-border bg-card py-3.5 text-sm font-semibold text-foreground hover:bg-slate-50 active:scale-[.98] transition-all flex items-center justify-center gap-2.5"
         >
           <GoogleIcon />
           Continue with Google
@@ -174,14 +174,14 @@ export default function SignUpPage() {
 
         <p className="mt-5 text-center text-xs text-muted">
           By signing up you agree to our{' '}
-          <Link href="/terms" className="text-indigo-600 dark:text-indigo-400 hover:underline">Terms</Link>
+          <Link href="/terms" className="text-indigo-600 hover:underline">Terms</Link>
           {' '}and{' '}
-          <Link href="/privacy" className="text-indigo-600 dark:text-indigo-400 hover:underline">Privacy Policy</Link>.
+          <Link href="/privacy" className="text-indigo-600 hover:underline">Privacy Policy</Link>.
         </p>
 
         <p className="mt-4 text-center text-sm text-muted">
           Already have an account?{' '}
-          <Link href="/auth/sign-in" className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+          <Link href="/auth/sign-in" className="font-bold text-indigo-600 hover:underline">
             Sign in
           </Link>
         </p>

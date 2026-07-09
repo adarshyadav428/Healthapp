@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '../../lib/supabase/server'
-import { Navbar } from '../../components/layout/Navbar'
+import { AppHeader } from '../../components/layout/AppHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { HistoryClient } from '../../components/history/HistoryClient'
 import type { Profile } from '../../types/index'
@@ -59,9 +59,9 @@ export default async function HistoryPage() {
   const exerciseLogs = exerciseResult.error ? [] : (exerciseResult.data ?? [])
 
   return (
-    <div className="min-h-screen bg-background pb-32 dark:bg-slate-950">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(234,88,12,0.10),_transparent_50%)] dark:opacity-40" />
-      <Navbar />
+    <div className="min-h-screen bg-background pb-32">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(234,88,12,0.10),_transparent_50%)]" />
+      <AppHeader title="History" />
       <main className="mx-auto w-full max-w-md px-4 py-6">
         <div className="mb-6">
           <h1 className="text-2xl font-black text-foreground">History</h1>

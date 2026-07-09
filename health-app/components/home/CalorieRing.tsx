@@ -28,16 +28,16 @@ export function CalorieRing({ eaten, target, kcalLeft }: Props) {
           width={204}
           height={204}
           viewBox="0 0 204 204"
-          style={{ filter: 'drop-shadow(0 6px 14px rgba(251,116,69,.30))' }}
+          style={{ filter: 'drop-shadow(0 6px 14px rgba(242,162,58,.28))' }}
         >
           <defs>
             <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#FFB36B" />
-              <stop offset="100%" stopColor="#FB7445" />
+              <stop offset="0%" stopColor="var(--energy-lite)" />
+              <stop offset="100%" stopColor="var(--energy)" />
             </linearGradient>
             <linearGradient id="ringGradOver" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#FF6B6B" />
-              <stop offset="100%" stopColor="#E0554D" />
+              <stop offset="0%" stopColor="var(--bad)" />
+              <stop offset="100%" stopColor="var(--bad)" />
             </linearGradient>
           </defs>
 
@@ -45,7 +45,7 @@ export function CalorieRing({ eaten, target, kcalLeft }: Props) {
           <circle
             cx={CX} cy={CY} r={R}
             fill="none"
-            stroke="#F4ECE5"
+            stroke="var(--surface-2)"
             strokeWidth={14}
           />
 

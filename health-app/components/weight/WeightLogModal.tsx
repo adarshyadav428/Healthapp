@@ -76,22 +76,22 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
       {/* Sheet */}
-      <div className="relative w-full max-w-md rounded-t-3xl bg-white dark:bg-slate-900 p-6 shadow-2xl">
+      <div className="relative w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl">
         {/* Handle */}
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-gray-200 dark:bg-slate-700" />
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-gray-200" />
 
         {/* Header */}
         <div className="flex items-center justify-between mb-6 mt-2">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-950/40">
-              <Scale className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100">
+              <Scale className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
               <h2 className="text-base font-black text-foreground">Log weight</h2>
               <p className="text-xs text-muted">Track your progress</p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded-full p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+          <button type="button" onClick={onClose} className="rounded-full p-1.5 hover:bg-gray-100 transition-colors">
             <X className="h-5 w-5 text-muted" />
           </button>
         </div>
@@ -106,7 +106,7 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
               <button
                 type="button"
                 onClick={() => form.setValue('weight_kg', Math.max(1, weight - 0.1), { shouldValidate: true })}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800 text-lg font-bold text-foreground hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-90 transition-all"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-lg font-bold text-foreground hover:bg-gray-200 active:scale-90 transition-all"
               >
                 −
               </button>
@@ -120,7 +120,7 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
               <button
                 type="button"
                 onClick={() => form.setValue('weight_kg', weight + 0.1, { shouldValidate: true })}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800 text-lg font-bold text-foreground hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-90 transition-all"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-lg font-bold text-foreground hover:bg-gray-200 active:scale-90 transition-all"
               >
                 +
               </button>
@@ -136,7 +136,7 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
                   key={adj}
                   type="button"
                   onClick={() => form.setValue('weight_kg', Math.max(1, +(weight + adj).toFixed(1)), { shouldValidate: true })}
-                  className="rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-3 py-1 text-xs font-semibold text-foreground hover:border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-700 active:scale-95 transition-all"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-foreground hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 active:scale-95 transition-all"
                 >
                   {adj > 0 ? `+${adj}` : adj}
                 </button>
@@ -157,7 +157,7 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
                   shouldValidate: true,
                 })
               }}
-              className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900 transition-all"
+              className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all"
             />
           </div>
 
@@ -167,7 +167,7 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
             <input
               {...form.register('notes')}
               placeholder="e.g. Morning, after workout..."
-              className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900 transition-all"
+              className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all"
             />
           </div>
 

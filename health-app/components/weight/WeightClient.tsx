@@ -55,7 +55,7 @@ export function WeightClient({ logs, profile }: { logs: WeightLog[]; profile: Pr
 
       {/* Chart */}
       {sorted.length > 1 && (
-        <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4 shadow-sm">
+        <div className="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-3">Trend</p>
           <WeightChart logs={sorted} />
         </div>
@@ -73,13 +73,13 @@ export function WeightClient({ logs, profile }: { logs: WeightLog[]; profile: Pr
 
       {/* Recent entries */}
       {recentEntries.length > 0 && (
-        <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4 shadow-sm space-y-2">
+        <div className="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">Recent entries</p>
           {recentEntries.map((log) => {
             const date = new Date(log.measured_at)
             const label = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', weekday: 'short' })
             return (
-              <div key={log.id} className="flex items-center justify-between rounded-2xl bg-gray-50 dark:bg-slate-800 px-4 py-2.5">
+              <div key={log.id} className="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-2.5">
                 <span className="text-sm text-muted">{label}</span>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-bold text-foreground">{log.weight_kg} kg</span>
@@ -87,7 +87,7 @@ export function WeightClient({ logs, profile }: { logs: WeightLog[]; profile: Pr
                     type="button"
                     onClick={() => deleteLog(log.id)}
                     disabled={deletingId === log.id}
-                    className="rounded-full p-1 text-muted hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 disabled:opacity-40 transition-colors"
+                    className="rounded-full p-1 text-muted hover:text-rose-500 hover:bg-rose-50 disabled:opacity-40 transition-colors"
                     aria-label="Delete entry"
                   >
                     <Trash2 className="h-3.5 w-3.5" />

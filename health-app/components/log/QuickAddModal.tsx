@@ -70,9 +70,9 @@ export function QuickAddModal({ onClose }: { onClose: () => void }) {
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
       {/* Sheet */}
-      <div className="relative w-full max-w-md rounded-t-[28px] bg-white dark:bg-slate-900 px-5 pt-4 pb-8 shadow-2xl animate-fade-up">
+      <div className="relative w-full max-w-md rounded-t-[28px] bg-white px-5 pt-4 pb-8 shadow-2xl animate-fade-up">
         {/* Handle */}
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-slate-200 dark:bg-slate-700" />
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-slate-200" />
 
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -80,7 +80,7 @@ export function QuickAddModal({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="rounded-full p-1.5 hover:bg-slate-100 transition-colors"
           >
             <X className="h-5 w-5 text-muted" />
           </button>
@@ -98,7 +98,7 @@ export function QuickAddModal({ onClose }: { onClose: () => void }) {
               value={kcal}
               onChange={(e) => setKcal(e.target.value)}
               autoFocus
-              className="w-40 bg-transparent text-center text-7xl font-black tabular-nums text-foreground outline-none placeholder:text-slate-200 dark:placeholder:text-slate-700"
+              className="w-40 bg-transparent text-center text-7xl font-black tabular-nums text-foreground outline-none placeholder:text-slate-200"
             />
             <span className="text-xl font-bold text-muted">kcal</span>
           </div>
@@ -117,8 +117,8 @@ export function QuickAddModal({ onClose }: { onClose: () => void }) {
               className={cn(
                 'rounded-xl py-2 text-xs font-semibold transition-all',
                 meal === m.value
-                  ? 'bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700'
-                  : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-700'
+                  ? 'bg-indigo-100 text-indigo-700 border border-indigo-300'
+                  : 'bg-slate-50 text-slate-500 border border-slate-100'
               )}
             >
               {m.label}
@@ -151,7 +151,7 @@ export function QuickAddModal({ onClose }: { onClose: () => void }) {
                   value={value}
                   onChange={(e) => set(e.target.value)}
                   placeholder="0"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2.5 text-sm font-bold text-center outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-bold text-center outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
                 />
               </div>
             ))}

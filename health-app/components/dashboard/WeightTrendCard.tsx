@@ -6,8 +6,8 @@ import type { WeightLog } from '../../types/index'
 export function WeightTrendCard({ logs }: { logs: WeightLog[] }) {
   if (!logs || logs.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed border-emerald-200 dark:border-emerald-900/40 bg-white/80 dark:bg-slate-900/80 p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">Weight</p>
+      <div className="rounded-3xl border border-dashed border-emerald-200 bg-white/80 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">Weight</p>
         <p className="mt-2 text-xs text-muted">Log your weight to see the trend.</p>
       </div>
     )
@@ -22,13 +22,13 @@ export function WeightTrendCard({ logs }: { logs: WeightLog[] }) {
   const start = data[0]?.weight ?? current
   const delta = Number((current - start).toFixed(1))
   const deltaLabel = delta <= 0 ? `${Math.abs(delta)} kg ↓` : `${delta} kg ↑`
-  const deltaColor = delta <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+  const deltaColor = delta <= 0 ? 'text-emerald-600' : 'text-rose-600'
 
   return (
-    <div className="rounded-3xl border border-emerald-100 dark:border-emerald-900/30 bg-white/90 dark:bg-slate-900/80 p-4 shadow-sm">
+    <div className="rounded-3xl border border-emerald-100 bg-white/90 p-4 shadow-sm">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">Weight</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Weight</p>
           <p className="mt-1 text-2xl font-black text-foreground leading-none">{current} kg</p>
           <p className={`text-xs font-semibold mt-0.5 ${deltaColor}`}>{deltaLabel}</p>
         </div>

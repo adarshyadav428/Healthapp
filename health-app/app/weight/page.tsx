@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '../../lib/supabase/server'
-import { Navbar } from '../../components/layout/Navbar'
+import { AppHeader } from '../../components/layout/AppHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { WeightClient } from '../../components/weight/WeightClient'
 import type { WeightLog } from '../../types/index'
@@ -38,9 +38,9 @@ export default async function WeightPage() {
   const weightLogs = (logs ?? []) as WeightLog[]
 
   return (
-    <div className="min-h-screen bg-background pb-32 dark:bg-slate-950">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.15),_transparent_50%)] dark:opacity-40" />
-      <Navbar />
+    <div className="min-h-screen bg-background pb-32">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.15),_transparent_50%)]" />
+      <AppHeader title="Weight" />
       <main className="mx-auto w-full max-w-md px-4 py-6">
         <div className="mb-6">
           <h1 className="text-2xl font-black text-foreground">Weight</h1>

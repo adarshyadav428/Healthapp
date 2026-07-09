@@ -123,15 +123,15 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-lg bg-white rounded-t-3xl shadow-2xl flex flex-col max-h-[90vh]">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100 dark:border-slate-800">
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <MessageSquarePlus className="h-5 w-5 text-orange-600" />
             <h2 className="text-base font-bold text-foreground">Log with AI</h2>
           </div>
-          <button onClick={onClose} className="rounded-full p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+          <button onClick={onClose} className="rounded-full p-1.5 hover:bg-gray-100 transition-colors">
             <X className="h-4 w-4 text-muted" />
           </button>
         </div>
@@ -171,7 +171,7 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
                         ? 'border-orange-500 bg-orange-50 text-orange-700'
                         : state.type === 'logging' && state.meal === opt.value
                         ? 'border-orange-500 bg-orange-50 text-orange-700'
-                        : 'border-gray-200 dark:border-slate-700 text-muted bg-gray-50 dark:bg-slate-800'
+                        : 'border-gray-200 text-muted bg-gray-50'
                     }`}
                   >
                     {opt.label}
@@ -184,7 +184,7 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
                 {state.type === 'confirm' && state.items.map((item, idx) => {
                   const itemKcal = Math.round(item.food.kcal_per_100g * item.grams / 100)
                   return (
-                    <div key={idx} className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 p-3">
+                    <div key={idx} className="rounded-2xl border border-gray-100 bg-gray-50 p-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-foreground truncate">{item.food.name}</p>
@@ -194,7 +194,7 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
                           <span className="text-sm font-bold text-orange-600">{itemKcal} kcal</span>
                           <button
                             onClick={() => removeItem(idx)}
-                            className="rounded-full p-1 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+                            className="rounded-full p-1 hover:bg-gray-200 transition-colors"
                           >
                             <X className="h-3.5 w-3.5 text-muted" />
                           </button>
@@ -232,10 +232,10 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
 
               {/* Total + actions */}
               {state.type === 'confirm' && (
-                <div className="rounded-2xl bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/30 p-3">
+                <div className="rounded-2xl bg-orange-50 border border-orange-100 p-3">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold text-orange-700 dark:text-orange-300">Total</span>
-                    <span className="text-lg font-black text-orange-700 dark:text-orange-300">{totalKcal} kcal</span>
+                    <span className="text-xs font-semibold text-orange-700">Total</span>
+                    <span className="text-lg font-black text-orange-700">{totalKcal} kcal</span>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -247,7 +247,7 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
                     </button>
                     <button
                       onClick={() => setState({ type: 'idle' })}
-                      className="flex items-center justify-center gap-1.5 rounded-2xl border border-gray-200 dark:border-slate-700 px-4 py-2.5 text-sm font-semibold text-muted hover:bg-gray-50 dark:hover:bg-slate-800 transition-all"
+                      className="flex items-center justify-center gap-1.5 rounded-2xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-muted hover:bg-gray-50 transition-all"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
                       Redo
@@ -261,16 +261,16 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
           {/* Done state */}
           {state.type === 'done' && (
             <div className="space-y-3">
-              <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 p-4 text-center">
+              <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 text-center">
                 <CheckCircle className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
-                <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
+                <p className="text-sm font-bold text-emerald-800">
                   Logged {state.logged} item{state.logged > 1 ? 's' : ''} · {state.kcal} kcal
                 </p>
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5 capitalize">Added to {state.meal}</p>
+                <p className="text-xs text-emerald-600 mt-0.5 capitalize">Added to {state.meal}</p>
               </div>
               <button
                 onClick={() => setState({ type: 'idle' })}
-                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 py-2.5 text-sm font-semibold text-foreground hover:bg-gray-50 dark:hover:bg-slate-800 transition-all"
+                className="w-full rounded-2xl border border-gray-200 py-2.5 text-sm font-semibold text-foreground hover:bg-gray-50 transition-all"
               >
                 Log another meal
               </button>
@@ -279,7 +279,7 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
 
           {/* Idle hint */}
           {state.type === 'idle' && (
-            <div className="rounded-2xl bg-gray-50 dark:bg-slate-800 p-4">
+            <div className="rounded-2xl bg-gray-50 p-4">
               <p className="text-xs font-semibold text-muted mb-2">Try saying:</p>
               {[
                 '4 medium roti, aloo beans sabzi, 1 katori dal, 3 katori chawal',
@@ -289,7 +289,7 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
                 <button
                   key={ex}
                   onClick={() => setInput(ex)}
-                  className="block w-full text-left text-xs text-orange-700 dark:text-orange-400 py-1.5 hover:underline"
+                  className="block w-full text-left text-xs text-orange-700 py-1.5 hover:underline"
                 >
                   &ldquo;{ex}&rdquo;
                 </button>
@@ -300,7 +300,7 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
 
         {/* Input area */}
         {(state.type === 'idle' || state.type === 'done') && (
-          <div className="px-5 pb-6 pt-3 border-t border-gray-100 dark:border-slate-800">
+          <div className="px-5 pb-6 pt-3 border-t border-gray-100">
             <div className="flex gap-2 items-end">
               <textarea
                 ref={textareaRef}
@@ -309,7 +309,7 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
                 placeholder="Describe what you ate — e.g. 4 roti, dal, sabzi..."
                 rows={2}
-                className="flex-1 resize-none rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+                className="flex-1 resize-none rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
               />
               <button
                 onClick={handleSend}

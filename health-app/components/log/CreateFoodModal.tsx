@@ -81,19 +81,19 @@ export function CreateFoodModal({
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
       {/* Sheet */}
-      <div className="relative w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-white dark:bg-slate-900 p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-white p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-orange-100 dark:bg-orange-950/40">
-              <ChefHat className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-orange-100">
+              <ChefHat className="h-5 w-5 text-orange-600" />
             </div>
             <div>
               <h2 className="text-base font-black text-foreground">Create custom food</h2>
               <p className="text-xs text-muted">Add your own recipe or meal</p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded-full p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+          <button type="button" onClick={onClose} className="rounded-full p-1.5 hover:bg-gray-100 transition-colors">
             <X className="h-5 w-5 text-muted" />
           </button>
         </div>
@@ -105,7 +105,7 @@ export function CreateFoodModal({
               <label className="block text-xs font-semibold text-muted mb-1 uppercase tracking-wide">Food name *</label>
               <input
                 {...form.register('name')}
-                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
                 placeholder="e.g. Dal Makhani"
               />
               {form.formState.errors.name && (
@@ -116,7 +116,7 @@ export function CreateFoodModal({
               <label className="block text-xs font-semibold text-muted mb-1 uppercase tracking-wide">Brand / Restaurant (optional)</label>
               <input
                 {...form.register('brand')}
-                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
                 placeholder="e.g. Home cooked"
               />
             </div>
@@ -130,7 +130,7 @@ export function CreateFoodModal({
                 type="number"
                 step="1"
                 {...form.register('serving_size_g', { valueAsNumber: true })}
-                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
                 placeholder="100"
               />
               {form.formState.errors.serving_size_g && (
@@ -141,7 +141,7 @@ export function CreateFoodModal({
               <label className="block text-xs font-semibold text-muted mb-1 uppercase tracking-wide">Serving label</label>
               <input
                 {...form.register('serving_description')}
-                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
                 placeholder="1 bowl"
               />
             </div>
@@ -163,8 +163,8 @@ export function CreateFoodModal({
 
           {/* Per-serving preview */}
           {kcal > 0 && (
-            <div className="rounded-2xl border border-orange-100 dark:border-orange-900/30 bg-orange-50 dark:bg-orange-950/20 p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-orange-600 dark:text-orange-400 mb-2">Per serving ({serving}g)</p>
+            <div className="rounded-2xl border border-orange-100 bg-orange-50 p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-orange-600 mb-2">Per serving ({serving}g)</p>
               <div className="flex gap-4">
                 <MiniStat value={perServing.kcal} label="kcal" color="text-orange-700 font-black text-lg" />
                 <MiniStat value={perServing.protein} label="P" color="text-blue-600 font-bold" />
@@ -203,7 +203,7 @@ function NutrientField({
         step="0.1"
         min="0"
         placeholder={placeholder}
-        className={`w-full rounded-xl border dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-3 py-2 text-sm text-foreground outline-none focus:ring-2 transition-all ${color}`}
+        className={`w-full rounded-xl border bg-gray-50 px-3 py-2 text-sm text-foreground outline-none focus:ring-2 transition-all ${color}`}
         {...props}
       />
       {error && <p className="mt-0.5 text-[10px] text-red-500">{error}</p>}

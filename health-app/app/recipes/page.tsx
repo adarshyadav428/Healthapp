@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '../../lib/supabase/server'
-import { Navbar } from '../../components/layout/Navbar'
+import { AppHeader } from '../../components/layout/AppHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { RecipeBuilder } from '../../components/recipes/RecipeBuilder'
 
@@ -26,8 +26,8 @@ export default async function RecipesPage() {
   if (!profile || profile.height_cm === null) redirect('/onboarding')
 
   return (
-    <div className="min-h-screen bg-background pb-24 dark:bg-slate-950">
-      <Navbar />
+    <div className="min-h-screen bg-background pb-24">
+      <AppHeader title="Recipes" />
       <main className="mx-auto w-full max-w-md px-4 py-6">
         <div className="mb-6">
           <h1 className="text-2xl font-black text-foreground">Recipe Builder</h1>

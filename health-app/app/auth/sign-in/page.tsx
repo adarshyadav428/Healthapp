@@ -8,7 +8,7 @@ import { getBrowserSupabaseClient } from '../../../lib/supabase/client'
 import { toast } from '../../../components/ui/use-toast'
 
 const inputClass =
-  'w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition-all placeholder:text-muted focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900'
+  'w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition-all placeholder:text-muted focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100'
 
 export default function SignInPage() {
   const form = useForm<SignInData>({
@@ -54,7 +54,7 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12 dark:bg-slate-950">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12">
       {/* Logo */}
       <Link href="/" className="mb-10 flex items-center gap-2.5">
         <span className="text-[26px] leading-none">🥗</span>
@@ -88,7 +88,7 @@ export default function SignInPage() {
               <label htmlFor="password" className="text-xs font-bold uppercase tracking-wide text-muted">
                 Password
               </label>
-              <Link href="/auth/forgot-password" className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+              <Link href="/auth/forgot-password" className="text-xs font-semibold text-indigo-600 hover:underline">
                 Forgot?
               </Link>
             </div>
@@ -120,7 +120,7 @@ export default function SignInPage() {
             <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-background px-3 text-xs text-muted dark:bg-slate-950">or</span>
+            <span className="bg-background px-3 text-xs text-muted">or</span>
           </div>
         </div>
 
@@ -128,7 +128,7 @@ export default function SignInPage() {
         <button
           type="button"
           onClick={handleGoogle}
-          className="w-full rounded-2xl border border-border bg-card py-3.5 text-sm font-semibold text-foreground hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[.98] transition-all flex items-center justify-center gap-2.5"
+          className="w-full rounded-2xl border border-border bg-card py-3.5 text-sm font-semibold text-foreground hover:bg-slate-50 active:scale-[.98] transition-all flex items-center justify-center gap-2.5"
         >
           <GoogleIcon />
           Continue with Google
@@ -136,7 +136,7 @@ export default function SignInPage() {
 
         <p className="mt-7 text-center text-sm text-muted">
           New to GetInShape?{' '}
-          <Link href="/auth/sign-up" className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+          <Link href="/auth/sign-up" className="font-bold text-indigo-600 hover:underline">
             Create account
           </Link>
         </p>

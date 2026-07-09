@@ -114,7 +114,7 @@ export function OnboardingForm() {
           <span className="text-lg">{STEP_EMOJIS[step - 1]}</span>
           <span className="text-xs font-semibold text-orange-600">{step} / {TOTAL_STEPS}</span>
         </div>
-        <div className="h-1.5 rounded-full bg-orange-100 dark:bg-orange-950/30 overflow-hidden">
+        <div className="h-1.5 rounded-full bg-orange-100 overflow-hidden">
           <div
             className="h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-600 transition-all duration-500"
             style={{ width: `${progress}%` }}
@@ -131,7 +131,7 @@ export function OnboardingForm() {
               <label className="block text-sm font-semibold text-foreground mb-1">What should we call you?</label>
               <input
                 {...form.register('display_name')}
-                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
                 placeholder="Your name"
               />
               {form.formState.errors.display_name && (
@@ -149,7 +149,7 @@ export function OnboardingForm() {
               <input
                 type="number"
                 {...form.register('age', { valueAsNumber: true })}
-                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
                 placeholder="25"
               />
               {form.formState.errors.age && (
@@ -166,8 +166,8 @@ export function OnboardingForm() {
                     onClick={() => form.setValue('sex', s)}
                     className={`rounded-2xl border px-3 py-3 text-sm font-semibold capitalize transition-all ${
                       form.watch('sex') === s
-                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300'
-                        : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-foreground hover:border-orange-200 dark:hover:border-orange-800'
+                        ? 'border-orange-500 bg-orange-50 text-orange-700'
+                        : 'border-gray-200 bg-gray-50 text-foreground hover:border-orange-200'
                     }`}
                   >
                     {s === 'male' ? '♂️ Male' : s === 'female' ? '♀️ Female' : '⚧ Other'}
@@ -192,7 +192,7 @@ export function OnboardingForm() {
                       setHeightFt(ft)
                       form.setValue('height_cm', ftInToCm(ft, heightIn), { shouldValidate: true })
                     }}
-                    className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm font-bold text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+                    className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-bold text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
                   >
                     {[3,4,5,6,7,8].map(ft => (
                       <option key={ft} value={ft}>{ft} ft</option>
@@ -207,7 +207,7 @@ export function OnboardingForm() {
                       setHeightIn(inches)
                       form.setValue('height_cm', ftInToCm(heightFt, inches), { shouldValidate: true })
                     }}
-                    className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm font-bold text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+                    className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-bold text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
                   >
                     {[0,1,2,3,4,5,6,7,8,9,10,11].map(i => (
                       <option key={i} value={i}>{i} in</option>
@@ -224,7 +224,7 @@ export function OnboardingForm() {
               <input
                 type="number"
                 {...form.register('current_weight_kg', { valueAsNumber: true })}
-                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
                 placeholder="70"
               />
               {form.formState.errors.current_weight_kg && (
@@ -242,7 +242,7 @@ export function OnboardingForm() {
               <input
                 type="number"
                 {...form.register('target_weight_kg', { valueAsNumber: true })}
-                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
                 placeholder="65"
               />
               {form.formState.errors.target_weight_kg && (
@@ -257,7 +257,7 @@ export function OnboardingForm() {
                 const hM = hCm / 100
                 const currentBmi = +(wKg / (hM * hM)).toFixed(1)
                 const bmiLabel = currentBmi < 18.5 ? 'Underweight' : currentBmi < 25 ? 'Healthy weight' : currentBmi < 30 ? 'Overweight' : 'Obese'
-                const bmiColor = currentBmi < 18.5 ? 'text-blue-600 dark:text-blue-400' : currentBmi < 25 ? 'text-emerald-600 dark:text-emerald-400' : currentBmi < 30 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'
+                const bmiColor = currentBmi < 18.5 ? 'text-blue-600' : currentBmi < 25 ? 'text-emerald-600' : currentBmi < 30 ? 'text-amber-600' : 'text-rose-600'
                 const suggestions = [
                   { bmi: 20, kg: +(20 * hM * hM).toFixed(1) },
                   { bmi: 22, kg: +(22 * hM * hM).toFixed(1) },
@@ -266,7 +266,7 @@ export function OnboardingForm() {
                 const minHealthy = +(18.5 * hM * hM).toFixed(1)
                 const maxHealthy = +(24.9 * hM * hM).toFixed(1)
                 return (
-                  <div className="mt-2 rounded-2xl border border-orange-100 dark:border-orange-900/30 bg-orange-50/50 dark:bg-orange-950/10 p-3 space-y-2">
+                  <div className="mt-2 rounded-2xl border border-orange-100 bg-orange-50/50 p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-muted">Your current BMI</span>
                       <span className={`text-xs font-bold ${bmiColor}`}>{currentBmi} · {bmiLabel}</span>
@@ -282,9 +282,9 @@ export function OnboardingForm() {
                             key={s.bmi}
                             type="button"
                             onClick={() => form.setValue('target_weight_kg', s.kg, { shouldValidate: true })}
-                            className="flex-1 rounded-xl border border-orange-200 dark:border-orange-800 bg-white dark:bg-slate-800 py-1.5 text-center hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/20 active:scale-95 transition-all"
+                            className="flex-1 rounded-xl border border-orange-200 bg-white py-1.5 text-center hover:border-orange-400 hover:bg-orange-50 active:scale-95 transition-all"
                           >
-                            <p className="text-xs font-black text-orange-700 dark:text-orange-400">{s.kg} kg</p>
+                            <p className="text-xs font-black text-orange-700">{s.kg} kg</p>
                             <p className="text-[10px] text-muted">BMI {s.bmi}</p>
                           </button>
                         ))}
@@ -304,8 +304,8 @@ export function OnboardingForm() {
                     onClick={() => form.setValue('goal', g)}
                     className={`rounded-2xl border px-3 py-3 text-sm font-semibold capitalize transition-all ${
                       form.watch('goal') === g
-                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300'
-                        : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-foreground hover:border-orange-200 dark:hover:border-orange-800'
+                        ? 'border-orange-500 bg-orange-50 text-orange-700'
+                        : 'border-gray-200 bg-gray-50 text-foreground hover:border-orange-200'
                     }`}
                   >
                     {g === 'lose' ? '📉 Lose' : g === 'maintain' ? '⚖️ Maintain' : '📈 Gain'}
@@ -335,13 +335,13 @@ export function OnboardingForm() {
                     onClick={() => form.setValue('activity_level', a.value)}
                     className={`w-full flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all ${
                       form.watch('activity_level') === a.value
-                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/30'
-                        : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 hover:border-orange-200 dark:hover:border-orange-800'
+                        ? 'border-orange-500 bg-orange-50'
+                        : 'border-gray-200 bg-gray-50 hover:border-orange-200'
                     }`}
                   >
                     <span className="text-lg">{a.emoji}</span>
                     <div>
-                      <p className={`text-sm font-semibold ${form.watch('activity_level') === a.value ? 'text-orange-700 dark:text-orange-300' : 'text-foreground'}`}>{a.label}</p>
+                      <p className={`text-sm font-semibold ${form.watch('activity_level') === a.value ? 'text-orange-700' : 'text-foreground'}`}>{a.label}</p>
                       <p className="text-xs text-muted">{a.desc}</p>
                     </div>
                   </button>
@@ -352,7 +352,7 @@ export function OnboardingForm() {
               <label className="block text-sm font-semibold text-foreground mb-1">Goal pace (kg/week)</label>
               <select
                 {...form.register('pace_kg_per_week', { valueAsNumber: true })}
-                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 transition-all"
+                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground outline-none focus:border-orange-400 transition-all"
               >
                 <option value="0.25">0.25 kg/week — Slow &amp; steady</option>
                 <option value="0.5">0.5 kg/week — Recommended</option>
@@ -365,27 +365,27 @@ export function OnboardingForm() {
 
         {/* Live TDEE preview on final step */}
         {step === 5 && tdeePreview && (
-          <div className="rounded-2xl border border-orange-100 dark:border-orange-900/30 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-orange-600 dark:text-orange-400 mb-2">Your personalised targets</p>
+          <div className="rounded-2xl border border-orange-100 bg-gradient-to-r from-orange-50 to-amber-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-orange-600 mb-2">Your personalised targets</p>
             <div className="flex items-baseline gap-1.5 mb-3">
-              <span className="text-3xl font-black text-orange-700 dark:text-orange-400">{tdeePreview.daily_calorie_target.toLocaleString()}</span>
-              <span className="text-sm text-orange-500 dark:text-orange-400 font-semibold">kcal / day</span>
+              <span className="text-3xl font-black text-orange-700">{tdeePreview.daily_calorie_target.toLocaleString()}</span>
+              <span className="text-sm text-orange-500 font-semibold">kcal / day</span>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl bg-blue-100 dark:bg-blue-950/40 py-2 text-center">
-                <p className="text-sm font-black text-blue-800 dark:text-blue-300">{tdeePreview.protein_g_target}g</p>
-                <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400">Protein</p>
+              <div className="rounded-xl bg-blue-100 py-2 text-center">
+                <p className="text-sm font-black text-blue-800">{tdeePreview.protein_g_target}g</p>
+                <p className="text-[10px] font-semibold text-blue-600">Protein</p>
               </div>
-              <div className="rounded-xl bg-amber-100 dark:bg-amber-950/40 py-2 text-center">
-                <p className="text-sm font-black text-amber-800 dark:text-amber-300">{tdeePreview.carbs_g_target}g</p>
-                <p className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">Carbs</p>
+              <div className="rounded-xl bg-amber-100 py-2 text-center">
+                <p className="text-sm font-black text-amber-800">{tdeePreview.carbs_g_target}g</p>
+                <p className="text-[10px] font-semibold text-amber-600">Carbs</p>
               </div>
-              <div className="rounded-xl bg-rose-100 dark:bg-rose-950/40 py-2 text-center">
-                <p className="text-sm font-black text-rose-800 dark:text-rose-300">{tdeePreview.fat_g_target}g</p>
-                <p className="text-[10px] font-semibold text-rose-600 dark:text-rose-400">Fat</p>
+              <div className="rounded-xl bg-rose-100 py-2 text-center">
+                <p className="text-sm font-black text-rose-800">{tdeePreview.fat_g_target}g</p>
+                <p className="text-[10px] font-semibold text-rose-600">Fat</p>
               </div>
             </div>
-            <p className="mt-2 text-[11px] text-orange-500 dark:text-orange-400">Calculated using Mifflin-St Jeor formula. You can adjust this anytime in settings.</p>
+            <p className="mt-2 text-[11px] text-orange-500">Calculated using Mifflin-St Jeor formula. You can adjust this anytime in settings.</p>
           </div>
         )}
 
@@ -395,7 +395,7 @@ export function OnboardingForm() {
             type="button"
             onClick={prevStep}
             disabled={step === 1}
-            className="flex items-center gap-1 rounded-2xl px-4 py-2.5 text-sm font-semibold text-muted hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-0 transition-all"
+            className="flex items-center gap-1 rounded-2xl px-4 py-2.5 text-sm font-semibold text-muted hover:bg-gray-100 disabled:opacity-0 transition-all"
           >
             <ChevronLeft className="h-4 w-4" />
             Back

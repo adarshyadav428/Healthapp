@@ -651,14 +651,14 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
   const emoji = foodEmoji(food.name)
 
   return (
-    <div className="fixed inset-0 z-50 bg-background dark:bg-slate-950 flex flex-col">
+    <div className="fixed inset-0 z-50 bg-background flex flex-col">
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 pt-3 pb-2 flex-shrink-0">
         <button
           type="button"
           onClick={onClose}
           aria-label="Back"
-          className="h-10 w-10 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+          className="h-10 w-10 rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors"
         >
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
@@ -668,7 +668,7 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto px-4 pb-32">
         {/* Hero card */}
-        <div className="relative rounded-3xl overflow-hidden h-44 mb-5 bg-gradient-to-br from-indigo-100 via-violet-100 to-purple-100 dark:from-indigo-950/60 dark:via-violet-950/60 dark:to-purple-950/60">
+        <div className="relative rounded-3xl overflow-hidden h-44 mb-5 bg-gradient-to-br from-indigo-100 via-violet-100 to-purple-100">
           <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-90">
             {emoji}
           </div>
@@ -679,7 +679,7 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
         </div>
 
         {/* Quantity + Measure */}
-        <div className="rounded-2xl bg-card border border-border p-3 mb-6 dark:bg-slate-900/80">
+        <div className="rounded-2xl bg-card border border-border p-3 mb-6">
           <div className="grid grid-cols-2 gap-2">
             <div>
               <p className="text-xs text-muted font-medium mb-1.5 px-1">Quantity</p>
@@ -690,7 +690,7 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
                 onChange={(e) => setQuantityStr(e.target.value)}
                 onFocus={(e) => e.target.select()}
                 placeholder="1"
-                className="w-full h-12 rounded-xl bg-gray-50 dark:bg-slate-800 px-3 text-lg font-bold text-foreground outline-none focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900 transition-all"
+                className="w-full h-12 rounded-xl bg-gray-50 px-3 text-lg font-bold text-foreground outline-none focus:ring-2 focus:ring-indigo-200 transition-all"
               />
             </div>
             <div>
@@ -698,7 +698,7 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
               <button
                 type="button"
                 onClick={() => setShowUnitPicker(true)}
-                className="w-full h-12 rounded-xl bg-gray-50 dark:bg-slate-800 px-3 flex items-center justify-between text-left transition-all hover:bg-gray-100 dark:hover:bg-slate-700"
+                className="w-full h-12 rounded-xl bg-gray-50 px-3 flex items-center justify-between text-left transition-all hover:bg-gray-100"
               >
                 <span className="text-base font-bold text-foreground truncate">{unit.label}</span>
                 <ChevronDown className="h-4 w-4 text-muted flex-shrink-0 ml-1" />
@@ -710,7 +710,7 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
         {/* Macronutrients Breakdown */}
         <p className="text-base font-black text-foreground mb-3 px-1">Macronutrients Breakdown</p>
 
-        <div className="rounded-2xl bg-card border border-border p-4 mb-5 dark:bg-slate-900/80">
+        <div className="rounded-2xl bg-card border border-border p-4 mb-5">
           <div className="flex items-start justify-between mb-4">
             <div>
               <p className="text-xs text-muted font-medium">Calories</p>
@@ -718,7 +718,7 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
                 {nutrition.kcal} <span className="text-base font-bold text-muted">Cal</span>
               </p>
             </div>
-            <div className="bg-gray-100 dark:bg-slate-800 rounded-xl px-3 py-1.5">
+            <div className="bg-gray-100 rounded-xl px-3 py-1.5">
               <p className="text-xs font-bold text-foreground tabular-nums">Net wt: {Math.round(grams)} g</p>
             </div>
           </div>
@@ -726,11 +726,11 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
           <div className="border-t border-border" />
 
           <div className="divide-y divide-border">
-            <MacroRow icon={<Drumstick className="h-4 w-4" />} color="text-indigo-600 dark:text-indigo-400" label="Proteins" value={nutrition.protein} />
-            <MacroRow icon={<Droplet    className="h-4 w-4" />} color="text-rose-500 dark:text-rose-400"    label="Fats"     value={nutrition.fat} />
-            <MacroRow icon={<Wheat      className="h-4 w-4" />} color="text-amber-600 dark:text-amber-400" label="Carbs"    value={nutrition.carbs} />
+            <MacroRow icon={<Drumstick className="h-4 w-4" />} color="text-indigo-600" label="Proteins" value={nutrition.protein} />
+            <MacroRow icon={<Droplet    className="h-4 w-4" />} color="text-rose-500"    label="Fats"     value={nutrition.fat} />
+            <MacroRow icon={<Wheat      className="h-4 w-4" />} color="text-amber-600" label="Carbs"    value={nutrition.carbs} />
             {nutrition.fiber != null && (
-              <MacroRow icon={<Sprout className="h-4 w-4" />} color="text-emerald-600 dark:text-emerald-400" label="Fiber" value={nutrition.fiber} />
+              <MacroRow icon={<Sprout className="h-4 w-4" />} color="text-emerald-600" label="Fiber" value={nutrition.fiber} />
             )}
           </div>
         </div>
@@ -745,8 +745,8 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
               onClick={() => setMeal(m.value)}
               className={`rounded-2xl py-2.5 flex flex-col items-center gap-1 transition-all border ${
                 meal === m.value
-                  ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300'
-                  : 'bg-card border-border text-muted hover:border-indigo-200 dark:hover:border-indigo-800'
+                  ? 'bg-indigo-50 border-indigo-300 text-indigo-700'
+                  : 'bg-card border-border text-muted hover:border-indigo-200'
               }`}
             >
               <span className="text-lg leading-none">{m.emoji}</span>
@@ -757,7 +757,7 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
       </div>
 
       {/* Sticky bottom Add button */}
-      <div className="absolute inset-x-0 bottom-0 bg-background dark:bg-slate-950 border-t border-border px-4 pt-3 pb-5 safe-area-inset-bottom">
+      <div className="absolute inset-x-0 bottom-0 bg-background border-t border-border px-4 pt-3 pb-5 safe-area-inset-bottom">
         <button
           type="button"
           onClick={handleSubmit}
@@ -813,8 +813,8 @@ function UnitPicker({
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-t-3xl bg-white dark:bg-slate-900 px-4 pb-6 pt-3 shadow-2xl">
-        <div className="mx-auto h-1 w-10 rounded-full bg-gray-200 dark:bg-slate-700 mb-4" />
+      <div className="relative w-full max-w-md rounded-t-3xl bg-white px-4 pb-6 pt-3 shadow-2xl">
+        <div className="mx-auto h-1 w-10 rounded-full bg-gray-200 mb-4" />
         <p className="text-center text-xs uppercase tracking-wide font-bold text-muted mb-2">{foodName}</p>
         <div className="space-y-1.5 mb-4">
           {units.map((u) => {
@@ -826,8 +826,8 @@ function UnitPicker({
                 onClick={() => onSelect(u)}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all ${
                   isActive
-                    ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300'
-                    : 'hover:bg-gray-50 dark:hover:bg-slate-800 text-foreground'
+                    ? 'bg-indigo-50 text-indigo-700'
+                    : 'hover:bg-gray-50 text-foreground'
                 }`}
               >
                 <span className={`text-base ${isActive ? 'font-black' : 'font-semibold'}`}>{u.label}</span>
@@ -839,7 +839,7 @@ function UnitPicker({
         <button
           type="button"
           onClick={onClose}
-          className="w-full rounded-2xl bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white py-3.5 font-black text-base underline underline-offset-4"
+          className="w-full rounded-2xl bg-slate-900 text-white py-3.5 font-black text-base underline underline-offset-4"
         >
           Done
         </button>

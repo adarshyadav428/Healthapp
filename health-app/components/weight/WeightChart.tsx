@@ -9,7 +9,7 @@ import type { WeightLog } from '../../types/index'
 export function WeightChart({ logs }: { logs: WeightLog[] }) {
   if (logs.length === 0) {
     return (
-      <div className="flex h-[200px] w-full items-center justify-center rounded-2xl border border-dashed border-gray-200 dark:border-slate-700">
+      <div className="flex h-[200px] w-full items-center justify-center rounded-2xl border border-dashed border-gray-200">
         <p className="text-sm text-muted">No entries yet</p>
       </div>
     )
@@ -53,9 +53,9 @@ export function WeightChart({ logs }: { logs: WeightLog[] }) {
               if (!active || !payload?.length) return null
               const d = payload[0]?.payload as { date: string; weight: number }
               return (
-                <div className="rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 shadow-md text-xs">
+                <div className="rounded-xl border border-gray-100 bg-white px-3 py-2 shadow-md text-xs">
                   <p className="font-semibold text-muted">{format(new Date(d.date), 'MMM d, yyyy')}</p>
-                  <p className="font-black text-emerald-700 dark:text-emerald-400">{d.weight} kg</p>
+                  <p className="font-black text-emerald-700">{d.weight} kg</p>
                 </div>
               )
             }}

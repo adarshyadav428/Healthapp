@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center dark:bg-slate-950">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center">
       <div className="mb-6 text-7xl select-none">🍱</div>
 
       <h1 className="text-5xl font-black text-foreground mb-2">404</h1>
@@ -20,7 +20,7 @@ export default function NotFound() {
         </Link>
         <Link
           href="/log"
-          className="w-full rounded-2xl border border-border bg-card py-3 text-sm font-bold text-foreground text-center hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+          className="w-full rounded-2xl border border-border bg-card py-3 text-sm font-bold text-foreground text-center hover:bg-slate-50 transition-all"
         >
           Log Food
         </Link>

@@ -11,95 +11,45 @@ const TABS = [
   { href: '/settings',  icon: User,        label: 'Profile'  },
 ]
 
+function NavTab({ href, icon: Icon, label, active }: {
+  href: string
+  icon: typeof Home
+  label: string
+  active: boolean
+}) {
+  return (
+    <Link
+      href={href}
+      className={`flex w-14 flex-col items-center gap-[3px] py-1 tap-scale ${active ? 'text-brand-ink' : 'text-ink-3'}`}
+    >
+      <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.5 : 1.8} />
+      <span className={`text-[10px] ${active ? 'font-bold' : 'font-medium'}`}>{label}</span>
+    </Link>
+  )
+}
+
 export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <div
-      className="fixed z-40"
-      style={{
-        bottom: 18,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: 'calc(100% - 40px)',
-        maxWidth: 428,
-      }}
-    >
-      <div
-        className="relative flex items-center justify-around px-2 py-2"
-        style={{
-          background: 'rgba(255,255,255,.9)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderRadius: 24,
-          border: '1px solid #EFEDE6',
-          boxShadow: '0 10px 34px -12px rgba(20,24,29,.22)',
-        }}
-      >
-        {TABS.slice(0, 2).map(({ href, icon: Icon, label }) => {
-          const active = pathname === href
-          return (
-            <Link
-              key={href}
-              href={href}
-              className="flex flex-col items-center gap-[3px] w-14 py-1 tap-scale"
-              style={{ color: active ? '#B5471A' : '#A8A498' }}
-            >
-              <Icon
-                className="h-[22px] w-[22px]"
-                strokeWidth={active ? 2.5 : 1.8}
-              />
-              <span
-                className="text-[10px]"
-                style={{ fontWeight: active ? 700 : 500 }}
-              >
-                {label}
-              </span>
-            </Link>
-          )
-        })}
+    <div className="fixed bottom-[18px] left-1/2 z-40 w-[calc(100%-40px)] max-w-[428px] -translate-x-1/2">
+      <div className="relative flex items-center justify-around rounded-sheet border border-hairline bg-header-bg px-2 py-2 shadow-float backdrop-blur-md">
+        {TABS.slice(0, 2).map((tab) => (
+          <NavTab key={tab.href} {...tab} active={pathname === tab.href} />
+        ))}
 
         {/* Spacer for FAB */}
         <div className="w-[54px]" />
 
-        {TABS.slice(2).map(({ href, icon: Icon, label }) => {
-          const active = pathname === href
-          return (
-            <Link
-              key={href}
-              href={href}
-              className="flex flex-col items-center gap-[3px] w-14 py-1 tap-scale"
-              style={{ color: active ? '#B5471A' : '#A8A498' }}
-            >
-              <Icon
-                className="h-[22px] w-[22px]"
-                strokeWidth={active ? 2.5 : 1.8}
-              />
-              <span
-                className="text-[10px]"
-                style={{ fontWeight: active ? 700 : 500 }}
-              >
-                {label}
-              </span>
-            </Link>
-          )
-        })}
+        {TABS.slice(2).map((tab) => (
+          <NavTab key={tab.href} {...tab} active={pathname === tab.href} />
+        ))}
 
         {/* Floating + FAB */}
         <Link
           href="/log"
           aria-label="Log food"
-          className="absolute left-1/2 flex items-center justify-center tap-scale"
-          style={{
-            transform: 'translateX(-50%)',
-            bottom: 18,
-            width: 54,
-            height: 54,
-            borderRadius: 18,
-            background: '#FB7445',
-            border: '3px solid #fff',
-            boxShadow: '0 8px 18px -6px #FB7445',
-          }}
+          className="absolute bottom-[18px] left-1/2 flex h-[54px] w-[54px] -translate-x-1/2 items-center justify-center rounded-card border-[3px] border-canvas bg-brand shadow-float tap-scale"
         >
           <Plus className="h-[22px] w-[22px] text-white" strokeWidth={2.5} />
         </Link>

@@ -127,4 +127,17 @@ The `Subscription` type includes `provider: 'stripe' | 'google_play'` — never 
 
 Primitive components in `components/ui/` follow the shadcn/ui pattern (Radix UI primitives + `clsx`/`tailwind-merge` via `lib/utils.ts`). Domain components live under `components/dashboard/`, `components/log/`, `components/weight/`, `components/settings/`, `components/layout/`.
 
-Font: DM Sans (`next/font/google`). Primary colour: `#EA580C` (orange-600). Background: `#F8F7FF`. Dark mode is disabled — `.dark` CSS variables mirror light values.
+### Design system — "Peacock & Marigold"
+
+The interface is calm; the user's data is the color. **Peacock teal (`--brand` `#10514B`)** owns everything interactive — buttons, active nav, links, focus rings. **Marigold (`--energy` `#F2A23A`)** owns everything that is the user's data — the calorie ring, streak flame, progress fills. Marigold is **never** text or a button (use `--energy-ink` for marigold-toned text); peacock is the only action color. Semantic green/red (`--good` / `--bad`) are reserved for state so they never fight the brand.
+
+- **Tokens are the single source of truth.** All colors are CSS variables defined in `app/globals.css` (`:root` = light; `.dark` = staged dark palette, dark-ready but not enabled — nothing applies the class yet). Tailwind (`tailwind.config.ts`) maps token names to these variables. **Never write raw hex in a component** — reference a token (`bg-brand`, `text-ink`, `border-hairline`, `bg-energy`, …). Legacy aliases (`primary`, `accent`, `muted`, `card`, `background`) are remapped onto the new tokens for back-compat.
+  - Translucency can't use Tailwind's `/opacity` on `var()` tokens (it silently breaks). Dedicated alpha tokens exist for this: `--scrim`, `--header-bg`, `--brand-ring`.
+- **Type:** Bricolage Grotesque (`--font-display`, `font-display` / headings) for display + big numerals; Instrument Sans (`--font-sans`, body). Both via `next/font/google`. Numerals use `tabular-nums`.
+- **Radius:** four steps only — `rounded-control` (12px), `rounded-card` (18px), `rounded-sheet` (28px), `rounded-full` (pills).
+- **Elevation:** two shadows only — `shadow-rest` (cards) and `shadow-float` (sheets, nav, FAB); everything else is a hairline border.
+- **Motion:** spring curve `ease-spring` `cubic-bezier(.32,.72,0,1)`; `tap-scale` on tappables; all gated behind `prefers-reduced-motion`.
+- **Chrome:** one header, `components/layout/AppHeader.tsx` (`greeting` mode for home/log, `title` mode for interior pages). `BottomNav` is the tab bar + FAB.
+- **Guardrail:** `npm run check:tokens` fails if raw hex appears in guarded dirs (`components/ui`, `components/layout`) and reports remaining hex elsewhere as a migration tracker. Expand `GUARDED` in `scripts/check-tokens.mjs` as each rebrand phase lands.
+
+Dark mode is disabled (the `.dark` block exists and is dark-ready, but no code applies the class). Do not add `dark:` variant classes — they are dead until dark mode is switched on.

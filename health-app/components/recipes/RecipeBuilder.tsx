@@ -144,14 +144,14 @@ export function RecipeBuilder() {
   return (
     <div className="space-y-4">
       {/* Recipe name + servings */}
-      <div className="rounded-3xl border border-indigo-100 dark:border-indigo-900/30 bg-white/90 dark:bg-slate-900/80 p-4 shadow-sm space-y-3">
+      <div className="rounded-3xl border border-indigo-100 bg-white/90 p-4 shadow-sm space-y-3">
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">Recipe name</label>
           <input
             value={recipeName}
             onChange={(e) => setRecipeName(e.target.value)}
             placeholder="e.g. Dal Makhani, Palak Paneer..."
-            className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all"
+            className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
           />
         </div>
         <div>
@@ -162,7 +162,7 @@ export function RecipeBuilder() {
             <button
               type="button"
               onClick={() => setServings(Math.max(1, servings - 1))}
-              className="h-9 w-9 rounded-full bg-gray-100 dark:bg-slate-800 text-lg font-bold text-foreground hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-90 transition-all"
+              className="h-9 w-9 rounded-full bg-gray-100 text-lg font-bold text-foreground hover:bg-gray-200 active:scale-90 transition-all"
             >
               −
             </button>
@@ -170,7 +170,7 @@ export function RecipeBuilder() {
             <button
               type="button"
               onClick={() => setServings(servings + 1)}
-              className="h-9 w-9 rounded-full bg-gray-100 dark:bg-slate-800 text-lg font-bold text-foreground hover:bg-gray-200 dark:hover:bg-slate-700 active:scale-90 transition-all"
+              className="h-9 w-9 rounded-full bg-gray-100 text-lg font-bold text-foreground hover:bg-gray-200 active:scale-90 transition-all"
             >
               +
             </button>
@@ -179,7 +179,7 @@ export function RecipeBuilder() {
       </div>
 
       {/* Ingredient search */}
-      <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4 shadow-sm space-y-3">
+      <div className="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm space-y-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted">Ingredients</p>
 
         {/* Search */}
@@ -190,7 +190,7 @@ export function RecipeBuilder() {
             value={query}
             onChange={(e) => { setQuery(e.target.value); setSearchOpen(true) }}
             onFocus={() => setSearchOpen(true)}
-            className="w-full pl-9 pr-9 h-10 text-sm rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all"
+            className="w-full pl-9 pr-9 h-10 text-sm rounded-2xl border border-gray-200 bg-gray-50 text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
           />
           {query && (
             <button type="button" onClick={() => { setQuery(''); setSearchOpen(false) }} className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -214,13 +214,13 @@ export function RecipeBuilder() {
                   key={food.id}
                   type="button"
                   onClick={() => addIngredient(food)}
-                  className="w-full flex items-center justify-between rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-left hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 transition-all group"
+                  className="w-full flex items-center justify-between rounded-xl border border-gray-100 bg-white px-3 py-2 text-left hover:border-indigo-200 hover:bg-indigo-50 transition-all group"
                 >
                   <div className="min-w-0 flex-1 mr-2">
                     <p className="text-sm font-semibold text-foreground truncate">{food.name}</p>
                     <p className="text-[11px] text-muted">{Math.round(food.kcal_per_100g)} kcal · {Math.round(food.protein_g_per_100g)}P {Math.round(food.carbs_g_per_100g)}C {Math.round(food.fat_g_per_100g)}F per 100g</p>
                   </div>
-                  <Plus className="h-4 w-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                  <Plus className="h-4 w-4 text-indigo-600 flex-shrink-0" />
                 </button>
               ))
             )}
@@ -231,7 +231,7 @@ export function RecipeBuilder() {
         {ingredients.length > 0 ? (
           <div className="space-y-2 mt-1">
             {ingredients.map((ing, index) => (
-              <div key={ing.food.id} className="flex items-center gap-2 rounded-2xl border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-3 py-2">
+              <div key={ing.food.id} className="flex items-center gap-2 rounded-2xl border border-gray-100 bg-gray-50 px-3 py-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-foreground truncate">{ing.food.name}</p>
                   <p className="text-[10px] text-muted">
@@ -244,13 +244,13 @@ export function RecipeBuilder() {
                     value={ing.grams}
                     min={1}
                     onChange={(e) => updateGrams(index, Math.max(1, Number(e.target.value)))}
-                    className="w-16 text-center text-xs font-bold rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-foreground px-2 py-1.5 outline-none focus:border-indigo-400"
+                    className="w-16 text-center text-xs font-bold rounded-xl border border-gray-200 bg-white text-foreground px-2 py-1.5 outline-none focus:border-indigo-400"
                   />
                   <span className="text-[10px] text-muted">g</span>
                   <button
                     type="button"
                     onClick={() => removeIngredient(index)}
-                    className="rounded-full p-1 text-muted hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                    className="rounded-full p-1 text-muted hover:text-rose-500 hover:bg-rose-50 transition-colors"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -268,14 +268,14 @@ export function RecipeBuilder() {
 
       {/* Nutrition summary */}
       {ingredients.length > 0 && (
-        <div className="rounded-3xl border border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400 mb-3">
+        <div className="rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50 p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 mb-3">
             Per serving (of {servings}) — {Math.round(perServing.totalGrams)}g
           </p>
           <div className="flex gap-4">
             <div className="text-center">
-              <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400">{Math.round(perServing.kcal)}</p>
-              <p className="text-[11px] text-emerald-500 dark:text-emerald-400">kcal</p>
+              <p className="text-2xl font-black text-emerald-700">{Math.round(perServing.kcal)}</p>
+              <p className="text-[11px] text-emerald-500">kcal</p>
             </div>
             <div className="flex gap-3 ml-2">
               <MacroStat value={round1(perServing.protein)} label="Protein" color="text-blue-600" />
@@ -283,8 +283,8 @@ export function RecipeBuilder() {
               <MacroStat value={round1(perServing.fat)} label="Fat" color="text-rose-600" />
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-emerald-100/50 dark:border-emerald-900/30">
-            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+          <div className="mt-3 pt-3 border-t border-emerald-100/50">
+            <p className="text-[11px] text-emerald-600 font-medium">
               Total recipe: {Math.round(totalNutrition.kcal)} kcal · {Math.round(totalNutrition.totalGrams)}g
             </p>
           </div>

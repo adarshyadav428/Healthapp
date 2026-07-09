@@ -107,17 +107,17 @@ export function DeficitPageClient({
     <div className="space-y-4">
 
       {/* ── Hero: the plan ── */}
-      <div className="rounded-3xl border border-indigo-100 dark:border-indigo-900/40 bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-950/30 dark:to-slate-900 p-4">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400 mb-3">Your plan</p>
+      <div className="rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-violet-50 p-4">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500 mb-3">Your plan</p>
 
         {/* Primary number */}
         <div className="flex items-baseline gap-2 mb-4">
-          <span className="text-5xl font-black text-indigo-700 dark:text-indigo-300 leading-none tabular-nums">
+          <span className="text-5xl font-black text-indigo-700 leading-none tabular-nums">
             {eatTarget.toLocaleString()}
           </span>
           <div>
-            <p className="text-sm font-bold text-indigo-600 dark:text-indigo-400">kcal / day</p>
-            <p className="text-[11px] text-indigo-400 dark:text-indigo-500">to eat each day</p>
+            <p className="text-sm font-bold text-indigo-600">kcal / day</p>
+            <p className="text-[11px] text-indigo-400">to eat each day</p>
           </div>
         </div>
 
@@ -129,17 +129,17 @@ export function DeficitPageClient({
         </div>
 
         <div className="mt-3 flex items-center justify-between">
-          <p className="text-[11px] text-indigo-400 dark:text-indigo-500">
-            At this pace: <span className="font-semibold text-indigo-600 dark:text-indigo-300">~{impliedPaceKg} kg/week</span>
+          <p className="text-[11px] text-indigo-400">
+            At this pace: <span className="font-semibold text-indigo-600">~{impliedPaceKg} kg/week</span>
           </p>
-          <Link href="/settings" className="text-[11px] font-semibold text-indigo-500 dark:text-indigo-400">
+          <Link href="/settings" className="text-[11px] font-semibold text-indigo-500">
             Change pace →
           </Link>
         </div>
       </div>
 
       {/* ── This week ── */}
-      <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm">
+      <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
         <div className="flex items-baseline justify-between mb-3">
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted">This week</p>
           {daysLogged > 0 && (
@@ -159,7 +159,7 @@ export function DeficitPageClient({
         </div>
 
         {actualWeeklyTarget > 0 && (
-          <div className="h-2.5 rounded-full bg-gray-100 dark:bg-slate-800 overflow-hidden mb-4">
+          <div className="h-2.5 rounded-full bg-gray-100 overflow-hidden mb-4">
             <div
               className={`h-full rounded-full transition-all duration-700 ${barFill}`}
               style={{ width: `${Math.max(0, Math.min(100, progressPct))}%` }}
@@ -181,9 +181,9 @@ export function DeficitPageClient({
                 <div className="w-full flex flex-col justify-end h-9">
                   {!isFuture && log ? (
                     <div style={{ height: `${barH}%` }}
-                      className={`w-full rounded-t transition-all duration-500 ${green ? 'bg-emerald-400 dark:bg-emerald-500' : 'bg-rose-400 dark:bg-rose-500'}`} />
+                      className={`w-full rounded-t transition-all duration-500 ${green ? 'bg-emerald-400' : 'bg-rose-400'}`} />
                   ) : (
-                    <div className={`w-full h-0.5 rounded-full ${isFuture ? 'bg-gray-100 dark:bg-slate-800' : 'bg-gray-200 dark:bg-slate-700'}`} />
+                    <div className={`w-full h-0.5 rounded-full ${isFuture ? 'bg-gray-100' : 'bg-gray-200'}`} />
                   )}
                 </div>
                 <p className={`text-[9px] font-bold ${isToday ? 'text-orange-500' : 'text-muted'}`}>{DAY_LABELS[i]}</p>
@@ -199,7 +199,7 @@ export function DeficitPageClient({
         </div>
 
         {daysLogged > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-50 dark:border-slate-800 grid grid-cols-3 gap-2 text-center">
+          <div className="mt-3 pt-3 border-t border-gray-50 grid grid-cols-3 gap-2 text-center">
             <div>
               <p className="text-base font-black text-foreground">{daysLogged}/7</p>
               <p className="text-[10px] text-muted">days logged</p>
@@ -220,7 +220,7 @@ export function DeficitPageClient({
 
       {/* ── 4-week chart ── */}
       {chartData.some(d => d.deficit !== 0) && (
-        <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm">
+        <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
           <div className="flex items-baseline justify-between mb-3">
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted">4-week history</p>
             <p className="text-[10px] text-muted">goal {actualWeeklyTarget.toLocaleString()} kcal</p>
@@ -236,7 +236,7 @@ export function DeficitPageClient({
                     if (!active || !payload?.length) return null
                     const val = payload[0]?.value as number
                     return (
-                      <div className="rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 shadow text-xs">
+                      <div className="rounded-xl border border-gray-100 bg-white px-3 py-2 shadow text-xs">
                         <p className="text-muted mb-0.5">{label}</p>
                         <p className="font-black" style={{ color: val > 0 ? '#10b981' : '#ef4444' }}>
                           {val > 0 ? '' : '−'}{Math.abs(val).toLocaleString()} kcal
@@ -263,17 +263,17 @@ export function DeficitPageClient({
       )}
 
       {/* ── All time ── */}
-      <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm">
+      <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
         <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-3">All time</p>
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/30 p-3">
+          <div className="rounded-2xl bg-orange-50 border border-orange-100 p-3">
             <p className="text-[10px] text-muted mb-1">Total fat burned</p>
-            <p className="text-xl font-black text-orange-600 dark:text-orange-400">{totalFatKg} kg</p>
+            <p className="text-xl font-black text-orange-600">{totalFatKg} kg</p>
             <p className="text-[10px] text-muted">= {Math.round(totalFatKg * 1000)}g</p>
           </div>
-          <div className="rounded-2xl bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 p-3">
+          <div className="rounded-2xl bg-indigo-50 border border-indigo-100 p-3">
             <p className="text-[10px] text-muted mb-1">Days logged</p>
-            <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">{totalDaysLogged}</p>
+            <p className="text-xl font-black text-indigo-600">{totalDaysLogged}</p>
             <p className="text-[10px] text-muted">since you joined</p>
           </div>
         </div>
@@ -285,10 +285,10 @@ export function DeficitPageClient({
 
 function StatPill({ label, value, unit, highlight }: { label: string; value: string; unit: string; highlight?: boolean }) {
   return (
-    <div className="rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-white/80 dark:border-slate-700/50 px-2.5 py-2 text-center">
-      <p className="text-[9px] font-semibold text-indigo-400 dark:text-indigo-500 uppercase tracking-wide mb-0.5">{label}</p>
-      <p className={`text-sm font-black leading-tight ${highlight ? 'text-orange-600 dark:text-orange-400' : 'text-slate-700 dark:text-slate-200'}`}>{value}</p>
-      {unit && <p className="text-[9px] text-indigo-300 dark:text-indigo-600">{unit}</p>}
+    <div className="rounded-2xl bg-white/60 border border-white/80 px-2.5 py-2 text-center">
+      <p className="text-[9px] font-semibold text-indigo-400 uppercase tracking-wide mb-0.5">{label}</p>
+      <p className={`text-sm font-black leading-tight ${highlight ? 'text-orange-600' : 'text-slate-700'}`}>{value}</p>
+      {unit && <p className="text-[9px] text-indigo-300">{unit}</p>}
     </div>
   )
 }

@@ -76,17 +76,17 @@ export function WeeklyDeficitCard() {
   )
 
   return (
-    <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+    <div className="rounded-3xl border border-gray-100 bg-white shadow-sm overflow-hidden">
 
       {/* ── Section 1: What to eat ── */}
-      <div className="p-4 border-b border-gray-50 dark:border-slate-800">
+      <div className="p-4 border-b border-gray-50">
         <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-3">Calorie plan</p>
 
         <div className="flex gap-3">
           {/* Eat target — the only number that matters */}
-          <div className="flex-1 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-800/50 px-4 py-3 flex flex-col justify-center">
-            <p className="text-[10px] text-indigo-500 dark:text-indigo-400 font-semibold mb-0.5">Eat daily</p>
-            <p className="text-[28px] font-black text-indigo-700 dark:text-indigo-300 leading-none tabular-nums">
+          <div className="flex-1 rounded-2xl bg-indigo-50 border border-indigo-100 px-4 py-3 flex flex-col justify-center">
+            <p className="text-[10px] text-indigo-500 font-semibold mb-0.5">Eat daily</p>
+            <p className="text-[28px] font-black text-indigo-700 leading-none tabular-nums">
               {data.eat_target.toLocaleString()}
             </p>
             <p className="text-[10px] text-indigo-400 mt-0.5">kcal / day</p>
@@ -94,11 +94,11 @@ export function WeeklyDeficitCard() {
 
           {/* Maintenance + goal weight stacked */}
           <div className="flex flex-col gap-2 w-[42%]">
-            <div className="flex-1 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 px-3 py-2">
+            <div className="flex-1 rounded-xl bg-gray-50 border border-gray-100 px-3 py-2">
               <p className="text-[9px] font-semibold text-muted uppercase tracking-wide">Maintenance</p>
               <p className="text-sm font-black text-foreground">{data.tdee.toLocaleString()} <span className="text-[10px] font-normal text-muted">kcal</span></p>
             </div>
-            <div className="flex-1 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 px-3 py-2">
+            <div className="flex-1 rounded-xl bg-gray-50 border border-gray-100 px-3 py-2">
               <p className="text-[9px] font-semibold text-muted uppercase tracking-wide">Goal weight</p>
               <p className="text-sm font-black text-foreground">
                 {data.target_weight_kg ? `${data.target_weight_kg} kg` : '—'}
@@ -115,7 +115,7 @@ export function WeeklyDeficitCard() {
               <> · lose <span className="font-semibold text-foreground">~{data.implied_pace_kg} kg</span>/week</>
             )}
           </p>
-          <Link href="/settings" className="text-[10px] font-semibold text-indigo-500 dark:text-indigo-400">
+          <Link href="/settings" className="text-[10px] font-semibold text-indigo-500">
             Edit →
           </Link>
         </div>
@@ -144,7 +144,7 @@ export function WeeklyDeficitCard() {
 
         {/* Progress bar */}
         {weeklyTarget > 0 && (
-          <div className="h-2 rounded-full bg-gray-100 dark:bg-slate-800 overflow-hidden mb-3">
+          <div className="h-2 rounded-full bg-gray-100 overflow-hidden mb-3">
             <div
               className={`h-full rounded-full transition-all duration-700 ${progressColor}`}
               style={{ width: `${progressPct}%` }}
@@ -168,10 +168,10 @@ export function WeeklyDeficitCard() {
                   {!isFuture && log ? (
                     <div
                       style={{ height: `${barH}%` }}
-                      className={`w-full rounded-t-sm transition-all duration-500 ${green ? 'bg-emerald-400 dark:bg-emerald-500' : 'bg-rose-400 dark:bg-rose-500'}`}
+                      className={`w-full rounded-t-sm transition-all duration-500 ${green ? 'bg-emerald-400' : 'bg-rose-400'}`}
                     />
                   ) : (
-                    <div className={`w-full h-0.5 rounded-full ${isFuture ? 'bg-gray-100 dark:bg-slate-800' : 'bg-gray-200 dark:bg-slate-700'}`} />
+                    <div className={`w-full h-0.5 rounded-full ${isFuture ? 'bg-gray-100' : 'bg-gray-200'}`} />
                   )}
                 </div>
                 <p className={`text-[9px] font-bold leading-none ${isToday ? 'text-orange-500' : 'text-muted'}`}>
@@ -188,7 +188,7 @@ export function WeeklyDeficitCard() {
           <p className="text-[11px] text-muted">
             {daysLogged > 0 ? `${daysLogged}/7 days logged` : 'No logs this week yet'}
           </p>
-          <Link href="/deficit" className="flex items-center gap-0.5 text-[11px] font-semibold text-indigo-500 dark:text-indigo-400">
+          <Link href="/deficit" className="flex items-center gap-0.5 text-[11px] font-semibold text-indigo-500">
             Details <ChevronRight className="h-3 w-3" />
           </Link>
         </div>

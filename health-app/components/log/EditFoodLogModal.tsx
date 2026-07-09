@@ -93,21 +93,21 @@ export function EditFoodLogModal({ log, onClose, onSaved }: { log: FoodLog; onCl
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full max-w-sm mx-auto bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl border border-gray-100 dark:border-slate-700 p-5 space-y-4">
+      <div className="relative w-full max-w-sm mx-auto bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-gray-100 p-5 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-foreground">Edit entry</h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1.5 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+            className="rounded-full p-1.5 hover:bg-gray-100 transition-colors"
           >
             <X className="h-4 w-4 text-muted" />
           </button>
         </div>
 
         {/* Food name */}
-        <div className="rounded-2xl bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/30 px-3 py-2.5">
+        <div className="rounded-2xl bg-orange-50 border border-orange-100 px-3 py-2.5">
           <p className="text-sm font-semibold text-foreground truncate">{food?.name ?? 'Food item'}</p>
           {food?.brand && <p className="text-xs text-muted">{food.brand}</p>}
         </div>
@@ -121,7 +121,7 @@ export function EditFoodLogModal({ log, onClose, onSaved }: { log: FoodLog; onCl
             <button
               type="button"
               onClick={() => setGrams((g) => Math.max(5, Math.round(g - 10)))}
-              className="h-10 w-10 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-foreground font-bold hover:bg-gray-100 dark:hover:bg-slate-700 flex-shrink-0 transition-colors"
+              className="h-10 w-10 rounded-2xl border border-gray-200 bg-gray-50 text-foreground font-bold hover:bg-gray-100 flex-shrink-0 transition-colors"
             >
               −
             </button>
@@ -131,12 +131,12 @@ export function EditFoodLogModal({ log, onClose, onSaved }: { log: FoodLog; onCl
               min={1}
               step={5}
               onChange={(e) => setGrams(parseFloat(e.target.value) || 0)}
-              className="flex-1 rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground px-4 py-2.5 text-sm text-center outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:focus:ring-orange-900 transition-all"
+              className="flex-1 rounded-2xl border border-gray-200 bg-white text-foreground px-4 py-2.5 text-sm text-center outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
             />
             <button
               type="button"
               onClick={() => setGrams((g) => Math.round(g + 10))}
-              className="h-10 w-10 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-foreground font-bold hover:bg-gray-100 dark:hover:bg-slate-700 flex-shrink-0 transition-colors"
+              className="h-10 w-10 rounded-2xl border border-gray-200 bg-gray-50 text-foreground font-bold hover:bg-gray-100 flex-shrink-0 transition-colors"
             >
               +
             </button>
@@ -161,8 +161,8 @@ export function EditFoodLogModal({ log, onClose, onSaved }: { log: FoodLog; onCl
                 onClick={() => setMeal(opt.value)}
                 className={`rounded-2xl border py-2 text-xs font-semibold transition-all active:scale-95 ${
                   meal === opt.value
-                    ? 'border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-700 dark:bg-orange-950/40 dark:text-orange-300'
-                    : 'border-gray-100 bg-gray-50 text-muted hover:border-orange-200 hover:bg-orange-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-orange-800'
+                    ? 'border-orange-300 bg-orange-50 text-orange-700'
+                    : 'border-gray-100 bg-gray-50 text-muted hover:border-orange-200 hover:bg-orange-50'
                 }`}
               >
                 {opt.label}
@@ -173,21 +173,21 @@ export function EditFoodLogModal({ log, onClose, onSaved }: { log: FoodLog; onCl
 
         {/* Nutrition preview */}
         {hasFood && (
-          <div className="grid grid-cols-4 gap-2 rounded-2xl border border-orange-100 dark:border-orange-900/30 bg-orange-50 dark:bg-orange-950/20 px-3 py-2.5">
+          <div className="grid grid-cols-4 gap-2 rounded-2xl border border-orange-100 bg-orange-50 px-3 py-2.5">
             <div className="text-center">
-              <p className="text-sm font-black text-orange-700 dark:text-orange-400">{Math.round(nutrition.kcal)}</p>
-              <p className="text-[10px] text-orange-500 dark:text-orange-500">kcal</p>
+              <p className="text-sm font-black text-orange-700">{Math.round(nutrition.kcal)}</p>
+              <p className="text-[10px] text-orange-500">kcal</p>
             </div>
             <div className="text-center">
-              <p className="text-sm font-black text-blue-600 dark:text-blue-400">{Math.round(nutrition.protein)}g</p>
+              <p className="text-sm font-black text-blue-600">{Math.round(nutrition.protein)}g</p>
               <p className="text-[10px] text-muted">P</p>
             </div>
             <div className="text-center">
-              <p className="text-sm font-black text-amber-600 dark:text-amber-400">{Math.round(nutrition.carbs)}g</p>
+              <p className="text-sm font-black text-amber-600">{Math.round(nutrition.carbs)}g</p>
               <p className="text-[10px] text-muted">C</p>
             </div>
             <div className="text-center">
-              <p className="text-sm font-black text-rose-600 dark:text-rose-400">{Math.round(nutrition.fat)}g</p>
+              <p className="text-sm font-black text-rose-600">{Math.round(nutrition.fat)}g</p>
               <p className="text-[10px] text-muted">F</p>
             </div>
           </div>
@@ -198,7 +198,7 @@ export function EditFoodLogModal({ log, onClose, onSaved }: { log: FoodLog; onCl
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-2xl border border-gray-200 dark:border-slate-700 py-3 text-sm font-semibold text-muted hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+            className="flex-1 rounded-2xl border border-gray-200 py-3 text-sm font-semibold text-muted hover:bg-gray-50 transition-colors"
           >
             Cancel
           </button>

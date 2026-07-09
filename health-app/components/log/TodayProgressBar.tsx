@@ -30,7 +30,7 @@ function MacroBar({
         <span className="text-[10px] font-semibold text-muted">{label}</span>
         <span className="text-[10px] font-bold text-foreground">{eaten}g</span>
       </div>
-      <div className="h-1.5 rounded-full bg-gray-100 dark:bg-slate-700 overflow-hidden">
+      <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
         <div
           className={`h-full rounded-full transition-all ${color}`}
           style={{ width: `${pct}%` }}
@@ -59,19 +59,19 @@ export function TodayProgressBar({
     kcalPct < 80 ? 'bg-emerald-500' : kcalPct <= 100 ? 'bg-amber-500' : 'bg-rose-500'
 
   return (
-    <div className="rounded-2xl border border-indigo-100 dark:border-indigo-900/30 bg-gradient-to-r from-indigo-50 to-slate-50 dark:from-indigo-950/20 dark:to-slate-950/10 px-4 py-3 shadow-sm dark:bg-slate-900/80">
+    <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-slate-50 px-4 py-3 shadow-sm">
       {/* Calorie row */}
       <div className="flex items-center gap-3 mb-2.5">
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
+            <span className="text-xs font-bold text-indigo-700">
               {kcalEaten.toLocaleString()} <span className="font-normal text-indigo-500">/ {kcalTarget.toLocaleString()} kcal</span>
             </span>
             <span className={`text-xs font-bold ${over > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
               {over > 0 ? `+${over} over` : `${remaining} left`}
             </span>
           </div>
-          <div className="h-2 rounded-full bg-indigo-100 dark:bg-indigo-950/40 overflow-hidden">
+          <div className="h-2 rounded-full bg-indigo-100 overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${ringColor}`}
               style={{ width: `${kcalPct}%` }}

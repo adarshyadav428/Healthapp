@@ -5,7 +5,7 @@ import { LogProgressClient } from '../../components/log/LogProgressClient'
 import { TodayFoodLog } from '../../components/log/TodayFoodLog'
 import { LogPageShell } from '../../components/log/LogPageShell'
 import { DateNav } from '../../components/log/DateNav'
-import { HomeHeader } from '../../components/layout/HomeHeader'
+import { AppHeader } from '../../components/layout/AppHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { createServerClient } from '../../lib/supabase/server'
 import type { Food, FoodLog } from '../../types/index'
@@ -181,7 +181,7 @@ export default async function LogPage({
 
   return (
     <div className="min-h-screen" style={{ background: '#FAFAF7' }}>
-      <HomeHeader displayName={profile.display_name ?? null} />
+      <AppHeader greeting displayName={profile.display_name ?? null} />
       <main className="mx-auto w-full max-w-md px-[18px] pt-4" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}>
         {/* Header */}
         <div className="mb-3">

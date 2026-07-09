@@ -48,8 +48,8 @@ export function WeeklySummary({ weekLogs, kcalTarget }: WeeklySummaryProps) {
         {onTrack !== null && (
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
             onTrack
-              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
-              : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400'
+              ? 'bg-emerald-50 text-emerald-700'
+              : 'bg-rose-50 text-rose-600'
           }`}>
             {onTrack ? '✓ On track' : '↑ Over target'}
           </span>
@@ -61,7 +61,7 @@ export function WeeklySummary({ weekLogs, kcalTarget }: WeeklySummaryProps) {
         {days.map((day) => {
           const pct = kcalTarget && day.kcal > 0 ? Math.min((day.kcal / kcalTarget) * 100, 100) : 0
           const barColor = !day.logged
-            ? 'bg-gray-200 dark:bg-slate-700'
+            ? 'bg-gray-200'
             : day.kcal > (kcalTarget ?? Infinity) * 1.1
             ? 'bg-rose-400'
             : day.kcal >= (kcalTarget ?? 0) * 0.8
@@ -72,8 +72,8 @@ export function WeeklySummary({ weekLogs, kcalTarget }: WeeklySummaryProps) {
             <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
               <span className="text-[10px] font-medium text-muted">{day.label}</span>
               <div
-                className={`relative w-full rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-800 ${
-                  day.isToday ? 'ring-2 ring-indigo-400 ring-offset-1 dark:ring-offset-slate-900' : ''
+                className={`relative w-full rounded-lg overflow-hidden bg-gray-100 ${
+                  day.isToday ? 'ring-2 ring-indigo-400 ring-offset-1' : ''
                 }`}
                 style={{ height: 36 }}
               >
@@ -109,7 +109,7 @@ export function WeeklySummary({ weekLogs, kcalTarget }: WeeklySummaryProps) {
         <div className="pl-2">
           {deficit !== null ? (
             <>
-              <p className={`text-lg font-black leading-tight ${deficit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+              <p className={`text-lg font-black leading-tight ${deficit >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
                 {deficit >= 0 ? '−' : '+'}{Math.abs(deficit).toLocaleString()}
               </p>
               <p className="text-[10px] text-muted mt-0.5">Deficit</p>

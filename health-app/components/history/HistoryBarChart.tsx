@@ -50,7 +50,7 @@ export function HistoryBarChart({
               if (!active || !payload?.length) return null
               const val = payload[0]?.value as number
               return (
-                <div className="rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 shadow-md text-xs">
+                <div className="rounded-xl border border-gray-100 bg-white px-3 py-2 shadow-md text-xs">
                   <p className="font-semibold text-muted mb-0.5">{label}</p>
                   <p style={{ color }} className="font-bold">
                     {val > 0 ? `${val.toLocaleString()} ${unit}` : 'Not logged'}

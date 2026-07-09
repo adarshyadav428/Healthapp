@@ -117,21 +117,21 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
     <div className="space-y-3">
       {/* Day total */}
       <div className="flex gap-2 flex-wrap">
-        <div className="rounded-xl bg-orange-50 dark:bg-orange-950/30 border border-orange-100 dark:border-orange-900/30 px-3 py-1.5 text-center">
-          <p className="text-sm font-black text-orange-700 dark:text-orange-400">{Math.round(totalKcal)}</p>
-          <p className="text-[10px] text-orange-500 dark:text-orange-400">kcal</p>
+        <div className="rounded-xl bg-orange-50 border border-orange-100 px-3 py-1.5 text-center">
+          <p className="text-sm font-black text-orange-700">{Math.round(totalKcal)}</p>
+          <p className="text-[10px] text-orange-500">kcal</p>
         </div>
-        <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/30 px-3 py-1.5 text-center">
-          <p className="text-sm font-black text-blue-700 dark:text-blue-400">{Math.round(totalP)}g</p>
-          <p className="text-[10px] text-blue-500 dark:text-blue-400">protein</p>
+        <div className="rounded-xl bg-blue-50 border border-blue-100 px-3 py-1.5 text-center">
+          <p className="text-sm font-black text-blue-700">{Math.round(totalP)}g</p>
+          <p className="text-[10px] text-blue-500">protein</p>
         </div>
-        <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/30 px-3 py-1.5 text-center">
-          <p className="text-sm font-black text-amber-700 dark:text-amber-400">{Math.round(totalC)}g</p>
-          <p className="text-[10px] text-amber-500 dark:text-amber-400">carbs</p>
+        <div className="rounded-xl bg-amber-50 border border-amber-100 px-3 py-1.5 text-center">
+          <p className="text-sm font-black text-amber-700">{Math.round(totalC)}g</p>
+          <p className="text-[10px] text-amber-500">carbs</p>
         </div>
-        <div className="rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/30 px-3 py-1.5 text-center">
-          <p className="text-sm font-black text-rose-700 dark:text-rose-400">{Math.round(totalF)}g</p>
-          <p className="text-[10px] text-rose-500 dark:text-rose-400">fat</p>
+        <div className="rounded-xl bg-rose-50 border border-rose-100 px-3 py-1.5 text-center">
+          <p className="text-sm font-black text-rose-700">{Math.round(totalF)}g</p>
+          <p className="text-[10px] text-rose-500">fat</p>
         </div>
       </div>
 
@@ -152,7 +152,7 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
               </div>
               <div className="space-y-1.5">
                 {items.map((log) => (
-                  <div key={log.id} className="flex items-center justify-between rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 px-3 py-2">
+                  <div key={log.id} className="flex items-center justify-between rounded-xl bg-gray-50 border border-gray-100 px-3 py-2">
                     <div className="min-w-0 flex-1 mr-2">
                       <p className="text-xs font-semibold text-foreground truncate">{log.food?.name ?? 'Food item'}</p>
                       <p className="text-[10px] text-muted">{Math.round(log.grams)}g · {Math.round(log.protein_g)}P {Math.round(log.carbs_g)}C {Math.round(log.fat_g)}F</p>
@@ -162,7 +162,7 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
                       <button
                         type="button"
                         onClick={() => setEditingLog(log)}
-                        className="rounded-full p-1 text-muted hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors"
+                        className="rounded-full p-1 text-muted hover:text-orange-500 hover:bg-orange-50 transition-colors"
                         aria-label="Edit"
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -171,7 +171,7 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
                         type="button"
                         onClick={() => deleteLog(log.id)}
                         disabled={deletingId === log.id}
-                        className="rounded-full p-1 text-muted hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 disabled:opacity-40 transition-colors"
+                        className="rounded-full p-1 text-muted hover:text-rose-500 hover:bg-rose-50 disabled:opacity-40 transition-colors"
                         aria-label="Delete"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -196,15 +196,15 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
       {exerciseLogs.length > 0 && (
         <div>
           <div className="flex items-center gap-1.5 mb-1.5">
-            <Dumbbell className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
-            <span className="text-xs font-bold text-violet-700 dark:text-violet-400">Exercise</span>
+            <Dumbbell className="h-3.5 w-3.5 text-violet-600" />
+            <span className="text-xs font-bold text-violet-700">Exercise</span>
             <span className="text-[11px] text-muted font-medium ml-auto">
               −{exerciseLogs.reduce((s, e) => s + e.calories, 0)} kcal burned
             </span>
           </div>
           <div className="space-y-1.5">
             {exerciseLogs.map((log) => (
-              <div key={log.id} className="flex items-center justify-between rounded-xl bg-violet-50 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/30 px-3 py-2">
+              <div key={log.id} className="flex items-center justify-between rounded-xl bg-violet-50 border border-violet-100 px-3 py-2">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <Flame className="h-3 w-3 text-orange-500 shrink-0" />
                   <div className="min-w-0">
@@ -212,7 +212,7 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
                     <p className="text-[10px] text-muted">{log.duration_min} min</p>
                   </div>
                 </div>
-                <span className="text-xs font-bold text-violet-700 dark:text-violet-400 shrink-0">{log.calories} kcal</span>
+                <span className="text-xs font-bold text-violet-700 shrink-0">{log.calories} kcal</span>
               </div>
             ))}
           </div>

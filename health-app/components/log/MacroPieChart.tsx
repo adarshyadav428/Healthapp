@@ -50,7 +50,7 @@ export function MacroPieChart({ protein, carbs, fat }: Props) {
                 if (!active || !payload?.length) return null
                 const d = payload[0]?.payload as typeof data[0]
                 return (
-                  <div className="rounded-xl bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-700 px-2.5 py-1.5 shadow text-xs">
+                  <div className="rounded-xl bg-white border border-gray-100 px-2.5 py-1.5 shadow text-xs">
                     <p style={{ color: d.color }} className="font-bold">{d.name}</p>
                     <p className="text-muted">{d.g}g · {d.value} kcal</p>
                   </div>

@@ -49,7 +49,7 @@ export function StreakCalendar({ loggedDates }: Props) {
     <div className="rounded-2xl bg-card border border-border p-4">
       <div className="flex items-center justify-between mb-3">
         <p className="text-[10px] font-bold uppercase tracking-widest text-muted">Logging habit · last 5 weeks</p>
-        <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">{loggedCount} / 35 days</span>
+        <span className="text-[11px] font-bold text-indigo-600">{loggedCount} / 35 days</span>
       </div>
 
       {/* Day-of-week headers */}
@@ -73,11 +73,11 @@ export function StreakCalendar({ loggedDates }: Props) {
                 'aspect-square rounded-md transition-all',
                 cell.isToday
                   ? cell.logged
-                    ? 'bg-indigo-500 ring-2 ring-indigo-300 dark:ring-indigo-700'
-                    : 'bg-slate-100 dark:bg-slate-800 ring-2 ring-indigo-400 dark:ring-indigo-600'
+                    ? 'bg-indigo-500 ring-2 ring-indigo-300'
+                    : 'bg-slate-100 ring-2 ring-indigo-400'
                   : cell.logged
-                  ? 'bg-indigo-500 dark:bg-indigo-600'
-                  : 'bg-slate-100 dark:bg-slate-800',
+                  ? 'bg-indigo-500'
+                  : 'bg-slate-100',
               ].join(' ')}
             />
           )
@@ -89,10 +89,10 @@ export function StreakCalendar({ loggedDates }: Props) {
           <span className="h-2.5 w-2.5 rounded-sm bg-indigo-500 inline-block" /> Logged
         </div>
         <div className="flex items-center gap-1 text-[10px] text-muted">
-          <span className="h-2.5 w-2.5 rounded-sm bg-slate-100 dark:bg-slate-800 inline-block ring-1 ring-slate-200 dark:ring-slate-700" /> No log
+          <span className="h-2.5 w-2.5 rounded-sm bg-slate-100 inline-block ring-1 ring-slate-200" /> No log
         </div>
         <div className="flex items-center gap-1 text-[10px] text-muted">
-          <span className="h-2.5 w-2.5 rounded-sm bg-slate-100 dark:bg-slate-800 inline-block ring-2 ring-indigo-400" /> Today
+          <span className="h-2.5 w-2.5 rounded-sm bg-slate-100 inline-block ring-2 ring-indigo-400" /> Today
         </div>
       </div>
     </div>

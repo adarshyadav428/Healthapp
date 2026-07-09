@@ -131,12 +131,12 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
     <div className="space-y-4">
       {/* Free-tier upgrade banner */}
       {!isPro && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20 p-3.5 flex items-center justify-between gap-3">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3.5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+            <Lock className="h-4 w-4 text-amber-600 shrink-0" />
             <div className="min-w-0">
-              <p className="text-xs font-bold text-amber-900 dark:text-amber-200">Showing last 7 days</p>
-              <p className="text-[11px] text-amber-700 dark:text-amber-400">Pro unlocks full history</p>
+              <p className="text-xs font-bold text-amber-900">Showing last 7 days</p>
+              <p className="text-[11px] text-amber-700">Pro unlocks full history</p>
             </div>
           </div>
           <Link
@@ -155,33 +155,33 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
           value={avgKcal > 0 ? `${avgKcal.toLocaleString()}` : '--'}
           unit="kcal"
           sub={target > 0 && avgKcal > 0 ? `Goal: ${target.toLocaleString()}` : undefined}
-          color="text-orange-600 dark:text-orange-400"
-          bg="bg-orange-50 dark:bg-orange-950/20 border-orange-100 dark:border-orange-900/30"
+          color="text-orange-600"
+          bg="bg-orange-50 border-orange-100"
         />
         <StatCard
           label="Days logged"
           value={String(loggedDays.length)}
           unit={`of ${range}`}
           sub={streakCount > 0 ? `🔥 ${streakCount} day streak` : undefined}
-          color="text-emerald-600 dark:text-emerald-400"
-          bg="bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/30"
+          color="text-emerald-600"
+          bg="bg-emerald-50 border-emerald-100"
         />
       </div>
       {avgDeficit !== null && (
         <div className={`rounded-2xl border px-4 py-3 flex items-center justify-between ${
           avgDeficit > 0
-            ? 'border-emerald-100 dark:border-emerald-900/30 bg-emerald-50 dark:bg-emerald-950/20'
-            : 'border-rose-100 dark:border-rose-900/30 bg-rose-50 dark:bg-rose-950/20'
+            ? 'border-emerald-100 bg-emerald-50'
+            : 'border-rose-100 bg-rose-50'
         }`}>
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Avg daily {avgDeficit >= 0 ? 'deficit' : 'surplus'}</p>
-            <p className={`text-xl font-black mt-0.5 ${avgDeficit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+            <p className={`text-xl font-black mt-0.5 ${avgDeficit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
               {avgDeficit >= 0 ? '-' : '+'}{Math.abs(avgDeficit).toLocaleString()} kcal
             </p>
           </div>
           <div className="text-right">
             <p className="text-[10px] text-muted">Est. weight {avgDeficit >= 0 ? 'loss' : 'gain'}</p>
-            <p className={`text-sm font-bold ${avgDeficit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+            <p className={`text-sm font-bold ${avgDeficit >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
               {Math.abs(avgDeficit * loggedDays.length / 7700).toFixed(2)} kg / {range} days
             </p>
           </div>
@@ -199,11 +199,11 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
       )}
 
       {/* Chart card */}
-      <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4 shadow-sm">
+      <div className="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm">
         {/* Range tabs */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">{cfg.label} trend</p>
-          <div className="flex gap-1 rounded-xl bg-gray-100 dark:bg-slate-800 p-0.5">
+          <div className="flex gap-1 rounded-xl bg-gray-100 p-0.5">
             {RANGES.map((r) => {
               const locked = !isPro && r.days > 7
               return locked ? (
@@ -221,7 +221,7 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
                   type="button"
                   onClick={() => setRange(r.days)}
                   className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
-                    range === r.days ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm' : 'text-muted'
+                    range === r.days ? 'bg-white text-gray-900 shadow-sm' : 'text-muted'
                   }`}
                 >
                   {r.label}
@@ -241,7 +241,7 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
               className={`rounded-xl px-3 py-1 text-xs font-semibold transition-all ${
                 metric === m
                   ? 'text-white shadow-sm'
-                  : 'bg-gray-100 dark:bg-slate-800 text-muted hover:bg-gray-200 dark:hover:bg-slate-700'
+                  : 'bg-gray-100 text-muted hover:bg-gray-200'
               }`}
               style={metric === m ? { backgroundColor: metricConfig[m].color } : {}}
             >
@@ -269,10 +269,10 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
 
       {/* Day diary panel */}
       {selectedDate && user && (
-        <div className="rounded-3xl border border-purple-100 dark:border-purple-900/30 bg-white/90 dark:bg-slate-900/80 p-4 shadow-sm">
+        <div className="rounded-3xl border border-purple-100 bg-white/90 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-purple-500 dark:text-purple-400" />
+              <CalendarDays className="h-4 w-4 text-purple-500" />
               <p className="text-sm font-bold text-foreground">
                 {format(parse(selectedDate, 'yyyy-MM-dd', new Date()), 'EEEE, MMM d')}
               </p>
@@ -280,7 +280,7 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
             <button
               type="button"
               onClick={() => setSelectedDate(null)}
-              className="rounded-full p-1 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              className="rounded-full p-1 hover:bg-gray-100 transition-colors"
             >
               <X className="h-4 w-4 text-muted" />
             </button>
@@ -294,28 +294,28 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
 
       {/* Weekly breakdown */}
       {loggedDays.length > 0 && (
-        <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4 shadow-sm">
+        <div className="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-3">Calorie breakdown by day</p>
           <div className="space-y-2">
             {[...chartData].reverse().slice(0, 7).map((day) => {
               const pct = target > 0 ? Math.min((day.kcal / target) * 100, 100) : 0
-              const color = day.kcal === 0 ? 'bg-gray-200 dark:bg-slate-700' : day.kcal > target * 1.1 ? 'bg-rose-400' : day.kcal >= target * 0.9 ? 'bg-emerald-400' : 'bg-orange-400'
+              const color = day.kcal === 0 ? 'bg-gray-200' : day.kcal > target * 1.1 ? 'bg-rose-400' : day.kcal >= target * 0.9 ? 'bg-emerald-400' : 'bg-orange-400'
               const isSelected = selectedDate === day.date
             return (
                 <button
                   key={day.date}
                   type="button"
                   onClick={() => setSelectedDate(isSelected ? null : day.date)}
-                  className={`flex items-center gap-3 w-full rounded-xl px-2 py-1 -mx-2 transition-colors ${isSelected ? 'bg-purple-50 dark:bg-purple-950/30' : 'hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+                  className={`flex items-center gap-3 w-full rounded-xl px-2 py-1 -mx-2 transition-colors ${isSelected ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
                 >
-                  <span className={`w-14 text-xs font-medium shrink-0 ${isSelected ? 'text-purple-700 dark:text-purple-300 font-bold' : 'text-muted'}`}>{day.label}</span>
-                  <div className="flex-1 h-5 rounded-full bg-gray-100 dark:bg-slate-800 overflow-hidden">
+                  <span className={`w-14 text-xs font-medium shrink-0 ${isSelected ? 'text-purple-700 font-bold' : 'text-muted'}`}>{day.label}</span>
+                  <div className="flex-1 h-5 rounded-full bg-gray-100 overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all ${isSelected ? 'bg-purple-400' : color}`}
                       style={{ width: day.kcal === 0 ? '0%' : `${pct}%` }}
                     />
                   </div>
-                  <span className={`w-16 text-xs font-bold text-right shrink-0 ${isSelected ? 'text-purple-700 dark:text-purple-300' : 'text-foreground'}`}>
+                  <span className={`w-16 text-xs font-bold text-right shrink-0 ${isSelected ? 'text-purple-700' : 'text-foreground'}`}>
                     {day.kcal > 0 ? `${day.kcal.toLocaleString()} kcal` : '—'}
                   </span>
                 </button>
@@ -354,26 +354,26 @@ function ExerciseSection({ exerciseLogs, range }: { exerciseLogs: ExerciseRow[];
   const displayed = showAll ? filtered : filtered.slice(0, 3)
 
   return (
-    <div className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-4 shadow-sm">
+    <div className="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm">
       <div className="flex items-center gap-2 mb-3">
-        <Dumbbell className="h-4 w-4 text-violet-500 dark:text-violet-400" />
+        <Dumbbell className="h-4 w-4 text-violet-500" />
         <p className="text-xs font-semibold uppercase tracking-wide text-muted">Exercise</p>
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-2 mb-4">
-        <div className="rounded-2xl bg-violet-50 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/30 p-2.5 text-center">
+        <div className="rounded-2xl bg-violet-50 border border-violet-100 p-2.5 text-center">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Sessions</p>
-          <p className="text-lg font-black text-violet-600 dark:text-violet-400 mt-0.5">{totalSessions}</p>
+          <p className="text-lg font-black text-violet-600 mt-0.5">{totalSessions}</p>
         </div>
-        <div className="rounded-2xl bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 p-2.5 text-center">
+        <div className="rounded-2xl bg-rose-50 border border-rose-100 p-2.5 text-center">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Burned</p>
-          <p className="text-lg font-black text-rose-600 dark:text-rose-400 mt-0.5">{totalCalories.toLocaleString()}</p>
+          <p className="text-lg font-black text-rose-600 mt-0.5">{totalCalories.toLocaleString()}</p>
           <p className="text-[10px] text-muted">kcal</p>
         </div>
-        <div className="rounded-2xl bg-sky-50 dark:bg-sky-950/20 border border-sky-100 dark:border-sky-900/30 p-2.5 text-center">
+        <div className="rounded-2xl bg-sky-50 border border-sky-100 p-2.5 text-center">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Time</p>
-          <p className="text-lg font-black text-sky-600 dark:text-sky-400 mt-0.5">
+          <p className="text-lg font-black text-sky-600 mt-0.5">
             {totalMinutes >= 60 ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m` : `${totalMinutes}m`}
           </p>
         </div>
@@ -382,15 +382,15 @@ function ExerciseSection({ exerciseLogs, range }: { exerciseLogs: ExerciseRow[];
       {/* Session list */}
       <div className="space-y-1.5">
         {displayed.map((e, i) => (
-          <div key={i} className="flex items-center justify-between rounded-xl bg-gray-50 dark:bg-slate-800 px-3 py-2">
+          <div key={i} className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2">
             <div className="flex items-center gap-2 min-w-0">
-              <Flame className="h-3.5 w-3.5 text-orange-500 dark:text-orange-400 shrink-0" />
+              <Flame className="h-3.5 w-3.5 text-orange-500 shrink-0" />
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-foreground capitalize truncate">{e.activity}</p>
                 <p className="text-[10px] text-muted">{format(parseISO(e.logged_at), 'MMM d')} · {e.duration_min} min</p>
               </div>
             </div>
-            <span className="text-xs font-bold text-orange-600 dark:text-orange-400 shrink-0 ml-2">
+            <span className="text-xs font-bold text-orange-600 shrink-0 ml-2">
               {e.calories > 0 ? `${e.calories} kcal` : '—'}
             </span>
           </div>
@@ -429,7 +429,7 @@ function StatCard({
 
 function MacroCard({ label, value, unit, color }: { label: string; value: number; unit: string; color: string }) {
   return (
-    <div className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-3 text-center shadow-sm">
+    <div className="rounded-2xl border border-gray-100 bg-white/90 p-3 text-center shadow-sm">
       <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">{label}</p>
       <p className={`text-lg font-black mt-0.5 ${color}`}>{value > 0 ? value : '--'}</p>
       <p className="text-[10px] text-muted">{unit}</p>

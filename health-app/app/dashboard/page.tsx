@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createServerClient } from '../../lib/supabase/server'
 import type { FoodLog } from '../../types/index'
-import { HomeHeader } from '../../components/layout/HomeHeader'
+import { AppHeader } from '../../components/layout/AppHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { DashboardClient } from '../../components/dashboard/DashboardClient'
 import { getUtcDayRange } from '../../lib/dateUtils'
@@ -60,7 +60,7 @@ export default async function DashboardPage() {
       className="min-h-screen"
       style={{ background: '#FAFAF7' }}
     >
-      <HomeHeader displayName={profile.display_name} />
+      <AppHeader greeting displayName={profile.display_name} />
       <main
         className="relative mx-auto w-full max-w-md px-[18px] pt-4"
         style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}

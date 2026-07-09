@@ -58,11 +58,11 @@ function ReasonBanner() {
   const reasonCopy = reason ? REASON_COPY[reason] : null
   if (!reasonCopy) return null
   return (
-    <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20 p-4 mb-6 flex items-start gap-3">
-      <Lock className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 mb-6 flex items-start gap-3">
+      <Lock className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
       <div>
-        <p className="text-sm font-bold text-amber-900 dark:text-amber-200">{reasonCopy.title}</p>
-        <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">{reasonCopy.description}</p>
+        <p className="text-sm font-bold text-amber-900">{reasonCopy.title}</p>
+        <p className="text-xs text-amber-700 mt-0.5">{reasonCopy.description}</p>
       </div>
     </div>
   )
@@ -131,7 +131,7 @@ export default function UpgradePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background dark:bg-slate-950">
+    <div className="min-h-screen bg-background">
 
       <div className="mx-auto w-full max-w-lg px-4 py-8">
         <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground mb-6">
@@ -146,7 +146,7 @@ export default function UpgradePage() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-200 px-3 py-1 text-xs font-semibold text-indigo-700 mb-3 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-400">
+          <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-200 px-3 py-1 text-xs font-semibold text-indigo-700 mb-3">
             <Crown className="h-3.5 w-3.5" />
             GetInShape Pro
           </div>
@@ -155,9 +155,9 @@ export default function UpgradePage() {
         </div>
 
         {/* Features */}
-        <div className="rounded-3xl border border-border bg-card p-5 mb-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
+        <div className="rounded-3xl border border-border bg-card p-5 mb-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            <Zap className="h-4 w-4 text-indigo-600" />
             <p className="text-sm font-bold text-foreground">What you get with Pro</p>
           </div>
           <ul className="space-y-2">
@@ -179,8 +179,8 @@ export default function UpgradePage() {
               key={plan.id}
               className={`rounded-3xl border p-5 shadow-sm transition-all ${
                 plan.highlight
-                  ? 'border-indigo-300 bg-gradient-to-br from-indigo-50 to-violet-50 ring-2 ring-indigo-200 dark:border-indigo-500/60 dark:from-indigo-950/30 dark:to-violet-950/30 dark:ring-indigo-500/20'
-                  : 'border-border bg-card dark:border-slate-800 dark:bg-slate-900/90'
+                  ? 'border-indigo-300 bg-gradient-to-br from-indigo-50 to-violet-50 ring-2 ring-indigo-200'
+                  : 'border-border bg-card'
               }`}
             >
               <div className="flex items-start justify-between">
@@ -204,7 +204,7 @@ export default function UpgradePage() {
                 className={`mt-4 w-full rounded-full font-bold ${
                   plan.highlight
                     ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-500/25'
-                    : 'bg-gray-900 hover:bg-gray-800 text-white dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-slate-100'
+                    : 'bg-gray-900 hover:bg-gray-800 text-white'
                 }`}
                 onClick={() => startCheckout(plan.id)}
                 disabled={!!loading}

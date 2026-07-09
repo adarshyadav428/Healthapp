@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, Mail } from 'lucide-react'
 
 const inputClass =
-  'w-full rounded-2xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all placeholder:text-muted'
+  'w-full rounded-2xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all placeholder:text-muted'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -34,7 +34,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 dark:bg-slate-950">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <Link href="/auth/sign-in" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground mb-6 transition-colors">
           <ArrowLeft className="h-4 w-4" />
@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             {error && (
-              <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-2.5 text-xs text-red-600 dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-300">
+              <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-2.5 text-xs text-red-600">
                 {error}
               </div>
             )}

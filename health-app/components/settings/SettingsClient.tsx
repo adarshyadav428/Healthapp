@@ -39,8 +39,8 @@ const GOAL_LABELS: Record<string, string> = {
 
 function SectionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-3xl border border-gray-100 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 shadow-sm overflow-hidden">
-      <div className="flex items-center gap-2 border-b border-gray-50 dark:border-slate-800 px-4 py-3">
+    <section className="rounded-3xl border border-gray-100 bg-white/90 shadow-sm overflow-hidden">
+      <div className="flex items-center gap-2 border-b border-gray-50 px-4 py-3">
         <span className="text-muted">{icon}</span>
         <h2 className="text-sm font-bold text-foreground">{title}</h2>
       </div>
@@ -214,11 +214,11 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
     <div className="space-y-4">
 
       {/* ── Calorie target — quick editor ── */}
-      <div className="rounded-3xl border border-indigo-100 dark:border-indigo-900/30 bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-950/30 dark:to-violet-950/20 p-4 shadow-sm">
+      <div className="rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-violet-50 p-4 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-            <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">Daily Calorie Goal</p>
+            <Zap className="h-4 w-4 text-indigo-600" />
+            <p className="text-xs font-bold uppercase tracking-widest text-indigo-600">Daily Calorie Goal</p>
           </div>
           {!editingCalories && (
             <button
@@ -228,7 +228,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
                 setEditingCalories(true)
                 setTimeout(() => kcalInputRef.current?.focus(), 50)
               }}
-              className="flex items-center gap-1 rounded-xl bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-all"
+              className="flex items-center gap-1 rounded-xl bg-white border border-indigo-200 px-2.5 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 transition-all"
             >
               <Pencil className="h-3 w-3" />
               Edit
@@ -238,21 +238,21 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
 
         {!editingCalories ? (
           <>
-            <p className="text-4xl font-black text-indigo-700 dark:text-indigo-300 leading-none">
+            <p className="text-4xl font-black text-indigo-700 leading-none">
               {profile.daily_calorie_target.toLocaleString()}
             </p>
-            <p className="text-sm text-indigo-500 dark:text-indigo-400 mt-1">kcal / day</p>
+            <p className="text-sm text-indigo-500 mt-1">kcal / day</p>
             <div className="mt-3 flex gap-3 text-xs">
-              <span className="text-blue-600 dark:text-blue-400 font-semibold">P {profile.protein_g_target}g</span>
-              <span className="text-amber-600 dark:text-amber-400 font-semibold">C {profile.carbs_g_target}g</span>
-              <span className="text-rose-500 dark:text-rose-400 font-semibold">F {profile.fat_g_target}g</span>
+              <span className="text-blue-600 font-semibold">P {profile.protein_g_target}g</span>
+              <span className="text-amber-600 font-semibold">C {profile.carbs_g_target}g</span>
+              <span className="text-rose-500 font-semibold">F {profile.fat_g_target}g</span>
             </div>
           </>
         ) : (
           <div className="space-y-3">
             {/* Preset chips */}
             <div>
-              <p className="text-xs text-indigo-500 dark:text-indigo-400 font-semibold mb-2">Quick presets</p>
+              <p className="text-xs text-indigo-500 font-semibold mb-2">Quick presets</p>
               <div className="flex flex-wrap gap-2">
                 {[1200, 1500, 1800, 2000, 2200, 2500].map((kcal) => (
                   <button
@@ -262,7 +262,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
                     className={`rounded-xl px-3 py-1.5 text-sm font-bold border transition-all ${
                       quickKcal === String(kcal)
                         ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
-                        : 'bg-white dark:bg-slate-800 text-foreground border-indigo-200 dark:border-indigo-700 hover:border-indigo-400'
+                        : 'bg-white text-foreground border-indigo-200 hover:border-indigo-400'
                     }`}
                   >
                     {kcal.toLocaleString()}
@@ -273,7 +273,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
 
             {/* Custom input */}
             <div>
-              <p className="text-xs text-indigo-500 dark:text-indigo-400 font-semibold mb-1.5">Or type a custom value</p>
+              <p className="text-xs text-indigo-500 font-semibold mb-1.5">Or type a custom value</p>
               <div className="flex items-center gap-2">
                 <input
                   ref={kcalInputRef}
@@ -284,7 +284,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
                   step={50}
                   onChange={(e) => setQuickKcal(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && saveQuickKcal(Number(quickKcal))}
-                  className="w-32 rounded-2xl border border-indigo-200 dark:border-indigo-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-lg font-black text-foreground outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all"
+                  className="w-32 rounded-2xl border border-indigo-200 bg-white px-4 py-2.5 text-lg font-black text-foreground outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
                 />
                 <span className="text-sm text-muted font-medium">kcal / day</span>
               </div>
@@ -304,13 +304,13 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
               <button
                 type="button"
                 onClick={() => setEditingCalories(false)}
-                className="flex items-center gap-1.5 rounded-2xl border border-gray-200 dark:border-slate-700 px-4 py-2.5 text-sm font-semibold text-muted hover:bg-gray-50 dark:hover:bg-slate-800 transition-all"
+                className="flex items-center gap-1.5 rounded-2xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-muted hover:bg-gray-50 transition-all"
               >
                 <X className="h-4 w-4" />
                 Cancel
               </button>
             </div>
-            <p className="text-[11px] text-indigo-400 dark:text-indigo-500">
+            <p className="text-[11px] text-indigo-400">
               This overrides the auto-calculated target. Macros will keep their current values.
             </p>
           </div>
@@ -318,7 +318,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
       </div>
 
       {bmi !== null && (
-        <div className="flex items-center justify-between rounded-2xl border border-gray-100 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 px-4 py-3">
+        <div className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white/90 px-4 py-3">
           <span className="text-sm text-muted">BMI</span>
           <span className={`text-sm font-bold ${bmiColor}`}>{bmi} — {bmiLabel}</span>
         </div>
@@ -339,7 +339,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
                   setHeightFt(ft)
                   form.setValue('height_cm', ftInToCm(ft, heightIn), { shouldValidate: true })
                 }}
-                className="flex-1 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all"
+                className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
               >
                 {[3,4,5,6,7,8].map(ft => <option key={ft} value={ft}>{ft} ft</option>)}
               </select>
@@ -350,7 +350,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
                   setHeightIn(inches)
                   form.setValue('height_cm', ftInToCm(heightFt, inches), { shouldValidate: true })
                 }}
-                className="flex-1 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-bold text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition-all"
+                className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
               >
                 {[0,1,2,3,4,5,6,7,8,9,10,11].map(i => <option key={i} value={i}>{i} in</option>)}
               </select>
@@ -376,7 +376,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
           <Field label="Activity level" error={form.formState.errors.activity_level?.message}>
             <select
               {...form.register('activity_level')}
-              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 transition-all"
+              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 transition-all"
             >
               {Object.entries(ACTIVITY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
@@ -394,8 +394,8 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
                   onClick={() => form.setValue('goal', g.value, { shouldDirty: true })}
                   className={`rounded-xl border py-2.5 text-sm font-semibold transition-all ${
                     form.watch('goal') === g.value
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300'
-                      : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground hover:border-indigo-200'
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                      : 'border-gray-200 bg-white text-foreground hover:border-indigo-200'
                   }`}
                 >
                   {g.emoji} {g.label}
@@ -406,7 +406,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
           <Field label="Weekly loss goal" error={form.formState.errors.pace_kg_per_week?.message}>
             <select
               {...form.register('pace_kg_per_week', { valueAsNumber: true })}
-              className="w-full rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 transition-all"
+              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-foreground outline-none focus:border-indigo-400 transition-all"
             >
               <option value="0.25">0.25 kg/week — 275 kcal/day deficit</option>
               <option value="0.5">0.50 kg/week — 550 kcal/day deficit</option>
@@ -416,17 +416,17 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
           </Field>
 
           {/* Custom targets toggle */}
-          <div className="rounded-2xl border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 p-3">
+          <div className="rounded-2xl border border-gray-100 bg-gray-50 p-3">
             <button
               type="button"
               onClick={() => setUseCustomTargets((v) => !v)}
               className="flex w-full items-center justify-between"
             >
               <div className="flex items-center gap-2">
-                <Sliders className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                <Sliders className="h-4 w-4 text-indigo-600" />
                 <span className="text-sm font-semibold text-foreground">Custom calorie &amp; macro targets</span>
               </div>
-              <div className={`relative h-5 w-9 rounded-full transition-colors ${useCustomTargets ? 'bg-indigo-500' : 'bg-gray-300 dark:bg-slate-600'}`}>
+              <div className={`relative h-5 w-9 rounded-full transition-colors ${useCustomTargets ? 'bg-indigo-500' : 'bg-gray-300'}`}>
                 <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${useCustomTargets ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </div>
             </button>
@@ -463,7 +463,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
                   const diff = Math.abs(derivedKcal - targetKcal)
                   if (derivedKcal === 0) return null
                   return (
-                    <p className={`text-xs font-medium ${diff > 100 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                    <p className={`text-xs font-medium ${diff > 100 ? 'text-amber-600' : 'text-emerald-600'}`}>
                       {derivedKcal} kcal from macros
                       {diff > 100 ? ` — ${diff} kcal off from your calorie target` : ' ✓ matches calorie target'}
                     </p>
@@ -484,7 +484,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
         {subscription?.isPro ? (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-amber-100 dark:bg-amber-950/40 px-2 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-400">PRO</span>
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">PRO</span>
               <span className="text-sm text-muted">Unlimited logging, all features</span>
             </div>
             <Button variant="outline" className="w-full" onClick={manageSubscription} disabled={portalLoading}>
@@ -511,7 +511,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
           <button
             type="button"
             onClick={exportData}
-            className="flex w-full items-center justify-between rounded-2xl border border-gray-100 dark:border-slate-700 px-4 py-3 text-sm font-medium text-foreground hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+            className="flex w-full items-center justify-between rounded-2xl border border-gray-100 px-4 py-3 text-sm font-medium text-foreground hover:bg-gray-50 transition-colors"
           >
             <span className="flex items-center gap-2">
               <Download className="h-4 w-4 text-muted" />
@@ -523,7 +523,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
             type="button"
             onClick={signOut}
             disabled={signOutLoading}
-            className="flex w-full items-center justify-between rounded-2xl border border-gray-100 dark:border-slate-700 px-4 py-3 text-sm font-medium text-foreground hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+            className="flex w-full items-center justify-between rounded-2xl border border-gray-100 px-4 py-3 text-sm font-medium text-foreground hover:bg-gray-50 disabled:opacity-50 transition-colors"
           >
             <span className="flex items-center gap-2">
               <LogOut className="h-4 w-4 text-muted" />
@@ -535,13 +535,13 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
             type="button"
             onClick={deleteAccount}
             disabled={deleteLoading}
-            className="flex w-full items-center justify-between rounded-2xl border border-rose-100 dark:border-rose-900/30 px-4 py-3 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 disabled:opacity-50 transition-colors"
+            className="flex w-full items-center justify-between rounded-2xl border border-rose-100 px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-50 transition-colors"
           >
             <span className="flex items-center gap-2">
               <Trash2 className="h-4 w-4" />
               {deleteLoading ? 'Deleting...' : 'Delete account'}
             </span>
-            <ChevronRight className="h-4 w-4 text-rose-300 dark:text-rose-700" />
+            <ChevronRight className="h-4 w-4 text-rose-300" />
           </button>
         </div>
         <p className="mt-3 text-center text-xs text-muted">GetInShape v{version}</p>
@@ -587,10 +587,10 @@ function BmiRecommendation({
     currentBmi < 25   ? 'Healthy weight' :
     currentBmi < 30   ? 'Overweight' : 'Obese'
   const bmiColor =
-    currentBmi < 18.5 ? 'text-blue-600 dark:text-blue-400' :
-    currentBmi < 25   ? 'text-emerald-600 dark:text-emerald-400' :
-    currentBmi < 30   ? 'text-amber-600 dark:text-amber-400' :
-                        'text-rose-600 dark:text-rose-400'
+    currentBmi < 18.5 ? 'text-blue-600' :
+    currentBmi < 25   ? 'text-emerald-600' :
+    currentBmi < 30   ? 'text-amber-600' :
+                        'text-rose-600'
 
   const suggestions = [
     { bmi: 20, kg: +(20 * hM * hM).toFixed(1) },
@@ -601,7 +601,7 @@ function BmiRecommendation({
   const maxHealthy = +(24.9 * hM * hM).toFixed(1)
 
   return (
-    <div className="mt-2 rounded-2xl border border-indigo-100 dark:border-indigo-900/30 bg-indigo-50/50 dark:bg-indigo-950/10 p-3 space-y-2">
+    <div className="mt-2 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-3 space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted">Your current BMI</span>
         <span className={`text-xs font-bold ${bmiColor}`}>{currentBmi} · {bmiLabel}</span>
@@ -617,9 +617,9 @@ function BmiRecommendation({
               key={s.bmi}
               type="button"
               onClick={() => onSelect(s.kg)}
-              className="flex-1 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-800 py-1.5 text-center hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 active:scale-95 transition-all"
+              className="flex-1 rounded-xl border border-indigo-200 bg-white py-1.5 text-center hover:border-indigo-400 hover:bg-indigo-50 active:scale-95 transition-all"
             >
-              <p className="text-xs font-black text-indigo-700 dark:text-indigo-400">{s.kg} kg</p>
+              <p className="text-xs font-black text-indigo-700">{s.kg} kg</p>
               <p className="text-[10px] text-muted">BMI {s.bmi}</p>
             </button>
           ))}

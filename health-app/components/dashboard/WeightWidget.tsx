@@ -71,7 +71,7 @@ export function WeightWidget({ currentWeightKg, onLogged }: Props) {
               onChange={(e) => setVal(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               placeholder="e.g. 72.5"
-              className="flex-1 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-3 py-2 text-sm text-foreground outline-none focus:border-indigo-400 transition-all"
+              className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-foreground outline-none focus:border-indigo-400 transition-all"
               autoFocus
             />
             <span className="text-xs text-muted font-medium">kg</span>
@@ -90,14 +90,14 @@ export function WeightWidget({ currentWeightKg, onLogged }: Props) {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="rounded-xl px-2 py-2 text-muted hover:text-foreground hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+              className="rounded-xl px-2 py-2 text-muted hover:text-foreground hover:bg-gray-100 transition-colors"
             >
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
           <Link
             href="/weight"
-            className="block text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+            className="block text-[11px] font-semibold text-indigo-600 hover:underline"
           >
             View full weight history →
           </Link>
