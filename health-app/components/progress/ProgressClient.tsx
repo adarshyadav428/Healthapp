@@ -9,7 +9,7 @@ import { Scale, ChevronRight } from 'lucide-react'
 import { StreakCalendar } from './StreakCalendar'
 
 // All three of these render recharts SVG charts — defer to keep initial /progress chunk small.
-const SkeletonChart     = () => <div className="h-40 rounded-2xl bg-card border border-border animate-pulse" />
+const SkeletonChart     = () => <div className="h-40 rounded-card bg-surface border border-hairline animate-pulse" />
 const WeightTrendCard   = dynamic(() => import('../dashboard/WeightTrendCard').then(m => m.WeightTrendCard),   { ssr: false, loading: SkeletonChart })
 type Props = {
   streak:      number
@@ -32,16 +32,16 @@ export function ProgressClient({ streak, weightLogs, weekLogs, kcalTarget, profi
 
       {/* ── Goal snapshot ── */}
       {current !== null && target !== null && (
-        <div className="rounded-2xl bg-card border border-border p-4">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-3">Goal</p>
+        <div className="rounded-card bg-surface border border-hairline p-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-ink-2 mb-3">Goal</p>
           <div className="flex items-center justify-between">
             <div className="text-center">
-              <p className="text-2xl font-black tabular-nums">{current}</p>
-              <p className="text-[10px] text-muted mt-0.5">Current kg</p>
+              <p className="font-display text-2xl font-bold tabular-nums text-ink">{current}</p>
+              <p className="text-[10px] text-ink-2 mt-0.5">Current kg</p>
             </div>
             <div className="flex-1 mx-4 text-center">
-              <p className="text-sm font-bold text-indigo-600">{toGo} kg to go</p>
-              <div className="mt-2 h-2 rounded-full bg-slate-100 overflow-hidden">
+              <p className="text-sm font-bold text-brand-ink tabular-nums">{toGo} kg to go</p>
+              <div className="mt-2 h-2 rounded-full bg-surface-2 overflow-hidden">
                 {(() => {
                   const start  = weightLogs[weightLogs.length - 1]?.weight_kg ?? current
                   const totalNeeded = Math.abs(start - target)
@@ -49,7 +49,7 @@ export function ProgressClient({ streak, weightLogs, weekLogs, kcalTarget, profi
                   const pct         = totalNeeded > 0 ? Math.min((done / totalNeeded) * 100, 100) : 0
                   return (
                     <div
-                      className="h-full rounded-full bg-indigo-500 transition-all duration-700"
+                      className="h-full rounded-full bg-brand transition-all duration-700"
                       style={{ width: `${pct}%` }}
                     />
                   )
@@ -59,22 +59,22 @@ export function ProgressClient({ streak, weightLogs, weekLogs, kcalTarget, profi
               {(() => {
                 const pace = profile.pace_kg_per_week ?? 0.5
                 const remaining = Math.abs(current - target)
-                if (remaining < 0.1) return <p className="text-xs text-emerald-600 font-bold mt-1.5">🎉 Goal reached!</p>
+                if (remaining < 0.1) return <p className="text-xs text-good font-bold mt-1.5">🎉 Goal reached!</p>
                 if (pace <= 0) return null
                 const daysLeft = Math.round((remaining / pace) * 7)
                 const goalDate = new Date()
                 goalDate.setDate(goalDate.getDate() + daysLeft)
                 const formatted = goalDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                 return (
-                  <p className="text-[10px] text-muted mt-1.5">
-                    At current pace · <span className="font-semibold text-foreground">{formatted}</span>
+                  <p className="text-[10px] text-ink-2 mt-1.5">
+                    At current pace · <span className="font-semibold text-ink">{formatted}</span>
                   </p>
                 )
               })()}
             </div>
             <div className="text-center">
-              <p className="text-2xl font-black tabular-nums">{target}</p>
-              <p className="text-[10px] text-muted mt-0.5">Target kg</p>
+              <p className="font-display text-2xl font-bold tabular-nums text-ink">{target}</p>
+              <p className="text-[10px] text-ink-2 mt-0.5">Target kg</p>
             </div>
           </div>
         </div>
@@ -92,10 +92,10 @@ export function ProgressClient({ streak, weightLogs, weekLogs, kcalTarget, profi
       {/* ── Weight trend ── */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted">Weight</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-ink-2">Weight</p>
           <Link
             href="/weight"
-            className="flex items-center gap-1 text-[11px] font-semibold text-indigo-600"
+            className="flex items-center gap-1 text-[11px] font-semibold text-brand-ink"
           >
             Log weight <ChevronRight className="h-3 w-3" />
           </Link>
@@ -105,24 +105,24 @@ export function ProgressClient({ streak, weightLogs, weekLogs, kcalTarget, profi
         ) : (
           <Link
             href="/weight"
-            className="flex items-center justify-between rounded-2xl bg-card border border-dashed border-border px-4 py-4"
+            className="flex items-center justify-between rounded-card bg-surface border border-dashed border-hairline px-4 py-4"
           >
             <div className="flex items-center gap-3">
-              <Scale className="h-5 w-5 text-muted" />
+              <Scale className="h-5 w-5 text-ink-2" />
               <div>
-                <p className="text-sm font-semibold text-foreground">Track your weight</p>
-                <p className="text-xs text-muted">See your trend over time</p>
+                <p className="text-sm font-semibold text-ink">Track your weight</p>
+                <p className="text-xs text-ink-2">See your trend over time</p>
               </div>
             </div>
-            <ChevronRight className="h-4 w-4 text-muted" />
+            <ChevronRight className="h-4 w-4 text-ink-2" />
           </Link>
         )}
       </div>
 
 
       {/* ── Macro targets (reference) ── */}
-      <div className="rounded-2xl bg-card border border-border p-4">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-3">Daily Targets</p>
+      <div className="rounded-card bg-surface border border-hairline p-4">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-ink-2 mb-3">Daily Targets</p>
         <div className="grid grid-cols-2 gap-3">
           <TargetStat label="Calories" value={`${(kcalTarget ?? 0).toLocaleString()} kcal`} />
           <TargetStat label="Protein"  value={`${profile.protein_g_target ?? 0}g`} />
@@ -131,7 +131,7 @@ export function ProgressClient({ streak, weightLogs, weekLogs, kcalTarget, profi
         </div>
         <Link
           href="/settings"
-          className="mt-3 flex items-center justify-center gap-1 text-xs font-semibold text-indigo-600"
+          className="mt-3 flex items-center justify-center gap-1 text-xs font-semibold text-brand-ink"
         >
           Edit targets <ChevronRight className="h-3 w-3" />
         </Link>
@@ -143,9 +143,9 @@ export function ProgressClient({ streak, weightLogs, weekLogs, kcalTarget, profi
 
 function TargetStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-slate-50 px-3 py-2.5">
-      <p className="text-[10px] text-muted font-medium">{label}</p>
-      <p className="text-base font-black tabular-nums mt-0.5">{value}</p>
+    <div className="rounded-control bg-surface-2 px-3 py-2.5">
+      <p className="text-[10px] text-ink-2 font-medium">{label}</p>
+      <p className="text-base font-bold tabular-nums mt-0.5 text-ink">{value}</p>
     </div>
   )
 }

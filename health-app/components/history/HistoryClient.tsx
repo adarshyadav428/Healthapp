@@ -12,7 +12,7 @@ import Link from 'next/link'
 // Defer recharts — saves ~95KB on initial /history load.
 const HistoryBarChart = dynamic(() => import('./HistoryBarChart').then(m => m.HistoryBarChart), {
   ssr: false,
-  loading: () => <div className="h-[180px] rounded-2xl bg-card border border-border animate-pulse" />,
+  loading: () => <div className="h-[180px] rounded-card bg-surface border border-hairline animate-pulse" />,
 })
 
 type LogRow = {
@@ -119,10 +119,10 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
   }, [logs])
 
   const metricConfig = {
-    kcal: { color: '#ea580c', label: 'Calories', unit: 'kcal' },
-    protein: { color: '#3b82f6', label: 'Protein', unit: 'g' },
-    carbs: { color: '#f59e0b', label: 'Carbs', unit: 'g' },
-    fat: { color: '#ef4444', label: 'Fat', unit: 'g' },
+    kcal: { color: '#F2A23A', label: 'Calories', unit: 'kcal' },
+    protein: { color: '#3566C4', label: 'Protein', unit: 'g' },
+    carbs: { color: '#C98A1B', label: 'Carbs', unit: 'g' },
+    fat: { color: '#C7554B', label: 'Fat', unit: 'g' },
   }
 
   const cfg = metricConfig[metric]
@@ -131,17 +131,17 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
     <div className="space-y-4">
       {/* Free-tier upgrade banner */}
       {!isPro && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3.5 flex items-center justify-between gap-3">
+        <div className="rounded-card border border-hairline bg-energy-soft p-3.5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <Lock className="h-4 w-4 text-amber-600 shrink-0" />
+            <Lock className="h-4 w-4 text-energy-ink shrink-0" />
             <div className="min-w-0">
-              <p className="text-xs font-bold text-amber-900">Showing last 7 days</p>
-              <p className="text-[11px] text-amber-700">Pro unlocks full history</p>
+              <p className="text-xs font-bold text-energy-ink">Showing last 7 days</p>
+              <p className="text-[11px] text-energy-ink opacity-80">Pro unlocks full history</p>
             </div>
           </div>
           <Link
             href="/upgrade?reason=history"
-            className="shrink-0 flex items-center gap-1 rounded-full bg-orange-500 hover:bg-orange-600 px-3 py-1.5 text-xs font-bold text-white transition-colors"
+            className="shrink-0 flex items-center gap-1 rounded-full bg-brand hover:opacity-90 px-3 py-1.5 text-xs font-bold text-white transition-opacity"
           >
             <Crown className="h-3 w-3" />
             Upgrade
@@ -155,42 +155,39 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
           value={avgKcal > 0 ? `${avgKcal.toLocaleString()}` : '--'}
           unit="kcal"
           sub={target > 0 && avgKcal > 0 ? `Goal: ${target.toLocaleString()}` : undefined}
-          color="text-orange-600"
-          bg="bg-orange-50 border-orange-100"
+          color="text-energy-ink"
+          bg="bg-energy-soft border-hairline"
         />
         <StatCard
           label="Days logged"
           value={String(loggedDays.length)}
           unit={`of ${range}`}
           sub={streakCount > 0 ? `🔥 ${streakCount} day streak` : undefined}
-          color="text-emerald-600"
-          bg="bg-emerald-50 border-emerald-100"
+          color="text-good"
+          bg="bg-brand-soft border-hairline"
         />
       </div>
       {avgDeficit !== null && (
-        <div className={`rounded-2xl border px-4 py-3 flex items-center justify-between ${
-          avgDeficit > 0
-            ? 'border-emerald-100 bg-emerald-50'
-            : 'border-rose-100 bg-rose-50'
-        }`}>
+        <div className="rounded-card border border-hairline px-4 py-3 flex items-center justify-between"
+          style={{ background: avgDeficit > 0 ? 'rgba(46,125,79,0.08)' : 'var(--bad-soft)' }}>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Avg daily {avgDeficit >= 0 ? 'deficit' : 'surplus'}</p>
-            <p className={`text-xl font-black mt-0.5 ${avgDeficit >= 0 ? 'text-emerald-700' : 'text-rose-600'}`}>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-2">Avg daily {avgDeficit >= 0 ? 'deficit' : 'surplus'}</p>
+            <p className="text-xl font-bold mt-0.5 tabular-nums" style={{ color: avgDeficit >= 0 ? 'var(--good)' : 'var(--bad)' }}>
               {avgDeficit >= 0 ? '-' : '+'}{Math.abs(avgDeficit).toLocaleString()} kcal
             </p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] text-muted">Est. weight {avgDeficit >= 0 ? 'loss' : 'gain'}</p>
-            <p className={`text-sm font-bold ${avgDeficit >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+            <p className="text-[10px] text-ink-2">Est. weight {avgDeficit >= 0 ? 'loss' : 'gain'}</p>
+            <p className="text-sm font-bold tabular-nums" style={{ color: avgDeficit >= 0 ? 'var(--good)' : 'var(--bad)' }}>
               {Math.abs(avgDeficit * loggedDays.length / 7700).toFixed(2)} kg / {range} days
             </p>
           </div>
         </div>
       )}
       <div className="grid grid-cols-3 gap-2">
-        <MacroCard label="Avg protein" value={avgProtein} unit="g" color="text-blue-600" />
-        <MacroCard label="Avg carbs" value={avgCarbs} unit="g" color="text-amber-600" />
-        <MacroCard label="Avg fat" value={avgFat} unit="g" color="text-rose-600" />
+        <MacroCard label="Avg protein" value={avgProtein} unit="g" color="var(--protein)" />
+        <MacroCard label="Avg carbs" value={avgCarbs} unit="g" color="var(--carbs)" />
+        <MacroCard label="Avg fat" value={avgFat} unit="g" color="var(--fat)" />
       </div>
 
       {/* Exercise summary */}
@@ -199,18 +196,18 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
       )}
 
       {/* Chart card */}
-      <div className="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm">
+      <div className="rounded-sheet border border-hairline bg-surface p-4 shadow-rest">
         {/* Range tabs */}
         <div className="flex items-center justify-between mb-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">{cfg.label} trend</p>
-          <div className="flex gap-1 rounded-xl bg-gray-100 p-0.5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-2">{cfg.label} trend</p>
+          <div className="flex gap-1 rounded-control bg-surface-2 p-0.5">
             {RANGES.map((r) => {
               const locked = !isPro && r.days > 7
               return locked ? (
                 <Link
                   key={r.days}
                   href="/upgrade?reason=history"
-                  className="rounded-lg px-2.5 py-1 text-xs font-semibold text-muted flex items-center gap-1 opacity-60 hover:opacity-80 transition-opacity"
+                  className="rounded-[0.625rem] px-2.5 py-1 text-xs font-semibold text-ink-2 flex items-center gap-1 opacity-60 hover:opacity-80 transition-opacity"
                 >
                   <Lock className="h-3 w-3" />
                   {r.label}
@@ -220,8 +217,8 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
                   key={r.days}
                   type="button"
                   onClick={() => setRange(r.days)}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
-                    range === r.days ? 'bg-white text-gray-900 shadow-sm' : 'text-muted'
+                  className={`rounded-[0.625rem] px-2.5 py-1 text-xs font-semibold transition-all ${
+                    range === r.days ? 'bg-surface text-ink shadow-rest' : 'text-ink-2'
                   }`}
                 >
                   {r.label}
@@ -238,10 +235,10 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
               key={m}
               type="button"
               onClick={() => setMetric(m)}
-              className={`rounded-xl px-3 py-1 text-xs font-semibold transition-all ${
+              className={`rounded-control px-3 py-1 text-xs font-semibold transition-all ${
                 metric === m
-                  ? 'text-white shadow-sm'
-                  : 'bg-gray-100 text-muted hover:bg-gray-200'
+                  ? 'text-white shadow-rest'
+                  : 'bg-surface-2 text-ink-2 hover:bg-hairline/40'
               }`}
               style={metric === m ? { backgroundColor: metricConfig[m].color } : {}}
             >
@@ -262,27 +259,27 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
           onSelect={setSelectedDate}
         />
 
-        <p className="mt-2 text-[10px] text-muted text-center">
+        <p className="mt-2 text-[10px] text-ink-2 text-center">
           Tap a bar to view that day&apos;s food diary
         </p>
       </div>
 
       {/* Day diary panel */}
       {selectedDate && user && (
-        <div className="rounded-3xl border border-purple-100 bg-white/90 p-4 shadow-sm">
+        <div className="rounded-sheet border border-hairline bg-surface p-4 shadow-rest">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-purple-500" />
-              <p className="text-sm font-bold text-foreground">
+              <CalendarDays className="h-4 w-4 text-brand" />
+              <p className="text-sm font-bold text-ink">
                 {format(parse(selectedDate, 'yyyy-MM-dd', new Date()), 'EEEE, MMM d')}
               </p>
             </div>
             <button
               type="button"
               onClick={() => setSelectedDate(null)}
-              className="rounded-full p-1 hover:bg-gray-100 transition-colors"
+              className="rounded-full p-1 hover:bg-surface-2 transition-colors"
             >
-              <X className="h-4 w-4 text-muted" />
+              <X className="h-4 w-4 text-ink-2" />
             </button>
           </div>
           <DayDiary
@@ -294,28 +291,28 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
 
       {/* Weekly breakdown */}
       {loggedDays.length > 0 && (
-        <div className="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-3">Calorie breakdown by day</p>
+        <div className="rounded-sheet border border-hairline bg-surface p-4 shadow-rest">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-2 mb-3">Calorie breakdown by day</p>
           <div className="space-y-2">
             {[...chartData].reverse().slice(0, 7).map((day) => {
               const pct = target > 0 ? Math.min((day.kcal / target) * 100, 100) : 0
-              const color = day.kcal === 0 ? 'bg-gray-200' : day.kcal > target * 1.1 ? 'bg-rose-400' : day.kcal >= target * 0.9 ? 'bg-emerald-400' : 'bg-orange-400'
+              const barColor = day.kcal === 0 ? 'var(--hairline)' : day.kcal > target * 1.1 ? 'var(--bad)' : day.kcal >= target * 0.9 ? 'var(--good)' : 'var(--energy)'
               const isSelected = selectedDate === day.date
             return (
                 <button
                   key={day.date}
                   type="button"
                   onClick={() => setSelectedDate(isSelected ? null : day.date)}
-                  className={`flex items-center gap-3 w-full rounded-xl px-2 py-1 -mx-2 transition-colors ${isSelected ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
+                  className={`flex items-center gap-3 w-full rounded-control px-2 py-1 -mx-2 transition-colors ${isSelected ? 'bg-brand-soft' : 'hover:bg-surface-2'}`}
                 >
-                  <span className={`w-14 text-xs font-medium shrink-0 ${isSelected ? 'text-purple-700 font-bold' : 'text-muted'}`}>{day.label}</span>
-                  <div className="flex-1 h-5 rounded-full bg-gray-100 overflow-hidden">
+                  <span className={`w-14 text-xs font-medium shrink-0 ${isSelected ? 'text-brand-ink font-bold' : 'text-ink-2'}`}>{day.label}</span>
+                  <div className="flex-1 h-5 rounded-full bg-surface-2 overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all ${isSelected ? 'bg-purple-400' : color}`}
-                      style={{ width: day.kcal === 0 ? '0%' : `${pct}%` }}
+                      className="h-full rounded-full transition-all"
+                      style={{ width: day.kcal === 0 ? '0%' : `${pct}%`, background: isSelected ? 'var(--brand)' : barColor }}
                     />
                   </div>
-                  <span className={`w-16 text-xs font-bold text-right shrink-0 ${isSelected ? 'text-purple-700' : 'text-foreground'}`}>
+                  <span className={`w-16 text-xs font-bold text-right shrink-0 tabular-nums ${isSelected ? 'text-brand-ink' : 'text-ink'}`}>
                     {day.kcal > 0 ? `${day.kcal.toLocaleString()} kcal` : '—'}
                   </span>
                 </button>
@@ -323,10 +320,10 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
             })}
           </div>
           {target > 0 && (
-            <div className="mt-3 flex items-center gap-3 text-[10px] text-muted">
-              <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-400 inline-block" /> On target</div>
-              <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-orange-400 inline-block" /> Under target</div>
-              <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-400 inline-block" /> Over target</div>
+            <div className="mt-3 flex items-center gap-3 text-[10px] text-ink-2">
+              <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-good inline-block" /> On target</div>
+              <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-energy inline-block" /> Under target</div>
+              <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-danger inline-block" /> Over target</div>
             </div>
           )}
         </div>
@@ -354,26 +351,26 @@ function ExerciseSection({ exerciseLogs, range }: { exerciseLogs: ExerciseRow[];
   const displayed = showAll ? filtered : filtered.slice(0, 3)
 
   return (
-    <div className="rounded-3xl border border-gray-100 bg-white/90 p-4 shadow-sm">
+    <div className="rounded-sheet border border-hairline bg-surface p-4 shadow-rest">
       <div className="flex items-center gap-2 mb-3">
-        <Dumbbell className="h-4 w-4 text-violet-500" />
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">Exercise</p>
+        <Dumbbell className="h-4 w-4 text-brand" />
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-2">Exercise</p>
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-2 mb-4">
-        <div className="rounded-2xl bg-violet-50 border border-violet-100 p-2.5 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Sessions</p>
-          <p className="text-lg font-black text-violet-600 mt-0.5">{totalSessions}</p>
+        <div className="rounded-card bg-brand-soft border border-hairline p-2.5 text-center">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-2">Sessions</p>
+          <p className="text-lg font-bold text-brand-ink mt-0.5 tabular-nums">{totalSessions}</p>
         </div>
-        <div className="rounded-2xl bg-rose-50 border border-rose-100 p-2.5 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Burned</p>
-          <p className="text-lg font-black text-rose-600 mt-0.5">{totalCalories.toLocaleString()}</p>
-          <p className="text-[10px] text-muted">kcal</p>
+        <div className="rounded-card border border-hairline p-2.5 text-center" style={{ background: 'var(--bad-soft)' }}>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-2">Burned</p>
+          <p className="text-lg font-bold mt-0.5 tabular-nums" style={{ color: 'var(--fat)' }}>{totalCalories.toLocaleString()}</p>
+          <p className="text-[10px] text-ink-2">kcal</p>
         </div>
-        <div className="rounded-2xl bg-sky-50 border border-sky-100 p-2.5 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Time</p>
-          <p className="text-lg font-black text-sky-600 mt-0.5">
+        <div className="rounded-card border border-hairline p-2.5 text-center" style={{ background: 'rgba(53,102,196,0.08)' }}>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-2">Time</p>
+          <p className="text-lg font-bold mt-0.5 tabular-nums" style={{ color: 'var(--protein)' }}>
             {totalMinutes >= 60 ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m` : `${totalMinutes}m`}
           </p>
         </div>
@@ -382,15 +379,15 @@ function ExerciseSection({ exerciseLogs, range }: { exerciseLogs: ExerciseRow[];
       {/* Session list */}
       <div className="space-y-1.5">
         {displayed.map((e, i) => (
-          <div key={i} className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2">
+          <div key={i} className="flex items-center justify-between rounded-control bg-surface-2 px-3 py-2">
             <div className="flex items-center gap-2 min-w-0">
-              <Flame className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+              <Flame className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--fat)' }} />
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-foreground capitalize truncate">{e.activity}</p>
-                <p className="text-[10px] text-muted">{format(parseISO(e.logged_at), 'MMM d')} · {e.duration_min} min</p>
+                <p className="text-xs font-semibold text-ink capitalize truncate">{e.activity}</p>
+                <p className="text-[10px] text-ink-2">{format(parseISO(e.logged_at), 'MMM d')} · {e.duration_min} min</p>
               </div>
             </div>
-            <span className="text-xs font-bold text-orange-600 shrink-0 ml-2">
+            <span className="text-xs font-bold shrink-0 ml-2 tabular-nums" style={{ color: 'var(--fat)' }}>
               {e.calories > 0 ? `${e.calories} kcal` : '—'}
             </span>
           </div>
@@ -401,7 +398,7 @@ function ExerciseSection({ exerciseLogs, range }: { exerciseLogs: ExerciseRow[];
         <button
           type="button"
           onClick={() => setShowAll((v) => !v)}
-          className="mt-2 w-full text-[11px] font-semibold text-muted hover:text-foreground transition-colors"
+          className="mt-2 w-full text-[11px] font-semibold text-ink-2 hover:text-ink transition-colors"
         >
           {showAll ? 'Show less' : `Show all ${filtered.length} sessions`}
         </button>
@@ -416,23 +413,23 @@ function StatCard({
   label: string; value: string; unit?: string; sub?: string; color: string; bg: string
 }) {
   return (
-    <div className={`rounded-2xl border p-3.5 ${bg}`}>
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">{label}</p>
+    <div className={`rounded-card border p-3.5 ${bg}`}>
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-2">{label}</p>
       <div className="flex items-baseline gap-1 mt-1">
-        <span className={`text-2xl font-black ${color}`}>{value}</span>
-        {unit && <span className="text-xs text-muted">{unit}</span>}
+        <span className={`text-2xl font-bold tabular-nums ${color}`}>{value}</span>
+        {unit && <span className="text-xs text-ink-2">{unit}</span>}
       </div>
-      {sub && <p className="text-[11px] text-muted mt-0.5">{sub}</p>}
+      {sub && <p className="text-[11px] text-ink-2 mt-0.5">{sub}</p>}
     </div>
   )
 }
 
 function MacroCard({ label, value, unit, color }: { label: string; value: number; unit: string; color: string }) {
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white/90 p-3 text-center shadow-sm">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">{label}</p>
-      <p className={`text-lg font-black mt-0.5 ${color}`}>{value > 0 ? value : '--'}</p>
-      <p className="text-[10px] text-muted">{unit}</p>
+    <div className="rounded-card border border-hairline bg-surface p-3 text-center shadow-rest">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-2">{label}</p>
+      <p className="text-lg font-bold mt-0.5 tabular-nums" style={{ color }}>{value > 0 ? value : '--'}</p>
+      <p className="text-[10px] text-ink-2">{unit}</p>
     </div>
   )
 }

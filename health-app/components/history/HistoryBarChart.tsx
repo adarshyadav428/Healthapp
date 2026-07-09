@@ -30,7 +30,7 @@ export function HistoryBarChart({
         <BarChart data={chartData} barSize={range <= 7 ? 28 : range <= 14 ? 16 : 8}>
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 10, fill: '#9ca3af' }}
+            tick={{ fontSize: 10, fill: '#9AA0A5' }}
             axisLine={false}
             tickLine={false}
           />
@@ -45,13 +45,13 @@ export function HistoryBarChart({
             />
           )}
           <Tooltip
-            cursor={{ fill: 'rgba(0,0,0,0.04)', radius: 6 }}
+            cursor={{ fill: 'rgba(22,25,28,0.04)', radius: 6 }}
             content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null
               const val = payload[0]?.value as number
               return (
-                <div className="rounded-xl border border-gray-100 bg-white px-3 py-2 shadow-md text-xs">
-                  <p className="font-semibold text-muted mb-0.5">{label}</p>
+                <div className="rounded-control border border-hairline bg-surface px-3 py-2 shadow-float text-xs">
+                  <p className="font-semibold text-ink-2 mb-0.5">{label}</p>
                   <p style={{ color }} className="font-bold">
                     {val > 0 ? `${val.toLocaleString()} ${unit}` : 'Not logged'}
                   </p>
@@ -68,7 +68,7 @@ export function HistoryBarChart({
             {chartData.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={entry.date === selectedDate ? '#9333ea' : entry.kcal === 0 ? 'rgba(100,116,139,0.2)' : color}
+                fill={entry.date === selectedDate ? '#10514B' : entry.kcal === 0 ? 'rgba(22,25,28,0.12)' : color}
                 opacity={entry.kcal === 0 ? 1 : entry.date === selectedDate ? 1 : 0.85}
               />
             ))}

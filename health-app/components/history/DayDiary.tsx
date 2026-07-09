@@ -10,10 +10,10 @@ import { toast } from '../ui/use-toast'
 import { EditFoodLogModal } from '../log/EditFoodLogModal'
 
 const MEAL_CONFIG = {
-  breakfast: { emoji: '🥣', label: 'Breakfast', color: 'text-amber-700' },
-  lunch: { emoji: '🍛', label: 'Lunch', color: 'text-emerald-700' },
-  dinner: { emoji: '🍲', label: 'Dinner', color: 'text-rose-700' },
-  snack: { emoji: '🥜', label: 'Snack', color: 'text-amber-600' },
+  breakfast: { emoji: '🥣', label: 'Breakfast', color: 'text-energy-ink' },
+  lunch: { emoji: '🍛', label: 'Lunch', color: 'text-good' },
+  dinner: { emoji: '🍲', label: 'Dinner', color: 'text-brand-ink' },
+  snack: { emoji: '🥜', label: 'Snack', color: 'text-energy-ink' },
 }
 
 function useDayLogs(userId: string | null, date: Date) {
@@ -89,7 +89,7 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
   if (isLoading) {
     return (
       <div className="flex justify-center py-6">
-        <Loader2 className="h-5 w-5 animate-spin text-orange-400" />
+        <Loader2 className="h-5 w-5 animate-spin text-brand" />
       </div>
     )
   }
@@ -98,7 +98,7 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
     return (
       <div className="py-6 text-center">
         <p className="text-2xl mb-1">🍽️</p>
-        <p className="text-sm text-muted">Nothing logged on this day.</p>
+        <p className="text-sm text-ink-2">Nothing logged on this day.</p>
       </div>
     )
   }
@@ -117,21 +117,21 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
     <div className="space-y-3">
       {/* Day total */}
       <div className="flex gap-2 flex-wrap">
-        <div className="rounded-xl bg-orange-50 border border-orange-100 px-3 py-1.5 text-center">
-          <p className="text-sm font-black text-orange-700">{Math.round(totalKcal)}</p>
-          <p className="text-[10px] text-orange-500">kcal</p>
+        <div className="rounded-control bg-energy-soft border border-hairline px-3 py-1.5 text-center">
+          <p className="text-sm font-bold text-energy-ink tabular-nums">{Math.round(totalKcal)}</p>
+          <p className="text-[10px] text-energy-ink opacity-80">kcal</p>
         </div>
-        <div className="rounded-xl bg-blue-50 border border-blue-100 px-3 py-1.5 text-center">
-          <p className="text-sm font-black text-blue-700">{Math.round(totalP)}g</p>
-          <p className="text-[10px] text-blue-500">protein</p>
+        <div className="rounded-control border border-hairline px-3 py-1.5 text-center" style={{ background: 'rgba(53,102,196,0.08)' }}>
+          <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--protein)' }}>{Math.round(totalP)}g</p>
+          <p className="text-[10px] opacity-80" style={{ color: 'var(--protein)' }}>protein</p>
         </div>
-        <div className="rounded-xl bg-amber-50 border border-amber-100 px-3 py-1.5 text-center">
-          <p className="text-sm font-black text-amber-700">{Math.round(totalC)}g</p>
-          <p className="text-[10px] text-amber-500">carbs</p>
+        <div className="rounded-control border border-hairline px-3 py-1.5 text-center" style={{ background: 'rgba(201,138,27,0.1)' }}>
+          <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--carbs)' }}>{Math.round(totalC)}g</p>
+          <p className="text-[10px] opacity-80" style={{ color: 'var(--carbs)' }}>carbs</p>
         </div>
-        <div className="rounded-xl bg-rose-50 border border-rose-100 px-3 py-1.5 text-center">
-          <p className="text-sm font-black text-rose-700">{Math.round(totalF)}g</p>
-          <p className="text-[10px] text-rose-500">fat</p>
+        <div className="rounded-control border border-hairline px-3 py-1.5 text-center" style={{ background: 'var(--bad-soft)' }}>
+          <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--fat)' }}>{Math.round(totalF)}g</p>
+          <p className="text-[10px] opacity-80" style={{ color: 'var(--fat)' }}>fat</p>
         </div>
       </div>
 
@@ -148,21 +148,21 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
                   <span>{cfg.emoji}</span>
                   <span className={`text-xs font-bold ${cfg.color}`}>{cfg.label}</span>
                 </div>
-                <span className="text-[11px] text-muted font-medium">{Math.round(mealKcal)} kcal</span>
+                <span className="text-[11px] text-ink-2 font-medium tabular-nums">{Math.round(mealKcal)} kcal</span>
               </div>
               <div className="space-y-1.5">
                 {items.map((log) => (
-                  <div key={log.id} className="flex items-center justify-between rounded-xl bg-gray-50 border border-gray-100 px-3 py-2">
+                  <div key={log.id} className="flex items-center justify-between rounded-control bg-surface-2 border border-hairline px-3 py-2">
                     <div className="min-w-0 flex-1 mr-2">
-                      <p className="text-xs font-semibold text-foreground truncate">{log.food?.name ?? 'Food item'}</p>
-                      <p className="text-[10px] text-muted">{Math.round(log.grams)}g · {Math.round(log.protein_g)}P {Math.round(log.carbs_g)}C {Math.round(log.fat_g)}F</p>
+                      <p className="text-xs font-semibold text-ink truncate">{log.food?.name ?? 'Food item'}</p>
+                      <p className="text-[10px] text-ink-2 tabular-nums">{Math.round(log.grams)}g · {Math.round(log.protein_g)}P {Math.round(log.carbs_g)}C {Math.round(log.fat_g)}F</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <span className="text-xs font-bold text-foreground mr-1">{Math.round(log.kcal)} kcal</span>
+                      <span className="text-xs font-bold text-ink mr-1 tabular-nums">{Math.round(log.kcal)} kcal</span>
                       <button
                         type="button"
                         onClick={() => setEditingLog(log)}
-                        className="rounded-full p-1 text-muted hover:text-orange-500 hover:bg-orange-50 transition-colors"
+                        className="rounded-full p-1 text-ink-2 hover:text-brand hover:bg-brand-soft transition-colors"
                         aria-label="Edit"
                       >
                         <Pencil className="h-3.5 w-3.5" />
@@ -171,7 +171,7 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
                         type="button"
                         onClick={() => deleteLog(log.id)}
                         disabled={deletingId === log.id}
-                        className="rounded-full p-1 text-muted hover:text-rose-500 hover:bg-rose-50 disabled:opacity-40 transition-colors"
+                        className="rounded-full p-1 text-ink-2 hover:text-danger hover:bg-danger-soft disabled:opacity-40 transition-colors"
                         aria-label="Delete"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -196,23 +196,23 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
       {exerciseLogs.length > 0 && (
         <div>
           <div className="flex items-center gap-1.5 mb-1.5">
-            <Dumbbell className="h-3.5 w-3.5 text-violet-600" />
-            <span className="text-xs font-bold text-violet-700">Exercise</span>
-            <span className="text-[11px] text-muted font-medium ml-auto">
+            <Dumbbell className="h-3.5 w-3.5 text-brand" />
+            <span className="text-xs font-bold text-brand-ink">Exercise</span>
+            <span className="text-[11px] text-ink-2 font-medium ml-auto tabular-nums">
               −{exerciseLogs.reduce((s, e) => s + e.calories, 0)} kcal burned
             </span>
           </div>
           <div className="space-y-1.5">
             {exerciseLogs.map((log) => (
-              <div key={log.id} className="flex items-center justify-between rounded-xl bg-violet-50 border border-violet-100 px-3 py-2">
+              <div key={log.id} className="flex items-center justify-between rounded-control bg-brand-soft border border-hairline px-3 py-2">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <Flame className="h-3 w-3 text-orange-500 shrink-0" />
+                  <Flame className="h-3 w-3 shrink-0" style={{ color: 'var(--fat)' }} />
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-foreground capitalize truncate">{log.activity}</p>
-                    <p className="text-[10px] text-muted">{log.duration_min} min</p>
+                    <p className="text-xs font-semibold text-ink capitalize truncate">{log.activity}</p>
+                    <p className="text-[10px] text-ink-2">{log.duration_min} min</p>
                   </div>
                 </div>
-                <span className="text-xs font-bold text-violet-700 shrink-0">{log.calories} kcal</span>
+                <span className="text-xs font-bold text-brand-ink shrink-0 tabular-nums">{log.calories} kcal</span>
               </div>
             ))}
           </div>
