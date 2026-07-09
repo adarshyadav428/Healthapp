@@ -3,11 +3,11 @@
 export function StreakBadge({ streak }: { streak: number }) {
   if (streak === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border bg-card px-4 py-3.5 flex items-center gap-3">
+      <div className="rounded-card border border-dashed border-hairline bg-surface px-4 py-3.5 flex items-center gap-3">
         <span className="text-2xl">🌱</span>
         <div>
-          <p className="text-sm font-bold text-foreground">Start your streak</p>
-          <p className="text-xs text-muted">Log food every day to build one</p>
+          <p className="text-sm font-bold text-ink">Start your streak</p>
+          <p className="text-xs text-ink-2">Log food every day to build one</p>
         </div>
       </div>
     )
@@ -18,17 +18,17 @@ export function StreakBadge({ streak }: { streak: number }) {
     streak >= 30 ? 'Legendary 🏆' : streak >= 7 ? 'On fire 🚀' : 'Great start!'
 
   return (
-    <div className="rounded-2xl border border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3.5 flex items-center justify-between">
+    <div className="rounded-card border border-hairline bg-energy-soft px-4 py-3.5 flex items-center justify-between">
       <div className="flex items-center gap-3">
         <span className="text-2xl leading-none">{'🔥'.repeat(flameCount)}</span>
         <div>
-          <p className="text-sm font-black text-amber-700">
+          <p className="text-sm font-bold text-energy-ink">
             {streak}-day streak
           </p>
-          <p className="text-[11px] text-amber-600/80">{label}</p>
+          <p className="text-[11px] text-energy-ink opacity-80">{label}</p>
         </div>
       </div>
-      <span className="text-3xl font-black tabular-nums text-amber-600 leading-none">
+      <span className="font-display text-3xl font-bold tabular-nums text-energy-ink leading-none">
         {streak}
       </span>
     </div>

@@ -8,6 +8,9 @@ import { useUser } from '../../hooks/useUser'
 import { useQueryClient } from '@tanstack/react-query'
 import { weightLogSchema, type WeightLogData } from '../../lib/validations'
 import type { WeightLog } from '../../types/index'
+import { Sheet, SheetContent } from '../ui/sheet'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
 import { Scale, X } from 'lucide-react'
 
 const QUICK_ADJUSTMENTS = [-1, -0.5, +0.5, +1]
@@ -71,42 +74,35 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-
-      {/* Sheet */}
-      <div className="relative w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl">
-        {/* Handle */}
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-gray-200" />
-
+    <Sheet open onOpenChange={(v) => !v && onClose()}>
+      <SheetContent>
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 mt-2">
+        <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100">
-              <Scale className="h-5 w-5 text-emerald-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-control" style={{ background: 'rgba(46,125,79,0.12)' }}>
+              <Scale className="h-5 w-5 text-good" />
             </div>
             <div>
-              <h2 className="text-base font-black text-foreground">Log weight</h2>
-              <p className="text-xs text-muted">Track your progress</p>
+              <h2 className="font-display text-base font-bold text-ink">Log weight</h2>
+              <p className="text-xs text-ink-2">Track your progress</p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded-full p-1.5 hover:bg-gray-100 transition-colors">
-            <X className="h-5 w-5 text-muted" />
+          <button type="button" onClick={onClose} className="rounded-full p-1.5 hover:bg-surface-2 transition-colors">
+            <X className="h-5 w-5 text-ink-2" />
           </button>
         </div>
 
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           {/* Weight input - big hero number */}
           <div className="text-center">
-            <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-2">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-ink-2 mb-2">
               Weight ({unit})
             </label>
             <div className="flex items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={() => form.setValue('weight_kg', Math.max(1, weight - 0.1), { shouldValidate: true })}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-lg font-bold text-foreground hover:bg-gray-200 active:scale-90 transition-all"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 text-lg font-bold text-ink hover:bg-hairline/40 active:scale-90 transition-all"
               >
                 −
               </button>
@@ -115,18 +111,18 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
                 step="0.1"
                 min="1"
                 {...form.register('weight_kg', { valueAsNumber: true })}
-                className="w-28 text-center text-4xl font-black text-foreground outline-none border-b-2 border-emerald-400 bg-transparent pb-1 focus:border-emerald-600"
+                className="w-28 text-center font-display text-4xl font-bold text-ink outline-none border-b-2 border-good bg-transparent pb-1 tabular-nums"
               />
               <button
                 type="button"
                 onClick={() => form.setValue('weight_kg', weight + 0.1, { shouldValidate: true })}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-lg font-bold text-foreground hover:bg-gray-200 active:scale-90 transition-all"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 text-lg font-bold text-ink hover:bg-hairline/40 active:scale-90 transition-all"
               >
                 +
               </button>
             </div>
             {form.formState.errors.weight_kg && (
-              <p className="mt-1 text-xs text-red-500">{form.formState.errors.weight_kg.message}</p>
+              <p className="mt-1 text-xs text-danger">{form.formState.errors.weight_kg.message}</p>
             )}
 
             {/* Quick adjustments */}
@@ -136,7 +132,7 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
                   key={adj}
                   type="button"
                   onClick={() => form.setValue('weight_kg', Math.max(1, +(weight + adj).toFixed(1)), { shouldValidate: true })}
-                  className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-foreground hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 active:scale-95 transition-all"
+                  className="rounded-control border border-hairline bg-surface-2 px-3 py-1 text-xs font-semibold text-ink hover:border-brand/40 hover:bg-brand-soft hover:text-brand-ink active:scale-95 transition-all"
                 >
                   {adj > 0 ? `+${adj}` : adj}
                 </button>
@@ -146,8 +142,8 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
 
           {/* Date */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">Date</label>
-            <input
+            <label className="block text-xs font-semibold uppercase tracking-wide text-ink-2 mb-1">Date</label>
+            <Input
               type="date"
               value={date}
               onChange={(e) => {
@@ -157,29 +153,20 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
                   shouldValidate: true,
                 })
               }}
-              className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all"
             />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-muted mb-1">Notes (optional)</label>
-            <input
-              {...form.register('notes')}
-              placeholder="e.g. Morning, after workout..."
-              className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all"
-            />
+            <label className="block text-xs font-semibold uppercase tracking-wide text-ink-2 mb-1">Notes (optional)</label>
+            <Input {...form.register('notes')} placeholder="e.g. Morning, after workout..." />
           </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full rounded-2xl bg-emerald-600 py-3 text-sm font-bold text-white hover:bg-emerald-700 active:scale-[.98] transition-all shadow-sm disabled:opacity-60"
-          >
+          <Button type="submit" size="lg" disabled={isSubmitting} className="w-full tap-scale">
             {isSubmitting ? 'Saving...' : 'Save weight'}
-          </button>
+          </Button>
         </form>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   )
 }

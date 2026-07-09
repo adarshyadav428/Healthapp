@@ -17,8 +17,8 @@ export function WeightStats({ logs, profile }: { logs: WeightLog[] | null | unde
   const bmi = profile.height_cm ? +(current / Math.pow(profile.height_cm / 100, 2)).toFixed(1) : null
   const deltaLabel = delta < 0 ? `${Math.abs(delta)} kg lost` : delta > 0 ? `${delta} kg gained` : 'No change'
   const deltaColor = isLosing
-    ? delta < 0 ? 'text-emerald-600' : delta > 0 ? 'text-rose-500' : 'text-muted'
-    : delta > 0 ? 'text-emerald-600' : 'text-muted'
+    ? delta < 0 ? 'var(--good)' : delta > 0 ? 'var(--bad)' : 'var(--ink-2)'
+    : delta > 0 ? 'var(--good)' : 'var(--ink-2)'
 
   let weeksToGoal: number | null = null
   let rateLabel: string | null = null
@@ -38,18 +38,18 @@ export function WeightStats({ logs, profile }: { logs: WeightLog[] | null | unde
   return (
     <div className="space-y-3">
       {/* Current weight hero */}
-      <div className="rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50 p-5 shadow-sm">
+      <div className="rounded-sheet border border-hairline p-5 shadow-rest" style={{ background: 'rgba(46,125,79,0.06)' }}>
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Current weight</p>
-            <p className="text-5xl font-black text-foreground mt-1 leading-none">{current}</p>
-            <p className="text-base text-muted mt-0.5">kg</p>
-            <p className={`text-sm font-bold mt-2 ${deltaColor}`}>{deltaLabel} since start</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-good">Current weight</p>
+            <p className="font-display text-5xl font-bold text-ink mt-1 leading-none tabular-nums">{current}</p>
+            <p className="text-base text-ink-2 mt-0.5">kg</p>
+            <p className="text-sm font-bold mt-2 tabular-nums" style={{ color: deltaColor }}>{deltaLabel} since start</p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-muted">Goal</p>
-            <p className="text-2xl font-black text-emerald-700">{target} kg</p>
-            <p className={`text-xs font-semibold mt-1 ${Math.abs(toTarget) < 0.5 ? 'text-emerald-600' : 'text-muted'}`}>
+            <p className="text-xs text-ink-2">Goal</p>
+            <p className="text-2xl font-bold text-good tabular-nums">{target} kg</p>
+            <p className="text-xs font-semibold mt-1" style={{ color: Math.abs(toTarget) < 0.5 ? 'var(--good)' : 'var(--ink-2)' }}>
               {Math.abs(toTarget) < 0.5 ? '🎯 At goal!' : `${Math.abs(toTarget)} kg to go`}
             </p>
           </div>
@@ -57,20 +57,20 @@ export function WeightStats({ logs, profile }: { logs: WeightLog[] | null | unde
 
         {progressToTarget > 0 && (
           <div className="mt-4">
-            <div className="flex justify-between text-xs text-muted mb-1">
+            <div className="flex justify-between text-xs text-ink-2 mb-1">
               <span>{starting} kg start</span>
               <span>{target} kg goal</span>
             </div>
-            <div className="h-2 rounded-full bg-white/60 overflow-hidden">
+            <div className="h-2 rounded-full bg-surface/60 overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-400 transition-all duration-700"
-                style={{ width: `${progressToTarget}%` }}
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${progressToTarget}%`, background: 'var(--good)' }}
               />
             </div>
             <div className="flex items-center justify-between mt-1">
-              <p className="text-xs text-emerald-600 font-semibold">{Math.round(progressToTarget)}% to goal</p>
+              <p className="text-xs text-good font-semibold">{Math.round(progressToTarget)}% to goal</p>
               {weeksToGoal !== null && (
-                <p className="text-xs text-muted">
+                <p className="text-xs text-ink-2">
                   ~{weeksToGoal < 52 ? `${weeksToGoal}w` : `${Math.round(weeksToGoal / 4.3)}mo`} {rateLabel}
                 </p>
               )}
@@ -86,7 +86,7 @@ export function WeightStats({ logs, profile }: { logs: WeightLog[] | null | unde
           label="BMI"
           value={bmi !== null ? String(bmi) : '--'}
           sub={bmi !== null ? (bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Healthy' : bmi < 30 ? 'Overweight' : 'Obese') : ''}
-          subColor={bmi === null ? '' : bmi < 25 && bmi >= 18.5 ? 'text-emerald-600' : 'text-amber-600'}
+          subColor={bmi === null ? 'var(--ink-2)' : bmi < 25 && bmi >= 18.5 ? 'var(--good)' : 'var(--energy-ink)'}
         />
         <StatCard label="Entries" value={String(sorted.length)} sub={sorted.length > 0 ? 'logged' : 'Start now'} />
       </div>
@@ -94,12 +94,12 @@ export function WeightStats({ logs, profile }: { logs: WeightLog[] | null | unde
   )
 }
 
-function StatCard({ label, value, sub, subColor = 'text-muted' }: { label: string; value: string; sub?: string; subColor?: string }) {
+function StatCard({ label, value, sub, subColor = 'var(--ink-2)' }: { label: string; value: string; sub?: string; subColor?: string }) {
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white/90 p-3 shadow-sm text-center">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</p>
-      <p className="text-lg font-black text-foreground mt-0.5 leading-none">{value}</p>
-      {sub && <p className={`text-xs mt-0.5 font-medium ${subColor}`}>{sub}</p>}
+    <div className="rounded-card border border-hairline bg-surface p-3 shadow-rest text-center">
+      <p className="text-xs font-semibold uppercase tracking-wide text-ink-2">{label}</p>
+      <p className="text-lg font-bold text-ink mt-0.5 leading-none tabular-nums">{value}</p>
+      {sub && <p className="text-xs mt-0.5 font-medium" style={{ color: subColor }}>{sub}</p>}
     </div>
   )
 }
