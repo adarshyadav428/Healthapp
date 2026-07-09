@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react'
 import { getBrowserSupabaseClient } from '../../../lib/supabase/client'
 import Link from 'next/link'
-
-const inputClass =
-  'w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all placeholder:text-muted'
+import { Check, Flame } from 'lucide-react'
+import { Input } from '../../../components/ui/input'
+import { Button } from '../../../components/ui/button'
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
@@ -52,67 +52,65 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center px-4 py-12">
       {/* Logo */}
       <Link href="/" className="mb-10 flex items-center gap-2.5">
-        <span className="text-[26px] leading-none">🥗</span>
-        <span className="text-xl font-black tracking-tight text-foreground">GetInShape</span>
+        <div className="flex h-9 w-9 items-center justify-center rounded-control bg-brand-soft">
+          <Flame className="h-[18px] w-[18px] text-brand" strokeWidth={2.2} />
+        </div>
+        <span className="font-display text-xl font-bold tracking-tight text-ink">GetInShape</span>
       </Link>
 
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-black text-foreground mb-1">Set new password</h1>
-        <p className="text-sm text-muted mb-7">Choose a strong password for your account.</p>
+        <h1 className="font-display text-2xl font-bold text-ink mb-1">Set new password</h1>
+        <p className="text-sm text-ink-2 mb-7">Choose a strong password for your account.</p>
 
         {done ? (
           <div className="text-center py-8">
-            <div className="text-5xl mb-4">✅</div>
-            <p className="text-base font-bold text-foreground">Password updated!</p>
-            <p className="text-sm text-muted mt-2">Redirecting you to your dashboard…</p>
+            <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-full bg-brand-soft mb-4">
+              <Check className="h-6 w-6 text-brand" strokeWidth={2.5} />
+            </div>
+            <p className="text-base font-bold text-ink">Password updated!</p>
+            <p className="text-sm text-ink-2 mt-2">Redirecting you to your dashboard…</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-muted mb-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wide text-ink-2 mb-1.5">
                 New password
               </label>
-              <input
+              <Input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="min. 8 characters"
                 autoComplete="new-password"
                 required
-                className={inputClass}
               />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-muted mb-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wide text-ink-2 mb-1.5">
                 Confirm password
               </label>
-              <input
+              <Input
                 type="password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 placeholder="••••••••"
                 autoComplete="new-password"
                 required
-                className={inputClass}
               />
             </div>
 
             {error && (
-              <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-2.5 text-xs text-red-600">
+              <div className="rounded-control bg-danger-soft border border-hairline px-4 py-2.5 text-xs text-danger">
                 {error}
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loading || !password || !confirm}
-              className="w-full rounded-2xl bg-orange-500 py-3.5 text-sm font-black text-white shadow-lg shadow-orange-500/25 hover:bg-orange-600 active:scale-[.98] transition-all disabled:opacity-50 mt-2"
-            >
+            <Button type="submit" size="lg" disabled={loading || !password || !confirm} className="w-full mt-2 tap-scale">
               {loading ? 'Updating…' : 'Update password'}
-            </button>
+            </Button>
           </form>
         )}
       </div>

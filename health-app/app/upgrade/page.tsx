@@ -58,11 +58,11 @@ function ReasonBanner() {
   const reasonCopy = reason ? REASON_COPY[reason] : null
   if (!reasonCopy) return null
   return (
-    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 mb-6 flex items-start gap-3">
-      <Lock className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+    <div className="rounded-card border border-hairline bg-energy-soft p-4 mb-6 flex items-start gap-3">
+      <Lock className="h-5 w-5 text-energy-ink flex-shrink-0 mt-0.5" />
       <div>
-        <p className="text-sm font-bold text-amber-900">{reasonCopy.title}</p>
-        <p className="text-xs text-amber-700 mt-0.5">{reasonCopy.description}</p>
+        <p className="text-sm font-bold text-ink">{reasonCopy.title}</p>
+        <p className="text-xs text-energy-ink mt-0.5">{reasonCopy.description}</p>
       </div>
     </div>
   )
@@ -131,10 +131,10 @@ export default function UpgradePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-canvas">
 
       <div className="mx-auto w-full max-w-lg px-4 py-8">
-        <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground mb-6">
+        <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-ink-2 hover:text-ink mb-6">
           <ArrowLeft className="h-4 w-4" />
           Back to dashboard
         </Link>
@@ -146,25 +146,25 @@ export default function UpgradePage() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-200 px-3 py-1 text-xs font-semibold text-indigo-700 mb-3">
+          <div className="inline-flex items-center gap-2 rounded-full bg-brand-soft border border-hairline px-3 py-1 text-xs font-semibold text-brand-ink mb-3">
             <Crown className="h-3.5 w-3.5" />
             GetInShape Pro
           </div>
-          <h1 className="text-3xl font-black text-foreground">Upgrade to Pro</h1>
-          <p className="mt-2 text-sm text-muted">Log freely. Get deeper insights when you&apos;re ready.</p>
+          <h1 className="font-display text-3xl font-bold text-ink">Upgrade to Pro</h1>
+          <p className="mt-2 text-sm text-ink-2">Log freely. Get deeper insights when you&apos;re ready.</p>
         </div>
 
         {/* Features */}
-        <div className="rounded-3xl border border-border bg-card p-5 mb-6 shadow-sm">
+        <div className="rounded-sheet border border-hairline bg-surface p-5 mb-6 shadow-rest">
           <div className="flex items-center gap-2 mb-4">
-            <Zap className="h-4 w-4 text-indigo-600" />
-            <p className="text-sm font-bold text-foreground">What you get with Pro</p>
+            <Zap className="h-4 w-4 text-brand" />
+            <p className="text-sm font-bold text-ink">What you get with Pro</p>
           </div>
           <ul className="space-y-2">
             {FEATURES.map((f) => (
-              <li key={f} className="flex items-center gap-2.5 text-sm text-muted">
-                <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100">
-                  <Check className="h-3 w-3 text-emerald-600" />
+              <li key={f} className="flex items-center gap-2.5 text-sm text-ink-2">
+                <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-brand-soft">
+                  <Check className="h-3 w-3 text-brand" />
                 </span>
                 {f}
               </li>
@@ -177,35 +177,33 @@ export default function UpgradePage() {
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`rounded-3xl border p-5 shadow-sm transition-all ${
+              className={`rounded-sheet border p-5 transition-all ${
                 plan.highlight
-                  ? 'border-indigo-300 bg-gradient-to-br from-indigo-50 to-violet-50 ring-2 ring-indigo-200'
-                  : 'border-border bg-card'
+                  ? 'border-2 border-brand bg-brand-soft shadow-float'
+                  : 'border-hairline bg-surface shadow-rest'
               }`}
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">{plan.title}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-2">{plan.title}</p>
                   <div className="flex items-baseline gap-1 mt-0.5">
-                    <span className="text-3xl font-black text-foreground">
+                    <span className="font-display text-3xl font-bold text-ink tabular-nums">
                       {playPrices[PLAY_PRODUCT_FOR_PLAN[plan.id]] ?? plan.price}
                     </span>
-                    <span className="text-sm text-muted">{plan.per}</span>
+                    <span className="text-sm text-ink-2">{plan.per}</span>
                   </div>
-                  <p className="text-xs text-muted mt-0.5">{plan.note}</p>
+                  <p className="text-xs text-ink-2 mt-0.5">{plan.note}</p>
                 </div>
                 {plan.badge && (
-                  <span className="rounded-full bg-indigo-600 px-2.5 py-1 text-xs font-bold text-white">
+                  <span className="rounded-full bg-energy px-2.5 py-1 text-xs font-bold text-energy-ink">
                     {plan.badge}
                   </span>
                 )}
               </div>
               <Button
-                className={`mt-4 w-full rounded-full font-bold ${
-                  plan.highlight
-                    ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-500/25'
-                    : 'bg-gray-900 hover:bg-gray-800 text-white'
-                }`}
+                variant={plan.highlight ? 'default' : 'outline'}
+                size="lg"
+                className="mt-4 w-full rounded-full tap-scale"
                 onClick={() => startCheckout(plan.id)}
                 disabled={!!loading}
               >
@@ -217,14 +215,14 @@ export default function UpgradePage() {
 
         {/* Footer */}
         <div className="mt-8 text-center space-y-2">
-          <p className="text-xs text-muted">
+          <p className="text-xs text-ink-2">
             {playAvailable
               ? 'Billed securely through Google Play · Cancel anytime'
               : 'Secured by Stripe · Cancel anytime · 30-day money back'}
           </p>
-          <div className="flex justify-center gap-4 text-xs text-muted">
-            <Link href="/terms" className="underline hover:text-foreground">Terms</Link>
-            <Link href="/privacy" className="underline hover:text-foreground">Privacy</Link>
+          <div className="flex justify-center gap-4 text-xs text-ink-2">
+            <Link href="/terms" className="underline hover:text-ink">Terms</Link>
+            <Link href="/privacy" className="underline hover:text-ink">Privacy</Link>
           </div>
         </div>
       </div>

@@ -31,14 +31,14 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background px-4 py-10">
+    <div className="min-h-screen bg-canvas px-4 py-10">
       <div className="mx-auto w-full max-w-md">
         <div className="mb-8 text-center">
           <span className="text-3xl">🥗</span>
-          <h1 className="mt-2 text-2xl font-black text-foreground">Let&apos;s set up your goals</h1>
-          <p className="mt-1 text-sm text-muted">Takes less than 2 minutes.</p>
+          <h1 className="font-display mt-2 text-2xl font-bold text-ink">Let&apos;s set up your goals</h1>
+          <p className="mt-1 text-sm text-ink-2">Takes less than 2 minutes.</p>
         </div>
-        <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+        <div className="rounded-sheet border border-hairline bg-surface p-6 shadow-rest">
           <OnboardingForm />
         </div>
       </div>

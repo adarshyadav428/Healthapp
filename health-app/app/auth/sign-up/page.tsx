@@ -8,9 +8,9 @@ import { getBrowserSupabaseClient } from '../../../lib/supabase/client'
 import { toast } from '../../../components/ui/use-toast'
 import { useState } from 'react'
 import { captureEvent, identifyUser } from '../../../lib/posthog/client'
-
-const inputClass =
-  'w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition-all placeholder:text-muted focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100'
+import { Input } from '../../../components/ui/input'
+import { Button } from '../../../components/ui/button'
+import { Mail, Flame } from 'lucide-react'
 
 export default function SignUpPage() {
   const [emailSent, setEmailSent] = useState(false)
@@ -61,18 +61,17 @@ export default function SignUpPage() {
 
   if (emailSent) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12">
+      <div className="min-h-screen bg-canvas flex flex-col items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm text-center">
-          <div className="text-5xl mb-5">📬</div>
-          <h2 className="text-2xl font-black text-foreground">Check your inbox</h2>
-          <p className="mt-2 text-sm text-muted max-w-xs mx-auto">
+          <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-full bg-brand-soft mb-5">
+            <Mail className="h-6 w-6 text-brand" strokeWidth={2} />
+          </div>
+          <h2 className="font-display text-2xl font-bold text-ink">Check your inbox</h2>
+          <p className="mt-2 text-sm text-ink-2 max-w-xs mx-auto">
             We sent you a confirmation link. Click it to activate your account, then sign in.
           </p>
-          <Link
-            href="/auth/sign-in"
-            className="mt-8 inline-flex items-center rounded-2xl bg-orange-500 px-7 py-3.5 text-sm font-black text-white hover:bg-orange-600 transition-all"
-          >
-            Go to sign in
+          <Link href="/auth/sign-in">
+            <Button size="lg" className="mt-8 tap-scale">Go to sign in</Button>
           </Link>
         </div>
       </div>
@@ -80,108 +79,99 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center px-4 py-12">
       {/* Logo */}
       <Link href="/" className="mb-10 flex items-center gap-2.5">
-        <span className="text-[26px] leading-none">🥗</span>
-        <span className="text-xl font-black tracking-tight text-foreground">GetInShape</span>
+        <div className="flex h-9 w-9 items-center justify-center rounded-control bg-brand-soft">
+          <Flame className="h-[18px] w-[18px] text-brand" strokeWidth={2.2} />
+        </div>
+        <span className="font-display text-xl font-bold tracking-tight text-ink">GetInShape</span>
       </Link>
 
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-black text-foreground mb-1">Start for free</h1>
-        <p className="text-sm text-muted mb-7">Create your account in seconds.</p>
+        <h1 className="font-display text-2xl font-bold text-ink mb-1">Start for free</h1>
+        <p className="text-sm text-ink-2 mb-7">Create your account in seconds.</p>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wide text-muted mb-1.5">
+            <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wide text-ink-2 mb-1.5">
               Email
             </label>
-            <input
+            <Input
               id="email"
               type="email"
               autoComplete="email"
               {...form.register('email')}
-              className={inputClass}
               placeholder="you@example.com"
             />
             {form.formState.errors.email && (
-              <p className="mt-1.5 text-xs text-red-500">{form.formState.errors.email.message}</p>
+              <p className="mt-1.5 text-xs text-danger">{form.formState.errors.email.message}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-xs font-bold uppercase tracking-wide text-muted mb-1.5">
+            <label htmlFor="password" className="block text-xs font-bold uppercase tracking-wide text-ink-2 mb-1.5">
               Password
             </label>
-            <input
+            <Input
               id="password"
               type="password"
               autoComplete="new-password"
               {...form.register('password')}
-              className={inputClass}
               placeholder="min. 8 characters"
             />
             {form.formState.errors.password && (
-              <p className="mt-1.5 text-xs text-red-500">{form.formState.errors.password.message}</p>
+              <p className="mt-1.5 text-xs text-danger">{form.formState.errors.password.message}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-xs font-bold uppercase tracking-wide text-muted mb-1.5">
+            <label htmlFor="confirmPassword" className="block text-xs font-bold uppercase tracking-wide text-ink-2 mb-1.5">
               Confirm password
             </label>
-            <input
+            <Input
               id="confirmPassword"
               type="password"
               autoComplete="new-password"
               {...form.register('confirmPassword')}
-              className={inputClass}
               placeholder="••••••••"
             />
             {form.formState.errors.confirmPassword && (
-              <p className="mt-1.5 text-xs text-red-500">{form.formState.errors.confirmPassword.message}</p>
+              <p className="mt-1.5 text-xs text-danger">{form.formState.errors.confirmPassword.message}</p>
             )}
           </div>
 
-          <button
-            type="submit"
-            disabled={form.formState.isSubmitting}
-            className="w-full rounded-2xl bg-orange-500 py-3.5 text-sm font-black text-white shadow-lg shadow-orange-500/25 hover:bg-orange-600 active:scale-[.98] transition-all disabled:opacity-50 mt-2"
-          >
+          <Button type="submit" size="lg" disabled={form.formState.isSubmitting} className="w-full mt-2 tap-scale">
             {form.formState.isSubmitting ? 'Creating account…' : 'Create account'}
-          </button>
+          </Button>
         </form>
 
         {/* Divider */}
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
+            <div className="w-full border-t border-hairline" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-background px-3 text-xs text-muted">or</span>
+            <span className="bg-canvas px-3 text-xs text-ink-2">or</span>
           </div>
         </div>
 
         {/* Google */}
-        <button
-          type="button"
-          onClick={handleGoogle}
-          className="w-full rounded-2xl border border-border bg-card py-3.5 text-sm font-semibold text-foreground hover:bg-slate-50 active:scale-[.98] transition-all flex items-center justify-center gap-2.5"
-        >
+        <Button type="button" variant="outline" size="lg" onClick={handleGoogle} className="w-full gap-2.5 tap-scale">
           <GoogleIcon />
           Continue with Google
-        </button>
+        </Button>
 
-        <p className="mt-5 text-center text-xs text-muted">
+        <p className="mt-5 text-center text-xs text-ink-2">
           By signing up you agree to our{' '}
-          <Link href="/terms" className="text-indigo-600 hover:underline">Terms</Link>
+          <Link href="/terms" className="text-brand-ink hover:underline">Terms</Link>
           {' '}and{' '}
-          <Link href="/privacy" className="text-indigo-600 hover:underline">Privacy Policy</Link>.
+          <Link href="/privacy" className="text-brand-ink hover:underline">Privacy Policy</Link>.
         </p>
 
-        <p className="mt-4 text-center text-sm text-muted">
+        <p className="mt-4 text-center text-sm text-ink-2">
           Already have an account?{' '}
-          <Link href="/auth/sign-in" className="font-bold text-indigo-600 hover:underline">
+          <Link href="/auth/sign-in" className="font-bold text-brand-ink hover:underline">
             Sign in
           </Link>
         </p>
