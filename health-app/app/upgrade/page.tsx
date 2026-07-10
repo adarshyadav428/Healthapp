@@ -131,8 +131,7 @@ export default function UpgradePage() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas">
-
+    <div className="min-h-screen">
       <div className="mx-auto w-full max-w-lg px-4 py-8">
         <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-ink-2 hover:text-ink mb-6">
           <ArrowLeft className="h-4 w-4" />

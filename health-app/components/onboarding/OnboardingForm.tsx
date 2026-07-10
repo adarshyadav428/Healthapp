@@ -23,7 +23,7 @@ const selectClass =
 const pillBase =
   'rounded-control border px-3 py-3 text-sm font-semibold capitalize transition-all'
 const pillOn = 'border-brand bg-brand-soft text-brand-ink'
-const pillOff = 'border-hairline bg-surface-2 text-ink hover:border-brand/40'
+const pillOff = 'border-hairline bg-surface-2 text-ink hover:border-brand-ring'
 
 // Convert feet + inches to cm
 function ftInToCm(ft: number, inches: number): number {
@@ -253,7 +253,7 @@ export function OnboardingForm() {
                 const minHealthy = +(18.5 * hM * hM).toFixed(1)
                 const maxHealthy = +(24.9 * hM * hM).toFixed(1)
                 return (
-                  <div className="mt-2 rounded-card border border-hairline bg-brand-soft/50 p-3 space-y-2">
+                  <div className="mt-2 rounded-card border border-hairline bg-brand-soft p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-ink-2">Your current BMI</span>
                       <span className={`text-xs font-bold ${bmiColor}`}>{currentBmi} · {bmiLabel}</span>

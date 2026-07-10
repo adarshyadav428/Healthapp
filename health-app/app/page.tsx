@@ -3,10 +3,7 @@ import { CheckCircle, Flame } from 'lucide-react'
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-canvas overflow-x-hidden">
-      {/* Subtle brand-tinted glow */}
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(16,81,75,0.06),_transparent_50%),radial-gradient(circle_at_bottom_left,_rgba(242,162,58,0.06),_transparent_50%)]" />
-
+    <div className="min-h-screen overflow-x-hidden">
       {/* Header */}
       <header className="mx-auto flex w-full max-w-4xl items-center justify-between px-5 py-5">
         <div className="flex items-center gap-2.5">
@@ -139,9 +136,7 @@ export default function Home() {
 
         {/* Founder story */}
         <section className="mt-16">
-          <div className="rounded-sheet border border-hairline bg-surface p-6 shadow-rest relative overflow-hidden">
-            {/* Subtle brand glow */}
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,81,75,0.06),_transparent_60%)]" />
+          <div className="rounded-sheet border border-hairline bg-surface bg-hero-wash p-6 shadow-rest relative overflow-hidden">
             <div className="relative">
               <div className="inline-flex items-center gap-2 rounded-full border border-hairline bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-ink mb-4">
                 👤 Why I built this
@@ -205,7 +200,7 @@ export default function Home() {
             </div>
             {/* Pro */}
             <div className="rounded-sheet border-2 border-brand bg-brand-soft p-6 shadow-float relative overflow-hidden">
-              <div className="absolute top-4 right-4 rounded-full bg-energy px-2.5 py-1 text-[10px] font-black text-energy-ink uppercase tracking-wide">Popular</div>
+              <div className="absolute top-4 right-4 rounded-full bg-energy px-2.5 py-1 text-[10px] font-bold text-energy-ink uppercase tracking-wide">Popular</div>
               <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink mb-1">Pro</p>
               <p className="font-display text-3xl font-bold text-ink">₹199<span className="text-base font-semibold text-ink-2">/mo</span></p>
               <p className="text-sm text-ink-2 mt-1 mb-5">or ₹699/year · save 71%</p>
@@ -288,7 +283,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-hairline bg-surface/60 px-5 py-8 text-center text-xs text-ink-2">
+      <footer className="border-t border-hairline bg-surface px-5 py-8 text-center text-xs text-ink-2">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3">
           <span>© 2026 GetInShape · Made with ❤️ for India</span>
           <div className="flex gap-4">
