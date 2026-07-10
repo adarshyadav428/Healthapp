@@ -30,7 +30,7 @@ export function HistoryBarChart({
         <BarChart data={chartData} barSize={range <= 7 ? 28 : range <= 14 ? 16 : 8}>
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 10, fill: '#9AA0A5' }}
+            tick={{ fontSize: 10, fill: 'var(--ink-3)' }}
             axisLine={false}
             tickLine={false}
           />
@@ -45,7 +45,7 @@ export function HistoryBarChart({
             />
           )}
           <Tooltip
-            cursor={{ fill: 'rgba(22,25,28,0.04)', radius: 6 }}
+            cursor={{ fill: 'var(--track)', radius: 6 }}
             content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null
               const val = payload[0]?.value as number
@@ -68,7 +68,7 @@ export function HistoryBarChart({
             {chartData.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={entry.date === selectedDate ? '#10514B' : entry.kcal === 0 ? 'rgba(22,25,28,0.12)' : color}
+                fill={entry.date === selectedDate ? 'var(--brand)' : entry.kcal === 0 ? 'var(--track)' : color}
                 opacity={entry.kcal === 0 ? 1 : entry.date === selectedDate ? 1 : 0.85}
               />
             ))}

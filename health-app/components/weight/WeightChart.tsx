@@ -30,21 +30,21 @@ export function WeightChart({ logs }: { logs: WeightLog[] }) {
         <AreaChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="weightGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#2E7D4F" stopOpacity={0.25} />
-              <stop offset="95%" stopColor="#2E7D4F" stopOpacity={0} />
+              <stop offset="5%" stopColor="var(--good)" stopOpacity={0.25} />
+              <stop offset="95%" stopColor="var(--good)" stopOpacity={0} />
             </linearGradient>
           </defs>
           <XAxis
             dataKey="date"
             tickFormatter={(v) => format(new Date(v), 'MMM d')}
-            tick={{ fontSize: 10, fill: '#9AA0A5' }}
+            tick={{ fontSize: 10, fill: 'var(--ink-3)' }}
             axisLine={false}
             tickLine={false}
             interval="preserveStartEnd"
           />
           <YAxis
             domain={[minW, maxW]}
-            tick={{ fontSize: 10, fill: '#9AA0A5' }}
+            tick={{ fontSize: 10, fill: 'var(--ink-3)' }}
             axisLine={false}
             tickLine={false}
           />
@@ -63,16 +63,16 @@ export function WeightChart({ logs }: { logs: WeightLog[] }) {
           <Area
             type="monotone"
             dataKey="weight"
-            stroke="#2E7D4F"
+            stroke="var(--good)"
             strokeWidth={2.5}
             fill="url(#weightGradient)"
-            dot={{ r: 3, fill: '#2E7D4F', strokeWidth: 0 }}
-            activeDot={{ r: 5, fill: '#2E7D4F', strokeWidth: 2, stroke: '#fff' }}
+            dot={{ r: 3, fill: 'var(--good)', strokeWidth: 0 }}
+            activeDot={{ r: 5, fill: 'var(--good)', strokeWidth: 2, stroke: 'var(--surface)' }}
           />
           {data.length > 2 && (
             <ReferenceLine
               y={data[0].weight}
-              stroke="#9AA0A5"
+              stroke="var(--ink-3)"
               strokeDasharray="3 3"
               strokeWidth={1}
             />

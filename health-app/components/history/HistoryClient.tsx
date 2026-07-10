@@ -119,10 +119,10 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
   }, [logs])
 
   const metricConfig = {
-    kcal: { color: '#F2A23A', label: 'Calories', unit: 'kcal' },
-    protein: { color: '#3566C4', label: 'Protein', unit: 'g' },
-    carbs: { color: '#C98A1B', label: 'Carbs', unit: 'g' },
-    fat: { color: '#C7554B', label: 'Fat', unit: 'g' },
+    kcal: { color: 'var(--energy)', label: 'Calories', unit: 'kcal' },
+    protein: { color: 'var(--protein)', label: 'Protein', unit: 'g' },
+    carbs: { color: 'var(--carbs)', label: 'Carbs', unit: 'g' },
+    fat: { color: 'var(--fat)', label: 'Fat', unit: 'g' },
   }
 
   const cfg = metricConfig[metric]
@@ -169,7 +169,7 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
       </div>
       {avgDeficit !== null && (
         <div className="rounded-card border border-hairline px-4 py-3 flex items-center justify-between"
-          style={{ background: avgDeficit > 0 ? 'rgba(46,125,79,0.08)' : 'var(--bad-soft)' }}>
+          style={{ background: avgDeficit > 0 ? 'color-mix(in srgb, var(--good) 8%, transparent)' : 'var(--bad-soft)' }}>
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-2">Avg daily {avgDeficit >= 0 ? 'deficit' : 'surplus'}</p>
             <p className="text-xl font-bold mt-0.5 tabular-nums" style={{ color: avgDeficit >= 0 ? 'var(--good)' : 'var(--bad)' }}>
@@ -368,7 +368,7 @@ function ExerciseSection({ exerciseLogs, range }: { exerciseLogs: ExerciseRow[];
           <p className="text-lg font-bold mt-0.5 tabular-nums" style={{ color: 'var(--fat)' }}>{totalCalories.toLocaleString()}</p>
           <p className="text-[10px] text-ink-2">kcal</p>
         </div>
-        <div className="rounded-card border border-hairline p-2.5 text-center" style={{ background: 'rgba(53,102,196,0.08)' }}>
+        <div className="rounded-card border border-hairline p-2.5 text-center" style={{ background: 'color-mix(in srgb, var(--protein) 8%, transparent)' }}>
           <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-2">Time</p>
           <p className="text-lg font-bold mt-0.5 tabular-nums" style={{ color: 'var(--protein)' }}>
             {totalMinutes >= 60 ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m` : `${totalMinutes}m`}

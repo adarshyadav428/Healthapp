@@ -38,7 +38,7 @@ export function WeightStats({ logs, profile }: { logs: WeightLog[] | null | unde
   return (
     <div className="space-y-3">
       {/* Current weight hero */}
-      <div className="rounded-sheet border border-hairline p-5 shadow-rest" style={{ background: 'rgba(46,125,79,0.06)' }}>
+      <div className="rounded-sheet border border-hairline p-5 shadow-rest" style={{ background: 'color-mix(in srgb, var(--good) 6%, transparent)' }}>
         <div className="flex items-end justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-good">Current weight</p>
@@ -61,7 +61,7 @@ export function WeightStats({ logs, profile }: { logs: WeightLog[] | null | unde
               <span>{starting} kg start</span>
               <span>{target} kg goal</span>
             </div>
-            <div className="h-2 rounded-full bg-surface/60 overflow-hidden">
+            <div className="h-2 rounded-full bg-surface overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{ width: `${progressToTarget}%`, background: 'var(--good)' }}

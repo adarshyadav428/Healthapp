@@ -9,9 +9,9 @@ type Props = {
 }
 
 const SLICES = [
-  { key: 'protein', label: 'Protein', color: '#3566C4' },
-  { key: 'carbs',   label: 'Carbs',   color: '#C98A1B' },
-  { key: 'fat',     label: 'Fat',     color: '#C7554B' },
+  { key: 'protein', label: 'Protein', color: 'var(--protein)' },
+  { key: 'carbs',   label: 'Carbs',   color: 'var(--carbs)' },
+  { key: 'fat',     label: 'Fat',     color: 'var(--fat)' },
 ] as const
 
 export function MacroPieChart({ protein, carbs, fat }: Props) {
@@ -19,9 +19,9 @@ export function MacroPieChart({ protein, carbs, fat }: Props) {
   if (total <= 0) return null
 
   const data = [
-    { name: 'Protein', value: Math.round(protein * 4), g: protein, color: '#3566C4' },
-    { name: 'Carbs',   value: Math.round(carbs * 4),   g: carbs,   color: '#C98A1B' },
-    { name: 'Fat',     value: Math.round(fat * 9),     g: fat,     color: '#C7554B' },
+    { name: 'Protein', value: Math.round(protein * 4), g: protein, color: 'var(--protein)' },
+    { name: 'Carbs',   value: Math.round(carbs * 4),   g: carbs,   color: 'var(--carbs)' },
+    { name: 'Fat',     value: Math.round(fat * 9),     g: fat,     color: 'var(--fat)' },
   ].filter((d) => d.g > 0)
 
   return (

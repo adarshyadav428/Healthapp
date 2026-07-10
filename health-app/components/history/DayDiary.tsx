@@ -121,15 +121,15 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
           <p className="text-sm font-bold text-energy-ink tabular-nums">{Math.round(totalKcal)}</p>
           <p className="text-[10px] text-energy-ink opacity-80">kcal</p>
         </div>
-        <div className="rounded-control border border-hairline px-3 py-1.5 text-center" style={{ background: 'rgba(53,102,196,0.08)' }}>
+        <div className="rounded-control border border-hairline px-3 py-1.5 text-center" style={{ background: 'color-mix(in srgb, var(--protein) 8%, transparent)' }}>
           <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--protein)' }}>{Math.round(totalP)}g</p>
           <p className="text-[10px] opacity-80" style={{ color: 'var(--protein)' }}>protein</p>
         </div>
-        <div className="rounded-control border border-hairline px-3 py-1.5 text-center" style={{ background: 'rgba(201,138,27,0.1)' }}>
+        <div className="rounded-control border border-hairline px-3 py-1.5 text-center" style={{ background: 'color-mix(in srgb, var(--carbs) 10%, transparent)' }}>
           <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--carbs)' }}>{Math.round(totalC)}g</p>
           <p className="text-[10px] opacity-80" style={{ color: 'var(--carbs)' }}>carbs</p>
         </div>
-        <div className="rounded-control border border-hairline px-3 py-1.5 text-center" style={{ background: 'var(--bad-soft)' }}>
+        <div className="rounded-control border border-hairline px-3 py-1.5 text-center" style={{ background: 'color-mix(in srgb, var(--fat) 10%, transparent)' }}>
           <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--fat)' }}>{Math.round(totalF)}g</p>
           <p className="text-[10px] opacity-80" style={{ color: 'var(--fat)' }}>fat</p>
         </div>

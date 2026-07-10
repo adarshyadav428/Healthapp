@@ -101,23 +101,23 @@ export function DeficitPageClient({
     ...days.map(d => Math.abs(tdee - d.calories))
   )
 
-  const barFill = isSurplus ? 'bg-rose-400' : progressPct >= 100 ? 'bg-emerald-400' : 'bg-orange-400'
+  const barFill = isSurplus ? 'bg-danger' : progressPct >= 100 ? 'bg-good' : 'bg-brand'
 
   return (
     <div className="space-y-4">
 
       {/* ── Hero: the plan ── */}
-      <div className="rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-violet-50 p-4">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500 mb-3">Your plan</p>
+      <div className="rounded-sheet border border-hairline bg-surface bg-hero-wash p-4">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-brand-ink mb-3">Your plan</p>
 
         {/* Primary number */}
         <div className="flex items-baseline gap-2 mb-4">
-          <span className="text-5xl font-black text-indigo-700 leading-none tabular-nums">
+          <span className="font-display text-5xl font-bold text-ink leading-none tabular-nums">
             {eatTarget.toLocaleString()}
           </span>
           <div>
-            <p className="text-sm font-bold text-indigo-600">kcal / day</p>
-            <p className="text-[11px] text-indigo-400">to eat each day</p>
+            <p className="text-sm font-semibold text-ink">kcal / day</p>
+            <p className="text-[11px] text-ink-2">to eat each day</p>
           </div>
         </div>
 
@@ -129,37 +129,37 @@ export function DeficitPageClient({
         </div>
 
         <div className="mt-3 flex items-center justify-between">
-          <p className="text-[11px] text-indigo-400">
-            At this pace: <span className="font-semibold text-indigo-600">~{impliedPaceKg} kg/week</span>
+          <p className="text-[11px] text-ink-2">
+            At this pace: <span className="font-semibold text-brand-ink">~{impliedPaceKg} kg/week</span>
           </p>
-          <Link href="/settings" className="text-[11px] font-semibold text-indigo-500">
+          <Link href="/settings" className="text-[11px] font-semibold text-brand-ink">
             Change pace →
           </Link>
         </div>
       </div>
 
       {/* ── This week ── */}
-      <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
+      <div className="rounded-sheet border border-hairline bg-surface p-4 shadow-rest">
         <div className="flex items-baseline justify-between mb-3">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted">This week</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-ink-3">This week</p>
           {daysLogged > 0 && (
-            <p className={`text-xs font-black ${isSurplus ? 'text-rose-500' : progressPct >= 100 ? 'text-emerald-500' : 'text-orange-500'}`}>
+            <p className={`text-xs font-bold ${isSurplus ? 'text-danger' : progressPct >= 100 ? 'text-good' : 'text-brand-ink'}`}>
               {isSurplus ? 'Surplus' : `${Math.round(progressPct)}%`}
             </p>
           )}
         </div>
 
         <div className="flex items-baseline gap-1.5 mb-2">
-          <span className="text-3xl font-black text-foreground leading-none tabular-nums">
+          <span className="font-display text-3xl font-bold text-ink leading-none tabular-nums">
             {daysLogged > 0 ? thisWeekDeficit.toLocaleString() : '—'}
           </span>
           {actualWeeklyTarget > 0 && (
-            <span className="text-xs text-muted">/ {actualWeeklyTarget.toLocaleString()} kcal</span>
+            <span className="text-xs text-ink-2">/ {actualWeeklyTarget.toLocaleString()} kcal</span>
           )}
         </div>
 
         {actualWeeklyTarget > 0 && (
-          <div className="h-2.5 rounded-full bg-gray-100 overflow-hidden mb-4">
+          <div className="h-2.5 rounded-full bg-track overflow-hidden mb-4">
             <div
               className={`h-full rounded-full transition-all duration-700 ${barFill}`}
               style={{ width: `${Math.max(0, Math.min(100, progressPct))}%` }}
@@ -175,44 +175,44 @@ export function DeficitPageClient({
             const isFuture = date > today
             const deficit  = log ? tdee - log.calories : 0
             const barH     = log ? Math.max(8, Math.round((Math.abs(deficit) / maxBarH) * 100)) : 0
-            const green    = deficit >= 0
+            const good     = deficit >= 0
             return (
               <div key={date} className="flex-1 flex flex-col items-center gap-0.5">
                 <div className="w-full flex flex-col justify-end h-9">
                   {!isFuture && log ? (
                     <div style={{ height: `${barH}%` }}
-                      className={`w-full rounded-t transition-all duration-500 ${green ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                      className={`w-full rounded-t transition-all duration-500 ${good ? 'bg-good' : 'bg-danger'}`} />
                   ) : (
-                    <div className={`w-full h-0.5 rounded-full ${isFuture ? 'bg-gray-100' : 'bg-gray-200'}`} />
+                    <div className={`w-full h-0.5 rounded-full ${isFuture ? 'bg-track' : 'bg-hairline'}`} />
                   )}
                 </div>
-                <p className={`text-[9px] font-bold ${isToday ? 'text-orange-500' : 'text-muted'}`}>{DAY_LABELS[i]}</p>
-                {isToday && <div className="h-0.5 w-3 rounded-full bg-orange-400" />}
+                <p className={`text-[9px] font-bold ${isToday ? 'text-brand-ink' : 'text-ink-3'}`}>{DAY_LABELS[i]}</p>
+                {isToday && <div className="h-0.5 w-3 rounded-full bg-brand" />}
               </div>
             )
           })}
         </div>
 
-        <div className="flex gap-4 mt-2 text-[10px] text-muted">
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-emerald-400 inline-block" />Deficit</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-rose-400 inline-block" />Surplus</span>
+        <div className="flex gap-4 mt-2 text-[10px] text-ink-2">
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-good inline-block" />Deficit</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-danger inline-block" />Surplus</span>
         </div>
 
         {daysLogged > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-50 grid grid-cols-3 gap-2 text-center">
+          <div className="mt-3 pt-3 border-t border-hairline grid grid-cols-3 gap-2 text-center">
             <div>
-              <p className="text-base font-black text-foreground">{daysLogged}/7</p>
-              <p className="text-[10px] text-muted">days logged</p>
+              <p className="text-base font-bold text-ink">{daysLogged}/7</p>
+              <p className="text-[10px] text-ink-2">days logged</p>
             </div>
             <div>
-              <p className="text-base font-black text-foreground">
+              <p className="text-base font-bold text-ink">
                 {Math.round(Math.max(0, thisWeekDeficit) / 7700 * 1000) / 1000} kg
               </p>
-              <p className="text-[10px] text-muted">fat so far</p>
+              <p className="text-[10px] text-ink-2">fat so far</p>
             </div>
             <div>
-              <p className="text-base font-black text-foreground">{Math.round(progressPct)}%</p>
-              <p className="text-[10px] text-muted">of weekly goal</p>
+              <p className="text-base font-bold text-ink">{Math.round(progressPct)}%</p>
+              <p className="text-[10px] text-ink-2">of weekly goal</p>
             </div>
           </div>
         )}
@@ -220,38 +220,38 @@ export function DeficitPageClient({
 
       {/* ── 4-week chart ── */}
       {chartData.some(d => d.deficit !== 0) && (
-        <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
+        <div className="rounded-sheet border border-hairline bg-surface p-4 shadow-rest">
           <div className="flex items-baseline justify-between mb-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted">4-week history</p>
-            <p className="text-[10px] text-muted">goal {actualWeeklyTarget.toLocaleString()} kcal</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-ink-3">4-week history</p>
+            <p className="text-[10px] text-ink-2">goal {actualWeeklyTarget.toLocaleString()} kcal</p>
           </div>
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} barSize={32} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 9, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--ink-3)' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 9, fill: 'var(--ink-3)' }} axisLine={false} tickLine={false} />
                 <Tooltip
-                  cursor={{ fill: 'rgba(0,0,0,0.03)', radius: 6 }}
+                  cursor={{ fill: 'var(--track)', radius: 6 }}
                   content={({ active, payload, label }: { active?: boolean; payload?: { value: unknown }[]; label?: string }) => {
                     if (!active || !payload?.length) return null
                     const val = payload[0]?.value as number
                     return (
-                      <div className="rounded-xl border border-gray-100 bg-white px-3 py-2 shadow text-xs">
-                        <p className="text-muted mb-0.5">{label}</p>
-                        <p className="font-black" style={{ color: val > 0 ? '#10b981' : '#ef4444' }}>
+                      <div className="rounded-control border border-hairline bg-surface px-3 py-2 shadow-float text-xs">
+                        <p className="text-ink-2 mb-0.5">{label}</p>
+                        <p className="font-bold" style={{ color: val > 0 ? 'var(--good)' : 'var(--bad)' }}>
                           {val > 0 ? '' : '−'}{Math.abs(val).toLocaleString()} kcal
                         </p>
-                        {val > 0 && <p className="text-muted">{(val / 7700).toFixed(2)} kg fat</p>}
+                        {val > 0 && <p className="text-ink-2">{(val / 7700).toFixed(2)} kg fat</p>}
                       </div>
                     )
                   }}
                 />
-                <ReferenceLine y={actualWeeklyTarget} stroke="#6366f1" strokeDasharray="4 2" strokeWidth={1.5}
-                  label={{ value: 'Goal', position: 'right', fontSize: 9, fill: '#6366f1' }} />
+                <ReferenceLine y={actualWeeklyTarget} stroke="var(--brand)" strokeDasharray="4 2" strokeWidth={1.5}
+                  label={{ value: 'Goal', position: 'right', fontSize: 9, fill: 'var(--brand)' }} />
                 <Bar dataKey="deficit" radius={[4, 4, 0, 0]}>
                   {chartData.map((entry, i) => (
                     <Cell key={i}
-                      fill={entry.deficit >= entry.target * 0.9 ? '#10b981' : entry.deficit > 0 ? '#f97316' : '#ef4444'}
+                      fill={entry.deficit >= entry.target * 0.9 ? 'var(--good)' : entry.deficit > 0 ? 'var(--brand)' : 'var(--bad)'}
                       opacity={0.85}
                     />
                   ))}
@@ -263,18 +263,18 @@ export function DeficitPageClient({
       )}
 
       {/* ── All time ── */}
-      <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-3">All time</p>
+      <div className="rounded-sheet border border-hairline bg-surface p-4 shadow-rest">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-ink-3 mb-3">All time</p>
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-orange-50 border border-orange-100 p-3">
-            <p className="text-[10px] text-muted mb-1">Total fat burned</p>
-            <p className="text-xl font-black text-orange-600">{totalFatKg} kg</p>
-            <p className="text-[10px] text-muted">= {Math.round(totalFatKg * 1000)}g</p>
+          <div className="rounded-card bg-brand-soft border border-hairline p-3">
+            <p className="text-[10px] text-ink-2 mb-1">Total fat burned</p>
+            <p className="text-xl font-bold text-brand-ink">{totalFatKg} kg</p>
+            <p className="text-[10px] text-ink-2">= {Math.round(totalFatKg * 1000)}g</p>
           </div>
-          <div className="rounded-2xl bg-indigo-50 border border-indigo-100 p-3">
-            <p className="text-[10px] text-muted mb-1">Days logged</p>
-            <p className="text-xl font-black text-indigo-600">{totalDaysLogged}</p>
-            <p className="text-[10px] text-muted">since you joined</p>
+          <div className="rounded-card bg-surface-2 border border-hairline p-3">
+            <p className="text-[10px] text-ink-2 mb-1">Days logged</p>
+            <p className="text-xl font-bold text-ink">{totalDaysLogged}</p>
+            <p className="text-[10px] text-ink-2">since you joined</p>
           </div>
         </div>
       </div>
@@ -285,10 +285,10 @@ export function DeficitPageClient({
 
 function StatPill({ label, value, unit, highlight }: { label: string; value: string; unit: string; highlight?: boolean }) {
   return (
-    <div className="rounded-2xl bg-white/60 border border-white/80 px-2.5 py-2 text-center">
-      <p className="text-[9px] font-semibold text-indigo-400 uppercase tracking-wide mb-0.5">{label}</p>
-      <p className={`text-sm font-black leading-tight ${highlight ? 'text-orange-600' : 'text-slate-700'}`}>{value}</p>
-      {unit && <p className="text-[9px] text-indigo-300">{unit}</p>}
+    <div className="rounded-card bg-surface border border-hairline px-2.5 py-2 text-center">
+      <p className="text-[9px] font-semibold text-ink-3 uppercase tracking-wide mb-0.5">{label}</p>
+      <p className={`text-sm font-bold leading-tight ${highlight ? 'text-brand-ink' : 'text-ink'}`}>{value}</p>
+      {unit && <p className="text-[9px] text-ink-3">{unit}</p>}
     </div>
   )
 }

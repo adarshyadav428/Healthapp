@@ -27,12 +27,11 @@ export default async function SettingsPage() {
   if (!profile || profile.height_cm === null) redirect('/onboarding')
 
   return (
-    <div className="min-h-screen bg-background pb-32">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(234,88,12,0.10),_transparent_50%)]" />
+    <div className="min-h-screen" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}>
       <AppHeader title="Settings" />
-      <main className="mx-auto w-full max-w-md px-4 py-6">
-        <h1 className="text-2xl font-black text-foreground">Settings</h1>
-        <p className="text-sm text-muted mt-0.5">Profile, goals &amp; subscription</p>
+      <main className="mx-auto w-full max-w-md px-5 pt-4">
+        <h1 className="font-display text-[23px] font-semibold text-ink leading-tight">Settings</h1>
+        <p className="text-sm text-ink-2 mt-0.5">Profile, goals &amp; subscription</p>
         <div className="mt-6">
           <SettingsClient profile={profile} version={pkg.version} />
         </div>

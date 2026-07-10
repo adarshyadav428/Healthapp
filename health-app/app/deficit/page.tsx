@@ -81,12 +81,12 @@ export default async function DeficitPage() {
   const totalFatKg   = Math.max(0, totalDeficit / 7700)
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}>
       <AppHeader title="Deficit" />
-      <main className="mx-auto w-full max-w-md px-4 pt-4 pb-6">
+      <main className="mx-auto w-full max-w-md px-5 pt-4">
         <div className="mb-4">
-          <h1 className="text-[28px] font-black text-foreground leading-tight">Deficit Tracker</h1>
-          <p className="text-sm text-muted">1 kg fat = 7,700 kcal deficit</p>
+          <h1 className="font-display text-[23px] font-semibold text-ink leading-tight">Deficit Tracker</h1>
+          <p className="text-sm text-ink-2">1 kg fat = 7,700 kcal deficit</p>
         </div>
 
         <DeficitPageClient

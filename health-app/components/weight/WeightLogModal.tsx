@@ -79,7 +79,7 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-control" style={{ background: 'rgba(46,125,79,0.12)' }}>
+            <div className="flex h-10 w-10 items-center justify-center rounded-control" style={{ background: 'color-mix(in srgb, var(--good) 12%, transparent)' }}>
               <Scale className="h-5 w-5 text-good" />
             </div>
             <div>

@@ -10,8 +10,8 @@ type BmiCategory = {
 }
 
 function getBmiCategory(bmi: number): BmiCategory {
-  if (bmi < 18.5) return { label: 'Underweight', emoji: '⚠️', color: 'var(--protein)', soft: 'rgba(53,102,196,0.08)' }
-  if (bmi < 25)   return { label: 'Healthy',     emoji: '✅', color: 'var(--good)',    soft: 'rgba(46,125,79,0.08)' }
+  if (bmi < 18.5) return { label: 'Underweight', emoji: '⚠️', color: 'var(--protein)', soft: 'color-mix(in srgb, var(--protein) 8%, transparent)' }
+  if (bmi < 25)   return { label: 'Healthy',     emoji: '✅', color: 'var(--good)',    soft: 'color-mix(in srgb, var(--good) 8%, transparent)' }
   if (bmi < 30)   return { label: 'Overweight',  emoji: '⚠️', color: 'var(--energy-ink)', soft: 'var(--energy-soft)' }
   return             { label: 'Obese',           emoji: '🔴', color: 'var(--bad)',     soft: 'var(--bad-soft)' }
 }
@@ -52,7 +52,7 @@ export function BmiCard({ logs, profile }: { logs: WeightLog[]; profile: Profile
 
       {/* BMI gradient bar */}
       <div className="relative mb-1">
-        <div className="h-2.5 w-full rounded-full overflow-hidden" style={{ background: 'linear-gradient(90deg, #3566C4, #2E7D4F, #9A6210, #C64B3E)' }}>
+        <div className="h-2.5 w-full rounded-full overflow-hidden" style={{ background: 'linear-gradient(90deg, var(--protein), var(--good), var(--carbs), var(--bad))' }}>
           <div
             className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-surface border-2 border-ink shadow-float transition-all duration-500"
             style={{ left: `calc(${barPercent}% - 7px)` }}

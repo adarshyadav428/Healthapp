@@ -63,12 +63,12 @@ export default async function ProgressPage() {
   const loggedDates = (streakResult.data ?? []).map((r) => r.logged_at as string)
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}>
       <AppHeader title="Progress" />
-      <main className="mx-auto w-full max-w-md px-4 pt-5 pb-4">
+      <main className="mx-auto w-full max-w-md px-5 pt-4">
         <div className="mb-5">
-          <h1 className="text-[28px] font-black text-foreground leading-tight">Progress</h1>
-          <p className="text-sm text-muted mt-0.5">Your trends over time</p>
+          <h1 className="font-display text-[23px] font-semibold text-ink leading-tight">Progress</h1>
+          <p className="text-sm text-ink-2 mt-0.5">Your trends over time</p>
         </div>
         <ProgressClient
           streak={streak}

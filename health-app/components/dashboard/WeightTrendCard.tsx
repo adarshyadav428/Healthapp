@@ -37,7 +37,7 @@ export function WeightTrendCard({ logs }: { logs: WeightLog[] }) {
       <div className="mt-3 h-16">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
-            <Line type="monotone" dataKey="weight" stroke="#2E7D4F" strokeWidth={2.5} dot={false} />
+            <Line type="monotone" dataKey="weight" stroke="var(--good)" strokeWidth={2.5} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>

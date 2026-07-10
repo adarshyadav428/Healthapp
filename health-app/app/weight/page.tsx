@@ -38,13 +38,12 @@ export default async function WeightPage() {
   const weightLogs = (logs ?? []) as WeightLog[]
 
   return (
-    <div className="min-h-screen bg-background pb-32">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.15),_transparent_50%)]" />
+    <div className="min-h-screen" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}>
       <AppHeader title="Weight" />
-      <main className="mx-auto w-full max-w-md px-4 py-6">
+      <main className="mx-auto w-full max-w-md px-5 pt-4">
         <div className="mb-6">
-          <h1 className="text-2xl font-black text-foreground">Weight</h1>
-          <p className="text-sm text-muted mt-0.5">Track your journey to {profile.target_weight_kg} kg</p>
+          <h1 className="font-display text-[23px] font-semibold text-ink leading-tight">Weight</h1>
+          <p className="text-sm text-ink-2 mt-0.5">Track your journey to {profile.target_weight_kg} kg</p>
         </div>
         <WeightClient logs={weightLogs} profile={profile} />
       </main>

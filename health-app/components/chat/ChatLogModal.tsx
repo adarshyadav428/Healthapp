@@ -272,7 +272,7 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
           {/* Done state */}
           {state.type === 'done' && (
             <div className="space-y-3">
-              <div className="rounded-card border border-hairline p-4 text-center" style={{ background: 'rgba(46,125,79,0.08)' }}>
+              <div className="rounded-card border border-hairline p-4 text-center" style={{ background: 'color-mix(in srgb, var(--good) 8%, transparent)' }}>
                 <CheckCircle className="h-8 w-8 text-good mx-auto mb-2" />
                 <p className="text-sm font-bold text-good">
                   Logged {state.logged} item{state.logged > 1 ? 's' : ''} · {state.kcal} kcal
