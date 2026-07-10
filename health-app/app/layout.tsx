@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Instrument_Sans, Bricolage_Grotesque } from 'next/font/google'
+import { Instrument_Sans, Bricolage_Grotesque, Inter, Inter_Tight } from 'next/font/google'
 import './globals.css'
 import Providers from './providers'
 
@@ -15,6 +15,20 @@ const bricolage = Bricolage_Grotesque({
   variable: '--font-display',
   display: 'swap',
   weight: ['600', '700', '800'],
+})
+
+// Candidate premium type system — currently consumed only by /studio.
+// Promoted to --font-sans/--font-display app-wide once a direction is picked.
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
+
+const interTight = Inter_Tight({
+  subsets: ['latin'],
+  variable: '--font-inter-tight',
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
@@ -52,7 +66,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`h-full ${instrumentSans.variable} ${bricolage.variable}`}>
+    <html lang="en" className={`h-full ${instrumentSans.variable} ${bricolage.variable} ${inter.variable} ${interTight.variable}`}>
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>

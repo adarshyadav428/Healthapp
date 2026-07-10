@@ -47,7 +47,8 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = pathname.startsWith('/auth/')
   const isApiRoute = pathname.startsWith('/api/')
   const isNextInternal = pathname.startsWith('/_next/')
-  const isPublic = pathname === '/' || pathname === '/privacy' || pathname === '/terms' || pathname === '/upgrade'
+  // /studio is the design-review route: static mock data only, noindex, no user data.
+  const isPublic = pathname === '/' || pathname === '/privacy' || pathname === '/terms' || pathname === '/upgrade' || pathname === '/studio'
 
   // Let API routes and Next.js internals pass through
   if (isApiRoute || isNextInternal) return response
