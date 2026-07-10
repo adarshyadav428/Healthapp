@@ -8,21 +8,16 @@ interface MacroItemProps {
 function MacroItem({ label, color, eaten, target }: MacroItemProps) {
   const pct = target > 0 ? Math.min(eaten / target, 1) : 0
   return (
-    <div className="flex flex-col gap-[6px]">
-      <div className="flex items-center gap-1.5">
-        <span
-          className="inline-block h-2 w-2 flex-shrink-0"
-          style={{ borderRadius: 3, background: color }}
-        />
-        <span className="text-[12.5px] font-semibold text-secondary">{label}</span>
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-baseline justify-between">
+        <span className="text-[10px] font-medium uppercase tracking-[.1em] text-ink-3">{label}</span>
+        <span className="text-[11.5px] font-medium text-ink-2 tabular-nums">
+          {Math.round(eaten)} / {Math.round(target)}g
+        </span>
       </div>
-      <p className="tabular-nums">
-        <span className="text-[15px] font-bold text-ink">{Math.round(eaten)}</span>
-        <span className="text-[12px] font-medium text-muted">/{Math.round(target)}g</span>
-      </p>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#F1EFE9' }}>
+      <div className="h-1 rounded-full overflow-hidden bg-track">
         <div
-          className="h-full rounded-full transition-all duration-700"
+          className="h-full rounded-full transition-all duration-700 ease-out"
           style={{ width: `${pct * 100}%`, background: color }}
         />
       </div>
@@ -41,13 +36,10 @@ interface Props {
 
 export function MacroRow({ proteinEaten, carbsEaten, fatEaten, proteinTarget, carbsTarget, fatTarget }: Props) {
   return (
-    <div
-      className="grid grid-cols-3 gap-[18px] pt-5"
-      style={{ borderTop: '1px solid #F1EFE9' }}
-    >
-      <MacroItem label="Protein" color="#2F6FE0" eaten={proteinEaten} target={proteinTarget} />
-      <MacroItem label="Carbs"   color="#E89316" eaten={carbsEaten}   target={carbsTarget}   />
-      <MacroItem label="Fat"     color="#E0554D" eaten={fatEaten}     target={fatTarget}     />
+    <div className="grid grid-cols-3 gap-[18px] border-t border-hairline pt-[18px]">
+      <MacroItem label="Protein" color="var(--protein)" eaten={proteinEaten} target={proteinTarget} />
+      <MacroItem label="Carbs"   color="var(--carbs)"   eaten={carbsEaten}   target={carbsTarget}   />
+      <MacroItem label="Fat"     color="var(--fat)"     eaten={fatEaten}     target={fatTarget}     />
     </div>
   )
 }

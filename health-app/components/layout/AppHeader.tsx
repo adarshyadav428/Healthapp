@@ -5,53 +5,39 @@ import { Flame } from 'lucide-react'
 import { useUser } from '../../hooks/useUser'
 import { ThemeToggle } from '../ui/theme-toggle'
 
-function greeting(): string {
-  const h = new Date().getHours()
-  if (h < 12) return 'Good morning'
-  if (h < 17) return 'Good afternoon'
-  return 'Good evening'
-}
-
 interface AppHeaderProps {
-  /** Page title — shown on interior pages (Progress, History, …). */
+  /** Page title — shown on interior pages (Progress, History, …). Defaults to the wordmark. */
   title?: string
-  /** Home mode: show a time-of-day greeting instead of a title. */
-  greeting?: boolean
-  /** SSR-provided name so the greeting/avatar render without a client fetch. */
-  displayName?: string | null
 }
 
 /**
- * The single app chrome header. Two modes:
- *  - greeting (home / log): "Good evening, Adarsh"
- *  - title (interior pages): the page name
- * Always: peacock flame mark on the left, avatar → settings on the right.
+ * The single app chrome header: ember flame mark + wordmark (or page title)
+ * on the left, theme toggle + avatar → settings on the right. Warm glass.
+ * The per-page greeting now lives in the page body, not here.
  */
-export function AppHeader({ title, greeting: isGreeting, displayName }: AppHeaderProps) {
+export function AppHeader({ title }: AppHeaderProps) {
   const { user, profile } = useUser()
-  const name = displayName ?? profile?.display_name ?? null
-  const firstName = name?.split(' ')[0] ?? 'there'
+  const name = profile?.display_name ?? null
   const initial = (name?.[0] ?? user?.email?.[0] ?? '?').toUpperCase()
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between border-b border-hairline bg-header-bg px-[18px] py-3 backdrop-blur-md">
-      {/* Left: mark + context */}
-      <div className="flex items-center gap-3">
+    <header
+      className="sticky top-0 z-30 flex items-center justify-between px-5 py-3"
+      style={{
+        background: 'var(--header-bg)',
+        backdropFilter: 'blur(24px) saturate(1.6)',
+        WebkitBackdropFilter: 'blur(24px) saturate(1.6)',
+        borderBottom: '1px solid var(--glass-hair)',
+      }}
+    >
+      {/* Left: mark + wordmark / title */}
+      <div className="flex items-center gap-2.5">
         <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-control bg-brand-soft">
-          <Flame className="h-[18px] w-[18px] text-brand" strokeWidth={2.2} />
+          <Flame className="h-[18px] w-[18px] text-brand" strokeWidth={2} />
         </div>
-        {isGreeting ? (
-          <div>
-            <p className="font-display text-[14px] font-bold leading-none text-ink">GetInShape</p>
-            <p className="mt-[3px] text-[12px] font-medium text-ink-2">
-              {greeting()}, {firstName}
-            </p>
-          </div>
-        ) : (
-          <p className="font-display text-[18px] font-bold tracking-tight text-ink">
-            {title ?? 'GetInShape'}
-          </p>
-        )}
+        <p className="font-display text-[17px] font-semibold tracking-tight text-ink">
+          {title ?? 'GetInShape'}
+        </p>
       </div>
 
       {/* Right: theme toggle + avatar → settings */}

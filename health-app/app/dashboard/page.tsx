@@ -56,13 +56,11 @@ export default async function DashboardPage() {
   const foodLogs = (rawLogs ?? []) as unknown as FoodLog[]
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ background: '#FAFAF7' }}
-    >
-      <AppHeader greeting displayName={profile.display_name} />
+    // Transparent: the body paints canvas + the ambient light field
+    <div className="min-h-screen">
+      <AppHeader />
       <main
-        className="relative mx-auto w-full max-w-md px-[18px] pt-4"
+        className="relative mx-auto w-full max-w-md px-5 pt-2"
         style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}
       >
         <DashboardClient

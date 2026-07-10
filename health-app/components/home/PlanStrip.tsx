@@ -17,25 +17,21 @@ export function PlanStrip({ calorieTarget, maintenanceKcal, goal }: Props) {
   return (
     <Link
       href="/settings"
-      className="flex items-center gap-3 w-full rounded-[18px] bg-white px-4 py-3 tap-scale"
-      style={{ border: '1px solid #F1EFE9' }}
+      className="flex w-full items-center gap-3 rounded-card bg-surface px-4 py-3 shadow-rest tap-scale"
     >
-      <div
-        className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[10px]"
-        style={{ background: '#F4F6F4' }}
-      >
-        <TrendingUp className="h-4 w-4 text-secondary" strokeWidth={1.8} />
+      <div className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-control bg-surface-2">
+        <TrendingUp className="h-4 w-4 text-ink-2" strokeWidth={1.75} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[13.5px] font-semibold text-ink leading-none">
+        <p className="text-[13.5px] font-semibold leading-none text-ink">
           Plan · {GOAL_LABEL[goal] ?? 'Custom'}
         </p>
-        <p className="text-[11.5px] font-medium text-muted mt-[3px]">
+        <p className="mt-[3px] text-[11.5px] text-ink-3 tabular-nums">
           Target {calorieTarget.toLocaleString('en-IN')}
           {maintenanceKcal ? ` · Maintenance ${maintenanceKcal.toLocaleString('en-IN')}` : ''} kcal/day
         </p>
       </div>
-      <ChevronRight className="h-4 w-4 flex-shrink-0" style={{ color: '#C4C0B6' }} />
+      <ChevronRight className="h-4 w-4 flex-shrink-0 text-ink-3" strokeWidth={1.75} />
     </Link>
   )
 }

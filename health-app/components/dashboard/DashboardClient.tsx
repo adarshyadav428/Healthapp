@@ -88,33 +88,43 @@ export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
   const deficitPerDay = Math.round((pace * 7700) / 7)
   const maintenance = target + (profile.goal === 'lose' ? deficitPerDay : profile.goal === 'gain' ? -deficitPerDay : 0)
 
-  const todayDate = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long' })
+  const todayDate = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })
   const hasLogs = logs.length > 0
   const totalMealKcal = Math.round(totals.kcal)
+  const firstName = profile.display_name?.split(' ')[0] ?? 'there'
+  const greeting = (() => {
+    const h = new Date().getHours()
+    if (h < 12) return 'Good morning'
+    if (h < 17) return 'Good afternoon'
+    return 'Good evening'
+  })()
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+
+      {/* ── Editorial greeting ── */}
+      <div className="px-1 pt-2">
+        <p className="text-[10.5px] font-medium uppercase tracking-[.12em] text-ink-3">{todayDate}</p>
+        <h2 className="font-display mt-1.5 text-[23px] font-semibold tracking-tight text-ink">
+          {greeting}, {firstName}
+        </h2>
+        <p className="mt-0.5 text-[13.5px] text-ink-2">
+          {kcalLeft >= 0
+            ? `${kcalLeft.toLocaleString('en-IN')} kcal to go — right on track`
+            : `${Math.abs(kcalLeft).toLocaleString('en-IN')} kcal over — tomorrow's a fresh start`}
+        </p>
+      </div>
 
       {/* ── Calorie hero card ── */}
-      <div
-        className="rounded-[24px] px-6 pt-5 pb-6"
-        style={{
-          background: 'linear-gradient(180deg, #FFF0E7 0%, #fff 58%)',
-          border: '1px solid #FBDCCB',
-          boxShadow: '0 8px 26px -12px rgba(20,24,29,.10)',
-        }}
-      >
-        {/* Top row: date + streak */}
-        <div className="flex items-center justify-between mb-5">
-          <p className="text-[12px] font-semibold text-muted">Today · {todayDate}</p>
+      <div className="rounded-card bg-surface bg-hero-wash px-6 pb-6 pt-5 shadow-rest">
+        {/* Top row: label + streak */}
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-[10.5px] font-medium uppercase tracking-[.12em] text-ink-3">Today</p>
           {streakDays > 0 && (
-            <div
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full"
-              style={{ background: '#FFF0E7' }}
-            >
-              <Flame className="h-3.5 w-3.5 text-accent" strokeWidth={2} />
-              <span className="text-[11.5px] font-bold" style={{ color: '#B5471A' }}>
-                {streakDays}-day streak
+            <div className="flex items-center gap-1.5 rounded-full bg-brand-soft px-2.5 py-1">
+              <Flame className="h-3 w-3 text-brand" strokeWidth={2} />
+              <span className="text-[11.5px] font-semibold text-brand-ink">
+                {streakDays} days
               </span>
             </div>
           )}
@@ -138,10 +148,10 @@ export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
 
       {/* ── Today's meals ── */}
       <div>
-        <div className="flex items-center justify-between mb-2 px-1">
-          <p className="text-[17px] font-bold text-ink">Today&apos;s meals</p>
+        <div className="mb-2.5 flex items-baseline justify-between px-1">
+          <p className="text-[15px] font-semibold tracking-tight text-ink">Today&apos;s meals</p>
           {hasLogs && (
-            <p className="text-[13px] font-semibold text-secondary tabular-nums">
+            <p className="text-[12px] font-medium text-ink-3 tabular-nums">
               {totalMealKcal} kcal
             </p>
           )}

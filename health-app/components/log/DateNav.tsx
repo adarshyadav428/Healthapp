@@ -70,11 +70,10 @@ export function DateNav({ dateStr }: Props) {
       <button
         type="button"
         onClick={() => go(shiftDate(dateStr, -1))}
-        className="flex h-9 w-9 items-center justify-center rounded-full tap-scale transition-colors"
-        style={{ background: '#F1EFE9' }}
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-2 tap-scale transition-colors"
         aria-label="Previous day"
       >
-        <ChevronLeft className="h-4 w-4" style={{ color: '#16181D' }} />
+        <ChevronLeft className="h-4 w-4 text-ink" strokeWidth={1.75} />
       </button>
 
       <button
@@ -82,14 +81,11 @@ export function DateNav({ dateStr }: Props) {
         onClick={() => !isToday && go(todayStr)}
         className="flex flex-col items-center gap-0.5"
       >
-        <span
-          className="text-[16px] font-bold leading-tight"
-          style={{ color: isToday ? '#FB7445' : '#16181D' }}
-        >
+        <span className={`text-[16px] font-semibold leading-tight ${isToday ? 'text-brand-ink' : 'text-ink'}`}>
           {formatDisplay(dateStr)}
         </span>
         {!isToday && (
-          <span className="text-[11px] font-medium" style={{ color: '#9CA3AF' }}>
+          <span className="text-[11px] font-medium text-ink-3">
             tap to return to today
           </span>
         )}
@@ -99,11 +95,10 @@ export function DateNav({ dateStr }: Props) {
         type="button"
         onClick={() => !isToday && !isFuture && go(shiftDate(dateStr, 1))}
         disabled={isToday}
-        className="flex h-9 w-9 items-center justify-center rounded-full tap-scale transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-        style={{ background: '#F1EFE9' }}
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-2 tap-scale transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         aria-label="Next day"
       >
-        <ChevronRight className="h-4 w-4" style={{ color: '#16181D' }} />
+        <ChevronRight className="h-4 w-4 text-ink" strokeWidth={1.75} />
       </button>
     </div>
   )

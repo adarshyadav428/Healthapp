@@ -180,13 +180,16 @@ export default async function LogPage({
   )
 
   return (
-    <div className="min-h-screen" style={{ background: '#FAFAF7' }}>
-      <AppHeader greeting displayName={profile.display_name ?? null} />
-      <main className="mx-auto w-full max-w-md px-[18px] pt-4" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen">
+      <AppHeader />
+      <main className="mx-auto w-full max-w-md px-5 pt-3" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}>
         {/* Header */}
-        <div className="mb-3">
-          <h1 className="text-[26px] font-black leading-tight" style={{ color: '#16181D' }}>Food Diary</h1>
-          <p className="text-[13px] font-medium mt-0.5" style={{ color: '#9CA3AF' }}>{isToday ? 'What did you eat today?' : 'Viewing past entry'}</p>
+        <div className="mb-4 px-1">
+          <p className="text-[10.5px] font-medium uppercase tracking-[.12em] text-ink-3">
+            {isToday ? 'Today' : 'Past entry'}
+          </p>
+          <h1 className="font-display mt-1.5 text-[23px] font-semibold leading-tight tracking-tight text-ink">Food diary</h1>
+          <p className="mt-0.5 text-[13.5px] text-ink-2">{isToday ? 'What did you eat today?' : 'Viewing a past day'}</p>
         </div>
 
         {/* Date navigation */}
