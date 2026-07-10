@@ -60,7 +60,7 @@ export function ThemeSegmented() {
               'flex flex-col items-center gap-1.5 rounded-control border py-3 text-xs font-semibold transition-all tap-scale',
               active
                 ? 'border-brand bg-brand-soft text-brand-ink'
-                : 'border-hairline bg-surface-2 text-ink-2 hover:border-brand/40'
+                : 'border-hairline bg-surface-2 text-ink-2 hover:border-brand-ring'
             )}
           >
             <m.icon className="h-[18px] w-[18px]" strokeWidth={1.75} />

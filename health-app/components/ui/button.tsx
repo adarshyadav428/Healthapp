@@ -8,8 +8,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Peacock owns every action
-        default: 'bg-brand text-white shadow-rest hover:brightness-110',
+        // Ember owns every action
+        default: 'bg-cta-grad text-white shadow-cta hover:brightness-105',
         outline: 'border border-hairline bg-surface text-ink hover:bg-surface-2',
         ghost:   'bg-brand-soft text-brand-ink hover:brightness-95',
         subtle:  'bg-transparent text-ink hover:bg-surface-2',

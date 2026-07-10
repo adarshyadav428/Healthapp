@@ -699,7 +699,7 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
               <button
                 type="button"
                 onClick={() => setShowUnitPicker(true)}
-                className="w-full h-12 rounded-control bg-surface-2 px-3 flex items-center justify-between text-left transition-all hover:bg-hairline/40"
+                className="w-full h-12 rounded-control bg-surface-2 px-3 flex items-center justify-between text-left transition-all hover:bg-hairline"
               >
                 <span className="text-base font-bold text-ink truncate">{unit.label}</span>
                 <ChevronDown className="h-4 w-4 text-ink-2 flex-shrink-0 ml-1" />
@@ -747,7 +747,7 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
               className={`rounded-control py-2.5 flex flex-col items-center gap-1 transition-all border ${
                 meal === m.value
                   ? 'bg-brand-soft border-brand text-brand-ink'
-                  : 'bg-surface border-hairline text-ink-2 hover:border-brand/40'
+                  : 'bg-surface border-hairline text-ink-2 hover:border-brand-ring'
               }`}
             >
               <span className="text-lg leading-none">{m.emoji}</span>

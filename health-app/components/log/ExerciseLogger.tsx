@@ -124,7 +124,7 @@ export function ExerciseLogger({ weightKg = 70 }: Props) {
                   className={`rounded-control px-2.5 py-1 text-xs font-semibold border transition-all ${
                     activity === a.name
                       ? 'border-2'
-                      : 'bg-surface-2 text-ink-2 border-hairline hover:border-brand/40'
+                      : 'bg-surface-2 text-ink-2 border-hairline hover:border-brand-ring'
                   }`}
                   style={activity === a.name ? { background: 'var(--bad-soft)', color: 'var(--fat)', borderColor: 'var(--fat)' } : undefined}
                 >

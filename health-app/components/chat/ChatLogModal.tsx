@@ -211,7 +211,7 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
                           <span className="text-sm font-bold text-brand-ink tabular-nums">{itemKcal} kcal</span>
                           <button
                             onClick={() => removeItem(idx)}
-                            className="rounded-full p-1 hover:bg-hairline/40 transition-colors"
+                            className="rounded-full p-1 hover:bg-hairline transition-colors"
                           >
                             <X className="h-3.5 w-3.5 text-ink-2" />
                           </button>

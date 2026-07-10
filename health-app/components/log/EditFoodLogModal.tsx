@@ -120,7 +120,7 @@ export function EditFoodLogModal({ log, onClose, onSaved }: { log: FoodLog; onCl
             <button
               type="button"
               onClick={() => setGrams((g) => Math.max(5, Math.round(g - 10)))}
-              className="h-10 w-10 rounded-control border border-hairline bg-surface-2 text-ink font-bold hover:bg-hairline/40 flex-shrink-0 transition-colors"
+              className="h-10 w-10 rounded-control border border-hairline bg-surface-2 text-ink font-bold hover:bg-hairline flex-shrink-0 transition-colors"
             >
               −
             </button>
@@ -135,7 +135,7 @@ export function EditFoodLogModal({ log, onClose, onSaved }: { log: FoodLog; onCl
             <button
               type="button"
               onClick={() => setGrams((g) => Math.round(g + 10))}
-              className="h-10 w-10 rounded-control border border-hairline bg-surface-2 text-ink font-bold hover:bg-hairline/40 flex-shrink-0 transition-colors"
+              className="h-10 w-10 rounded-control border border-hairline bg-surface-2 text-ink font-bold hover:bg-hairline flex-shrink-0 transition-colors"
             >
               +
             </button>
@@ -161,7 +161,7 @@ export function EditFoodLogModal({ log, onClose, onSaved }: { log: FoodLog; onCl
                 className={`rounded-control border py-2 text-xs font-semibold transition-all active:scale-95 ${
                   meal === opt.value
                     ? 'border-brand bg-brand-soft text-brand-ink'
-                    : 'border-hairline bg-surface-2 text-ink-2 hover:border-brand/40'
+                    : 'border-hairline bg-surface-2 text-ink-2 hover:border-brand-ring'
                 }`}
               >
                 {opt.label}

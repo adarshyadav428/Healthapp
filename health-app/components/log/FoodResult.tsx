@@ -27,7 +27,7 @@ export function FoodResult({
   const badge = SOURCE_BADGE[food.source] ?? SOURCE_BADGE.off
 
   return (
-    <div className="flex w-full items-center gap-2 rounded-card border border-hairline bg-surface px-4 py-3 shadow-rest hover:border-brand/40 transition-all">
+    <div className="flex w-full items-center gap-2 rounded-card border border-hairline bg-surface px-4 py-3 shadow-rest hover:border-brand-ring transition-all">
       <button type="button" className="flex-1 min-w-0 text-left" onClick={() => onSelect(food)}>
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
