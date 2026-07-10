@@ -4,8 +4,8 @@
   "description": "Log Indian & global foods, track macros, water, exercise and weight. Built for Indian diets.",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#fff7ed",
-  "theme_color": "#ea580c",
+  "background_color": "#F7F6F3",
+  "theme_color": "#F7F6F3",
   "orientation": "portrait",
   "categories": ["health", "fitness"],
   "icons": [

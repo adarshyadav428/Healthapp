@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Flame } from 'lucide-react'
 import { useUser } from '../../hooks/useUser'
+import { ThemeToggle } from '../ui/theme-toggle'
 
 function greeting(): string {
   const h = new Date().getHours()
@@ -53,15 +54,19 @@ export function AppHeader({ title, greeting: isGreeting, displayName }: AppHeade
         )}
       </div>
 
-      {/* Right: avatar → settings */}
-      <Link
-        href="/settings"
-        aria-label="Profile and settings"
-        title={name ?? user?.email ?? 'Settings'}
-        className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-full bg-brand text-[14px] font-bold text-white tap-scale"
-      >
-        {initial}
-      </Link>
+      {/* Right: theme toggle + avatar → settings */}
+      <div className="flex items-center gap-2.5">
+        <ThemeToggle />
+        <Link
+          href="/settings"
+          aria-label="Profile and settings"
+          title={name ?? user?.email ?? 'Settings'}
+          className="flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-full bg-ava-grad text-[14px] font-semibold text-white tap-scale"
+          style={{ boxShadow: '0 0 0 2px var(--canvas), 0 0 0 3.5px var(--ava-halo)' }}
+        >
+          {initial}
+        </Link>
+      </div>
     </header>
   )
 }

@@ -13,7 +13,8 @@ import { toast } from '../ui/use-toast'
 import { useSubscription } from '../../hooks/useSubscription'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Crown, Target, User, LogOut, Trash2, Download, Sliders, Pencil, Check, X, Zap } from 'lucide-react'
+import { ChevronRight, Crown, Target, User, LogOut, Trash2, Download, Sliders, Pencil, Check, X, Zap, SunMoon } from 'lucide-react'
+import { ThemeSegmented } from '../ui/theme-toggle'
 
 function ftInToCm(ft: number, inches: number) {
   return Math.round((ft * 12 + inches) * 2.54)
@@ -314,6 +315,12 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
           <span className="text-sm font-bold" style={{ color: bmiColor }}>{bmi} — {bmiLabel}</span>
         </div>
       )}
+
+      {/* Appearance */}
+      <SectionCard title="Appearance" icon={<SunMoon className="h-4 w-4" />}>
+        <ThemeSegmented />
+        <p className="mt-2.5 text-xs text-ink-2">System follows your phone&apos;s light/dark setting automatically.</p>
+      </SectionCard>
 
       {/* Profile form */}
       <SectionCard title="Profile" icon={<User className="h-4 w-4" />}>

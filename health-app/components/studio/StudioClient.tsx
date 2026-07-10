@@ -50,6 +50,8 @@ const WORLDS: Record<Direction, Record<string, string>> = {
     '--s-cta-grad': 'linear-gradient(160deg, #FF8A55, #F5551A)',
     '--s-ava-grad': 'linear-gradient(150deg, #FF9F6E, #F5551A)',
     '--s-ava-halo': 'rgba(255,122,69,.25)',
+    '--s-hero-wash': 'linear-gradient(180deg, rgba(255,122,69,.05), transparent 42%)',
+    '--s-bloom': 'none',
   },
   porcelain: {
     '--s-canvas': '#F7F6F3',
@@ -85,6 +87,8 @@ const WORLDS: Record<Direction, Record<string, string>> = {
     '--s-cta-grad': 'linear-gradient(160deg, #FF8A50, #EB5A20)',
     '--s-ava-grad': 'linear-gradient(150deg, #FF9560, #E8551C)',
     '--s-ava-halo': 'rgba(241,102,46,.22)',
+    '--s-hero-wash': 'linear-gradient(180deg, #FFF2E8 0%, rgba(255,255,255,0) 52%)',
+    '--s-bloom': 'radial-gradient(closest-side, rgba(241,102,46,.16), transparent 72%)',
   },
 }
 
@@ -119,7 +123,8 @@ function StudioRing({ eaten, target, animKey }: { eaten: number; target: number;
   const shown = useCountUp(eaten, 800, [animKey])
   return (
     <div className="st-ringwrap">
-      <svg key={animKey} width="196" height="196" viewBox="0 0 196 196" style={{ filter: 'var(--s-ring-drop)' }}>
+      <div className="st-bloom" aria-hidden="true" />
+      <svg key={animKey} width="196" height="196" viewBox="0 0 196 196" style={{ filter: 'var(--s-ring-drop)', position: 'relative' }}>
         <defs>
           <linearGradient id={`arc-${animKey}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="var(--s-accent-hi)" />
@@ -366,7 +371,7 @@ export function StudioClient() {
 const STUDIO_CSS = `
 #gis-studio {
   min-height: 100vh; background: #0B0A09; color: #E8E4DC;
-  font-family: var(--font-inter, ui-sans-serif, system-ui, sans-serif);
+  font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
   -webkit-font-smoothing: antialiased; display: flex; flex-direction: column;
 }
 #gis-studio * { box-sizing: border-box; margin: 0; }
@@ -409,10 +414,10 @@ const STUDIO_CSS = `
 
 /* ── type roles ── */
 #gis-studio .st-label { font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--s-ter); }
-#gis-studio .st-title { font-family: var(--font-inter-tight, var(--font-inter, sans-serif)); font-size: 23px; font-weight: 600; letter-spacing: -.02em; color: var(--s-ink); margin-top: 7px; }
+#gis-studio .st-title { font-family: var(--font-display, var(--font-sans, sans-serif)); font-size: 23px; font-weight: 600; letter-spacing: -.02em; color: var(--s-ink); margin-top: 7px; }
 #gis-studio .st-sub { font-size: 13.5px; font-weight: 400; color: var(--s-sec); line-height: 1.5; margin-top: 4px; }
 #gis-studio .st-hero-num {
-  font-family: var(--font-inter-tight, var(--font-inter, sans-serif));
+  font-family: var(--font-display, var(--font-sans, sans-serif));
   font-size: 46px; font-weight: 700; letter-spacing: -.03em; line-height: 1; color: var(--s-ink);
   font-variant-numeric: tabular-nums;
 }
@@ -428,7 +433,8 @@ const STUDIO_CSS = `
 
 /* cards */
 #gis-studio .st-card { background: var(--s-surface); border-radius: 20px; box-shadow: var(--s-card-shadow); }
-#gis-studio .st-hero-card { padding: 24px; }
+#gis-studio .st-hero-card { padding: 24px; background-image: var(--s-hero-wash); }
+#gis-studio .st-bloom { position: absolute; inset: -26px; background: var(--s-bloom); pointer-events: none; }
 #gis-studio .st-hero-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 #gis-studio .st-streak {
   display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600;
@@ -498,7 +504,7 @@ const STUDIO_CSS = `
 #gis-studio .st-pw-back { display: flex; align-items: center; gap: 2px; font-size: 12.5px; color: var(--s-ter); padding: 26px 0 6px; }
 #gis-studio .st-pw-head { text-align: center; padding: 24px 0 24px; }
 #gis-studio .st-eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--s-accent-ink); margin-bottom: 12px; }
-#gis-studio .st-pw-h { font-family: var(--font-inter-tight, sans-serif); font-size: 31px; font-weight: 700; letter-spacing: -.025em; line-height: 1.1; color: var(--s-ink); }
+#gis-studio .st-pw-h { font-family: var(--font-display, sans-serif); font-size: 31px; font-weight: 700; letter-spacing: -.025em; line-height: 1.1; color: var(--s-ink); }
 #gis-studio .st-feats { padding: 0 6px 22px; }
 #gis-studio .st-feat { display: flex; align-items: center; gap: 12px; font-size: 13.5px; color: var(--s-sec); padding: 7px 0; }
 #gis-studio .st-feat b { font-weight: 600; color: var(--s-ink); }
@@ -515,7 +521,7 @@ const STUDIO_CSS = `
   border-radius: 999px; padding: 4px 11px;
 }
 #gis-studio .st-plan-row { display: flex; align-items: flex-end; justify-content: space-between; }
-#gis-studio .st-price { font-family: var(--font-inter-tight, sans-serif); font-size: 30px; font-weight: 700; letter-spacing: -.03em; color: var(--s-ink); line-height: 1; margin-top: 7px; font-variant-numeric: tabular-nums; }
+#gis-studio .st-price { font-family: var(--font-display, sans-serif); font-size: 30px; font-weight: 700; letter-spacing: -.03em; color: var(--s-ink); line-height: 1; margin-top: 7px; font-variant-numeric: tabular-nums; }
 #gis-studio .st-price span { font-size: 13px; font-weight: 400; color: var(--s-ter); letter-spacing: 0; }
 #gis-studio .st-note { font-size: 11.5px; color: var(--s-sec); margin-top: 8px; }
 #gis-studio .st-permo { font-size: 12px; font-weight: 600; color: var(--s-accent-ink); }

@@ -17,16 +17,15 @@ const config: Config = {
         scrim:         'var(--scrim)',
         'header-bg':   'var(--header-bg)',
 
-        // ── Brand · peacock (interactive) ──
+        // ── Accent · ember (brand and energy are the same family now) ──
         brand:         'var(--brand)',
         'brand-soft':  'var(--brand-soft)',
         'brand-ink':   'var(--brand-text)',
         'brand-ring':  'var(--brand-ring)',
-
-        // ── Energy · marigold (data) ──
         energy:        'var(--energy)',
         'energy-ink':  'var(--energy-ink)',
         'energy-soft': 'var(--energy-soft)',
+        track:         'var(--track)',
 
         // ── Semantic ──
         good:          'var(--good)',
@@ -47,13 +46,12 @@ const config: Config = {
         border:        'var(--hairline)',
         muted:         'var(--ink-2)',
         secondary:     'var(--ink-2)',
-        // Interactive — flips coral → peacock everywhere it was used
+        // Interactive
         primary:       'var(--brand)',
         accent:        'var(--brand)',
         'accent-soft': 'var(--brand-soft)',
         'accent-ink':  'var(--brand-text)',
         'accent-line': 'var(--brand-soft)',
-        // Data accent — was light coral, now marigold
         'accent-2':    'var(--energy)',
         // Semantic
         success:       'var(--good)',
@@ -80,9 +78,17 @@ const config: Config = {
       boxShadow: {
         rest:  'var(--shadow-rest)',
         float: 'var(--shadow-float)',
+        cta:   'var(--cta-shadow)',
+        fab:   'var(--fab-shadow)',
+      },
+      backgroundImage: {
+        'cta-grad':  'var(--cta-grad)',
+        'ava-grad':  'var(--ava-grad)',
+        'hero-wash': 'var(--hero-wash)',
       },
       transitionTimingFunction: {
         spring: 'cubic-bezier(.32,.72,0,1)',
+        out:    'cubic-bezier(.22,1,.36,1)',
       },
     },
   },

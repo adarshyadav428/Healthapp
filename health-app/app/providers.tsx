@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Suspense, useEffect, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { ThemeProvider } from 'next-themes'
 import { Toaster } from '../components/ui/toaster'
 import { capturePageview } from '../lib/posthog/client'
 
@@ -33,12 +34,14 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <Suspense fallback={null}>
-        <PostHogPageView />
-      </Suspense>
-      {children}
-      <Toaster />
-    </QueryClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <QueryClientProvider client={queryClient}>
+        <Suspense fallback={null}>
+          <PostHogPageView />
+        </Suspense>
+        {children}
+        <Toaster />
+      </QueryClientProvider>
+    </ThemeProvider>
   )
 }

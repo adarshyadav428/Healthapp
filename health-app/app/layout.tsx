@@ -1,33 +1,19 @@
 import type { Metadata, Viewport } from 'next'
-import { Instrument_Sans, Bricolage_Grotesque, Inter, Inter_Tight } from 'next/font/google'
+import { Inter, Inter_Tight } from 'next/font/google'
 import './globals.css'
 import Providers from './providers'
 
-const instrumentSans = Instrument_Sans({
-  subsets: ['latin'],
-  variable: '--font-sans',
-  display: 'swap',
-  weight: ['400', '500', '600', '700'],
-})
-
-const bricolage = Bricolage_Grotesque({
-  subsets: ['latin'],
-  variable: '--font-display',
-  display: 'swap',
-  weight: ['600', '700', '800'],
-})
-
-// Candidate premium type system — currently consumed only by /studio.
-// Promoted to --font-sans/--font-display app-wide once a direction is picked.
+// Ember type system: Inter for UI, Inter Tight for display & hero numerals —
+// the doctrine's Apple-crisp pairing, promoted app-wide after the studio pick.
 const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-sans',
   display: 'swap',
 })
 
 const interTight = Inter_Tight({
   subsets: ['latin'],
-  variable: '--font-inter-tight',
+  variable: '--font-display',
   display: 'swap',
 })
 
@@ -57,7 +43,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#F6F5F1',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#F7F6F3' },
+    { media: '(prefers-color-scheme: dark)', color: '#0F0E0C' },
+  ],
 }
 
 export default function RootLayout({
@@ -65,12 +54,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // suppressHydrationWarning: next-themes stamps the theme class on <html>
+  // before hydration, which React would otherwise flag as a mismatch.
   return (
-    <html lang="en" className={`h-full ${instrumentSans.variable} ${bricolage.variable} ${inter.variable} ${interTight.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`h-full ${inter.variable} ${interTight.variable}`}>
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
-      <body className="min-h-full bg-canvas text-ink">
+      <body className="min-h-full text-ink">
         <Providers>{children}</Providers>
       </body>
     </html>
