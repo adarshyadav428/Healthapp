@@ -102,7 +102,7 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
               <button
                 type="button"
                 onClick={() => form.setValue('weight_kg', Math.max(1, weight - 0.1), { shouldValidate: true })}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 text-lg font-bold text-ink hover:bg-hairline/40 active:scale-90 transition-all"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 text-lg font-bold text-ink hover:bg-hairline active:scale-90 transition-all"
               >
                 −
               </button>
@@ -116,7 +116,7 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
               <button
                 type="button"
                 onClick={() => form.setValue('weight_kg', weight + 0.1, { shouldValidate: true })}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 text-lg font-bold text-ink hover:bg-hairline/40 active:scale-90 transition-all"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 text-lg font-bold text-ink hover:bg-hairline active:scale-90 transition-all"
               >
                 +
               </button>
@@ -132,7 +132,7 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
                   key={adj}
                   type="button"
                   onClick={() => form.setValue('weight_kg', Math.max(1, +(weight + adj).toFixed(1)), { shouldValidate: true })}
-                  className="rounded-control border border-hairline bg-surface-2 px-3 py-1 text-xs font-semibold text-ink hover:border-brand/40 hover:bg-brand-soft hover:text-brand-ink active:scale-95 transition-all"
+                  className="rounded-control border border-hairline bg-surface-2 px-3 py-1 text-xs font-semibold text-ink hover:border-brand-ring hover:bg-brand-soft hover:text-brand-ink active:scale-95 transition-all"
                 >
                   {adj > 0 ? `+${adj}` : adj}
                 </button>

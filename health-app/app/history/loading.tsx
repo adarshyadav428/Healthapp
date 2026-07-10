@@ -1,7 +1,7 @@
 export default function HistoryLoading() {
   return (
     <div className="min-h-screen bg-canvas pb-24">
-      <div className="sticky top-0 z-40 border-b border-hairline/60 bg-canvas/80 backdrop-blur-md">
+      <div className="sticky top-0 z-40 border-b border-hairline bg-header-bg backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-md items-center justify-between px-4">
           <div className="h-6 w-24 rounded-lg bg-surface-2 animate-shimmer" />
           <div className="h-8 w-8 rounded-full bg-surface-2 animate-shimmer" />
@@ -29,7 +29,7 @@ export default function HistoryLoading() {
         </div>
 
         {/* Chart */}
-        <div className="rounded-sheet bg-surface p-4 shadow-sm border border-hairline">
+        <div className="rounded-sheet bg-surface p-4 shadow-rest border border-hairline">
           <div className="h-4 w-32 rounded bg-surface-2 animate-shimmer mb-4" />
           <div className="h-48 w-full rounded-control bg-surface-2 animate-shimmer" />
         </div>
@@ -37,14 +37,14 @@ export default function HistoryLoading() {
         {/* Stat cards */}
         <div className="grid grid-cols-2 gap-3">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="rounded-card bg-surface p-4 shadow-sm border border-hairline h-20 animate-shimmer" />
+            <div key={i} className="rounded-card bg-surface p-4 shadow-rest border border-hairline h-20 animate-shimmer" />
           ))}
         </div>
 
         {/* Weekly rows */}
         <div className="space-y-2">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-16 w-full rounded-card bg-surface shadow-sm border border-hairline animate-shimmer" />
+            <div key={i} className="h-16 w-full rounded-card bg-surface shadow-rest border border-hairline animate-shimmer" />
           ))}
         </div>
       </main>

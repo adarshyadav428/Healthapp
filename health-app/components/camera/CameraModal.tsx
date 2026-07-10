@@ -368,7 +368,7 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
       {/* ── Bottom panel ── */}
       <div
         className={`shrink-0 px-4 pb-6 pt-5 space-y-4 ${showResults ? 'bg-surface rounded-t-sheet' : ''}`}
-        style={!showResults ? { background: '#030712' } : undefined}
+        style={!showResults ? { background: '#030712' } : undefined} // token-check-ignore — camera viewfinder chrome is intentionally near-black regardless of theme
       >
 
         {/* ── Result card (photo mode) ── */}

@@ -263,7 +263,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
                     className={`rounded-control px-3 py-1.5 text-sm font-bold border transition-all ${
                       quickKcal === String(kcal)
                         ? 'bg-brand text-white border-brand shadow-rest'
-                        : 'bg-surface text-ink border-hairline hover:border-brand/40'
+                        : 'bg-surface text-ink border-hairline hover:border-brand-ring'
                     }`}
                   >
                     {kcal.toLocaleString()}
@@ -393,7 +393,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
                   className={`rounded-control border py-2.5 text-sm font-semibold transition-all ${
                     form.watch('goal') === g.value
                       ? 'border-brand bg-brand-soft text-brand-ink'
-                      : 'border-hairline bg-surface text-ink hover:border-brand/40'
+                      : 'border-hairline bg-surface text-ink hover:border-brand-ring'
                   }`}
                 >
                   {g.emoji} {g.label}
@@ -599,7 +599,7 @@ function BmiRecommendation({
   const maxHealthy = +(24.9 * hM * hM).toFixed(1)
 
   return (
-    <div className="mt-2 rounded-card border border-hairline bg-brand-soft/50 p-3 space-y-2">
+    <div className="mt-2 rounded-card border border-hairline bg-brand-soft p-3 space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-xs text-ink-2">Your current BMI</span>
         <span className="text-xs font-bold" style={{ color: bmiColor }}>{currentBmi} · {bmiLabel}</span>

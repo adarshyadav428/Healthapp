@@ -199,7 +199,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="w-full pl-10 pr-28 h-12 text-[14px] rounded-2xl outline-none transition-all"
-          style={{ background: '#fff', border: '1px solid var(--hairline)', color: 'var(--ink)' }}
+          style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', color: 'var(--ink)' }}
           onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--brand)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--brand-soft)' }}
           onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--hairline)'; e.currentTarget.style.boxShadow = 'none' }}
           autoComplete="off"
@@ -250,7 +250,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
                   onClick={() => reLogItem(item)}
                   disabled={isAdding}
                   className="flex-shrink-0 flex items-center gap-2 rounded-2xl px-3 py-2.5 text-left tap-scale disabled:opacity-50 transition-all"
-                  style={{ background: '#fff', border: '1px solid var(--hairline)' }}
+                  style={{ background: 'var(--surface)', border: '1px solid var(--hairline)' }}
                 >
                   <div>
                     <p className="text-xs font-bold max-w-[120px] truncate leading-tight" style={{ color: 'var(--ink)' }}>{item.food.name}</p>
@@ -302,7 +302,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
                 <div
                   key={meal.id}
                   className="flex items-center gap-2 rounded-2xl px-4 py-3"
-                  style={{ background: '#fff', border: '1px solid var(--hairline)' }}
+                  style={{ background: 'var(--surface)', border: '1px solid var(--hairline)' }}
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold truncate" style={{ color: 'var(--ink)' }}>{meal.name}</p>

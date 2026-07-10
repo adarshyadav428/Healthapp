@@ -2,7 +2,7 @@ export default function DashboardLoading() {
   return (
     <div className="min-h-screen bg-canvas pb-24">
       {/* Navbar skeleton */}
-      <div className="sticky top-0 z-40 border-b border-hairline/60 bg-canvas/80 backdrop-blur-md">
+      <div className="sticky top-0 z-40 border-b border-hairline bg-header-bg backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-md items-center justify-between px-4">
           <div className="h-6 w-24 rounded-lg bg-surface-2 animate-shimmer" />
           <div className="h-8 w-8 rounded-full bg-surface-2 animate-shimmer" />
@@ -18,7 +18,7 @@ export default function DashboardLoading() {
         </div>
 
         {/* Calorie ring skeleton */}
-        <div className="rounded-sheet bg-surface p-5 shadow-sm border border-hairline">
+        <div className="rounded-sheet bg-surface p-5 shadow-rest border border-hairline">
           <div className="flex items-center gap-5">
             <div className="h-28 w-28 rounded-full bg-surface-2 animate-shimmer flex-shrink-0" />
             <div className="flex-1 space-y-3">
@@ -34,32 +34,32 @@ export default function DashboardLoading() {
 
         {/* Streak + weight cards skeleton */}
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-sheet bg-surface p-4 shadow-sm border border-hairline h-24 animate-shimmer" />
-          <div className="rounded-sheet bg-surface p-4 shadow-sm border border-hairline h-24 animate-shimmer" />
+          <div className="rounded-sheet bg-surface p-4 shadow-rest border border-hairline h-24 animate-shimmer" />
+          <div className="rounded-sheet bg-surface p-4 shadow-rest border border-hairline h-24 animate-shimmer" />
         </div>
 
         {/* Insight card skeleton */}
-        <div className="rounded-sheet bg-surface p-4 shadow-sm border border-hairline h-16 animate-shimmer" />
+        <div className="rounded-sheet bg-surface p-4 shadow-rest border border-hairline h-16 animate-shimmer" />
 
         {/* Macros + water skeleton */}
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-sheet bg-surface p-4 shadow-sm border border-hairline h-36 animate-shimmer" />
-          <div className="rounded-sheet bg-surface p-4 shadow-sm border border-hairline h-36 animate-shimmer" />
+          <div className="rounded-sheet bg-surface p-4 shadow-rest border border-hairline h-36 animate-shimmer" />
+          <div className="rounded-sheet bg-surface p-4 shadow-rest border border-hairline h-36 animate-shimmer" />
         </div>
 
         {/* Exercise card skeleton */}
-        <div className="rounded-sheet bg-surface p-4 shadow-sm border border-hairline h-24 animate-shimmer" />
+        <div className="rounded-sheet bg-surface p-4 shadow-rest border border-hairline h-24 animate-shimmer" />
 
         {/* Meal sections skeleton */}
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="rounded-card bg-surface p-4 shadow-sm border border-hairline h-20 animate-shimmer" />
+            <div key={i} className="rounded-card bg-surface p-4 shadow-rest border border-hairline h-20 animate-shimmer" />
           ))}
         </div>
       </main>
 
       {/* Bottom nav skeleton */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-hairline bg-surface/95 backdrop-blur-md safe-area-bottom">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-hairline bg-header-bg backdrop-blur-md safe-area-bottom">
         <div className="mx-auto flex h-16 max-w-md items-center justify-around px-2">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="flex flex-col items-center gap-1">

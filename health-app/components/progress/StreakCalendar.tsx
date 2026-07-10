@@ -73,7 +73,7 @@ export function StreakCalendar({ loggedDates }: Props) {
                 'aspect-square rounded-md transition-all',
                 cell.isToday
                   ? cell.logged
-                    ? 'bg-brand ring-2 ring-brand/30'
+                    ? 'bg-brand ring-2 ring-brand-ring'
                     : 'bg-surface-2 ring-2 ring-brand'
                   : cell.logged
                   ? 'bg-brand'

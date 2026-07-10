@@ -1,7 +1,7 @@
 export default function LogLoading() {
   return (
     <div className="min-h-screen bg-canvas pb-24">
-      <div className="sticky top-0 z-40 border-b border-hairline/60 bg-canvas/80 backdrop-blur-md">
+      <div className="sticky top-0 z-40 border-b border-hairline bg-header-bg backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-md items-center justify-between px-4">
           <div className="h-6 w-24 rounded-lg bg-surface-2 animate-shimmer" />
           <div className="h-8 w-8 rounded-full bg-surface-2 animate-shimmer" />

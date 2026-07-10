@@ -238,7 +238,7 @@ export function HistoryClient({ logs, profile, exerciseLogs = [], isPro = false 
               className={`rounded-control px-3 py-1 text-xs font-semibold transition-all ${
                 metric === m
                   ? 'text-white shadow-rest'
-                  : 'bg-surface-2 text-ink-2 hover:bg-hairline/40'
+                  : 'bg-surface-2 text-ink-2 hover:bg-hairline'
               }`}
               style={metric === m ? { backgroundColor: metricConfig[m].color } : {}}
             >

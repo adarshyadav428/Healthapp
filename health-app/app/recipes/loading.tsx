@@ -1,7 +1,7 @@
 export default function RecipesLoading() {
   return (
     <div className="min-h-screen bg-canvas pb-24">
-      <div className="h-14 bg-canvas/80 border-b border-hairline animate-shimmer" />
+      <div className="h-14 bg-header-bg border-b border-hairline animate-shimmer" />
       <div className="mx-auto w-full max-w-md px-4 py-6 space-y-4">
         {/* Title */}
         <div className="h-7 w-40 rounded-control bg-surface-2 animate-shimmer" />
