@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useQueryClient } from '@tanstack/react-query'
 import type { Profile } from '../../types/index'
 import { profileUpdateSchema, type ProfileUpdateData } from '../../lib/validations'
 import { Button } from '../ui/button'
@@ -53,6 +54,7 @@ function SectionCard({ title, icon, children }: { title: string; icon: React.Rea
 
 export function SettingsClient({ profile, version }: { profile: Profile; version: string }) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { data: subscription } = useSubscription(profile.id)
   const [portalLoading, setPortalLoading] = useState(false)
   const [signOutLoading, setSignOutLoading] = useState(false)
@@ -124,6 +126,25 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
         ? `https://play.google.com/store/account/subscriptions?sku=${sku}&package=com.getinshape.app`
         : 'https://play.google.com/store/account/subscriptions'
       window.location.href = url
+      return
+    }
+
+    // Razorpay has no hosted self-serve portal like Stripe — cancel directly.
+    if (subscription?.provider === 'razorpay') {
+      const confirmed = window.confirm('Cancel your Pro subscription? You\'ll keep access until the end of the current billing period.')
+      if (!confirmed) return
+      try {
+        setPortalLoading(true)
+        const res = await fetch('/api/razorpay/cancel', { method: 'POST' })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error)
+        queryClient.invalidateQueries({ queryKey: ['subscription', profile.id] })
+        toast({ title: 'Subscription cancelled', duration: 3000 })
+      } catch (err) {
+        toast({ title: 'Could not cancel', description: (err as Error).message, variant: 'error', duration: 4000 })
+      } finally {
+        setPortalLoading(false)
+      }
       return
     }
 

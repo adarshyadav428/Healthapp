@@ -102,11 +102,13 @@ export type MeasurementLog = {
 
 export type Subscription = {
   user_id: string
-  provider: 'stripe' | 'google_play'
+  provider: 'stripe' | 'google_play' | 'razorpay'
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
   play_purchase_token: string | null
   play_product_id: string | null
+  razorpay_customer_id: string | null
+  razorpay_subscription_id: string | null
   status: 'active' | 'canceled' | 'past_due' | 'trialing' | null
   plan: 'monthly' | 'annual' | null
   current_period_end: string | null

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
+import Script from 'next/script'
 import { Button } from '../../components/ui/button'
 import { toast } from '../../components/ui/use-toast'
 import Link from 'next/link'
@@ -10,6 +11,27 @@ import { Check, Crown, Zap, ArrowLeft, Lock } from 'lucide-react'
 import { useUser } from '../../hooks/useUser'
 import { isPlayBillingAvailable, getPlayPrices, purchasePlan } from '../../lib/play/billing'
 import { PLAY_PRODUCTS } from '../../lib/play/products'
+
+type RazorpaySuccessResponse = {
+  razorpay_payment_id: string
+  razorpay_subscription_id: string
+  razorpay_signature: string
+}
+
+declare global {
+  interface Window {
+    Razorpay: new (options: {
+      key: string
+      subscription_id: string
+      name: string
+      description: string
+      prefill?: { email?: string }
+      theme?: { color: string }
+      handler: (response: RazorpaySuccessResponse) => void
+      modal?: { ondismiss?: () => void }
+    }) => { open: () => void }
+  }
+}
 
 const REASON_COPY: Record<string, { title: string; description: string }> = {
   history:            { title: 'Unlock your full history', description: 'Free users can view the last 7 days. Pro shows everything.' },
@@ -108,32 +130,75 @@ export default function UpgradePage() {
     }
   }
 
-  // Stripe path (web / iOS PWA / desktop) — redirect to hosted checkout.
-  const startStripeCheckout = async (plan: 'monthly' | 'annual') => {
-    const res = await fetch('/api/stripe/create-checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan }),
+  // Razorpay path (web / iOS PWA / desktop) — Stripe barely supports
+  // India-domestic INR recurring under RBI mandate rules, so this replaces
+  // it for all new web checkouts (existing Stripe subscribers are
+  // untouched — see migration 022_razorpay_billing.sql). Opens Razorpay's
+  // Checkout widget rather than redirecting, since subscriptions are
+  // authorised in-modal, not via a hosted page like Stripe Checkout.
+  const startRazorpayCheckout = (plan: 'monthly' | 'annual') =>
+    new Promise<void>((resolve, reject) => {
+      fetch('/api/razorpay/create-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      })
+        .then(async (res) => {
+          const data = await res.json()
+          if (!res.ok) throw new Error(data.error)
+          if (typeof window.Razorpay !== 'function') throw new Error('Payment widget failed to load — please retry.')
+
+          const rzp = new window.Razorpay({
+            key: data.key_id,
+            subscription_id: data.subscription_id,
+            name: 'GetInShape',
+            description: plan === 'monthly' ? 'Pro Monthly' : 'Pro Annual',
+            prefill: { email: user?.email ?? undefined },
+            // Razorpay's widget renders outside our DOM (its own iframe/modal), so it
+            // can't read var(--brand) — read the live computed value instead so the
+            // widget matches the active light/dark theme rather than one hardcoded hex.
+            theme: { color: getComputedStyle(document.documentElement).getPropertyValue('--brand').trim() || '#F1662E' }, // token-check-ignore
+            handler: (response) => {
+              fetch('/api/razorpay/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...response, plan }),
+              })
+                .then(async (verifyRes) => {
+                  const verifyData = await verifyRes.json()
+                  if (!verifyRes.ok) throw new Error(verifyData.error)
+                  queryClient.invalidateQueries({ queryKey: ['subscription', user?.id] })
+                  toast({ title: 'Welcome to Pro!', duration: 2500 })
+                  router.push('/dashboard?upgraded=true')
+                  resolve()
+                })
+                .catch(reject)
+            },
+            modal: { ondismiss: () => reject(new Error('Checkout cancelled')) },
+          })
+          rzp.open()
+        })
+        .catch(reject)
     })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error)
-    window.location.href = data.url
-  }
 
   const startCheckout = async (plan: 'monthly' | 'annual') => {
     if (loading) return
     setLoading(plan)
     try {
       if (playAvailable) await startPlayPurchase(plan)
-      else await startStripeCheckout(plan)
+      else await startRazorpayCheckout(plan)
     } catch (err) {
-      toast({ title: 'Checkout failed', description: (err as Error).message, variant: 'error' })
+      const message = (err as Error).message
+      if (message !== 'Checkout cancelled') {
+        toast({ title: 'Checkout failed', description: message, variant: 'error' })
+      }
       setLoading(null)
     }
   }
 
   return (
     <div className="min-h-screen">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       <div className="mx-auto w-full max-w-lg px-4 py-8">
         <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-ink-2 hover:text-ink mb-6">
           <ArrowLeft className="h-4 w-4" />
@@ -219,7 +284,7 @@ export default function UpgradePage() {
           <p className="text-xs text-ink-2">
             {playAvailable
               ? 'Billed securely through Google Play · Cancel anytime'
-              : 'Secured by Stripe · Cancel anytime · 30-day money back'}
+              : 'Secured by Razorpay · Cancel anytime · 30-day money back'}
           </p>
           <div className="flex justify-center gap-4 text-xs text-ink-2">
             <Link href="/terms" className="underline hover:text-ink">Terms</Link>
