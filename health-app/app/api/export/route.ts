@@ -65,7 +65,7 @@ export async function GET() {
       status: 200,
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="caltrack-export-${new Date().toISOString().slice(0, 10)}.csv"`,
+        'Content-Disposition': `attachment; filename="getinshape-export-${new Date().toISOString().slice(0, 10)}.csv"`,
       },
     })
   } catch (err) {

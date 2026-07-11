@@ -10,7 +10,7 @@ export default function PrivacyPage() {
             <span className="font-display text-xl font-bold text-brand-ink">GetInShape</span>
           </Link>
           <h1 className="font-display text-3xl font-bold text-ink">Privacy Policy</h1>
-          <p className="text-sm text-ink-2 mt-1">Last updated: May 1, 2026</p>
+          <p className="text-sm text-ink-2 mt-1">Last updated: July 11, 2026</p>
         </div>
 
         <div className="space-y-6 rounded-sheet border border-hairline bg-surface p-6 shadow-rest">
@@ -18,18 +18,20 @@ export default function PrivacyPage() {
             <ul className="list-disc ml-4 mt-1 space-y-1">
               <li><strong>Account info:</strong> email address and display name</li>
               <li><strong>Profile data:</strong> age, height, weight, activity level, and dietary goal — to calculate your personalised calorie target</li>
-              <li><strong>Food logs:</strong> foods you log and their nutritional data, including photos you scan for AI analysis</li>
+              <li><strong>Food logs:</strong> foods you log and their nutritional data, including photos you scan for AI analysis (photos are sent to Google Gemini for analysis and are not stored by us afterward — we only keep the resulting food/nutrition estimate you confirm)</li>
               <li><strong>Weight logs:</strong> your recorded weigh-ins</li>
               <li><strong>Exercise logs:</strong> activities and duration you track</li>
-              <li><strong>Subscription data:</strong> plan type and billing status (handled by Stripe or Google Play — we never see your card details)</li>
+              <li><strong>Saved meals &amp; favourites:</strong> meal templates and foods you save for quick re-logging</li>
+              <li><strong>Push notification token:</strong> if you enable meal reminders, your browser&apos;s push subscription endpoint and encryption keys — used only to deliver reminders, never shared or sold</li>
+              <li><strong>Subscription data:</strong> plan type and billing status (handled by Razorpay, Stripe, or Google Play — we never see your card, UPI, or bank details)</li>
               <li><strong>Product analytics:</strong> in-app usage events (e.g. which features you use) via PostHog, to help us improve the app</li>
             </ul>
           </Section>
 
           <Section title="2. How We Use Your Data">
             We use your data solely to provide GetInShape&apos;s features: calculating your calorie targets,
-            showing your food and weight history, and managing your subscription. We do not use your data
-            for advertising or sell it to third parties.
+            showing your food and weight history, sending reminders you&apos;ve opted into, and managing your
+            subscription. We do not use your data for advertising or sell it to third parties.
           </Section>
 
           <Section title="3. Data Storage">
@@ -41,7 +43,7 @@ export default function PrivacyPage() {
             We use the following trusted providers:
             <ul className="list-disc ml-4 mt-1 space-y-1">
               <li><strong>Supabase</strong> — database and authentication</li>
-              <li><strong>Stripe / Google Play Billing</strong> — payment processing (PCI-compliant)</li>
+              <li><strong>Razorpay, Stripe, and Google Play Billing</strong> — payment processing (PCI-compliant); which one handles your payment depends on how you signed up</li>
               <li><strong>Vercel</strong> — hosting and edge functions</li>
               <li><strong>IFCT 2017 (NIN Hyderabad) &amp; Open Food Facts</strong> — food nutrition data</li>
               <li><strong>Google Gemini</strong> — AI photo and natural-language meal analysis</li>
@@ -75,8 +77,8 @@ export default function PrivacyPage() {
 
           <Section title="9. Contact">
             For privacy-related requests, email us at{' '}
-            <a href="mailto:privacy@caltrack.app" className="text-brand-ink hover:underline">
-              privacy@caltrack.app
+            <a href="mailto:adarshyadavazm123@gmail.com" className="text-brand-ink hover:underline">
+              adarshyadavazm123@gmail.com
             </a>
           </Section>
         </div>

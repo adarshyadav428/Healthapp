@@ -10,7 +10,7 @@ export default function TermsPage() {
             <span className="font-display text-xl font-bold text-brand-ink">GetInShape</span>
           </Link>
           <h1 className="font-display text-3xl font-bold text-ink">Terms of Service</h1>
-          <p className="text-sm text-ink-2 mt-1">Last updated: May 1, 2026</p>
+          <p className="text-sm text-ink-2 mt-1">Last updated: July 11, 2026</p>
         </div>
 
         <div className="space-y-6 rounded-sheet border border-hairline bg-surface p-6 shadow-rest">
@@ -34,9 +34,10 @@ export default function TermsPage() {
 
           <Section title="4. Subscriptions and Billing">
             GetInShape offers a free tier with limited features and a Pro subscription for unlimited access.
-            Billing is handled securely by Stripe. You may cancel your subscription at any time from
-            Settings. Refunds are handled on a case-by-case basis — contact us within 7 days of a charge
-            if you believe you were billed in error.
+            Billing is handled securely by Razorpay (web), Google Play Billing (Android), or Stripe (for
+            accounts that subscribed before we switched web billing to Razorpay). You may cancel your
+            subscription at any time from Settings. Refunds are handled on a case-by-case basis — contact us
+            within 7 days of a charge if you believe you were billed in error.
           </Section>
 
           <Section title="5. Data and Privacy">
@@ -63,8 +64,8 @@ export default function TermsPage() {
 
           <Section title="9. Contact">
             Questions? Reach us at{' '}
-            <a href="mailto:support@caltrack.app" className="text-brand-ink hover:underline">
-              support@caltrack.app
+            <a href="mailto:adarshyadavazm123@gmail.com" className="text-brand-ink hover:underline">
+              adarshyadavazm123@gmail.com
             </a>
           </Section>
         </div>
