@@ -1,8 +1,33 @@
 import type { MetadataRoute } from 'next'
+import { createAdminClient } from '../lib/supabase/server'
 
 const BASE = process.env.NEXT_PUBLIC_APP_URL ?? 'https://healthapp-dun.vercel.app'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+// sitemap.ts runs with no request context (like generateStaticParams), so
+// the cookie-bound server client would throw — admin client is safe here
+// for the same reason it's safe in app/foods/[slug]/page.tsx: the query is
+// hardcoded to source = 'ifct', not driven by any caller input.
+async function getFoodPageUrls(): Promise<MetadataRoute.Sitemap> {
+  const supabase = createAdminClient()
+  const { data } = await supabase
+    .from('foods')
+    .select('source_id')
+    .eq('source', 'ifct')
+    .neq('name', 'Test Food')
+
+  return (data ?? [])
+    .filter((f): f is { source_id: string } => !!f.source_id)
+    .map((f) => ({
+      url: `${BASE}/foods/${f.source_id}`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly' as const,
+      priority: 0.5,
+    }))
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const foodUrls = await getFoodPageUrls()
+
   return [
     {
       url: BASE,
@@ -40,5 +65,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'yearly',
       priority: 0.3,
     },
+    ...foodUrls,
   ]
 }

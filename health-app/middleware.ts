@@ -48,7 +48,8 @@ export async function middleware(request: NextRequest) {
   const isApiRoute = pathname.startsWith('/api/')
   const isNextInternal = pathname.startsWith('/_next/')
   // /studio is the design-review route: static mock data only, noindex, no user data.
-  const isPublic = pathname === '/' || pathname === '/privacy' || pathname === '/terms' || pathname === '/upgrade' || pathname === '/studio'
+  // /foods/* is the public, indexable programmatic-SEO food pages (curated IFCT data only).
+  const isPublic = pathname === '/' || pathname === '/privacy' || pathname === '/terms' || pathname === '/upgrade' || pathname === '/studio' || pathname.startsWith('/foods/')
 
   // Let API routes and Next.js internals pass through
   if (isApiRoute || isNextInternal) return response
