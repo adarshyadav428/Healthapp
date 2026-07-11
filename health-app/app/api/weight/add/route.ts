@@ -11,8 +11,7 @@ export async function POST(req: Request) {
       error: sessionError,
     } = await supabase.auth.getUser()
 
-    if (sessionError) throw new Error(sessionError.message)
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (sessionError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const json = await req.json()
     const parsed = weightLogSchema.safeParse(json)

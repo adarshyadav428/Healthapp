@@ -10,8 +10,7 @@ export async function GET(req: Request) {
       error: sessionError,
     } = await supabase.auth.getUser()
 
-    if (sessionError) throw new Error(sessionError.message)
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (sessionError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(req.url)
     const start = searchParams.get('start')

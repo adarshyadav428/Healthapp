@@ -9,8 +9,7 @@ export async function POST() {
       error: userError,
     } = await supabase.auth.getUser()
 
-    if (userError) throw new Error(userError.message)
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (userError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const admin = createAdminClient()
     const { error } = await admin.auth.admin.deleteUser(user.id)

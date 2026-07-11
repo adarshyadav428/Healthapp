@@ -11,8 +11,7 @@ export async function POST(req: Request) {
       error: userError,
     } = await supabase.auth.getUser()
 
-    if (userError) throw new Error(userError.message)
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (userError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const json = await req.json()
     const parsed = profileUpdateSchema.safeParse(json)

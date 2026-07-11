@@ -21,8 +21,7 @@ export async function POST(req: Request) {
       error: userError,
     } = await supabase.auth.getUser()
 
-    if (userError) throw new Error(userError.message)
-    if (!user || !user.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (userError || !user || !user.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { plan } = (await req.json()) as { plan: Plan }
     if (!plan || !priceMap[plan]) return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
