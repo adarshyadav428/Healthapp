@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
-  const publicFiles = ['/sw.js', '/manifest.webmanifest']
+  const publicFiles = ['/sw.js', '/manifest.webmanifest', '/robots.txt', '/sitemap.xml']
   const publicPrefixes = ['/icons/', '/.well-known/', '/workbox-', '/fallback-']
 
   if (
@@ -83,5 +83,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|sw\\.js|workbox-.*|manifest\\.webmanifest|icons/.*|\\.well-known/.*).*)',],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|sw\\.js|workbox-.*|manifest\\.webmanifest|robots\\.txt|sitemap\\.xml|icons/.*|\\.well-known/.*).*)',],
 }

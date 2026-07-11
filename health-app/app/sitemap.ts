@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 
-const BASE = 'https://caltrack.app'
+const BASE = process.env.NEXT_PUBLIC_APP_URL ?? 'https://healthapp-dun.vercel.app'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [

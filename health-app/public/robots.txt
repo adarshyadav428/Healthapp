@@ -8,6 +8,8 @@ Disallow: /history
 Disallow: /settings
 Disallow: /recipes
 Disallow: /onboarding
-Disallow: /auth/
+Disallow: /auth/callback
+Disallow: /auth/forgot-password
+Disallow: /auth/reset-password
 
-Sitemap: https://caltrack.app/sitemap.xml
+Sitemap: https://healthapp-dun.vercel.app/sitemap.xml

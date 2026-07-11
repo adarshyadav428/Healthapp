@@ -2,25 +2,15 @@ import { NextResponse } from 'next/server'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
 import { getIstDayRange } from '../../../../lib/dateUtils'
 import { captureServerEvent } from '../../../../lib/posthog/server'
+import { INDIAN_PORTION_REFERENCE } from '../../../../lib/indian-portions'
 
 const FREE_DAILY_LIMIT = 5
 
 const PROMPT = `You are a nutrition expert specializing in Indian food. Analyze this food image.
 Use IFCT 2017 values for traditional Indian foods and standard global values for packaged/international foods.
 
-INDIAN PORTION SIZE REFERENCE — use these as starting baselines, then adjust up or down based on what you actually see in the image:
-- Chapati/roti: 1 piece = 40g | Paratha: 1 piece = 85g | Naan: 1 piece = 90g | Puri: 1 piece = 30g
-- Rice (cooked): 1 home plate = 200g | 1 restaurant plate = 300g | 1 katori = 150g
-- Dal / sambar / curry (liquid): 1 katori = 150ml | 1 bowl = 250ml
-- Dry sabzi (potato, paneer, mixed veg): 1 katori = 110g
-- Idli: 1 piece = 45g | Dosa (plain): 1 piece = 110g | Medu vada: 1 piece = 55g
-- Samosa: 1 piece = 115g | Kachori: 1 piece = 80g | Vada pav: 1 = 145g | Pav bhaji (plate) = 280g
-- Biryani: home plate = 300g | restaurant portion = 420g
-- Chole / rajma / dal makhani: 1 katori = 150g
-- Paneer dish (e.g. paneer butter masala): 1 katori = 160g
-- Poha / upma / khichdi: 1 plate = 200g
-- Chai: 1 cup = 150ml | Coffee: 1 cup = 150ml
-- Gulab jamun: 1 piece = 50g | Jalebi: 1 piece = 35g | Rasgulla: 1 piece = 60g
+${INDIAN_PORTION_REFERENCE}
+Adjust these baselines up or down based on what you actually see in the image.
 
 RULES:
 1. Be specific with names: prefer "Aloo Paratha" over "Paratha", "Paneer Butter Masala" over "Curry".

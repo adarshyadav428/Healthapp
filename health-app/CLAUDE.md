@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **No USDA data** — removed permanently. US-centric nutrition data is inaccurate for Indian foods. Food data comes from IFCT 2017 and Open Food Facts only.
 - **INR pricing only** — never USD. Prices: Pro Monthly ₹199, Pro Annual ₹699.
-- **Free tier** — unlimited food logs + 7 days history. Pro unlocks history beyond 7 days and custom foods.
+- **Free tier** — unlimited manual/search food logs + 7 days history + 5 AI camera scans/day + 10 AI chat logs/day (both server-enforced in `app/api/camera/analyze/route.ts` / `app/api/chat/analyze/route.ts`). Pro unlocks history beyond 7 days, custom foods, and unlimited AI scans.
 
 ## Commands
 
