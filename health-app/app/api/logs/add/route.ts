@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServerClient } from '../../../../lib/supabase/server'
 import { addFoodSchema } from '../../../../lib/validations'
 import { captureServerEvent } from '../../../../lib/posthog/server'
+import { getLogActivationContext } from '../../../../lib/logActivation'
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
@@ -38,6 +39,8 @@ export async function POST(req: Request) {
     const FOOD_SELECT = 'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions'
     const logged_at = new Date().toISOString()
 
+    const activation = await getLogActivationContext(supabase, user)
+
     const { data: inserted, error: insertError } = await supabase
       .from('food_logs')
       .insert({
@@ -57,7 +60,7 @@ export async function POST(req: Request) {
 
     if (insertError) throw new Error(insertError.message)
 
-    captureServerEvent(user.id, 'meal_logged', { source: 'add', meal: parsed.data.meal, kcal })
+    captureServerEvent(user.id, 'meal_logged', { source: 'add', meal: parsed.data.meal, kcal, ...activation })
 
     return NextResponse.json({ ok: true, row: inserted })
   } catch (err) {

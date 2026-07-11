@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient } from '../../../../lib/supabase/server'
 import { captureServerEvent } from '../../../../lib/posthog/server'
+import { getLogActivationContext } from '../../../../lib/logActivation'
 
 export const runtime = 'nodejs'
 
@@ -27,6 +28,8 @@ export async function POST(req: Request) {
     }
     const { kcal, protein, carbs, fat, meal } = parsed.data
 
+    const activation = await getLogActivationContext(supabase, user)
+
     const { error: logError } = await supabase.from('food_logs').insert({
       user_id:   userId,
       food_id:   null,
@@ -42,7 +45,7 @@ export async function POST(req: Request) {
 
     if (logError) throw new Error(logError.message)
 
-    captureServerEvent(userId, 'meal_logged', { source: 'quick_add', meal, kcal })
+    captureServerEvent(userId, 'meal_logged', { source: 'quick_add', meal, kcal, ...activation })
 
     return NextResponse.json({ ok: true })
   } catch (err) {

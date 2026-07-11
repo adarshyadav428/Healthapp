@@ -1,21 +1,27 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { onboardingSchema, type OnboardingData } from '../../lib/validations'
 import { toast } from '../ui/use-toast'
 import { useQueryClient } from '@tanstack/react-query'
-import { ChevronRight, ChevronLeft } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Camera, MessageSquarePlus } from 'lucide-react'
 import { calculateTDEE } from '../../lib/tdee'
 import { captureEvent } from '../../lib/posthog/client'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
+import type { Food } from '../../types/index'
 
-const TOTAL_STEPS = 5
+const CameraModal  = dynamic(() => import('../camera/CameraModal').then(m => m.CameraModal), { ssr: false })
+const ChatLogModal = dynamic(() => import('../chat/ChatLogModal').then(m => m.ChatLogModal),  { ssr: false })
+const AddFoodModal = dynamic(() => import('../log/AddFoodModal').then(m => m.AddFoodModal),   { ssr: false })
 
-const STEP_LABELS = ['About you', 'Body stats', 'Your weight', 'Your goal', 'Lifestyle']
-const STEP_EMOJIS = ['👤', '📏', '⚖️', '🎯', '🏃']
+const TOTAL_STEPS = 6
+
+const STEP_LABELS = ['Log a meal', 'About you', 'Body stats', 'Your weight', 'Your goal', 'Lifestyle']
+const STEP_EMOJIS = ['📸', '👤', '📏', '⚖️', '🎯', '🏃']
 
 const selectClass =
   'w-full rounded-control border border-hairline bg-surface-2 px-4 py-2.5 text-sm font-semibold text-ink outline-none transition-all focus:border-brand focus:ring-[3px] focus:ring-brand-ring'
@@ -37,6 +43,13 @@ export function OnboardingForm() {
   const [isNavigating, setIsNavigating] = useState(false)
   const [heightFt, setHeightFt] = useState(5)
   const [heightIn, setHeightIn] = useState(7)
+  const [showCamera, setShowCamera] = useState(false)
+  const [showChat, setShowChat] = useState(false)
+  const [barcodeFood, setBarcodeFood] = useState<Food | null>(null)
+  // CameraModal fires both onFoodFound and onClose for a barcode hit — this
+  // suppresses the step-advance from onClose so AddFoodModal's own onClose
+  // is the one that advances (avoids double-advancing past a step unseen).
+  const barcodeHandoffRef = useRef(false)
 
   const form = useForm<OnboardingData>({
     resolver: zodResolver(onboardingSchema),
@@ -56,11 +69,12 @@ export function OnboardingForm() {
   const nextStep = async () => {
     if (isNavigating) return
     const fieldsByStep: Record<number, (keyof OnboardingData)[]> = {
-      1: ['display_name'],
-      2: ['age', 'sex'],
-      3: ['height_cm', 'current_weight_kg'],
-      4: ['target_weight_kg', 'goal'],
-      5: ['activity_level', 'pace_kg_per_week'],
+      1: [],
+      2: ['display_name'],
+      3: ['age', 'sex'],
+      4: ['height_cm', 'current_weight_kg'],
+      5: ['target_weight_kg', 'goal'],
+      6: ['activity_level', 'pace_kg_per_week'],
     }
     setIsNavigating(true)
     try {
@@ -134,8 +148,49 @@ export function OnboardingForm() {
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {/* Step 1: Name */}
+        {/* Step 1: Log a meal — the activation moment, before any biometrics */}
         {step === 1 && (
+          <div className="space-y-4 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-soft">
+              <span className="text-3xl">📸</span>
+            </div>
+            <div>
+              <h2 className="font-display text-lg font-bold text-ink">What did you eat recently?</h2>
+              <p className="mt-1 text-sm text-ink-2">See how fast this is — then we&apos;ll set up your goals in under a minute.</p>
+            </div>
+            <div className="space-y-2.5 pt-2 text-left">
+              <button
+                type="button"
+                onClick={() => setShowCamera(true)}
+                className="flex w-full items-center gap-3 rounded-card border border-hairline bg-surface px-4 py-3.5 text-left tap-scale transition-colors hover:border-brand-ring"
+              >
+                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-control bg-brand-soft">
+                  <Camera className="h-5 w-5 text-brand" strokeWidth={1.75} />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-ink">Take a photo</p>
+                  <p className="text-xs text-ink-2">Snap your plate — AI reads the macros</p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowChat(true)}
+                className="flex w-full items-center gap-3 rounded-card border border-hairline bg-surface px-4 py-3.5 text-left tap-scale transition-colors hover:border-brand-ring"
+              >
+                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-control bg-brand-soft">
+                  <MessageSquarePlus className="h-5 w-5 text-brand" strokeWidth={1.75} />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-ink">Describe it</p>
+                  <p className="text-xs text-ink-2">&quot;2 roti, dal, sabzi&quot; — type it in</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Name */}
+        {step === 2 && (
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-ink mb-1">What should we call you?</label>
@@ -147,8 +202,8 @@ export function OnboardingForm() {
           </div>
         )}
 
-        {/* Step 2: Age + Sex */}
-        {step === 2 && (
+        {/* Step 3: Age + Sex */}
+        {step === 3 && (
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-ink mb-1">Age</label>
@@ -175,8 +230,8 @@ export function OnboardingForm() {
           </div>
         )}
 
-        {/* Step 3: Height + Current weight */}
-        {step === 3 && (
+        {/* Step 4: Height + Current weight */}
+        {step === 4 && (
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-ink mb-1.5">Height</label>
@@ -226,8 +281,8 @@ export function OnboardingForm() {
           </div>
         )}
 
-        {/* Step 4: Target weight + Goal */}
-        {step === 4 && (
+        {/* Step 5: Target weight + Goal */}
+        {step === 5 && (
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-ink mb-1">Target weight (kg)</label>
@@ -299,8 +354,8 @@ export function OnboardingForm() {
           </div>
         )}
 
-        {/* Step 5: Activity + Pace */}
-        {step === 5 && (
+        {/* Step 6: Activity + Pace */}
+        {step === 6 && (
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-ink mb-2">Activity level</label>
@@ -342,7 +397,7 @@ export function OnboardingForm() {
         )}
 
         {/* Live TDEE preview — the payoff moment, marigold because it's your data */}
-        {step === 5 && tdeePreview && (
+        {step === 6 && tdeePreview && (
           <div className="rounded-card border border-hairline bg-energy-soft p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-energy-ink mb-2">Your personalised targets</p>
             <div className="flex items-baseline gap-1.5 mb-3">
@@ -378,7 +433,16 @@ export function OnboardingForm() {
             <ChevronLeft className="h-4 w-4" />
             Back
           </button>
-          {step < TOTAL_STEPS ? (
+          {step === 1 ? (
+            <button
+              type="button"
+              onClick={nextStep}
+              disabled={isNavigating}
+              className="rounded-control px-4 py-2.5 text-sm font-semibold text-ink-2 hover:bg-surface-2 transition-all disabled:opacity-50"
+            >
+              Skip for now
+            </button>
+          ) : step < TOTAL_STEPS ? (
             <Button type="button" onClick={nextStep} disabled={isNavigating} className="gap-1 tap-scale">
               {isNavigating ? 'Checking...' : 'Next'}
               <ChevronRight className="h-4 w-4" />
@@ -390,6 +454,21 @@ export function OnboardingForm() {
           )}
         </div>
       </form>
+
+      {showCamera && (
+        <CameraModal
+          onClose={() => {
+            setShowCamera(false)
+            if (barcodeHandoffRef.current) { barcodeHandoffRef.current = false; return }
+            nextStep()
+          }}
+          onFoodFound={(food) => { barcodeHandoffRef.current = true; setBarcodeFood(food) }}
+        />
+      )}
+      {showChat && <ChatLogModal onClose={() => { setShowChat(false); nextStep() }} />}
+      {barcodeFood && (
+        <AddFoodModal food={barcodeFood} onClose={() => { setBarcodeFood(null); nextStep() }} />
+      )}
     </div>
   )
 }
