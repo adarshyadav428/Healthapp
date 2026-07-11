@@ -8,6 +8,8 @@ export type ToastOptions = {
   variant?: ToastVariant
   /** Auto-dismiss delay in ms. Defaults to 4000. */
   duration?: number
+  /** Optional CTA rendered inside the toast, e.g. linking to an upgrade page. */
+  action?: { label: string; altText: string; onClick: () => void }
 }
 
 type ToastItem = ToastOptions & { id: string }

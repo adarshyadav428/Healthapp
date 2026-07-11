@@ -12,10 +12,12 @@ import { isPlayBillingAvailable, getPlayPrices, purchasePlan } from '../../lib/p
 import { PLAY_PRODUCTS } from '../../lib/play/products'
 
 const REASON_COPY: Record<string, { title: string; description: string }> = {
-  history:      { title: 'Unlock your full history', description: 'Free users can view the last 7 days. Pro shows everything.' },
-  custom_foods: { title: 'Create custom foods',      description: 'Log your home-cooked dishes and family recipes with Pro.' },
-  ai_insights:  { title: 'See your AI Weekly Insights', description: 'Personal analysis of your eating patterns, every Sunday.' },
-  exports:      { title: 'Export your data',         description: 'Download your full log as CSV with Pro.' },
+  history:            { title: 'Unlock your full history', description: 'Free users can view the last 7 days. Pro shows everything.' },
+  custom_foods:       { title: 'Create custom foods',      description: 'Log your home-cooked dishes and family recipes with Pro.' },
+  ai_insights:        { title: 'See your AI Weekly Insights', description: 'Personal analysis of your eating patterns, every Sunday.' },
+  exports:            { title: 'Export your data',         description: 'Download your full log as CSV with Pro.' },
+  camera_scan_limit:  { title: 'Out of photo scans for today', description: "You've used today's 5 free camera scans. Pro gives you unlimited." },
+  chat_scan_limit:    { title: 'Out of chat logs for today',   description: "You've used today's 10 free chat logs. Pro gives you unlimited." },
 }
 
 const plans = [

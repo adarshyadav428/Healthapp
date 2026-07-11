@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { X, Send, Loader2, RotateCcw, CheckCircle, MessageSquarePlus } from 'lucide-react'
 import { toast } from '../ui/use-toast'
@@ -50,6 +51,7 @@ function inferMeal(): Meal {
 function round1(n: number) { return Math.round(n * 10) / 10 }
 
 export function ChatLogModal({ onClose }: { onClose: () => void }) {
+  const router = useRouter()
   const queryClient = useQueryClient()
   const [state, setState] = useState<State>({ type: 'idle' })
   const [input, setInput] = useState('')
@@ -71,7 +73,20 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
       })
       const data = await res.json()
       if (!res.ok) {
-        toast({ title: 'Could not analyse meal', description: data.error, variant: 'error' })
+        if (res.status === 429) {
+          toast({
+            title: 'Daily chat-log limit reached',
+            description: 'Upgrade to Pro for unlimited AI meal logging.',
+            variant: 'error',
+            action: {
+              label: 'Upgrade',
+              altText: 'Go to upgrade page',
+              onClick: () => { onClose(); router.push('/upgrade?reason=chat_scan_limit') },
+            },
+          })
+        } else {
+          toast({ title: 'Could not analyse meal', description: data.error, variant: 'error' })
+        }
         setState({ type: 'idle' })
         setInput(message)
         return

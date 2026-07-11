@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   X, ScanLine, Camera, Loader2, RefreshCw, CheckCircle2, AlertCircle,
   Hash, Search, AlertTriangle, Pencil,
@@ -35,6 +36,7 @@ function defaultMeal() {
 }
 
 export function CameraModal({ onClose, onFoodFound }: Props) {
+  const router = useRouter()
   const videoRef    = useRef<HTMLVideoElement>(null)
   const canvasRef   = useRef<HTMLCanvasElement>(null)
   const streamRef   = useRef<MediaStream | null>(null)
@@ -183,7 +185,16 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
       .then(async (res) => {
         const json = await res.json()
         if (res.status === 429) {
-          toast({ title: 'Daily scan limit reached', description: 'Upgrade to Pro for unlimited photo scans.', variant: 'error' })
+          toast({
+            title: 'Daily scan limit reached',
+            description: 'Upgrade to Pro for unlimited photo scans.',
+            variant: 'error',
+            action: {
+              label: 'Upgrade',
+              altText: 'Go to upgrade page',
+              onClick: () => { onClose(); router.push('/upgrade?reason=camera_scan_limit') },
+            },
+          })
           setCaptured(null)
           return
         }
@@ -201,7 +212,7 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
         setCaptured(null)
       })
       .finally(() => setAnalyzing(false))
-  }, [])
+  }, [onClose, router])
 
   const retake = useCallback(() => {
     setCaptured(null); setResults(null); setSelected(null); setConfidence(null)
