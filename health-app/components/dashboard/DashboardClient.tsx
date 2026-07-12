@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import type { FoodLog, Profile } from '../../types/index'
 import { CalorieRing } from '../home/CalorieRing'
 import { MacroRow } from '../home/MacroRow'
@@ -14,7 +15,7 @@ import { useUser } from '../../hooks/useUser'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
 import { getUtcDayRange } from '../../lib/dateUtils'
-import { Flame } from 'lucide-react'
+import { Flame, Plus } from 'lucide-react'
 
 const WeightWidget = dynamic(
   () => import('./WeightWidget').then(m => m.WeightWidget),
@@ -88,32 +89,11 @@ export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
   const deficitPerDay = Math.round((pace * 7700) / 7)
   const maintenance = target + (profile.goal === 'lose' ? deficitPerDay : profile.goal === 'gain' ? -deficitPerDay : 0)
 
-  const todayDate = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })
   const hasLogs = logs.length > 0
   const totalMealKcal = Math.round(totals.kcal)
-  const firstName = profile.display_name?.split(' ')[0] ?? 'there'
-  const greeting = (() => {
-    const h = new Date().getHours()
-    if (h < 12) return 'Good morning'
-    if (h < 17) return 'Good afternoon'
-    return 'Good evening'
-  })()
 
   return (
     <div className="space-y-4">
-
-      {/* ── Editorial greeting ── */}
-      <div className="px-1 pt-2">
-        <p className="text-[10.5px] font-medium uppercase tracking-[.12em] text-ink-3">{todayDate}</p>
-        <h2 className="font-display mt-1.5 text-[23px] font-semibold tracking-tight text-ink">
-          {greeting}, {firstName}
-        </h2>
-        <p className="mt-0.5 text-[13.5px] text-ink-2">
-          {kcalLeft >= 0
-            ? `${kcalLeft.toLocaleString('en-IN')} kcal to go — right on track`
-            : `${Math.abs(kcalLeft).toLocaleString('en-IN')} kcal over — tomorrow's a fresh start`}
-        </p>
-      </div>
 
       {/* ── Calorie hero card ── */}
       <div className="rounded-card bg-surface bg-hero-wash px-6 pb-6 pt-5 shadow-rest">
@@ -173,6 +153,12 @@ export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
                 />
               )
             })}
+            <Link
+              href="/log"
+              className="flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-brand-ring py-[13px] text-[13px] font-semibold text-brand-ink tap-scale"
+            >
+              <Plus className="h-4 w-4" /> Add food manually
+            </Link>
           </div>
         ) : (
           <EmptyMeals />

@@ -1,8 +1,14 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
-import { Home, Utensils, TrendingUp, User, Plus } from 'lucide-react'
+import { Home, Utensils, TrendingUp, User, Camera } from 'lucide-react'
+import type { Food } from '../../types/index'
+
+const CameraModal  = dynamic(() => import('../camera/CameraModal').then(m => m.CameraModal),   { ssr: false })
+const AddFoodModal = dynamic(() => import('../log/AddFoodModal').then(m => m.AddFoodModal),     { ssr: false })
 
 const TABS = [
   { href: '/dashboard', icon: Home,        label: 'Home'     },
@@ -30,6 +36,8 @@ function NavTab({ href, icon: Icon, label, active }: {
 
 export function BottomNav() {
   const pathname = usePathname()
+  const [showCamera, setShowCamera] = useState(false)
+  const [foundFood, setFoundFood]   = useState<Food | null>(null)
 
   return (
     <div className="fixed bottom-[18px] left-1/2 z-40 w-[calc(100%-40px)] max-w-[428px] -translate-x-1/2">
@@ -52,16 +60,27 @@ export function BottomNav() {
           <NavTab key={tab.href} {...tab} active={pathname === tab.href} />
         ))}
 
-        {/* Floating + FAB */}
-        <Link
-          href="/log"
-          aria-label="Log food"
+        {/* Floating camera FAB */}
+        <button
+          type="button"
+          onClick={() => setShowCamera(true)}
+          aria-label="Scan food with camera"
           className="absolute bottom-4 left-1/2 flex h-[52px] w-[52px] -translate-x-1/2 items-center justify-center rounded-[17px] bg-cta-grad tap-scale"
           style={{ boxShadow: '0 0 0 3px var(--canvas), var(--fab-shadow)' }}
         >
-          <Plus className="h-[22px] w-[22px] text-white" strokeWidth={2.2} />
-        </Link>
+          <Camera className="h-[22px] w-[22px] text-white" strokeWidth={2.2} />
+        </button>
       </div>
+
+      {showCamera && (
+        <CameraModal
+          onClose={() => setShowCamera(false)}
+          onFoodFound={(food) => { setShowCamera(false); setFoundFood(food) }}
+        />
+      )}
+      {foundFood && (
+        <AddFoodModal food={foundFood} onClose={() => setFoundFood(null)} />
+      )}
     </div>
   )
 }
