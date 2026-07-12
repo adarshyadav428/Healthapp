@@ -13,7 +13,7 @@ import { captureEvent } from '../../lib/posthog/client'
 import { useQueryClient } from '@tanstack/react-query'
 
 type Mode = 'barcode' | 'photo' | 'manual'
-type PhotoResult = { food: Food; estimated_grams: number }
+type PhotoResult = { food: Food; estimated_grams: number; unit: string }
 
 type Props = {
   onClose: () => void
@@ -53,6 +53,8 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
   const [selected, setSelected]             = useState<PhotoResult | null>(null)
   const [confidence, setConfidence]         = useState<string | null>(null)
   const [grams, setGrams]                   = useState(100)
+  const [photoContext, setPhotoContext]     = useState('')
+  const [showContextInput, setShowContextInput] = useState(false)
   const [meal, setMeal]                     = useState<string>(defaultMeal())
   const [logging, setLogging]               = useState(false)
   const [manualBarcode, setManualBarcode]   = useState('')
@@ -170,9 +172,12 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
     canvas.width  = video.videoWidth  || 1280
     canvas.height = video.videoHeight || 720
     canvas.getContext('2d')?.drawImage(video, 0, 0)
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
-    setCaptured(dataUrl)
-    const base64 = dataUrl.split(',')[1]
+    setCaptured(canvas.toDataURL('image/jpeg', 0.85))
+  }, [])
+
+  const analyzePhoto = useCallback(() => {
+    if (!captured) return
+    const base64 = captured.split(',')[1]
 
     setAnalyzing(true)
     setResults(null)
@@ -180,7 +185,11 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
     fetch('/api/camera/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageBase64: base64, mimeType: 'image/jpeg' }),
+      body: JSON.stringify({
+        imageBase64: base64,
+        mimeType: 'image/jpeg',
+        context: photoContext.trim() || undefined,
+      }),
     })
       .then(async (res) => {
         const json = await res.json()
@@ -199,9 +208,10 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
           return
         }
         if (!res.ok) throw new Error(json.error ?? 'Analysis failed')
-        const items: PhotoResult[] = (json.foods as Array<Food & { estimated_grams: number }>).map((f) => ({
+        const items: PhotoResult[] = (json.foods as Array<Food & { estimated_grams: number; unit?: string }>).map((f) => ({
           food: f,
           estimated_grams: f.estimated_grams || f.serving_size_g || 100,
+          unit: f.unit === 'ml' ? 'ml' : 'g',
         }))
         setResults(items)
         setConfidence(json.confidence ?? null)
@@ -212,11 +222,11 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
         setCaptured(null)
       })
       .finally(() => setAnalyzing(false))
-  }, [onClose, router])
+  }, [captured, photoContext, onClose, router])
 
   const retake = useCallback(() => {
     setCaptured(null); setResults(null); setSelected(null); setConfidence(null)
-    setCustomName(''); setEditingName(false)
+    setCustomName(''); setEditingName(false); setPhotoContext(''); setShowContextInput(false)
     lastBarcode.current = null; setBarcodeLoading(false)
     setManualBarcode(''); setManualLoading(false)
   }, [])
@@ -488,7 +498,7 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
                     }}
                     className="w-[64px] text-center text-[15px] font-bold text-ink rounded-control py-1.5 outline-none bg-surface-2 border border-hairline"
                   />
-                  <span className="text-[12px] text-ink-2 font-medium">g</span>
+                  <span className="text-[12px] text-ink-2 font-medium">{selected?.unit ?? 'g'}</span>
                 </div>
                 <input
                   type="range" min={10} max={500} step={5} value={grams}
@@ -525,8 +535,45 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
           </div>
         )}
 
+        {/* ── Review capture + optional context, before sending to AI (photo mode) ── */}
+        {mode === 'photo' && captured && !analyzing && !results && (
+          <div className="space-y-3">
+            {showContextInput ? (
+              <input
+                type="text"
+                value={photoContext}
+                onChange={(e) => setPhotoContext(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') analyzePhoto() }}
+                placeholder="e.g. 'no oil', 'diet version', '2 rotis not 1'"
+                maxLength={200}
+                className="w-full rounded-control bg-white/10 border border-white/20 text-white text-sm px-4 py-3 outline-none focus:border-[var(--energy)] placeholder:text-white/40 transition-colors"
+                autoFocus
+              />
+            ) : (
+              <button
+                onClick={() => setShowContextInput(true)}
+                className="flex items-center gap-1.5 text-[13px] font-medium text-white/50 hover:text-white transition-colors"
+              >
+                <Pencil className="h-3.5 w-3.5" /> Add context (optional)
+              </button>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={retake}
+                className="flex items-center justify-center gap-1.5 rounded-control px-4 h-12 text-sm font-semibold text-white/60 hover:text-white bg-white/10 transition-colors tap-scale"
+              >
+                <RefreshCw className="h-4 w-4" /> Retake
+              </button>
+              <Button onClick={analyzePhoto} size="lg" className="flex-1 gap-2 tap-scale">
+                <Camera className="h-4 w-4" />
+                Analyze
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* ── Mode tabs + shutter (when no results) ── */}
-        {!results && !analyzing && (
+        {!results && !analyzing && !captured && (
           <>
             <div className="flex rounded-control bg-white/10 p-1 gap-0.5">
               {tabs.map((tab) => (

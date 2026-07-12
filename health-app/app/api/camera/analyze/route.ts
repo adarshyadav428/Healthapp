@@ -18,6 +18,7 @@ RULES:
 3. Adjust estimated_grams based on plate/bowl size visible in the image. A restaurant plate is 30-50% larger than a home katori.
 4. When no size reference is visible, default to standard home-cooked Indian portions (NOT Western restaurant sizes).
 5. Set confidence "low" if the image is blurry, partially obscured, or you are genuinely unsure of the dish.
+6. Set "unit" to "ml" for liquids/beverages (buttermilk, lassi, milk, juice, tea, coffee, soup); otherwise "g". estimated_grams holds the portion amount in whichever unit you chose.
 
 Respond ONLY with valid JSON (no markdown, no code blocks):
 {
@@ -25,6 +26,7 @@ Respond ONLY with valid JSON (no markdown, no code blocks):
     {
       "name": "Food name in English",
       "estimated_grams": 150,
+      "unit": "g",
       "kcal_per_100g": 180,
       "protein_g_per_100g": 8.0,
       "carbs_g_per_100g": 25.0,
@@ -72,14 +74,19 @@ export async function POST(req: Request) {
   if (!body?.imageBase64) {
     return NextResponse.json({ error: 'No image provided' }, { status: 400 })
   }
-  const { imageBase64, mimeType = 'image/jpeg' } = body as { imageBase64: string; mimeType?: string }
+  const { imageBase64, mimeType = 'image/jpeg', context } = body as { imageBase64: string; mimeType?: string; context?: string }
+  const userContext = typeof context === 'string' ? context.trim().slice(0, 200) : ''
 
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 })
   }
 
+  const promptWithContext = userContext
+    ? `${PROMPT}\n\nAdditional context from the user about this food (use it to refine your estimate, but don't let it override what you actually see in the image): "${userContext}"`
+    : PROMPT
+
   // Call Gemini 1.5 Flash via direct REST API (avoids SDK v1beta routing issues)
-  let geminiResult: { foods: Array<{ name: string; estimated_grams: number; kcal_per_100g: number; protein_g_per_100g: number; carbs_g_per_100g: number; fat_g_per_100g: number }>; confidence: string }
+  let geminiResult: { foods: Array<{ name: string; estimated_grams: number; unit?: string; kcal_per_100g: number; protein_g_per_100g: number; carbs_g_per_100g: number; fat_g_per_100g: number }>; confidence: string }
   try {
     const apiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
@@ -90,7 +97,7 @@ export async function POST(req: Request) {
           contents: [{
             parts: [
               { inline_data: { mime_type: mimeType, data: imageBase64 } },
-              { text: PROMPT },
+              { text: promptWithContext },
             ],
           }],
           generationConfig: { maxOutputTokens: 512, temperature: 0.05 },
@@ -139,8 +146,10 @@ export async function POST(req: Request) {
       .limit(1)
       .maybeSingle()
 
+    const unit = item.unit === 'ml' ? 'ml' : 'g'
+
     if (existing) {
-      enrichedFoods.push({ ...existing, estimated_grams: item.estimated_grams || existing.serving_size_g || 100 })
+      enrichedFoods.push({ ...existing, estimated_grams: item.estimated_grams || existing.serving_size_g || 100, unit })
       continue
     }
 
@@ -173,7 +182,7 @@ export async function POST(req: Request) {
     }
 
     if (created) {
-      enrichedFoods.push({ ...created, estimated_grams: item.estimated_grams || created.serving_size_g || 100 })
+      enrichedFoods.push({ ...created, estimated_grams: item.estimated_grams || created.serving_size_g || 100, unit })
     }
   }
 
