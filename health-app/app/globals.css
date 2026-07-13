@@ -67,6 +67,9 @@
   --track:       #EFEDE8;
   --arc-glow:    .22;
   --ring-drop:   drop-shadow(0 8px 16px rgba(241,102,46,.18));
+
+  /* Ember Air — flatter card elevation for the redesigned core screens */
+  --shadow-air:  0 1px 2px rgba(23,21,15,.04), 0 12px 32px -16px rgba(23,21,15,.10);
 }
 
 .dark {
@@ -118,6 +121,8 @@
   --track:       rgba(245,242,236,.07);
   --arc-glow:    .55;
   --ring-drop:   drop-shadow(0 0 18px rgba(255,110,60,.25));
+
+  --shadow-air:  0 12px 32px -16px rgba(0,0,0,.5);
 }
 
 @layer base {

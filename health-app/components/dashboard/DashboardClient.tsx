@@ -1,28 +1,14 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import dynamic from 'next/dynamic'
+import { useMemo } from 'react'
 import Link from 'next/link'
 import type { FoodLog, Profile } from '../../types/index'
-import { CalorieRing } from '../home/CalorieRing'
-import { MacroRow } from '../home/MacroRow'
-import { MealGroup } from '../home/MealGroup'
+import { CalorieHeroCard } from '../home/CalorieHeroCard'
+import { RecentMealCard } from '../home/RecentMealCard'
 import { EmptyMeals } from '../home/EmptyMeals'
-import { PlanStrip } from '../home/PlanStrip'
-import { EditFoodLogModal } from '../log/EditFoodLogModal'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
-import { useQueryClient } from '@tanstack/react-query'
-import { toast } from '../ui/use-toast'
-import { getUtcDayRange } from '../../lib/dateUtils'
-import { Flame, Plus } from 'lucide-react'
-
-const WeightWidget = dynamic(
-  () => import('./WeightWidget').then(m => m.WeightWidget),
-  { ssr: false, loading: () => <div className="h-24 rounded-2xl bg-card-border animate-pulse" /> }
-)
-
-const MEAL_ORDER = ['breakfast', 'lunch', 'snack', 'dinner'] as const
+import { Flame } from 'lucide-react'
 
 interface Props {
   profile: Profile
@@ -32,10 +18,7 @@ interface Props {
 
 export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
   const { user } = useUser()
-  const queryClient = useQueryClient()
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [editingLog, setEditingLog] = useState<FoodLog | null>(null)
 
   const totals = useMemo(
     () => logs.reduce(
@@ -51,137 +34,58 @@ export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
     [logs]
   )
 
-  const byMeal = useMemo(
-    () => Object.fromEntries(
-      MEAL_ORDER.map(m => [m, logs.filter(l => l.meal === m)])
-    ),
-    [logs]
-  )
-
-  const deleteLog = async (id: string) => {
-    if (deletingId) return
-    setDeletingId(id)
-    try {
-      const res = await fetch('/api/logs/delete', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Delete failed')
-      const { start } = getUtcDayRange(new Date())
-      queryClient.setQueryData<FoodLog[]>(['food-logs', user?.id, start], (old = []) =>
-        old.filter(f => f.id !== id)
-      )
-    } catch (err) {
-      toast({ title: 'Delete failed', description: (err as Error).message, variant: 'error' })
-    } finally {
-      setDeletingId(null)
-    }
-  }
-
-  const eaten = Math.round(totals.kcal)
   const target = profile.daily_calorie_target
-  const kcalLeft = target - eaten
-
-  // Derive a rough maintenance estimate (target + deficit)
-  const pace = profile.pace_kg_per_week ?? 0.5
-  const deficitPerDay = Math.round((pace * 7700) / 7)
-  const maintenance = target + (profile.goal === 'lose' ? deficitPerDay : profile.goal === 'gain' ? -deficitPerDay : 0)
-
   const hasLogs = logs.length > 0
-  const totalMealKcal = Math.round(totals.kcal)
+  const recent = logs.slice(0, 3) // logs arrive newest-first
+  const todayDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 
   return (
-    <div className="space-y-4">
-
-      {/* ── Calorie hero card ── */}
-      <div className="rounded-card bg-surface bg-hero-wash px-6 pb-6 pt-5 shadow-rest">
-        {/* Top row: label + streak */}
-        <div className="mb-4 flex items-center justify-between">
-          <p className="text-[10.5px] font-medium uppercase tracking-[.12em] text-ink-3">Today</p>
-          {streakDays > 0 && (
-            <div className="flex items-center gap-1.5 rounded-full bg-brand-soft px-2.5 py-1">
-              <Flame className="h-3 w-3 text-brand" strokeWidth={2} />
-              <span className="text-[11.5px] font-semibold text-brand-ink">
-                {streakDays} days
-              </span>
-            </div>
-          )}
+    <>
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between pt-2">
+        <div>
+          <p className="text-[13px] font-medium text-ink-3">{todayDate}</p>
+          <h1 className="font-display mt-[3px] text-[24px] font-bold tracking-[-0.02em] text-ink">Today</h1>
         </div>
-
-        {/* Ring */}
-        <CalorieRing eaten={eaten} target={target} kcalLeft={kcalLeft} />
-
-        {/* Macro row */}
-        <div className="mt-5">
-          <MacroRow
-            proteinEaten={Math.round(totals.protein_g)}
-            carbsEaten={Math.round(totals.carbs_g)}
-            fatEaten={Math.round(totals.fat_g)}
-            proteinTarget={profile.protein_g_target ?? 0}
-            carbsTarget={profile.carbs_g_target ?? 0}
-            fatTarget={profile.fat_g_target ?? 0}
-          />
-        </div>
-      </div>
-
-      {/* ── Today's meals ── */}
-      <div>
-        <div className="mb-2.5 flex items-baseline justify-between px-1">
-          <p className="text-[15px] font-semibold tracking-tight text-ink">Today&apos;s meals</p>
-          {hasLogs && (
-            <p className="text-[12px] font-medium text-ink-3 tabular-nums">
-              {totalMealKcal} kcal
-            </p>
-          )}
-        </div>
-
-        {hasLogs ? (
-          <div className="space-y-2">
-            {MEAL_ORDER.map(meal => {
-              const items = byMeal[meal] ?? []
-              if (items.length === 0) return null
-              return (
-                <MealGroup
-                  key={meal}
-                  meal={meal}
-                  items={items}
-                  onEdit={setEditingLog}
-                  onDelete={deleteLog}
-                  deletingId={deletingId}
-                />
-              )
-            })}
-            <Link
-              href="/log"
-              className="flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-brand-ring py-[13px] text-[13px] font-semibold text-brand-ink tap-scale"
-            >
-              <Plus className="h-4 w-4" /> Add food manually
-            </Link>
+        {streakDays > 0 && (
+          <div className="flex items-center gap-1.5 rounded-full bg-surface px-[13px] py-[7px]" style={{ boxShadow: 'var(--shadow-air)' }}>
+            <Flame className="h-[15px] w-[15px] text-brand" strokeWidth={2} />
+            <span className="text-[13.5px] font-semibold tabular-nums text-ink">{streakDays}</span>
           </div>
-        ) : (
-          <EmptyMeals />
         )}
       </div>
 
-      {/* ── Plan strip ── */}
-      <PlanStrip
-        calorieTarget={target}
-        maintenanceKcal={maintenance}
-        goal={profile.goal}
-      />
-
-      {/* ── Weight quick-log ── */}
-      <WeightWidget currentWeightKg={profile.current_weight_kg ?? null} />
-
-      {/* Edit modal */}
-      {editingLog && (
-        <EditFoodLogModal
-          log={editingLog}
-          onClose={() => setEditingLog(null)}
+      {/* ── Calorie hero ── */}
+      <div className="mt-4">
+        <CalorieHeroCard
+          eaten={Math.round(totals.kcal)}
+          target={target}
+          proteinEaten={totals.protein_g}
+          carbsEaten={totals.carbs_g}
+          fatEaten={totals.fat_g}
+          proteinTarget={profile.protein_g_target ?? 0}
+          carbsTarget={profile.carbs_g_target ?? 0}
+          fatTarget={profile.fat_g_target ?? 0}
         />
+      </div>
+
+      {/* ── Recently logged ── */}
+      <div className="mb-3 mt-6 flex items-baseline justify-between px-0.5">
+        <p className="text-[16px] font-semibold tracking-[-0.01em] text-ink">Recently logged</p>
+        {hasLogs && (
+          <Link href="/history" className="text-[13px] font-medium text-ink-3 tap-scale">See all</Link>
+        )}
+      </div>
+
+      {hasLogs ? (
+        <div className="flex flex-col gap-2.5">
+          {recent.map((log) => (
+            <RecentMealCard key={log.id} log={log} />
+          ))}
+        </div>
+      ) : (
+        <EmptyMeals />
       )}
-    </div>
+    </>
   )
 }

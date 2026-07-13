@@ -26,9 +26,9 @@ function NavTab({ href, icon: Icon, label, active }: {
   return (
     <Link
       href={href}
-      className={`flex w-14 flex-col items-center gap-[3px] py-1 tap-scale ${active ? 'text-brand-ink' : 'text-ink-3'}`}
+      className={`flex w-[60px] flex-col items-center gap-[3px] tap-scale ${active ? 'text-ink' : 'text-ink-3'}`}
     >
-      <Icon className="h-[21px] w-[21px]" strokeWidth={active ? 2 : 1.75} />
+      <Icon className="h-[23px] w-[23px]" strokeWidth={active ? 2 : 1.75} />
       <span className={`text-[10px] ${active ? 'font-semibold' : 'font-medium'}`}>{label}</span>
     </Link>
   )
@@ -40,37 +40,38 @@ export function BottomNav() {
   const [foundFood, setFoundFood]   = useState<Food | null>(null)
 
   return (
-    <div className="fixed bottom-[18px] left-1/2 z-40 w-[calc(100%-40px)] max-w-[428px] -translate-x-1/2">
-      <div
-        className="relative flex items-center justify-around rounded-[26px] bg-header-bg px-2 py-2"
+    <>
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-hairline bg-header-bg px-2 pt-2.5"
         style={{
           backdropFilter: 'blur(24px) saturate(1.6)',
           WebkitBackdropFilter: 'blur(24px) saturate(1.6)',
-          boxShadow: '0 0 0 1px var(--glass-hair), var(--shadow-float)',
+          paddingBottom: 'calc(18px + env(safe-area-inset-bottom))',
         }}
       >
-        {TABS.slice(0, 2).map((tab) => (
-          <NavTab key={tab.href} {...tab} active={pathname === tab.href} />
-        ))}
+        <div className="relative mx-auto flex max-w-md items-center justify-around">
+          {TABS.slice(0, 2).map((tab) => (
+            <NavTab key={tab.href} {...tab} active={pathname === tab.href} />
+          ))}
 
-        {/* Spacer for FAB */}
-        <div className="w-[54px]" />
+          {/* Center camera FAB — ink in light, off-white in dark (auto-inverts) */}
+          <div className="flex w-[60px] items-center justify-center">
+            <button
+              type="button"
+              onClick={() => setShowCamera(true)}
+              aria-label="Scan food with camera"
+              className="-mt-6 flex h-[54px] w-[54px] items-center justify-center rounded-full tap-scale"
+              style={{ backgroundColor: 'var(--ink)', boxShadow: 'var(--shadow-float)' }}
+            >
+              <Camera className="h-[23px] w-[23px]" strokeWidth={2} style={{ color: 'var(--canvas)' }} />
+            </button>
+          </div>
 
-        {TABS.slice(2).map((tab) => (
-          <NavTab key={tab.href} {...tab} active={pathname === tab.href} />
-        ))}
-
-        {/* Floating camera FAB */}
-        <button
-          type="button"
-          onClick={() => setShowCamera(true)}
-          aria-label="Scan food with camera"
-          className="absolute bottom-4 left-1/2 flex h-[52px] w-[52px] -translate-x-1/2 items-center justify-center rounded-[17px] bg-cta-grad tap-scale"
-          style={{ boxShadow: '0 0 0 3px var(--canvas), var(--fab-shadow)' }}
-        >
-          <Camera className="h-[22px] w-[22px] text-white" strokeWidth={2.2} />
-        </button>
-      </div>
+          {TABS.slice(2).map((tab) => (
+            <NavTab key={tab.href} {...tab} active={pathname === tab.href} />
+          ))}
+        </div>
+      </nav>
 
       {showCamera && (
         <CameraModal
@@ -81,6 +82,6 @@ export function BottomNav() {
       {foundFood && (
         <AddFoodModal food={foundFood} onClose={() => setFoundFood(null)} />
       )}
-    </div>
+    </>
   )
 }
