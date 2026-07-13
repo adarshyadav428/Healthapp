@@ -4,8 +4,7 @@ import { FoodSearch } from '../../components/log/FoodSearch'
 import { LogProgressClient } from '../../components/log/LogProgressClient'
 import { TodayFoodLog } from '../../components/log/TodayFoodLog'
 import { LogPageShell } from '../../components/log/LogPageShell'
-import { DateNav } from '../../components/log/DateNav'
-import { AppHeader } from '../../components/layout/AppHeader'
+import { FoodHeader } from '../../components/log/FoodHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { createServerClient } from '../../lib/supabase/server'
 import type { Food, FoodLog } from '../../types/index'
@@ -181,28 +180,26 @@ export default async function LogPage({
 
   return (
     <div className="min-h-screen">
-      <AppHeader />
-      <main className="mx-auto w-full max-w-md px-5 pt-3" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}>
-        {/* Header */}
-        <div className="mb-4 px-1">
-          <p className="text-[10.5px] font-medium uppercase tracking-[.12em] text-ink-3">
-            {isToday ? 'Today' : 'Past entry'}
-          </p>
-          <h1 className="font-display mt-1.5 text-[23px] font-semibold leading-tight tracking-tight text-ink">Food diary</h1>
-          <p className="mt-0.5 text-[13.5px] text-ink-2">{isToday ? 'What did you eat today?' : 'Viewing a past day'}</p>
+      <main
+        className="mx-auto w-full max-w-md px-6"
+        style={{
+          paddingTop: 'calc(20px + env(safe-area-inset-top))',
+          paddingBottom: 'calc(120px + env(safe-area-inset-bottom))',
+        }}
+      >
+        {/* Header — date + Food title + prev/next day chips */}
+        <FoodHeader dateStr={dateStr} />
+
+        {/* Calorie summary — live for today, static for past */}
+        <div className="mt-4">
+          <LogProgressClient
+            initialLogs={dayFoodLogs}
+            kcalTarget={profile.daily_calorie_target ?? 0}
+            proteinTarget={profile.protein_g_target ?? 0}
+            carbsTarget={profile.carbs_g_target ?? 0}
+            fatTarget={profile.fat_g_target ?? 0}
+          />
         </div>
-
-        {/* Date navigation */}
-        <DateNav dateStr={dateStr} />
-
-        {/* Calorie progress bar — live for today, static for past */}
-        <LogProgressClient
-          initialLogs={dayFoodLogs}
-          kcalTarget={profile.daily_calorie_target ?? 0}
-          proteinTarget={profile.protein_g_target ?? 0}
-          carbsTarget={profile.carbs_g_target ?? 0}
-          fatTarget={profile.fat_g_target ?? 0}
-        />
 
         {/* Logging controls — only shown for today */}
         {isToday && (
