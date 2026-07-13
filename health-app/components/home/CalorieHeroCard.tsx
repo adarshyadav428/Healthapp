@@ -48,7 +48,7 @@ function useCountUp(target: number, duration = 800) {
   return val
 }
 
-function MacroRing({ label, eaten, target }: { label: string; eaten: number; target: number }) {
+function MacroRing({ label, eaten, target, color }: { label: string; eaten: number; target: number; color: string }) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
   const pct = target > 0 ? Math.min(eaten / target, 1) : 0
@@ -59,7 +59,7 @@ function MacroRing({ label, eaten, target }: { label: string; eaten: number; tar
         <svg width={MACRO} height={MACRO} viewBox={`0 0 ${MACRO} ${MACRO}`}>
           <circle cx={MACRO_C} cy={MACRO_C} r={MACRO_R} fill="none" stroke="var(--surface-2)" strokeWidth={5} />
           <circle
-            cx={MACRO_C} cy={MACRO_C} r={MACRO_R} fill="none" stroke="var(--ink)" strokeWidth={5}
+            cx={MACRO_C} cy={MACRO_C} r={MACRO_R} fill="none" stroke={color} strokeWidth={5}
             strokeLinecap="round" strokeDasharray={MACRO_CIRC} strokeDashoffset={offset}
             transform={`rotate(-90 ${MACRO_C} ${MACRO_C})`}
             style={{ transition: 'stroke-dashoffset 0.9s cubic-bezier(.22,1,.36,1)' }}
@@ -126,9 +126,9 @@ export function CalorieHeroCard({
 
       {/* Macro rings, folded in below a hairline (2c) */}
       <div className="mt-5 flex justify-between border-t border-hairline px-1.5 pt-4">
-        <MacroRing label="Protein" eaten={proteinEaten} target={proteinTarget} />
-        <MacroRing label="Carbs" eaten={carbsEaten} target={carbsTarget} />
-        <MacroRing label="Fat" eaten={fatEaten} target={fatTarget} />
+        <MacroRing label="Protein" eaten={proteinEaten} target={proteinTarget} color="var(--protein)" />
+        <MacroRing label="Carbs" eaten={carbsEaten} target={carbsTarget} color="var(--carbs)" />
+        <MacroRing label="Fat" eaten={fatEaten} target={fatTarget} color="var(--fat)" />
       </div>
     </div>
   )

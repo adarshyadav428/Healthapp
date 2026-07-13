@@ -215,8 +215,8 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
 
       {/* ── Identity ── */}
       <div className="mt-5 flex flex-col items-center gap-3 pb-1 pt-2">
-        <div className="flex h-[76px] w-[76px] items-center justify-center rounded-full" style={{ backgroundColor: 'var(--ink)' }}>
-          <span className="font-display text-[30px] font-semibold" style={{ color: 'var(--canvas)' }}>{initial}</span>
+        <div className="flex h-[76px] w-[76px] items-center justify-center rounded-full" style={{ backgroundImage: 'var(--ava-grad)' }}>
+          <span className="font-display text-[30px] font-semibold text-white">{initial}</span>
         </div>
         <div className="text-center">
           <p className="text-[18px] font-bold tracking-[-0.01em] text-ink">{profile.display_name || 'You'}</p>

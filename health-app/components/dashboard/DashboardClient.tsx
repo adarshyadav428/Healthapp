@@ -8,7 +8,7 @@ import { RecentMealCard } from '../home/RecentMealCard'
 import { EmptyMeals } from '../home/EmptyMeals'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
-import { Flame } from 'lucide-react'
+import { Flame, Plus } from 'lucide-react'
 
 interface Props {
   profile: Profile
@@ -82,6 +82,12 @@ export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
           {recent.map((log) => (
             <RecentMealCard key={log.id} log={log} />
           ))}
+          <Link
+            href="/log"
+            className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-[16px] border border-dashed border-brand-ring py-[13px] text-[13px] font-semibold text-brand-ink tap-scale"
+          >
+            <Plus className="h-4 w-4" /> Add food manually
+          </Link>
         </div>
       ) : (
         <EmptyMeals />
