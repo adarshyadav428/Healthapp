@@ -4,7 +4,6 @@ import { createServerClient } from '../../lib/supabase/server'
 import type { FoodLog, WeightLog } from '../../types/index'
 import { calculateStreak } from '../../lib/streak'
 import { getIstDayRange } from '../../lib/dateUtils'
-import { AppHeader } from '../../components/layout/AppHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { ProgressClient } from '../../components/progress/ProgressClient'
 
@@ -63,13 +62,14 @@ export default async function ProgressPage() {
   const loggedDates = (streakResult.data ?? []).map((r) => r.logged_at as string)
 
   return (
-    <div className="min-h-screen" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}>
-      <AppHeader title="Progress" />
-      <main className="mx-auto w-full max-w-md px-5 pt-4">
-        <div className="mb-5">
-          <h1 className="font-display text-[23px] font-semibold text-ink leading-tight">Progress</h1>
-          <p className="text-sm text-ink-2 mt-0.5">Your trends over time</p>
-        </div>
+    <div className="min-h-screen">
+      <main
+        className="mx-auto w-full max-w-md px-6"
+        style={{
+          paddingTop: 'calc(20px + env(safe-area-inset-top))',
+          paddingBottom: 'calc(120px + env(safe-area-inset-bottom))',
+        }}
+      >
         <ProgressClient
           streak={streak}
           weightLogs={weightLogs}

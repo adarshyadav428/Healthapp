@@ -1,16 +1,9 @@
 'use client'
 
-import dynamic from 'next/dynamic'
+import { useMemo, useState } from 'react'
 import type { Profile, WeightLog } from '../../types/index'
-import { WeeklySummary } from '../dashboard/WeeklySummary'
-import { StreakBadge } from '../dashboard/StreakBadge'
-import Link from 'next/link'
-import { Scale, ChevronRight } from 'lucide-react'
-import { StreakCalendar } from './StreakCalendar'
+import { Flame, Scale, ChevronLeft, ChevronRight } from 'lucide-react'
 
-// All three of these render recharts SVG charts — defer to keep initial /progress chunk small.
-const SkeletonChart     = () => <div className="h-40 rounded-card bg-surface border border-hairline animate-pulse" />
-const WeightTrendCard   = dynamic(() => import('../dashboard/WeightTrendCard').then(m => m.WeightTrendCard),   { ssr: false, loading: SkeletonChart })
 type Props = {
   streak:      number
   weightLogs:  WeightLog[]
@@ -20,132 +13,166 @@ type Props = {
   loggedDates: string[]
 }
 
-export function ProgressClient({ streak, weightLogs, weekLogs, kcalTarget, profile, loggedDates }: Props) {
-  const current = weightLogs[0]?.weight_kg ?? null
-  const target  = profile.target_weight_kg ?? null
-  const toGo    = current !== null && target !== null
-    ? Math.abs(current - target).toFixed(1)
-    : null
+// IST calendar date (YYYY-MM-DD) for a timestamp — matches what the user sees.
+function istDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
+}
+function pad(n: number) { return String(n).padStart(2, '0') }
+
+const AIR = { boxShadow: 'var(--shadow-air)' } as const
+
+export function ProgressClient({ streak, weightLogs, weekLogs, loggedDates }: Props) {
+  const currentWeight = weightLogs[0]?.weight_kg ?? null
+
+  // ── 7-day calorie bars ──────────────────────────────────────────────────────
+  const { bars, avg } = useMemo(() => {
+    const istToday = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
+    const days: { key: string; total: number }[] = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(`${istToday}T12:00:00Z`)
+      d.setUTCDate(d.getUTCDate() - i)
+      days.push({ key: d.toISOString().slice(0, 10), total: 0 })
+    }
+    const idx = new Map(days.map((d, i) => [d.key, i]))
+    for (const l of weekLogs) {
+      const i = idx.get(istDate(l.logged_at))
+      if (i !== undefined) days[i].total += l.kcal
+    }
+    const max = Math.max(1, ...days.map((d) => d.total))
+    const active = days.filter((d) => d.total > 0)
+    const avg = active.length ? Math.round(active.reduce((s, d) => s + d.total, 0) / active.length) : 0
+    const bars = days.map((d, i) => ({
+      label: new Date(`${d.key}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'narrow' }),
+      pct: d.total > 0 ? Math.max((d.total / max) * 100, 6) : 3,
+      today: i === days.length - 1,
+    }))
+    return { bars, avg }
+  }, [weekLogs])
+
+  // ── Month calendar ──────────────────────────────────────────────────────────
+  const loggedSet = useMemo(() => new Set(loggedDates.map(istDate)), [loggedDates])
+  const istTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
+  const [ty, tm, td] = istTodayStr.split('-').map(Number)
+
+  // How far back navigation may go (earliest logged month within our window)
+  const minOffset = useMemo(() => {
+    if (loggedSet.size === 0) return 0
+    let earliest = istTodayStr
+    for (const d of loggedSet) if (d < earliest) earliest = d
+    const [ey, em] = earliest.split('-').map(Number)
+    return (ey - ty) * 12 + (em - tm)
+  }, [loggedSet, istTodayStr, ty, tm])
+
+  const [offset, setOffset] = useState(0)
+  const viewYear = ty + Math.floor((tm - 1 + offset) / 12)
+  const viewMonth = ((tm - 1 + offset) % 12 + 12) % 12 // 0-indexed
+  const isCurrentMonth = offset === 0
+
+  const cal = useMemo(() => {
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
+    const firstWeekday = new Date(viewYear, viewMonth, 1).getDay() // 0=Sun
+    const cells: ({ day: number; logged: boolean } | null)[] = []
+    for (let i = 0; i < firstWeekday; i++) cells.push(null)
+    let logged = 0
+    for (let day = 1; day <= daysInMonth; day++) {
+      const key = `${viewYear}-${pad(viewMonth + 1)}-${pad(day)}`
+      const isLogged = loggedSet.has(key)
+      if (isLogged) logged++
+      cells.push({ day, logged: isLogged })
+    }
+    while (cells.length % 7 !== 0) cells.push(null)
+    const elapsed = isCurrentMonth ? td : daysInMonth
+    const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString('en-US', {
+      month: 'long', ...(viewYear !== ty ? { year: 'numeric' } : {}),
+    })
+    return { cells, logged, elapsed, monthLabel }
+  }, [viewYear, viewMonth, isCurrentMonth, td, ty, loggedSet])
 
   return (
-    <div className="space-y-4">
+    <>
+      {/* ── Header ── */}
+      <div className="pt-2">
+        <p className="text-[13px] font-medium text-ink-3">Last 7 days</p>
+        <h1 className="font-display mt-[3px] text-[24px] font-bold tracking-[-0.02em] text-ink">Trends</h1>
+      </div>
 
-      {/* ── Goal snapshot ── */}
-      {current !== null && target !== null && (
-        <div className="rounded-card bg-surface border border-hairline p-4">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-ink-2 mb-3">Goal</p>
-          <div className="flex items-center justify-between">
-            <div className="text-center">
-              <p className="font-display text-2xl font-bold tabular-nums text-ink">{current}</p>
-              <p className="text-[10px] text-ink-2 mt-0.5">Current kg</p>
+      {/* ── Stat cards ── */}
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="rounded-[24px] bg-surface p-5" style={AIR}>
+          <Flame className="h-[18px] w-[18px] text-brand" strokeWidth={2} />
+          <p className="font-display mt-3.5 text-[34px] font-bold leading-none tabular-nums text-ink" style={{ letterSpacing: '-0.03em' }}>{streak}</p>
+          <p className="mt-[5px] text-[12px] text-ink-3">day streak</p>
+        </div>
+        <div className="rounded-[24px] bg-surface p-5" style={AIR}>
+          <Scale className="h-[18px] w-[18px] text-ink" strokeWidth={2} />
+          <p className="font-display mt-3.5 text-[34px] font-bold leading-none tabular-nums text-ink" style={{ letterSpacing: '-0.03em' }}>
+            {currentWeight ?? '—'}
+          </p>
+          <p className="mt-[5px] text-[12px] text-ink-3">kg current</p>
+        </div>
+      </div>
+
+      {/* ── Calories bar chart ── */}
+      <div className="mt-3 rounded-[24px] bg-surface p-[22px]" style={AIR}>
+        <div className="flex items-baseline justify-between">
+          <p className="text-[15px] font-semibold text-ink">Calories</p>
+          <p className="text-[12px] text-ink-3">avg <b className="font-bold tabular-nums text-ink">{avg.toLocaleString('en-IN')}</b></p>
+        </div>
+        <div className="mt-[18px] flex h-[120px] items-end gap-2.5">
+          {bars.map((b, i) => (
+            <div key={i} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
+              <div
+                className={`w-full max-w-[26px] rounded-lg ${b.today ? 'bg-brand' : 'bg-surface-2'}`}
+                style={{ height: `${b.pct}%` }}
+              />
+              <span className={`text-[10px] ${b.today ? 'font-bold text-ink' : 'text-ink-3'}`}>{b.label}</span>
             </div>
-            <div className="flex-1 mx-4 text-center">
-              <p className="text-sm font-bold text-brand-ink tabular-nums">{toGo} kg to go</p>
-              <div className="mt-2 h-2 rounded-full bg-surface-2 overflow-hidden">
-                {(() => {
-                  const start  = weightLogs[weightLogs.length - 1]?.weight_kg ?? current
-                  const totalNeeded = Math.abs(start - target)
-                  const done        = Math.abs(start - current)
-                  const pct         = totalNeeded > 0 ? Math.min((done / totalNeeded) * 100, 100) : 0
-                  return (
-                    <div
-                      className="h-full rounded-full bg-brand transition-all duration-700"
-                      style={{ width: `${pct}%` }}
-                    />
-                  )
-                })()}
-              </div>
-              {/* Goal date prediction */}
-              {(() => {
-                const pace = profile.pace_kg_per_week ?? 0.5
-                const remaining = Math.abs(current - target)
-                if (remaining < 0.1) return <p className="text-xs text-good font-bold mt-1.5">🎉 Goal reached!</p>
-                if (pace <= 0) return null
-                const daysLeft = Math.round((remaining / pace) * 7)
-                const goalDate = new Date()
-                goalDate.setDate(goalDate.getDate() + daysLeft)
-                const formatted = goalDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                return (
-                  <p className="text-[10px] text-ink-2 mt-1.5">
-                    At current pace · <span className="font-semibold text-ink">{formatted}</span>
-                  </p>
-                )
-              })()}
-            </div>
-            <div className="text-center">
-              <p className="font-display text-2xl font-bold tabular-nums text-ink">{target}</p>
-              <p className="text-[10px] text-ink-2 mt-0.5">Target kg</p>
-            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Month calendar ── */}
+      <div className="mt-3 rounded-[24px] bg-surface p-[22px]" style={AIR}>
+        <div className="flex items-center justify-between">
+          <p className="text-[15px] font-semibold text-ink">{cal.monthLabel}</p>
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => setOffset((o) => Math.max(minOffset, o - 1))}
+              disabled={offset <= minOffset}
+              aria-label="Previous month"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-surface-2 tap-scale disabled:opacity-35"
+            >
+              <ChevronLeft className="h-[13px] w-[13px] text-ink-2" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setOffset((o) => Math.min(0, o + 1))}
+              disabled={offset >= 0}
+              aria-label="Next month"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-surface-2 tap-scale disabled:opacity-35"
+            >
+              <ChevronRight className="h-[13px] w-[13px] text-ink-2" />
+            </button>
           </div>
         </div>
-      )}
-
-      {/* ── Streak ── */}
-      <StreakBadge streak={streak} />
-
-      {/* ── Habit calendar ── */}
-      <StreakCalendar loggedDates={loggedDates} />
-
-      {/* ── Weekly summary ── */}
-      <WeeklySummary weekLogs={weekLogs} kcalTarget={kcalTarget} />
-
-      {/* ── Weight trend ── */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-ink-2">Weight</p>
-          <Link
-            href="/weight"
-            className="flex items-center gap-1 text-[11px] font-semibold text-brand-ink"
-          >
-            Log weight <ChevronRight className="h-3 w-3" />
-          </Link>
-        </div>
-        {weightLogs.length > 0 ? (
-          <WeightTrendCard logs={weightLogs} />
-        ) : (
-          <Link
-            href="/weight"
-            className="flex items-center justify-between rounded-card bg-surface border border-dashed border-hairline px-4 py-4"
-          >
-            <div className="flex items-center gap-3">
-              <Scale className="h-5 w-5 text-ink-2" />
-              <div>
-                <p className="text-sm font-semibold text-ink">Track your weight</p>
-                <p className="text-xs text-ink-2">See your trend over time</p>
+        <div className="mt-4 grid grid-cols-7 gap-1.5">
+          {cal.cells.map((c, i) => (
+            c === null ? (
+              <div key={i} className="aspect-square" />
+            ) : c.logged ? (
+              <div key={i} className="flex aspect-square items-center justify-center rounded-full bg-brand">
+                <Flame className="h-3 w-3 text-white" strokeWidth={2} />
               </div>
-            </div>
-            <ChevronRight className="h-4 w-4 text-ink-2" />
-          </Link>
-        )}
-      </div>
-
-
-      {/* ── Macro targets (reference) ── */}
-      <div className="rounded-card bg-surface border border-hairline p-4">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-ink-2 mb-3">Daily Targets</p>
-        <div className="grid grid-cols-2 gap-3">
-          <TargetStat label="Calories" value={`${(kcalTarget ?? 0).toLocaleString()} kcal`} />
-          <TargetStat label="Protein"  value={`${profile.protein_g_target ?? 0}g`} />
-          <TargetStat label="Carbs"    value={`${profile.carbs_g_target ?? 0}g`} />
-          <TargetStat label="Fat"      value={`${profile.fat_g_target ?? 0}g`} />
+            ) : (
+              <div key={i} className="aspect-square rounded-full bg-surface-2" />
+            )
+          ))}
         </div>
-        <Link
-          href="/settings"
-          className="mt-3 flex items-center justify-center gap-1 text-xs font-semibold text-brand-ink"
-        >
-          Edit targets <ChevronRight className="h-3 w-3" />
-        </Link>
+        <p className="mt-4 text-[12px] text-ink-3">
+          <b className="font-bold text-ink">{cal.logged} of {cal.elapsed}</b> days logged this month
+        </p>
       </div>
-
-    </div>
-  )
-}
-
-function TargetStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-control bg-surface-2 px-3 py-2.5">
-      <p className="text-[10px] text-ink-2 font-medium">{label}</p>
-      <p className="text-base font-bold tabular-nums mt-0.5 text-ink">{value}</p>
-    </div>
+    </>
   )
 }
