@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '../../lib/supabase/server'
-import { AppHeader } from '../../components/layout/AppHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { SettingsClient } from '../../components/settings/SettingsClient'
 import pkg from '../../package.json'
@@ -27,14 +26,15 @@ export default async function SettingsPage() {
   if (!profile || profile.height_cm === null) redirect('/onboarding')
 
   return (
-    <div className="min-h-screen" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}>
-      <AppHeader title="Settings" />
-      <main className="mx-auto w-full max-w-md px-5 pt-4">
-        <h1 className="font-display text-[23px] font-semibold text-ink leading-tight">Settings</h1>
-        <p className="text-sm text-ink-2 mt-0.5">Profile, goals &amp; subscription</p>
-        <div className="mt-6">
-          <SettingsClient profile={profile} version={pkg.version} />
-        </div>
+    <div className="min-h-screen">
+      <main
+        className="mx-auto w-full max-w-md px-6"
+        style={{
+          paddingTop: 'calc(20px + env(safe-area-inset-top))',
+          paddingBottom: 'calc(120px + env(safe-area-inset-bottom))',
+        }}
+      >
+        <SettingsClient profile={profile} version={pkg.version} email={user.email ?? ''} />
       </main>
       <BottomNav />
     </div>

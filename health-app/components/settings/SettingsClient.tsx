@@ -1,20 +1,25 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
+import { useTheme } from 'next-themes'
 import type { Profile } from '../../types/index'
 import { profileUpdateSchema, type ProfileUpdateData } from '../../lib/validations'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { toast } from '../ui/use-toast'
 import { useSubscription } from '../../hooks/useSubscription'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Crown, Target, User, LogOut, Trash2, Download, Sliders, Pencil, Check, X, Zap, SunMoon, Bell } from 'lucide-react'
+import {
+  ChevronRight, Crown, Target, Scale, Bell, SunMoon, Download, Sliders, Pencil, Check, X,
+} from 'lucide-react'
+import {
+  Sheet, SheetContent, SheetTrigger, SheetTitle,
+} from '../ui/sheet'
 import { ThemeSegmented } from '../ui/theme-toggle'
 import { PushNotificationToggle } from './PushNotificationToggle'
 
@@ -34,28 +39,16 @@ const ACTIVITY_LABELS: Record<string, string> = {
   very_active: 'Very active (twice a day)',
 }
 
-const GOAL_LABELS: Record<string, string> = {
-  lose: '⬇️ Lose weight',
-  maintain: '⚖️ Maintain weight',
-  gain: '⬆️ Gain muscle',
-}
+const THEME_LABELS: Record<string, string> = { light: 'Light', dark: 'Dark', system: 'System' }
 
-function SectionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <section className="rounded-sheet border border-hairline bg-surface shadow-rest overflow-hidden">
-      <div className="flex items-center gap-2 border-b border-hairline px-4 py-3">
-        <span className="text-ink-2">{icon}</span>
-        <h2 className="font-display text-sm font-bold text-ink">{title}</h2>
-      </div>
-      <div className="p-4">{children}</div>
-    </section>
-  )
-}
-
-export function SettingsClient({ profile, version }: { profile: Profile; version: string }) {
+export function SettingsClient({ profile, version, email }: { profile: Profile; version: string; email: string }) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const { data: subscription } = useSubscription(profile.id)
+  const { theme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
   const [portalLoading, setPortalLoading] = useState(false)
   const [signOutLoading, setSignOutLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -63,7 +56,6 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
   const initHeight = cmToFtIn(profile.height_cm ?? 170)
   const [heightFt, setHeightFt] = useState(initHeight.ft)
   const [heightIn, setHeightIn] = useState(initHeight.inches)
-  // Quick calorie editor state
   const [editingCalories, setEditingCalories] = useState(false)
   const [quickKcal, setQuickKcal] = useState(String(profile.daily_calorie_target))
   const [savingKcal, setSavingKcal] = useState(false)
@@ -89,17 +81,9 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
 
   const onSubmit = async (values: ProfileUpdateData) => {
     try {
-      // Only send custom target fields when the user has opted in
       const payload = useCustomTargets
         ? values
-        : {
-            ...values,
-            custom_calorie_target: undefined,
-            custom_protein_target: undefined,
-            custom_carbs_target:   undefined,
-            custom_fat_target:     undefined,
-          }
-
+        : { ...values, custom_calorie_target: undefined, custom_protein_target: undefined, custom_carbs_target: undefined, custom_fat_target: undefined }
       const res = await fetch('/api/profile/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -111,25 +95,20 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
       }
       const desc = useCustomTargets ? 'Custom targets saved.' : 'Calorie targets recalculated.'
       toast({ title: 'Profile updated ✓', description: desc, duration: 3000 })
-      router.refresh() // re-render server component so DAILY GOAL stat updates
+      router.refresh()
     } catch (err) {
       toast({ title: 'Update failed', description: (err as Error).message, variant: 'error', duration: 4000 })
     }
   }
 
   const manageSubscription = async () => {
-    // Google Play subscriptions can only be managed in the Play Store, not the
-    // Stripe billing portal.
     if (subscription?.provider === 'google_play') {
       const sku = subscription.playProductId
-      const url = sku
+      window.location.href = sku
         ? `https://play.google.com/store/account/subscriptions?sku=${sku}&package=com.getinshape.app`
         : 'https://play.google.com/store/account/subscriptions'
-      window.location.href = url
       return
     }
-
-    // Razorpay has no hosted self-serve portal like Stripe — cancel directly.
     if (subscription?.provider === 'razorpay') {
       const confirmed = window.confirm('Cancel your Pro subscription? You\'ll keep access until the end of the current billing period.')
       if (!confirmed) return
@@ -147,7 +126,6 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
       }
       return
     }
-
     try {
       setPortalLoading(true)
       const res = await fetch('/api/stripe/portal', { method: 'POST' })
@@ -175,9 +153,7 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
     }
   }
 
-  const exportData = () => {
-    window.location.href = '/api/export'
-  }
+  const exportData = () => { window.location.href = '/api/export' }
 
   const deleteAccount = async () => {
     const confirmed = window.confirm('Delete your account and all data? This cannot be undone.')
@@ -226,379 +202,325 @@ export function SettingsClient({ profile, version }: { profile: Profile; version
     }
   }
 
-  // BMI calculation
-  const bmi = profile.height_cm && profile.current_weight_kg
-    ? +(profile.current_weight_kg / Math.pow(profile.height_cm / 100, 2)).toFixed(1)
-    : null
-  const bmiLabel = bmi === null ? null : bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Healthy' : bmi < 30 ? 'Overweight' : 'Obese'
-  const bmiColor = bmi === null ? '' : bmi < 18.5 ? 'var(--protein)' : bmi < 25 ? 'var(--good)' : bmi < 30 ? 'var(--energy-ink)' : 'var(--bad)'
+  const initial = (profile.display_name?.trim()?.[0] ?? email?.[0] ?? 'A').toUpperCase()
+  const isPro = subscription?.isPro
 
   return (
-    <div className="space-y-4">
+    <>
+      {/* ── Header ── */}
+      <div className="pt-2">
+        <p className="text-[13px] font-medium text-ink-3">Account</p>
+        <h1 className="font-display mt-[3px] text-[24px] font-bold tracking-[-0.02em] text-ink">Profile</h1>
+      </div>
 
-      {/* ── Calorie target — quick editor ── */}
-      <div className="rounded-sheet border border-hairline bg-brand-soft p-4 shadow-rest">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-brand" />
-            <p className="text-xs font-bold uppercase tracking-widest text-brand-ink">Daily Calorie Goal</p>
-          </div>
-          {!editingCalories && (
-            <button
-              type="button"
-              onClick={() => {
-                setQuickKcal(String(profile.daily_calorie_target))
-                setEditingCalories(true)
-                setTimeout(() => kcalInputRef.current?.focus(), 50)
-              }}
-              className="flex items-center gap-1 rounded-control bg-surface border border-hairline px-2.5 py-1 text-xs font-semibold text-brand-ink hover:bg-brand-soft transition-all"
-            >
-              <Pencil className="h-3 w-3" />
-              Edit
-            </button>
-          )}
+      {/* ── Identity ── */}
+      <div className="mt-5 flex flex-col items-center gap-3 pb-1 pt-2">
+        <div className="flex h-[76px] w-[76px] items-center justify-center rounded-full" style={{ backgroundColor: 'var(--ink)' }}>
+          <span className="font-display text-[30px] font-semibold" style={{ color: 'var(--canvas)' }}>{initial}</span>
         </div>
+        <div className="text-center">
+          <p className="text-[18px] font-bold tracking-[-0.01em] text-ink">{profile.display_name || 'You'}</p>
+          <p className="mt-[3px] text-[12.5px] text-ink-3">{email}</p>
+        </div>
+      </div>
 
-        {!editingCalories ? (
-          <>
-            <p className="font-display text-4xl font-bold text-ink leading-none tabular-nums">
-              {profile.daily_calorie_target.toLocaleString()}
-            </p>
-            <p className="text-sm text-brand-ink mt-1">kcal / day</p>
-            <div className="mt-3 flex gap-3 text-xs">
-              <span className="font-semibold tabular-nums" style={{ color: 'var(--protein)' }}>P {profile.protein_g_target}g</span>
-              <span className="font-semibold tabular-nums" style={{ color: 'var(--carbs)' }}>C {profile.carbs_g_target}g</span>
-              <span className="font-semibold tabular-nums" style={{ color: 'var(--fat)' }}>F {profile.fat_g_target}g</span>
-            </div>
-          </>
-        ) : (
-          <div className="space-y-3">
-            {/* Preset chips */}
-            <div>
-              <p className="text-xs text-brand-ink font-semibold mb-2">Quick presets</p>
-              <div className="flex flex-wrap gap-2">
-                {[1200, 1500, 1800, 2000, 2200, 2500].map((kcal) => (
+      {/* ── Stats ── */}
+      <div className="mt-[18px] grid grid-cols-3 rounded-[24px] bg-surface py-[18px]" style={{ boxShadow: 'var(--shadow-air)' }}>
+        <Stat value={profile.daily_calorie_target.toLocaleString('en-IN')} label="kcal goal" divider />
+        <Stat value={`${profile.protein_g_target ?? 0}g`} label="protein" divider />
+        <Stat value={profile.current_weight_kg ? String(profile.current_weight_kg) : '—'} label="weight kg" />
+      </div>
+
+      {/* ── Settings rows ── */}
+      <div className="mt-3.5 overflow-hidden rounded-[24px] bg-surface" style={{ boxShadow: 'var(--shadow-air)' }}>
+        {/* Goals — opens the full profile + targets form */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <button type="button" className="flex w-full items-center gap-3.5 px-[18px] py-4 text-left tap-scale">
+              <Target className="h-[19px] w-[19px] shrink-0 text-ink" strokeWidth={1.9} />
+              <span className="flex-1 text-[15px] font-medium text-ink">Goals</span>
+              <RowChevron />
+            </button>
+          </SheetTrigger>
+          <SheetContent className="max-h-[88vh] overflow-y-auto">
+            <SheetTitle className="mb-4">Goals &amp; targets</SheetTitle>
+
+            {/* Calorie quick-editor */}
+            <div className="rounded-card bg-brand-soft p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-widest text-brand-ink">Daily calorie goal</p>
+                {!editingCalories && (
                   <button
-                    key={kcal}
                     type="button"
-                    onClick={() => setQuickKcal(String(kcal))}
-                    className={`rounded-control px-3 py-1.5 text-sm font-bold border transition-all ${
-                      quickKcal === String(kcal)
-                        ? 'bg-brand text-white border-brand shadow-rest'
-                        : 'bg-surface text-ink border-hairline hover:border-brand-ring'
-                    }`}
+                    onClick={() => { setQuickKcal(String(profile.daily_calorie_target)); setEditingCalories(true); setTimeout(() => kcalInputRef.current?.focus(), 50) }}
+                    className="flex items-center gap-1 rounded-control border border-hairline bg-surface px-2.5 py-1 text-xs font-semibold text-brand-ink tap-scale"
                   >
-                    {kcal.toLocaleString()}
+                    <Pencil className="h-3 w-3" /> Edit
                   </button>
-                ))}
+                )}
               </div>
+              {!editingCalories ? (
+                <>
+                  <p className="font-display text-4xl font-bold leading-none tabular-nums text-ink">{profile.daily_calorie_target.toLocaleString()}</p>
+                  <p className="mt-1 text-sm text-brand-ink">kcal / day</p>
+                  <div className="mt-3 flex gap-3 text-xs">
+                    <span className="font-semibold tabular-nums" style={{ color: 'var(--protein)' }}>P {profile.protein_g_target}g</span>
+                    <span className="font-semibold tabular-nums" style={{ color: 'var(--carbs)' }}>C {profile.carbs_g_target}g</span>
+                    <span className="font-semibold tabular-nums" style={{ color: 'var(--fat)' }}>F {profile.fat_g_target}g</span>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {[1200, 1500, 1800, 2000, 2200, 2500].map((kcal) => (
+                      <button
+                        key={kcal} type="button" onClick={() => setQuickKcal(String(kcal))}
+                        className={`rounded-control border px-3 py-1.5 text-sm font-bold transition-all ${quickKcal === String(kcal) ? 'border-brand bg-brand text-white' : 'border-hairline bg-surface text-ink'}`}
+                      >{kcal.toLocaleString()}</button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={kcalInputRef} type="number" value={quickKcal} min={500} max={10000} step={50}
+                      onChange={(e) => setQuickKcal(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && saveQuickKcal(Number(quickKcal))}
+                      className="w-32 rounded-control border border-hairline bg-surface px-4 py-2.5 text-lg font-bold text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
+                    />
+                    <span className="text-sm font-medium text-ink-2">kcal / day</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => saveQuickKcal(Number(quickKcal))} disabled={savingKcal || !quickKcal || Number(quickKcal) < 500} className="gap-1.5 tap-scale">
+                      <Check className="h-4 w-4" />{savingKcal ? 'Saving…' : 'Save'}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditingCalories(false)} className="gap-1.5 tap-scale">
+                      <X className="h-4 w-4" /> Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Custom input */}
-            <div>
-              <p className="text-xs text-brand-ink font-semibold mb-1.5">Or type a custom value</p>
-              <div className="flex items-center gap-2">
-                <input
-                  ref={kcalInputRef}
-                  type="number"
-                  value={quickKcal}
-                  min={500}
-                  max={10000}
-                  step={50}
-                  onChange={(e) => setQuickKcal(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && saveQuickKcal(Number(quickKcal))}
-                  className="w-32 rounded-control border border-hairline bg-surface px-4 py-2.5 text-lg font-bold text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
+            {/* Profile form */}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="mt-4 space-y-4">
+              <Field label="Display name" error={form.formState.errors.display_name?.message}>
+                <Input id="display_name" {...form.register('display_name')} />
+              </Field>
+              <Field label="Height" error={form.formState.errors.height_cm?.message}>
+                <div className="flex gap-2">
+                  <select
+                    value={heightFt}
+                    onChange={(e) => { const ft = Number(e.target.value); setHeightFt(ft); form.setValue('height_cm', ftInToCm(ft, heightIn), { shouldValidate: true }) }}
+                    className="flex-1 rounded-control border border-hairline bg-surface px-3 py-2 text-sm font-bold text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
+                  >
+                    {[3,4,5,6,7,8].map(ft => <option key={ft} value={ft}>{ft} ft</option>)}
+                  </select>
+                  <select
+                    value={heightIn}
+                    onChange={(e) => { const inches = Number(e.target.value); setHeightIn(inches); form.setValue('height_cm', ftInToCm(heightFt, inches), { shouldValidate: true }) }}
+                    className="flex-1 rounded-control border border-hairline bg-surface px-3 py-2 text-sm font-bold text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
+                  >
+                    {[0,1,2,3,4,5,6,7,8,9,10,11].map(i => <option key={i} value={i}>{i} in</option>)}
+                  </select>
+                </div>
+              </Field>
+              <Field label="Current weight (kg)" error={form.formState.errors.current_weight_kg?.message}>
+                <Input id="current_weight_kg" type="number" step="0.1" min="1" {...form.register('current_weight_kg', { valueAsNumber: true })} />
+              </Field>
+              <Field label="Target weight (kg)" error={form.formState.errors.target_weight_kg?.message}>
+                <Input id="target_weight_kg" type="number" step="0.1" min="1" {...form.register('target_weight_kg', { valueAsNumber: true })} />
+                <BmiRecommendation
+                  heightCm={form.watch('height_cm')}
+                  currentWeightKg={form.watch('current_weight_kg')}
+                  onSelect={(kg) => form.setValue('target_weight_kg', kg, { shouldValidate: true })}
                 />
-                <span className="text-sm text-ink-2 font-medium">kcal / day</span>
-              </div>
-            </div>
+              </Field>
+              <Field label="Activity level" error={form.formState.errors.activity_level?.message}>
+                <select
+                  {...form.register('activity_level')}
+                  className="w-full rounded-control border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
+                >
+                  {Object.entries(ACTIVITY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </Field>
+              <Field label="Goal" error={form.formState.errors.goal?.message}>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { value: 'lose', label: 'Lose', emoji: '📉' },
+                    { value: 'maintain', label: 'Maintain', emoji: '⚖️' },
+                    { value: 'gain', label: 'Gain', emoji: '📈' },
+                  ] as const).map((g) => (
+                    <button
+                      key={g.value} type="button" onClick={() => form.setValue('goal', g.value, { shouldDirty: true })}
+                      className={`rounded-control border py-2.5 text-sm font-semibold transition-all ${form.watch('goal') === g.value ? 'border-brand bg-brand-soft text-brand-ink' : 'border-hairline bg-surface text-ink'}`}
+                    >{g.emoji} {g.label}</button>
+                  ))}
+                </div>
+              </Field>
+              <Field label="Weekly loss goal" error={form.formState.errors.pace_kg_per_week?.message}>
+                <select
+                  {...form.register('pace_kg_per_week', { valueAsNumber: true })}
+                  className="w-full rounded-control border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
+                >
+                  <option value="0.25">0.25 kg/week — 275 kcal/day deficit</option>
+                  <option value="0.5">0.50 kg/week — 550 kcal/day deficit</option>
+                  <option value="0.75">0.75 kg/week — 825 kcal/day deficit</option>
+                  <option value="1">1.00 kg/week — 1,100 kcal/day deficit</option>
+                </select>
+              </Field>
 
-            {/* Save / Cancel */}
-            <div className="flex gap-2">
-              <Button size="sm" onClick={() => saveQuickKcal(Number(quickKcal))} disabled={savingKcal || !quickKcal || Number(quickKcal) < 500} className="gap-1.5 tap-scale">
-                <Check className="h-4 w-4" />
-                {savingKcal ? 'Saving…' : 'Save'}
+              <div className="rounded-card border border-hairline bg-surface-2 p-3">
+                <button type="button" onClick={() => setUseCustomTargets((v) => !v)} className="flex w-full items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sliders className="h-4 w-4 text-brand" />
+                    <span className="text-sm font-semibold text-ink">Custom calorie &amp; macro targets</span>
+                  </div>
+                  <div className={`relative h-5 w-9 rounded-full transition-colors ${useCustomTargets ? 'bg-brand' : 'bg-hairline'}`}>
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow transition-transform ${useCustomTargets ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </div>
+                </button>
+                {useCustomTargets && (
+                  <div className="mt-3 space-y-3">
+                    <Field label="Daily calories (kcal)" error={form.formState.errors.custom_calorie_target?.message}>
+                      <Input type="number" min="500" max="10000" step="50" {...form.register('custom_calorie_target', { valueAsNumber: true })} />
+                    </Field>
+                    <div className="grid grid-cols-3 gap-2">
+                      <Field label="Protein (g)" error={form.formState.errors.custom_protein_target?.message}>
+                        <Input type="number" min="0" max="500" step="5" {...form.register('custom_protein_target', { valueAsNumber: true })} />
+                      </Field>
+                      <Field label="Carbs (g)" error={form.formState.errors.custom_carbs_target?.message}>
+                        <Input type="number" min="0" max="1000" step="5" {...form.register('custom_carbs_target', { valueAsNumber: true })} />
+                      </Field>
+                      <Field label="Fat (g)" error={form.formState.errors.custom_fat_target?.message}>
+                        <Input type="number" min="0" max="500" step="5" {...form.register('custom_fat_target', { valueAsNumber: true })} />
+                      </Field>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Button type="submit" size="lg" className="w-full tap-scale" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? 'Saving...' : 'Save changes'}
               </Button>
-              <Button size="sm" variant="outline" onClick={() => setEditingCalories(false)} className="gap-1.5 tap-scale">
-                <X className="h-4 w-4" />
-                Cancel
-              </Button>
-            </div>
-            <p className="text-[11px] text-brand-ink opacity-80">
-              This overrides the auto-calculated target. Macros will keep their current values.
-            </p>
-          </div>
+            </form>
+          </SheetContent>
+        </Sheet>
+
+        <Divider />
+
+        {/* Log weight — dedicated page */}
+        <Link href="/weight" className="flex w-full items-center gap-3.5 px-[18px] py-4 tap-scale">
+          <Scale className="h-[19px] w-[19px] shrink-0 text-ink" strokeWidth={1.9} />
+          <span className="flex-1 text-[15px] font-medium text-ink">Log weight</span>
+          <RowChevron />
+        </Link>
+
+        <Divider />
+
+        {/* Reminders */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <button type="button" className="flex w-full items-center gap-3.5 px-[18px] py-4 text-left tap-scale">
+              <Bell className="h-[19px] w-[19px] shrink-0 text-ink" strokeWidth={1.9} />
+              <span className="flex-1 text-[15px] font-medium text-ink">Reminders</span>
+              <RowChevron />
+            </button>
+          </SheetTrigger>
+          <SheetContent>
+            <SheetTitle className="mb-1">Meal reminders</SheetTitle>
+            <p className="mb-4 text-sm text-ink-2">A gentle nudge to log if you haven&apos;t yet today.</p>
+            <PushNotificationToggle />
+          </SheetContent>
+        </Sheet>
+
+        <Divider />
+
+        {/* Appearance */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <button type="button" className="flex w-full items-center gap-3.5 px-[18px] py-4 text-left tap-scale">
+              <SunMoon className="h-[19px] w-[19px] shrink-0 text-ink" strokeWidth={1.9} />
+              <span className="flex-1 text-[15px] font-medium text-ink">Appearance</span>
+              {mounted && <span className="text-[13px] text-ink-3">{THEME_LABELS[theme ?? 'system']}</span>}
+              <RowChevron />
+            </button>
+          </SheetTrigger>
+          <SheetContent>
+            <SheetTitle className="mb-4">Appearance</SheetTitle>
+            <ThemeSegmented />
+            <p className="mt-2.5 text-xs text-ink-2">System follows your phone&apos;s light/dark setting automatically.</p>
+          </SheetContent>
+        </Sheet>
+
+        <Divider />
+
+        {/* Export */}
+        <button type="button" onClick={exportData} className="flex w-full items-center gap-3.5 px-[18px] py-4 text-left tap-scale">
+          <Download className="h-[19px] w-[19px] shrink-0 text-ink" strokeWidth={1.9} />
+          <span className="flex-1 text-[15px] font-medium text-ink">Export data</span>
+          <RowChevron />
+        </button>
+
+        <Divider />
+
+        {/* Subscription */}
+        {isPro ? (
+          <button type="button" onClick={manageSubscription} disabled={portalLoading} className="flex w-full items-center gap-3.5 px-[18px] py-4 text-left tap-scale disabled:opacity-50">
+            <Crown className="h-[19px] w-[19px] shrink-0 text-brand" strokeWidth={1.9} />
+            <span className="flex-1 text-[15px] font-medium text-ink">Subscription</span>
+            <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-bold text-brand-ink">PRO</span>
+            <RowChevron />
+          </button>
+        ) : (
+          <Link href="/upgrade" className="flex w-full items-center gap-3.5 px-[18px] py-4 tap-scale">
+            <Crown className="h-[19px] w-[19px] shrink-0 text-brand" strokeWidth={1.9} />
+            <span className="flex-1 text-[15px] font-medium text-ink">Upgrade to Pro</span>
+            <RowChevron />
+          </Link>
         )}
       </div>
 
-      {bmi !== null && (
-        <div className="flex items-center justify-between rounded-card border border-hairline bg-surface px-4 py-3">
-          <span className="text-sm text-ink-2">BMI</span>
-          <span className="text-sm font-bold" style={{ color: bmiColor }}>{bmi} — {bmiLabel}</span>
-        </div>
-      )}
+      {/* ── Sign out / delete ── */}
+      <div className="mt-3.5 flex flex-col items-center gap-0.5">
+        <button type="button" onClick={signOut} disabled={signOutLoading} className="px-6 py-3 text-[14px] font-medium text-ink-2 tap-scale disabled:opacity-50">
+          {signOutLoading ? 'Signing out…' : 'Sign out'}
+        </button>
+        <button type="button" onClick={deleteAccount} disabled={deleteLoading} className="px-6 py-1 text-[13px] font-medium text-danger tap-scale disabled:opacity-50">
+          {deleteLoading ? 'Deleting…' : 'Delete account'}
+        </button>
+        <p className="mt-2 text-[11px] text-ink-3">GetInShape v{version}</p>
+      </div>
+    </>
+  )
+}
 
-      {/* Appearance */}
-      <SectionCard title="Appearance" icon={<SunMoon className="h-4 w-4" />}>
-        <ThemeSegmented />
-        <p className="mt-2.5 text-xs text-ink-2">System follows your phone&apos;s light/dark setting automatically.</p>
-      </SectionCard>
-
-      {/* Notifications */}
-      <SectionCard title="Notifications" icon={<Bell className="h-4 w-4" />}>
-        <PushNotificationToggle />
-      </SectionCard>
-
-      {/* Profile form */}
-      <SectionCard title="Profile" icon={<User className="h-4 w-4" />}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <Field label="Display name" error={form.formState.errors.display_name?.message}>
-            <Input id="display_name" {...form.register('display_name')} />
-          </Field>
-          <Field label="Height" error={form.formState.errors.height_cm?.message}>
-            <div className="flex gap-2">
-              <select
-                value={heightFt}
-                onChange={(e) => {
-                  const ft = Number(e.target.value)
-                  setHeightFt(ft)
-                  form.setValue('height_cm', ftInToCm(ft, heightIn), { shouldValidate: true })
-                }}
-                className="flex-1 rounded-control border border-hairline bg-surface px-3 py-2 text-sm font-bold text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
-              >
-                {[3,4,5,6,7,8].map(ft => <option key={ft} value={ft}>{ft} ft</option>)}
-              </select>
-              <select
-                value={heightIn}
-                onChange={(e) => {
-                  const inches = Number(e.target.value)
-                  setHeightIn(inches)
-                  form.setValue('height_cm', ftInToCm(heightFt, inches), { shouldValidate: true })
-                }}
-                className="flex-1 rounded-control border border-hairline bg-surface px-3 py-2 text-sm font-bold text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
-              >
-                {[0,1,2,3,4,5,6,7,8,9,10,11].map(i => <option key={i} value={i}>{i} in</option>)}
-              </select>
-            </div>
-          </Field>
-          <Field label="Current weight (kg)" error={form.formState.errors.current_weight_kg?.message}>
-            <Input id="current_weight_kg" type="number" step="0.1" min="1" {...form.register('current_weight_kg', { valueAsNumber: true })} />
-          </Field>
-          <Field label="Target weight (kg)" error={form.formState.errors.target_weight_kg?.message}>
-            <Input id="target_weight_kg" type="number" step="0.1" min="1" {...form.register('target_weight_kg', { valueAsNumber: true })} />
-            <BmiRecommendation
-              heightCm={form.watch('height_cm')}
-              currentWeightKg={form.watch('current_weight_kg')}
-              onSelect={(kg) => form.setValue('target_weight_kg', kg, { shouldValidate: true })}
-            />
-          </Field>
-          <Field label="Daily water goal (ml)" error={form.formState.errors.water_target_ml?.message}>
-            <div className="flex items-center gap-2">
-              <Input id="water_target_ml" type="number" step="250" min="500" max="8000" {...form.register('water_target_ml', { valueAsNumber: true })} />
-              <span className="text-xs text-ink-2 whitespace-nowrap">💧 ml/day</span>
-            </div>
-          </Field>
-          <Field label="Activity level" error={form.formState.errors.activity_level?.message}>
-            <select
-              {...form.register('activity_level')}
-              className="w-full rounded-control border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
-            >
-              {Object.entries(ACTIVITY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
-          </Field>
-          <Field label="Goal" error={form.formState.errors.goal?.message}>
-            <div className="grid grid-cols-3 gap-2">
-              {([
-                { value: 'lose', label: 'Lose', emoji: '📉' },
-                { value: 'maintain', label: 'Maintain', emoji: '⚖️' },
-                { value: 'gain', label: 'Gain', emoji: '📈' },
-              ] as const).map((g) => (
-                <button
-                  key={g.value}
-                  type="button"
-                  onClick={() => form.setValue('goal', g.value, { shouldDirty: true })}
-                  className={`rounded-control border py-2.5 text-sm font-semibold transition-all ${
-                    form.watch('goal') === g.value
-                      ? 'border-brand bg-brand-soft text-brand-ink'
-                      : 'border-hairline bg-surface text-ink hover:border-brand-ring'
-                  }`}
-                >
-                  {g.emoji} {g.label}
-                </button>
-              ))}
-            </div>
-          </Field>
-          <Field label="Weekly loss goal" error={form.formState.errors.pace_kg_per_week?.message}>
-            <select
-              {...form.register('pace_kg_per_week', { valueAsNumber: true })}
-              className="w-full rounded-control border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
-            >
-              <option value="0.25">0.25 kg/week — 275 kcal/day deficit</option>
-              <option value="0.5">0.50 kg/week — 550 kcal/day deficit</option>
-              <option value="0.75">0.75 kg/week — 825 kcal/day deficit</option>
-              <option value="1">1.00 kg/week — 1,100 kcal/day deficit</option>
-            </select>
-          </Field>
-
-          {/* Custom targets toggle */}
-          <div className="rounded-card border border-hairline bg-surface-2 p-3">
-            <button
-              type="button"
-              onClick={() => setUseCustomTargets((v) => !v)}
-              className="flex w-full items-center justify-between"
-            >
-              <div className="flex items-center gap-2">
-                <Sliders className="h-4 w-4 text-brand" />
-                <span className="text-sm font-semibold text-ink">Custom calorie &amp; macro targets</span>
-              </div>
-              <div className={`relative h-5 w-9 rounded-full transition-colors ${useCustomTargets ? 'bg-brand' : 'bg-hairline'}`}>
-                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow transition-transform ${useCustomTargets ? 'translate-x-4' : 'translate-x-0.5'}`} />
-              </div>
-            </button>
-            <p className="mt-1.5 text-xs text-ink-2">
-              {useCustomTargets ? 'Targets below will be saved as-is — no auto-recalculation.' : 'Targets are auto-calculated from your stats above.'}
-            </p>
-
-            {useCustomTargets && (
-              <div className="mt-3 space-y-3">
-                <Field label="Daily calories (kcal)" error={form.formState.errors.custom_calorie_target?.message}>
-                  <Input
-                    type="number" min="500" max="10000" step="50"
-                    {...form.register('custom_calorie_target', { valueAsNumber: true })}
-                  />
-                </Field>
-                <div className="grid grid-cols-3 gap-2">
-                  <Field label="Protein (g)" error={form.formState.errors.custom_protein_target?.message}>
-                    <Input type="number" min="0" max="500" step="5" {...form.register('custom_protein_target', { valueAsNumber: true })} />
-                  </Field>
-                  <Field label="Carbs (g)" error={form.formState.errors.custom_carbs_target?.message}>
-                    <Input type="number" min="0" max="1000" step="5" {...form.register('custom_carbs_target', { valueAsNumber: true })} />
-                  </Field>
-                  <Field label="Fat (g)" error={form.formState.errors.custom_fat_target?.message}>
-                    <Input type="number" min="0" max="500" step="5" {...form.register('custom_fat_target', { valueAsNumber: true })} />
-                  </Field>
-                </div>
-                {/* Live kcal check */}
-                {(() => {
-                  const p = form.watch('custom_protein_target') ?? 0
-                  const c = form.watch('custom_carbs_target') ?? 0
-                  const f = form.watch('custom_fat_target') ?? 0
-                  const derivedKcal = p * 4 + c * 4 + f * 9
-                  const targetKcal = form.watch('custom_calorie_target') ?? 0
-                  const diff = Math.abs(derivedKcal - targetKcal)
-                  if (derivedKcal === 0) return null
-                  return (
-                    <p className="text-xs font-medium" style={{ color: diff > 100 ? 'var(--energy-ink)' : 'var(--good)' }}>
-                      {derivedKcal} kcal from macros
-                      {diff > 100 ? ` — ${diff} kcal off from your calorie target` : ' ✓ matches calorie target'}
-                    </p>
-                  )
-                })()}
-              </div>
-            )}
-          </div>
-
-          <Button type="submit" size="lg" className="w-full tap-scale" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? 'Saving...' : 'Save changes'}
-          </Button>
-        </form>
-      </SectionCard>
-
-      {/* Subscription */}
-      <SectionCard title="Subscription" icon={<Crown className="h-4 w-4" />}>
-        {subscription?.isPro ? (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-energy-soft px-2 py-0.5 text-xs font-bold text-energy-ink">PRO</span>
-              <span className="text-sm text-ink-2">Unlimited logging, all features</span>
-            </div>
-            <Button variant="outline" size="lg" className="w-full tap-scale" onClick={manageSubscription} disabled={portalLoading}>
-              {portalLoading ? 'Opening...' : 'Manage Subscription'}
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-sm text-ink-2">Free plan — last 7 days of history</p>
-            <Button asChild size="lg" className="w-full tap-scale">
-              <Link href="/upgrade">
-                <Crown className="mr-1.5 h-4 w-4" />
-                Upgrade to Pro
-              </Link>
-            </Button>
-          </div>
-        )}
-      </SectionCard>
-
-      {/* Account */}
-      <SectionCard title="Account" icon={<Target className="h-4 w-4" />}>
-        <div className="space-y-2">
-          <button
-            type="button"
-            onClick={exportData}
-            className="flex w-full items-center justify-between rounded-card border border-hairline px-4 py-3 text-sm font-medium text-ink hover:bg-surface-2 transition-colors"
-          >
-            <span className="flex items-center gap-2">
-              <Download className="h-4 w-4 text-ink-2" />
-              Export my data (CSV)
-            </span>
-            <ChevronRight className="h-4 w-4 text-ink-2" />
-          </button>
-          <button
-            type="button"
-            onClick={signOut}
-            disabled={signOutLoading}
-            className="flex w-full items-center justify-between rounded-card border border-hairline px-4 py-3 text-sm font-medium text-ink hover:bg-surface-2 disabled:opacity-50 transition-colors"
-          >
-            <span className="flex items-center gap-2">
-              <LogOut className="h-4 w-4 text-ink-2" />
-              {signOutLoading ? 'Signing out...' : 'Sign out'}
-            </span>
-            <ChevronRight className="h-4 w-4 text-ink-2" />
-          </button>
-          <button
-            type="button"
-            onClick={deleteAccount}
-            disabled={deleteLoading}
-            className="flex w-full items-center justify-between rounded-card border border-hairline px-4 py-3 text-sm font-medium text-danger hover:bg-danger-soft disabled:opacity-50 transition-colors"
-          >
-            <span className="flex items-center gap-2">
-              <Trash2 className="h-4 w-4" />
-              {deleteLoading ? 'Deleting...' : 'Delete account'}
-            </span>
-            <ChevronRight className="h-4 w-4 opacity-50" />
-          </button>
-        </div>
-        <p className="mt-3 text-center text-xs text-ink-2">GetInShape v{version}</p>
-      </SectionCard>
+function Stat({ value, label, divider }: { value: string; label: string; divider?: boolean }) {
+  return (
+    <div className={`text-center ${divider ? 'border-r border-hairline' : ''}`}>
+      <p className="font-display text-[22px] font-bold tabular-nums tracking-[-0.02em] text-ink">{value}</p>
+      <p className="mt-[3px] text-[11px] text-ink-3">{label}</p>
     </div>
   )
+}
+
+function RowChevron() {
+  return <ChevronRight className="h-[15px] w-[15px] shrink-0 text-ink-3" strokeWidth={2} />
+}
+
+function Divider() {
+  return <div className="mx-[18px] border-t border-hairline" />
 }
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div>
-      <Label className="text-xs font-semibold text-ink-2 uppercase tracking-wide">{label}</Label>
+      <Label className="text-xs font-semibold uppercase tracking-wide text-ink-2">{label}</Label>
       <div className="mt-1">{children}</div>
       {error && <p className="mt-1 text-xs text-danger">{error}</p>}
     </div>
   )
 }
 
-function MacroChip({ label, g, color }: { label: string; g: number; color: string }) {
-  return (
-    <div className="flex items-center justify-between text-xs">
-      <span className="text-ink-2">{label}</span>
-      <span className="font-bold tabular-nums" style={{ color }}>{g}g</span>
-    </div>
-  )
-}
-
-function BmiRecommendation({
-  heightCm,
-  currentWeightKg,
-  onSelect,
-}: {
+function BmiRecommendation({ heightCm, currentWeightKg, onSelect }: {
   heightCm: number
   currentWeightKg: number
   onSelect: (kg: number) => void
@@ -626,7 +548,7 @@ function BmiRecommendation({
   const maxHealthy = +(24.9 * hM * hM).toFixed(1)
 
   return (
-    <div className="mt-2 rounded-card border border-hairline bg-brand-soft p-3 space-y-2">
+    <div className="mt-2 space-y-2 rounded-card border border-hairline bg-brand-soft p-3">
       <div className="flex items-center justify-between">
         <span className="text-xs text-ink-2">Your current BMI</span>
         <span className="text-xs font-bold" style={{ color: bmiColor }}>{currentBmi} · {bmiLabel}</span>
@@ -635,16 +557,14 @@ function BmiRecommendation({
         Healthy range: <span className="font-semibold text-ink">{minHealthy}–{maxHealthy} kg</span> (BMI 18.5–24.9)
       </p>
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-2 mb-1.5">Tap to set target</p>
+        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-ink-2">Tap to set target</p>
         <div className="flex gap-2">
           {suggestions.map((s) => (
             <button
-              key={s.bmi}
-              type="button"
-              onClick={() => onSelect(s.kg)}
-              className="flex-1 rounded-control border border-hairline bg-surface py-1.5 text-center hover:border-brand tap-scale transition-all"
+              key={s.bmi} type="button" onClick={() => onSelect(s.kg)}
+              className="flex-1 rounded-control border border-hairline bg-surface py-1.5 text-center tap-scale"
             >
-              <p className="text-xs font-bold text-brand-ink tabular-nums">{s.kg} kg</p>
+              <p className="text-xs font-bold tabular-nums text-brand-ink">{s.kg} kg</p>
               <p className="text-[10px] text-ink-2">BMI {s.bmi}</p>
             </button>
           ))}
