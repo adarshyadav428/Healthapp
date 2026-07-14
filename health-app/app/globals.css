@@ -58,8 +58,7 @@
   --cta-grad:    linear-gradient(160deg, #FF8A50, #EB5A20);
   --ava-grad:    linear-gradient(150deg, #FF9560, #E8551C);
   --ava-halo:    rgba(241,102,46,.22);
-  --ambient:     radial-gradient(120% 40% at 50% -6%, rgba(241,102,46,.07), transparent 60%),
-                 radial-gradient(60% 26% at 88% 0%, rgba(232,150,30,.05), transparent 56%);
+  --ambient:     linear-gradient(180deg, rgba(255,138,80,.30) 0%, rgba(255,138,80,.13) 20%, rgba(255,138,80,0) 46%);
   --hero-wash:   linear-gradient(180deg, #FFF2E8 0%, rgba(255,255,255,0) 52%);
   --ring-bloom:  radial-gradient(closest-side, rgba(241,102,46,.16), transparent 72%);
 
@@ -113,8 +112,7 @@
   --cta-grad:    linear-gradient(160deg, #FF8A55, #F5551A);
   --ava-grad:    linear-gradient(150deg, #FF9F6E, #F5551A);
   --ava-halo:    rgba(255,122,69,.25);
-  --ambient:     radial-gradient(120% 42% at 50% -6%, rgba(255,110,60,.13), transparent 62%),
-                 radial-gradient(60% 28% at 88% 0%, rgba(255,170,90,.06), transparent 58%);
+  --ambient:     linear-gradient(180deg, rgba(255,122,69,.18) 0%, rgba(255,122,69,.07) 20%, rgba(255,122,69,0) 46%);
   --hero-wash:   linear-gradient(180deg, rgba(255,122,69,.05), rgba(255,122,69,0) 42%);
   --ring-bloom:  none;
 

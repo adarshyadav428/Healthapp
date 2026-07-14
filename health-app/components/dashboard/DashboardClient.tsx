@@ -73,7 +73,7 @@ export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
       <div className="mb-3 mt-6 flex items-baseline justify-between px-0.5">
         <p className="text-[16px] font-semibold tracking-[-0.01em] text-ink">Recently logged</p>
         {hasLogs && (
-          <Link href="/history" className="text-[13px] font-medium text-ink-3 tap-scale">See all</Link>
+          <Link href="/history" className="text-[13px] font-semibold text-brand-ink tap-scale">See all</Link>
         )}
       </div>
 

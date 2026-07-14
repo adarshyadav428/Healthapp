@@ -1,20 +1,21 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { Drumstick, Wheat, Droplet } from 'lucide-react'
 
-// Ember Air hero: a 132px calorie ring (ember, always — no red over-goal
-// state) with the eaten total centred, two stacked stats beside it, and the
-// three macro rings folded in below a hairline (the 2c variant, ink progress).
+// Ember Air hero (v2): a 132px calorie ring (ember, always — no red over-goal
+// state) with the eaten total centred, the three macros as icon-rings down the
+// right, and a "kcal left / goal" strip below a hairline.
 
 const RING = 132
 const RING_R = 58
 const RING_C = RING / 2
 const RING_CIRC = 2 * Math.PI * RING_R
 
-const MACRO = 38
-const MACRO_R = 15
-const MACRO_C = MACRO / 2
-const MACRO_CIRC = 2 * Math.PI * MACRO_R
+const M = 34
+const M_R = 13
+const M_C = M / 2
+const M_CIRC = 2 * Math.PI * M_R
 
 interface Props {
   eaten: number
@@ -48,27 +49,36 @@ function useCountUp(target: number, duration = 800) {
   return val
 }
 
-function MacroRing({ label, eaten, target, color }: { label: string; eaten: number; target: number; color: string }) {
+function MacroRow({ icon: Icon, label, eaten, target, color }: {
+  icon: typeof Drumstick
+  label: string
+  eaten: number
+  target: number
+  color: string
+}) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
   const pct = target > 0 ? Math.min(eaten / target, 1) : 0
-  const offset = MACRO_CIRC * (1 - (mounted ? pct : 0))
+  const offset = M_CIRC * (1 - (mounted ? pct : 0))
   return (
-    <div className="flex items-center gap-2.5">
-      <div className="relative shrink-0" style={{ width: MACRO, height: MACRO }}>
-        <svg width={MACRO} height={MACRO} viewBox={`0 0 ${MACRO} ${MACRO}`}>
-          <circle cx={MACRO_C} cy={MACRO_C} r={MACRO_R} fill="none" stroke="var(--surface-2)" strokeWidth={5} />
+    <div className="flex items-center gap-3">
+      <div className="relative shrink-0" style={{ width: M, height: M }}>
+        <svg width={M} height={M} viewBox={`0 0 ${M} ${M}`}>
+          <circle cx={M_C} cy={M_C} r={M_R} fill="none" stroke="var(--surface-2)" strokeWidth={4} />
           <circle
-            cx={MACRO_C} cy={MACRO_C} r={MACRO_R} fill="none" stroke={color} strokeWidth={5}
-            strokeLinecap="round" strokeDasharray={MACRO_CIRC} strokeDashoffset={offset}
-            transform={`rotate(-90 ${MACRO_C} ${MACRO_C})`}
+            cx={M_C} cy={M_C} r={M_R} fill="none" stroke={color} strokeWidth={4}
+            strokeLinecap="round" strokeDasharray={M_CIRC} strokeDashoffset={offset}
+            transform={`rotate(-90 ${M_C} ${M_C})`}
             style={{ transition: 'stroke-dashoffset 0.9s cubic-bezier(.22,1,.36,1)' }}
           />
         </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Icon className="h-[13px] w-[13px]" strokeWidth={2} style={{ color }} />
+        </div>
       </div>
-      <div>
-        <p className="text-[13px] font-bold tabular-nums text-ink leading-none">{Math.round(eaten)}g</p>
-        <p className="mt-[1px] text-[10px] text-ink-3">{label}</p>
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-[15px] font-bold tabular-nums text-ink">{Math.round(eaten)}g</span>
+        <span className="text-[12px] text-ink-3">{label}</span>
       </div>
     </div>
   )
@@ -83,11 +93,11 @@ export function CalorieHeroCard({
   const pct = target > 0 ? Math.min(eaten / target, 1) : 0
   const offset = RING_CIRC * (1 - (mounted ? pct : 0))
   const shown = useCountUp(eaten)
-  const over = eaten - target
+  const kcalLeft = target - eaten
 
   return (
     <div className="rounded-[24px] bg-surface px-6 py-[26px]" style={{ boxShadow: 'var(--shadow-air)' }}>
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-5">
         {/* Ring */}
         <div className="relative shrink-0" style={{ width: RING, height: RING }}>
           <svg width={RING} height={RING} viewBox={`0 0 ${RING} ${RING}`}>
@@ -107,28 +117,22 @@ export function CalorieHeroCard({
           </div>
         </div>
 
-        {/* Stacked stats */}
-        <div className="flex flex-1 flex-col gap-4">
-          <div>
-            <p className="font-display text-[22px] font-bold tabular-nums leading-none text-ink" style={{ letterSpacing: '-0.02em' }}>
-              {Math.abs(Math.round(over)).toLocaleString('en-IN')}
-            </p>
-            <p className="mt-1 text-[12px] text-ink-3">{over >= 0 ? 'over goal' : 'kcal left'}</p>
-          </div>
-          <div>
-            <p className="font-display text-[22px] font-bold tabular-nums leading-none text-ink" style={{ letterSpacing: '-0.02em' }}>
-              {target.toLocaleString('en-IN')}
-            </p>
-            <p className="mt-1 text-[12px] text-ink-3">daily goal</p>
-          </div>
+        {/* Macros down the right */}
+        <div className="flex flex-1 flex-col gap-3.5">
+          <MacroRow icon={Drumstick} label="Protein" eaten={proteinEaten} target={proteinTarget} color="var(--protein)" />
+          <MacroRow icon={Wheat} label="Carbs" eaten={carbsEaten} target={carbsTarget} color="var(--carbs)" />
+          <MacroRow icon={Droplet} label="Fat" eaten={fatEaten} target={fatTarget} color="var(--fat)" />
         </div>
       </div>
 
-      {/* Macro rings, folded in below a hairline (2c) */}
-      <div className="mt-5 flex justify-between border-t border-hairline px-1.5 pt-4">
-        <MacroRing label="Protein" eaten={proteinEaten} target={proteinTarget} color="var(--protein)" />
-        <MacroRing label="Carbs" eaten={carbsEaten} target={carbsTarget} color="var(--carbs)" />
-        <MacroRing label="Fat" eaten={fatEaten} target={fatTarget} color="var(--fat)" />
+      {/* kcal left / goal strip */}
+      <div className="mt-5 flex items-baseline justify-between border-t border-hairline pt-4">
+        <span className="text-[12.5px] text-ink-3">
+          <b className="font-bold tabular-nums text-ink">{Math.abs(kcalLeft).toLocaleString('en-IN')}</b> kcal {kcalLeft >= 0 ? 'left' : 'over'}
+        </span>
+        <span className="text-[12.5px] text-ink-3">
+          Goal <b className="font-bold tabular-nums text-ink">{target.toLocaleString('en-IN')}</b> kcal
+        </span>
       </div>
     </div>
   )

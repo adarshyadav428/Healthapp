@@ -85,15 +85,10 @@ export function RecentMealCard({ log, imageUrl }: { log: FoodLog; imageUrl?: str
         )}
       </div>
 
-      {/* Name + caption + macro row */}
+      {/* Name + caption */}
       <div className="min-w-0 flex-1">
         <p className="truncate text-[14.5px] font-semibold text-ink">{name}</p>
         <p className="mt-[3px] text-[12px] text-ink-3">{mealLabel} · {formatTime(log.logged_at)}</p>
-        <div className="mt-1.5 flex gap-2.5">
-          <span className="text-[10.5px] text-ink-3">P <b className="font-bold text-ink">{Math.round(log.protein_g)}</b></span>
-          <span className="text-[10.5px] text-ink-3">C <b className="font-bold text-ink">{Math.round(log.carbs_g)}</b></span>
-          <span className="text-[10.5px] text-ink-3">F <b className="font-bold text-ink">{Math.round(log.fat_g)}</b></span>
-        </div>
       </div>
 
       {/* Kcal */}
