@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createServerClient } from '../../lib/supabase/server'
+import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import { PageHeader } from '../../components/layout/PageHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { DeficitPageClient } from '../../components/progress/DeficitPageClient'
@@ -16,8 +16,7 @@ function toIstDateKey(iso: string) {
 
 export default async function DeficitPage() {
   const supabase = createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/sign-in')
+  const user = await getAuthedUser(supabase)
 
   const { data: profile } = await supabase
     .from('profiles')

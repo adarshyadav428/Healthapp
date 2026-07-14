@@ -1,6 +1,7 @@
+import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createServerClient as createSupabaseServerClient } from '@supabase/ssr'
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js'
 import type { ResponseCookie } from 'next/dist/compiled/@edge-runtime/cookies'
 
 /**
@@ -39,6 +40,22 @@ export function createServerClient(): SupabaseClient {
       },
     },
   })
+}
+
+/**
+ * Get the current user in a Server Component/page, redirecting to sign-in if there
+ * isn't one. Uses getSession() (local cookie decode, no network round trip) rather
+ * than getUser() (which re-validates against the Supabase Auth server every time) —
+ * middleware.ts already did that network revalidation for this exact request one hop
+ * earlier and would have redirected already if it failed. Calling getUser() again
+ * here was pure duplicate latency: every page paid for two Auth-server round trips
+ * instead of one. This is safe because the actual data access is still enforced by
+ * Postgres RLS regardless of what this function returns.
+ */
+export async function getAuthedUser(supabase: SupabaseClient): Promise<User> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) redirect('/auth/sign-in')
+  return session.user
 }
 
 /**

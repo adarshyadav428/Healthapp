@@ -5,7 +5,7 @@ import { LogProgressClient } from '../../components/log/LogProgressClient'
 import { TodayFoodLog } from '../../components/log/TodayFoodLog'
 import { FoodHeader } from '../../components/log/FoodHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
-import { createServerClient } from '../../lib/supabase/server'
+import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import type { Food, FoodLog } from '../../types/index'
 import { getUtcDayRange } from '../../lib/dateUtils'
 
@@ -47,11 +47,7 @@ export default async function LogPage({
   searchParams: { date?: string }
 }) {
   const supabase = createServerClient()
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
-  if (error || !user) redirect('/auth/sign-in')
+  const user = await getAuthedUser(supabase)
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createServerClient } from '../../lib/supabase/server'
+import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { SettingsClient } from '../../components/settings/SettingsClient'
 import pkg from '../../package.json'
@@ -9,12 +9,7 @@ export const metadata = { robots: { index: false } }
 
 export default async function SettingsPage() {
   const supabase = createServerClient()
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
-
-  if (error || !user) redirect('/auth/sign-in')
+  const user = await getAuthedUser(supabase)
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')

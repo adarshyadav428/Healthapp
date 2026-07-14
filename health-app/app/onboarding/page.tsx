@@ -1,20 +1,13 @@
 import { redirect } from 'next/navigation'
 import { OnboardingForm } from '../../components/onboarding/OnboardingForm'
-import { createServerClient } from '../../lib/supabase/server'
+import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { robots: { index: false } }
 
 export default async function OnboardingPage() {
   const supabase = createServerClient()
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
-
-  if (error || !user) {
-    redirect('/auth/sign-in')
-  }
+  const user = await getAuthedUser(supabase)
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')

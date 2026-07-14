@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createServerClient } from '../../lib/supabase/server'
+import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import { PageHeader } from '../../components/layout/PageHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { WeightClient } from '../../components/weight/WeightClient'
@@ -10,12 +10,7 @@ export const metadata = { robots: { index: false } }
 
 export default async function WeightPage() {
   const supabase = createServerClient()
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
-
-  if (error || !user) redirect('/auth/sign-in')
+  const user = await getAuthedUser(supabase)
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')

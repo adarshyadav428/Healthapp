@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { createServerClient } from '../../lib/supabase/server'
+import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import type { FoodLog, WeightLog } from '../../types/index'
 import { calculateStreak } from '../../lib/streak'
 import { getIstDayRange } from '../../lib/dateUtils'
@@ -17,8 +17,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function ProgressPage() {
   const supabase = createServerClient()
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) redirect('/auth/sign-in')
+  const user = await getAuthedUser(supabase)
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
