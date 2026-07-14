@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '../../lib/supabase/server'
-import { AppHeader } from '../../components/layout/AppHeader'
+import { PageHeader } from '../../components/layout/PageHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { WeightClient } from '../../components/weight/WeightClient'
 import type { WeightLog } from '../../types/index'
@@ -38,14 +38,15 @@ export default async function WeightPage() {
   const weightLogs = (logs ?? []) as WeightLog[]
 
   return (
-    <div className="min-h-screen" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}>
-      <AppHeader title="Weight" />
-      <main className="mx-auto w-full max-w-md px-5 pt-4">
-        <div className="mb-6">
-          <h1 className="font-display text-[23px] font-semibold text-ink leading-tight">Weight</h1>
-          <p className="text-sm text-ink-2 mt-0.5">Track your journey to {profile.target_weight_kg} kg</p>
+    <div className="min-h-screen">
+      <main
+        className="mx-auto w-full max-w-md px-6"
+        style={{ paddingTop: 'calc(20px + env(safe-area-inset-top))', paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}
+      >
+        <PageHeader label={profile.target_weight_kg ? `Toward ${profile.target_weight_kg} kg` : 'Body'} title="Weight" back />
+        <div className="mt-5">
+          <WeightClient logs={weightLogs} profile={profile} />
         </div>
-        <WeightClient logs={weightLogs} profile={profile} />
       </main>
       <BottomNav />
     </div>

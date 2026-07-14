@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '../../lib/supabase/server'
-import { AppHeader } from '../../components/layout/AppHeader'
+import { PageHeader } from '../../components/layout/PageHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { DeficitPageClient } from '../../components/progress/DeficitPageClient'
 import { calculateBMR, activityMultiplier } from '../../lib/tdee'
@@ -81,14 +81,13 @@ export default async function DeficitPage() {
   const totalFatKg   = Math.max(0, totalDeficit / 7700)
 
   return (
-    <div className="min-h-screen" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}>
-      <AppHeader title="Deficit" />
-      <main className="mx-auto w-full max-w-md px-5 pt-4">
-        <div className="mb-4">
-          <h1 className="font-display text-[23px] font-semibold text-ink leading-tight">Deficit Tracker</h1>
-          <p className="text-sm text-ink-2">1 kg fat = 7,700 kcal deficit</p>
-        </div>
-
+    <div className="min-h-screen">
+      <main
+        className="mx-auto w-full max-w-md px-6"
+        style={{ paddingTop: 'calc(20px + env(safe-area-inset-top))', paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}
+      >
+        <PageHeader label="1 kg fat = 7,700 kcal deficit" title="Deficit" back />
+        <div className="mt-5">
         <DeficitPageClient
           days={days}
           tdee={tdee}
@@ -101,6 +100,7 @@ export default async function DeficitPage() {
           totalDaysLogged={allDayCount}
           targetWeightKg={profile.target_weight_kg ?? null}
         />
+        </div>
       </main>
       <BottomNav />
     </div>

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '../../lib/supabase/server'
-import { AppHeader } from '../../components/layout/AppHeader'
+import { PageHeader } from '../../components/layout/PageHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { RecipeBuilder } from '../../components/recipes/RecipeBuilder'
 
@@ -26,14 +26,15 @@ export default async function RecipesPage() {
   if (!profile || profile.height_cm === null) redirect('/onboarding')
 
   return (
-    <div className="min-h-screen" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}>
-      <AppHeader title="Recipes" />
-      <main className="mx-auto w-full max-w-md px-5 pt-4">
-        <div className="mb-6">
-          <h1 className="font-display text-[23px] font-semibold text-ink leading-tight">Recipe Builder</h1>
-          <p className="text-sm text-ink-2 mt-0.5">Calculate nutrition for any home recipe</p>
+    <div className="min-h-screen">
+      <main
+        className="mx-auto w-full max-w-md px-6"
+        style={{ paddingTop: 'calc(20px + env(safe-area-inset-top))', paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}
+      >
+        <PageHeader label="Nutrition for any home recipe" title="Recipes" back />
+        <div className="mt-5">
+          <RecipeBuilder />
         </div>
-        <RecipeBuilder />
       </main>
       <BottomNav />
     </div>

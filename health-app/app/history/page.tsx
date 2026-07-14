@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createServerClient } from '../../lib/supabase/server'
-import { AppHeader } from '../../components/layout/AppHeader'
+import { PageHeader } from '../../components/layout/PageHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { HistoryClient } from '../../components/history/HistoryClient'
 import type { Profile } from '../../types/index'
@@ -59,19 +59,20 @@ export default async function HistoryPage() {
   const exerciseLogs = exerciseResult.error ? [] : (exerciseResult.data ?? [])
 
   return (
-    <div className="min-h-screen" style={{ paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}>
-      <AppHeader title="History" />
-      <main className="mx-auto w-full max-w-md px-5 pt-4">
-        <div className="mb-6">
-          <h1 className="font-display text-[23px] font-semibold text-ink leading-tight">History</h1>
-          <p className="text-sm text-ink-2 mt-0.5">Your nutrition over time</p>
-        </div>
+    <div className="min-h-screen">
+      <main
+        className="mx-auto w-full max-w-md px-6"
+        style={{ paddingTop: 'calc(20px + env(safe-area-inset-top))', paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}
+      >
+        <PageHeader label="Your nutrition over time" title="History" back />
+        <div className="mt-5">
         <HistoryClient
           logs={logsResult.data ?? []}
           exerciseLogs={exerciseLogs}
           profile={profile as Profile}
           isPro={isPro}
         />
+        </div>
       </main>
       <BottomNav />
     </div>
