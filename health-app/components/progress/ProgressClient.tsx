@@ -99,12 +99,16 @@ export function ProgressClient({ streak, weightLogs, weekLogs, loggedDates }: Pr
       {/* ── Stat cards ── */}
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div className="rounded-[24px] bg-surface p-5" style={AIR}>
-          <Flame className="h-[18px] w-[18px] text-brand" strokeWidth={2} />
+          <div className="flex h-9 w-9 items-center justify-center rounded-[12px]" style={{ backgroundColor: 'var(--brand-soft)' }}>
+            <Flame className="h-[18px] w-[18px] text-brand" strokeWidth={2} />
+          </div>
           <p className="font-display mt-3.5 text-[34px] font-bold leading-none tabular-nums text-ink" style={{ letterSpacing: '-0.03em' }}>{streak}</p>
           <p className="mt-[5px] text-[12px] text-ink-3">day streak</p>
         </div>
         <div className="rounded-[24px] bg-surface p-5" style={AIR}>
-          <Scale className="h-[18px] w-[18px] text-ink" strokeWidth={2} />
+          <div className="flex h-9 w-9 items-center justify-center rounded-[12px]" style={{ backgroundColor: 'color-mix(in srgb, var(--carbs) 15%, transparent)' }}>
+            <Scale className="h-[18px] w-[18px]" strokeWidth={2} style={{ color: 'var(--carbs)' }} />
+          </div>
           <p className="font-display mt-3.5 text-[34px] font-bold leading-none tabular-nums text-ink" style={{ letterSpacing: '-0.03em' }}>
             {currentWeight ?? '—'}
           </p>

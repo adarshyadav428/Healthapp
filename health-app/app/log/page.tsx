@@ -1,9 +1,8 @@
 import { redirect } from 'next/navigation'
 import nextDynamic from 'next/dynamic'
-import { FoodSearch } from '../../components/log/FoodSearch'
+import { FoodLanding } from '../../components/log/FoodLanding'
 import { LogProgressClient } from '../../components/log/LogProgressClient'
 import { TodayFoodLog } from '../../components/log/TodayFoodLog'
-import { LogPageShell } from '../../components/log/LogPageShell'
 import { FoodHeader } from '../../components/log/FoodHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { createServerClient } from '../../lib/supabase/server'
@@ -201,25 +200,19 @@ export default async function LogPage({
           />
         </div>
 
-        {/* Logging controls — only shown for today */}
+        {/* 1f landing: search pill + scan/quick-add + log again + copy yesterday */}
         {isToday && (
-          <>
-            {/* Quick Add button */}
-            <LogPageShell />
-
-            {/* Food search */}
-            <div className="mt-4">
-              <FoodSearch
-                recentFoods={recentFoods}
-                recentLogItems={recentLogItems}
-                frequentFoods={frequentFoods}
-                hasYesterdayLogs={hasYesterdayLogs}
-              />
-            </div>
-          </>
+          <div className="mt-4">
+            <FoodLanding
+              recentFoods={recentFoods}
+              recentLogItems={recentLogItems}
+              frequentFoods={frequentFoods}
+              hasYesterdayLogs={hasYesterdayLogs}
+            />
+          </div>
         )}
 
-        {/* Food log for the selected day */}
+        {/* Editable day log for the selected day (kept below the landing) */}
         <div className="mt-6">
           <TodayFoodLog initialLogs={dayFoodLogs} />
         </div>
