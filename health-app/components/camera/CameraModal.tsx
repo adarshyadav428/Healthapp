@@ -490,10 +490,10 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
                   <input
                     type="number"
                     inputMode="numeric"
-                    min={10} max={500} step={5}
+                    min={10} max={1500} step={5}
                     value={grams}
                     onChange={(e) => {
-                      const v = Math.max(10, Math.min(500, Number(e.target.value) || 10))
+                      const v = Math.max(10, Math.min(1500, Number(e.target.value) || 10))
                       setGrams(v)
                     }}
                     className="w-[64px] text-center text-[15px] font-bold text-ink rounded-control py-1.5 outline-none bg-surface-2 border border-hairline"
@@ -501,7 +501,7 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
                   <span className="text-[12px] text-ink-2 font-medium">{selected?.unit ?? 'g'}</span>
                 </div>
                 <input
-                  type="range" min={10} max={500} step={5} value={grams}
+                  type="range" min={10} max={1500} step={5} value={grams}
                   onChange={(e) => setGrams(Number(e.target.value))}
                   className="flex-1 accent-brand"
                 />
