@@ -15,13 +15,18 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })
 }
 
-export function RecentMealCard({ log, imageUrl }: { log: FoodLog; imageUrl?: string | null }) {
+export function RecentMealCard({ log, imageUrl, onClick }: { log: FoodLog; imageUrl?: string | null; onClick?: () => void }) {
   const name = log.food?.name ?? 'Logged food'
   const mealLabel = MEAL_LABEL[log.meal] ?? log.meal
   const tint = tintFor(name)
 
   return (
-    <div className="flex items-center gap-3.5 rounded-[20px] bg-surface p-3" style={{ boxShadow: 'var(--shadow-air)' }}>
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-3.5 rounded-[20px] bg-surface p-3 text-left tap-scale"
+      style={{ boxShadow: 'var(--shadow-air)' }}
+    >
       {/* Thumbnail: photo when available, tinted emoji tile otherwise */}
       <div
         className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[14px]"
@@ -46,6 +51,6 @@ export function RecentMealCard({ log, imageUrl }: { log: FoodLog; imageUrl?: str
         <p className="text-[15px] font-bold tabular-nums text-ink">{Math.round(log.kcal)}</p>
         <p className="mt-[1px] text-[10.5px] text-ink-3">kcal</p>
       </div>
-    </div>
+    </button>
   )
 }

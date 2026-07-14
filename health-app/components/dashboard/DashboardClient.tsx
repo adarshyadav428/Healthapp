@@ -1,11 +1,12 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import type { FoodLog, Profile } from '../../types/index'
 import { CalorieHeroCard } from '../home/CalorieHeroCard'
 import { RecentMealCard } from '../home/RecentMealCard'
 import { EmptyMeals } from '../home/EmptyMeals'
+import { EditFoodLogModal } from '../log/EditFoodLogModal'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
 import { Flame, Plus } from 'lucide-react'
@@ -19,6 +20,7 @@ interface Props {
 export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
   const { user } = useUser()
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
+  const [editingLog, setEditingLog] = useState<FoodLog | null>(null)
 
   const totals = useMemo(
     () => logs.reduce(
@@ -80,7 +82,7 @@ export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
       {hasLogs ? (
         <div className="flex flex-col gap-2.5">
           {recent.map((log) => (
-            <RecentMealCard key={log.id} log={log} />
+            <RecentMealCard key={log.id} log={log} onClick={() => setEditingLog(log)} />
           ))}
           <Link
             href="/log"
@@ -91,6 +93,13 @@ export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
         </div>
       ) : (
         <EmptyMeals />
+      )}
+
+      {editingLog && (
+        <EditFoodLogModal
+          log={editingLog}
+          onClose={() => setEditingLog(null)}
+        />
       )}
     </>
   )
