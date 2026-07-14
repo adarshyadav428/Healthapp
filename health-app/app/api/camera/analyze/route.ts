@@ -19,16 +19,17 @@ RULES:
 4. When no size reference is visible, default to standard home-cooked Indian portions (NOT Western restaurant sizes).
 5. Set confidence "low" if the image is blurry, partially obscured, or you are genuinely unsure of the dish.
 6. Set "unit" to "ml" for liquids/beverages (buttermilk, lassi, milk, juice, tea, coffee, soup); otherwise "g". estimated_grams holds the portion amount in whichever unit you chose.
-7. PACKAGED PRODUCTS — if a printed nutrition panel is readable in the image, TRANSCRIBE it into the "label" object. Do NOT do any arithmetic and do NOT convert anything: copy the numbers exactly as printed and state which basis they are on. The application does the maths.
-   - "basis": "per_100" when the nutrient values are stated per 100 g / per 100 ml. "per_serving" when the nutrient values themselves are stated per serve / per serving / per pack.
-   - IMPORTANT Indian-label convention: headers like "Approximate Values Per 100 ml & Per Serve % RDA" mean the nutrient numbers are PER 100 ml — only the % RDA figures are per serve. That is "per_100". Only use "per_serving" if the actual kcal/gram values are themselves labelled per serve.
-   - "serving_size": the stated serving size as a number (270 from "Serving Size: 270 ml"; 30 from "30 g").
-   - "servings_per_pack": e.g. 1 from "Number of Servings in the Pack: 1".
-   - "net_quantity": the total pack size ("Net Quantity: 270 ml", "Net Wt. 90 g").
+7. PACKAGED PRODUCTS — if ANY printed nutrition panel with numbers is visible, you MUST fill in the "label" object below. This is mandatory, not optional — never leave "label" empty when a panel is visible, and never copy a panel number straight into the top-level kcal_per_100g/protein_g_per_100g/etc. fields (those are for food with NO panel — see rule 8). Do NOT do any arithmetic yourself — you are only transcribing four things off the panel. The application does 100% of the maths.
+   - "panel_amount": look at the row of numbers you are about to copy (energy, protein, carbs, fat) and find the quantity written directly above or beside THAT SAME row — the amount those specific numbers belong to. Copy that quantity as a plain number. Examples: a column headed "Per 100 ml" → panel_amount is 100. A column headed "Amount per Serving" next to "Serve Size 45 g" → panel_amount is 45 (the serve size), NOT 100. If you see both a "Per 100g" column and a "Per Serving" column, prefer the "Per 100g" one and set panel_amount to 100.
+   - "energy_kcal", "protein_g", "carbs_g", "fat_g": copy the numbers from that exact row, unchanged — these are the values FOR panel_amount, whatever it is.
+   - "serving_size": the pack's own stated serving size as a number, if printed separately (e.g. 270 from "Serving Size: 270 ml") — this can differ from panel_amount (see the "Per 100 ml" example above, where serving_size is 270 but panel_amount is 100).
+   - "servings_per_pack": e.g. 1 from "Number of Servings in the Pack: 1" or "Servings per container 1".
+   - "net_quantity": the total pack size ("Net Quantity: 270 ml", "Net Wt. 90 g", "45g" on a single-serve pack).
    - "unit": "ml" for volumes, "g" for weights.
-   - "energy_kcal", "protein_g", "carbs_g", "fat_g": exactly as printed, on the stated basis.
-   Omit "label" (or set it to null) when there is no readable printed panel — e.g. a plate of home-cooked food.
-8. For food with no readable panel, estimate kcal_per_100g and the macros per 100 g/ml as usual and set estimated_grams to the portion you actually see.
+   WORKED EXAMPLE A (single-serve pack, per-serving-only panel — a protein-chips packet): panel reads "Serve Size 45g • Servings per container 1" and a table headed "Amount per Serving: Energy(kcal) 194, Protein(g) 10, Carbohydrate(g) 29, Total Fat(g) 4", Net Quantity 45g. Correct label object: {"panel_amount": 45, "energy_kcal": 194, "protein_g": 10, "carbs_g": 29, "fat_g": 4, "serving_size": 45, "servings_per_pack": 1, "net_quantity": 45, "unit": "g"}.
+   WORKED EXAMPLE B (a buttermilk pouch, per-100ml panel with a separately printed serving size): panel reads "Approximate Values Per 100 ml & Per Serve %RDA: Energy 20 kcal, Protein 1.2g, Carbohydrate 1.2g, Total Fat 1.2g", then separately "Serving Size: 270 ml | Number of Servings in the Pack: 1", Net Quantity 270 ml. The energy/protein/carb/fat numbers belong to the "Per 100 ml" column, NOT to the 270 ml serving size — that 270 is a different, separately-printed number used only for %RDA. Correct label object: {"panel_amount": 100, "energy_kcal": 20, "protein_g": 1.2, "carbs_g": 1.2, "fat_g": 1.2, "serving_size": 270, "servings_per_pack": 1, "net_quantity": 270, "unit": "ml"}.
+   Omit "label" (or set it to null) ONLY when there is genuinely no readable printed nutrition panel — e.g. a plate of home-cooked food.
+8. For food with NO readable panel, estimate kcal_per_100g and the macros per 100 g/ml yourself as usual and set estimated_grams to the portion you actually see.
 
 Respond ONLY with valid JSON (no markdown, no code blocks):
 {
@@ -42,15 +43,15 @@ Respond ONLY with valid JSON (no markdown, no code blocks):
       "carbs_g_per_100g": 25.0,
       "fat_g_per_100g": 5.0,
       "label": {
-        "basis": "per_100",
-        "serving_size": 270,
-        "servings_per_pack": 1,
-        "net_quantity": 270,
-        "unit": "ml",
+        "panel_amount": 100,
         "energy_kcal": 20,
         "protein_g": 1.2,
         "carbs_g": 1.2,
-        "fat_g": 1.2
+        "fat_g": 1.2,
+        "serving_size": 270,
+        "servings_per_pack": 1,
+        "net_quantity": 270,
+        "unit": "ml"
       }
     }
   ],
@@ -63,7 +64,7 @@ function stripMarkdown(text: string): string {
 }
 
 type LabelPanel = {
-  basis?: string
+  panel_amount?: number
   serving_size?: number
   servings_per_pack?: number
   net_quantity?: number
@@ -112,21 +113,30 @@ function resolveNutrition(item: GeminiFood) {
 
   const label = item.label
   const energy = label ? num(label.energy_kcal) : null
-  if (!label || energy === null) return fallback
+  const panelAmount = label ? num(label.panel_amount) : null
+  if (!label || energy === null || !panelAmount) return fallback
 
-  const servingSize = num(label.serving_size)
-  const perServing = String(label.basis ?? '').toLowerCase().includes('serv')
-
-  // Only a per-serving panel needs scaling; a per-100 panel is already correct.
-  let scale = 1
-  if (perServing) {
-    if (!servingSize) return fallback // no serving size → can't convert safely
-    scale = 100 / servingSize
-  }
-
+  // One formula for every panel shape: a "Per 100 ml" panel has panel_amount=100
+  // (scale=1, no-op); a "Per Serving (45g)" panel has panel_amount=45 and scales
+  // up. The model never classifies "per-100 vs per-serving" — it just reports
+  // the quantity the printed numbers are actually for, which is far less prone
+  // to misreading than picking between two abstract categories.
+  const scale = 100 / panelAmount
   const kcal100 = energy * scale
   if (!(kcal100 > 0) || kcal100 > 900) return fallback // implausible for any real food
 
+  // Sanity check: energy should roughly match what the macros imply (Atwater
+  // factors). A big mismatch means the model likely paired mismatched numbers
+  // (e.g. energy from one column, macros from another) — don't trust the panel.
+  const protein = num(label.protein_g)
+  const carbs = num(label.carbs_g)
+  const fat = num(label.fat_g)
+  if (protein !== null && carbs !== null && fat !== null) {
+    const impliedKcal = protein * 4 + carbs * 4 + fat * 9
+    if (impliedKcal > 20 && (energy < impliedKcal * 0.5 || energy > impliedKcal * 1.8)) return fallback
+  }
+
+  const servingSize = num(label.serving_size)
   const net = num(label.net_quantity)
   const servings = num(label.servings_per_pack)
 
