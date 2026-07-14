@@ -19,6 +19,8 @@ RULES:
 4. When no size reference is visible, default to standard home-cooked Indian portions (NOT Western restaurant sizes).
 5. Set confidence "low" if the image is blurry, partially obscured, or you are genuinely unsure of the dish.
 6. Set "unit" to "ml" for liquids/beverages (buttermilk, lassi, milk, juice, tea, coffee, soup); otherwise "g". estimated_grams holds the portion amount in whichever unit you chose.
+7. If the image shows a packaged/branded product with a printed nutrition facts panel: check whether the calorie/macro values are stated "per serving" or "per 100g/100ml". If only a "per serving" value is given, find the stated serving size (e.g., "Serving size: 30g") and convert to a per-100g/100ml basis yourself: per-100g value = (per-serving value × 100) / serving size in grams. Always output kcal_per_100g and the macros normalized to per-100g/100ml — never a raw per-serving or per-package number.
+8. Also look for the package's total net weight/volume (e.g., "Net Wt. 90g", "250 ml"). If the product is a small, individually-sized single-serve pack meant to be consumed in one sitting (a pouch, bottle, snack bag, chocolate bar, drink carton), set estimated_grams to that net weight so the default estimate reflects eating the whole pack. If it's clearly a multi-serving or bulk product instead (a large jar, family-size bag, a cooking staple like atta/oil/sugar), do not do this — estimate one realistic serving instead.
 
 Respond ONLY with valid JSON (no markdown, no code blocks):
 {
