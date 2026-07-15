@@ -161,7 +161,7 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
         <div className="pt-2">
           <div className="mb-2.5 flex items-baseline justify-between px-0.5">
             <p className="text-[16px] font-semibold text-ink">Log again</p>
-            <Link href="/history" className="text-[13px] font-semibold text-brand-ink tap-scale">History</Link>
+            <Link href="/progress" className="text-[13px] font-semibold text-brand-ink tap-scale">History</Link>
           </div>
           <div className="flex flex-col gap-2.5">
             {recentLogItems.map((item) => (

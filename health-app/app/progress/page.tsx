@@ -3,13 +3,12 @@ import { redirect } from 'next/navigation'
 import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import type { FoodLog, WeightLog } from '../../types/index'
 import { calculateStreak } from '../../lib/streak'
-import { getIstDayRange } from '../../lib/dateUtils'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { ProgressClient } from '../../components/progress/ProgressClient'
 
 export const metadata: Metadata = {
-  title: 'Progress — GetInShape',
-  description: 'Your weight trend, streaks and weekly overview.',
+  title: 'Trends — GetInShape',
+  description: 'Your weight trend, streaks and nutrition history.',
   robots: { index: false },
 }
 
@@ -28,14 +27,25 @@ export default async function ProgressPage() {
   if (profileError) throw new Error(profileError.message)
   if (!profile || profile.height_cm === null) redirect('/onboarding')
 
-  // Date windows (IST-aware — "today"/"7 days" match what the user sees on their clock)
-  const now = new Date()
-  const sixtyDaysAgo = new Date()
-  sixtyDaysAgo.setUTCDate(now.getUTCDate() - 60)
-  const { start: sevenDaysAgoIst } = getIstDayRange(new Date(now.getTime() - 6 * 86_400_000))
-  const { end: todayIstEnd } = getIstDayRange(now)
+  // Pro status — free users only see the last 7 days of trend history
+  const { data: sub } = await supabase
+    .from('subscriptions')
+    .select('status')
+    .eq('user_id', user.id)
+    .maybeSingle()
+  const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
 
-  const [streakResult, weightResult, weekResult] = await Promise.all([
+  // Streak always looks back 60 days regardless of Pro status — it's a free,
+  // always-on stat, independent of the Pro-gated trend-history depth below.
+  const sixtyDaysAgo = new Date()
+  sixtyDaysAgo.setUTCDate(sixtyDaysAgo.getUTCDate() - 60)
+
+  // Free → 7 days, Pro → 90 days of trend/macro history
+  const lookbackDays = isPro ? 90 : 7
+  const cutoff = new Date()
+  cutoff.setUTCDate(cutoff.getUTCDate() - lookbackDays)
+
+  const [streakResult, weightResult, logsResult, exerciseResult] = await Promise.all([
     supabase
       .from('food_logs')
       .select('logged_at')
@@ -49,16 +59,26 @@ export default async function ProgressPage() {
       .limit(30),
     supabase
       .from('food_logs')
-      .select('kcal, logged_at')
+      .select('logged_at, kcal, protein_g, carbs_g, fat_g, meal')
       .eq('user_id', user.id)
-      .gte('logged_at', sevenDaysAgoIst)
-      .lt('logged_at', todayIstEnd),
+      .gte('logged_at', cutoff.toISOString())
+      .order('logged_at', { ascending: true }),
+    supabase
+      .from('exercise_logs')
+      .select('logged_at, activity, duration_min, calories')
+      .eq('user_id', user.id)
+      .gte('logged_at', cutoff.toISOString())
+      .order('logged_at', { ascending: false }),
   ])
+
+  if (logsResult.error) throw new Error(logsResult.error.message)
 
   const streak      = calculateStreak((streakResult.data ?? []) as unknown as FoodLog[])
   const weightLogs  = (weightResult.data ?? []) as unknown as WeightLog[]
-  const weekLogs    = (!weekResult.error ? (weekResult.data ?? []) : []) as { kcal: number; logged_at: string }[]
   const loggedDates = (streakResult.data ?? []).map((r) => r.logged_at as string)
+  const logs        = logsResult.data ?? []
+  // Exercise logs are optional — table may not exist yet
+  const exerciseLogs = exerciseResult.error ? [] : (exerciseResult.data ?? [])
 
   return (
     <div className="min-h-screen">
@@ -72,10 +92,11 @@ export default async function ProgressPage() {
         <ProgressClient
           streak={streak}
           weightLogs={weightLogs}
-          weekLogs={weekLogs}
-          kcalTarget={profile.daily_calorie_target}
-          profile={profile}
           loggedDates={loggedDates}
+          logs={logs}
+          exerciseLogs={exerciseLogs}
+          profile={profile}
+          isPro={isPro}
         />
       </main>
       <BottomNav />

@@ -12,7 +12,7 @@ type DayData = {
   logged: boolean
 }
 
-export function HistoryBarChart({
+export function TrendBarChart({
   chartData, range, metric, metricTarget, color, unit, selectedDate, onSelect,
 }: {
   chartData: DayData[]
@@ -45,12 +45,12 @@ export function HistoryBarChart({
             />
           )}
           <Tooltip
-            cursor={{ fill: 'var(--track)', radius: 6 }}
+            cursor={{ fill: 'var(--surface-2)', radius: 6 }}
             content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null
               const val = payload[0]?.value as number
               return (
-                <div className="rounded-control border border-hairline bg-surface px-3 py-2 shadow-float text-xs">
+                <div className="rounded-control bg-surface px-3 py-2 text-xs" style={{ boxShadow: 'var(--shadow-air)' }}>
                   <p className="font-semibold text-ink-2 mb-0.5">{label}</p>
                   <p style={{ color }} className="font-bold">
                     {val > 0 ? `${val.toLocaleString()} ${unit}` : 'Not logged'}
@@ -68,7 +68,7 @@ export function HistoryBarChart({
             {chartData.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={entry.date === selectedDate ? 'var(--brand)' : entry.kcal === 0 ? 'var(--track)' : color}
+                fill={entry.date === selectedDate ? 'var(--brand)' : entry.kcal === 0 ? 'var(--surface-2)' : color}
                 opacity={entry.kcal === 0 ? 1 : entry.date === selectedDate ? 1 : 0.85}
               />
             ))}
