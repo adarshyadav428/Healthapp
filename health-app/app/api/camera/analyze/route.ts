@@ -18,7 +18,8 @@ RULES:
 3. Adjust estimated_grams based on plate/bowl size visible in the image. A restaurant plate is 30-50% larger than a home katori.
 4. When no size reference is visible, default to standard home-cooked Indian portions (NOT Western restaurant sizes).
 5. Set confidence "low" if the image is blurry, partially obscured, or you are genuinely unsure of the dish.
-6. Set "unit" to "ml" for liquids/beverages (buttermilk, lassi, milk, juice, tea, coffee, soup); otherwise "g". estimated_grams holds the portion amount in whichever unit you chose.
+6. Keep the portion unit the user can see: use "ml" for liquids/beverages (buttermilk, lassi, milk, juice, tea, coffee, soup), "pcs" when the food is naturally counted (for example "6 hot wings" or "2 samosas"), and "g" for weighed foods. estimated_grams holds the displayed amount in that unit.
+   - For "pcs", also provide the nutrition for the ENTIRE displayed count in total_kcal, total_protein_g, total_carbs_g, and total_fat_g. Do not estimate a gram weight for pieces or derive nutrition from one. For example, 6 hot wings must return estimated_grams: 6, unit: "pcs", and totals for all 6 wings.
 7. PACKAGED PRODUCTS — if ANY printed nutrition panel with numbers is visible, you MUST fill in the "label" object below. This is mandatory, not optional — never leave "label" empty when a panel is visible, and never copy a panel number straight into the top-level kcal_per_100g/protein_g_per_100g/etc. fields (those are for food with NO panel — see rule 8). Do NOT do any arithmetic yourself — you are only transcribing four things off the panel. The application does 100% of the maths.
    - "panel_amount": look at the row of numbers you are about to copy (energy, protein, carbs, fat) and find the quantity written directly above or beside THAT SAME row — the amount those specific numbers belong to. Copy that quantity as a plain number. Examples: a column headed "Per 100 ml" → panel_amount is 100. A column headed "Amount per Serving" next to "Serve Size 45 g" → panel_amount is 45 (the serve size), NOT 100. If you see both a "Per 100g" column and a "Per Serving" column, prefer the "Per 100g" one and set panel_amount to 100.
    - "energy_kcal", "protein_g", "carbs_g", "fat_g": copy the numbers from that exact row, unchanged — these are the values FOR panel_amount, whatever it is.
@@ -42,6 +43,10 @@ Respond ONLY with valid JSON (no markdown, no code blocks):
       "protein_g_per_100g": 8.0,
       "carbs_g_per_100g": 25.0,
       "fat_g_per_100g": 5.0,
+      "total_kcal": null,
+      "total_protein_g": null,
+      "total_carbs_g": null,
+      "total_fat_g": null,
       "label": {
         "panel_amount": 100,
         "energy_kcal": 20,
@@ -83,6 +88,10 @@ type GeminiFood = {
   protein_g_per_100g: number
   carbs_g_per_100g: number
   fat_g_per_100g: number
+  total_kcal?: number
+  total_protein_g?: number
+  total_carbs_g?: number
+  total_fat_g?: number
   label?: LabelPanel | null
 }
 
@@ -100,15 +109,41 @@ function num(v: unknown): number | null {
  * the panel and the arithmetic happens here, where it's deterministic.
  */
 function resolveNutrition(item: GeminiFood) {
-  const itemUnit = item.unit === 'ml' ? 'ml' : 'g'
+  const itemUnit = item.unit === 'ml' || item.unit === 'pcs' ? item.unit : 'g'
+  const portion = num(item.estimated_grams) || 100
   const fallback = {
     kcal_per_100g:      num(item.kcal_per_100g) ?? 0,
     protein_g_per_100g: num(item.protein_g_per_100g) ?? 0,
     carbs_g_per_100g:   num(item.carbs_g_per_100g) ?? 0,
     fat_g_per_100g:     num(item.fat_g_per_100g) ?? 0,
-    portion:            num(item.estimated_grams) || 100,
+    portion,
     unit:               itemUnit,
     fromLabel:          false,
+    fromServingTotal:   false,
+  }
+
+  // Food logs calculate nutrition from a per-100-unit value. Normalize the
+  // supplied total for the exact visible count, so a count is never converted
+  // into an estimated gram weight for either display or nutrition math.
+  if (itemUnit === 'pcs') {
+    const kcal = num(item.total_kcal)
+    const protein = num(item.total_protein_g)
+    const carbs = num(item.total_carbs_g)
+    const fat = num(item.total_fat_g)
+    if (kcal !== null && protein !== null && carbs !== null && fat !== null) {
+      const scale = 100 / portion
+      return {
+        kcal_per_100g: kcal * scale,
+        protein_g_per_100g: protein * scale,
+        carbs_g_per_100g: carbs * scale,
+        fat_g_per_100g: fat * scale,
+        portion,
+        unit: itemUnit,
+        fromLabel: false,
+        fromServingTotal: true,
+      }
+    }
+    return null
   }
 
   const label = item.label
@@ -154,6 +189,7 @@ function resolveNutrition(item: GeminiFood) {
     portion,
     unit:               label.unit === 'ml' ? 'ml' : label.unit === 'g' ? 'g' : itemUnit,
     fromLabel:          true,
+    fromServingTotal:   false,
   }
 }
 
@@ -253,11 +289,12 @@ export async function POST(req: Request) {
 
   for (const item of geminiResult.foods.slice(0, 3)) {
     const n = resolveNutrition(item)
+    if (!n) continue
     const round1 = (v: number) => Math.round(v * 10) / 10
 
     // A readable printed panel is authoritative for that exact product — never
     // let a fuzzy name match against a generic DB food override it.
-    if (!n.fromLabel) {
+    if (!n.fromLabel && !n.fromServingTotal) {
       const { data: existing } = await supabase
         .from('foods')
         .select('id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions')

@@ -231,7 +231,7 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
         const items: PhotoResult[] = (json.foods as Array<Food & { estimated_grams: number; unit?: string }>).map((f) => ({
           food: f,
           estimated_grams: f.estimated_grams || f.serving_size_g || 100,
-          unit: f.unit === 'ml' ? 'ml' : 'g',
+          unit: f.unit === 'ml' || f.unit === 'pcs' ? f.unit : 'g',
         }))
         setResults(items)
         setConfidence(json.confidence ?? null)
@@ -267,20 +267,21 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
       queryClient.invalidateQueries({ queryKey: ['food-logs'] })
 
       // Correction signal: did the user change what the AI suggested before confirming?
-      const gramsCorrected = grams !== selected.estimated_grams
+      const amountCorrected = grams !== selected.estimated_grams
       const nameCorrected = customName.trim() !== selected.food.name
       captureEvent('ai_estimate_corrected', {
         type: 'camera',
-        corrected: gramsCorrected || nameCorrected,
+        corrected: amountCorrected || nameCorrected,
         original_name: selected.food.name,
         corrected_name: customName.trim(),
-        original_grams: selected.estimated_grams,
-        corrected_grams: grams,
-        delta_grams: grams - selected.estimated_grams,
+        original_amount: selected.estimated_grams,
+        corrected_amount: grams,
+        delta_amount: grams - selected.estimated_grams,
+        unit: selected.unit,
         confidence,
       })
 
-      toast({ title: `Logged ${customName || selected.food.name}`, description: `${grams}g · ${meal}`, duration: 2500 })
+      toast({ title: `Logged ${customName || selected.food.name}`, description: `${grams} ${selected.unit} · ${meal}`, duration: 2500 })
       onClose()
     } catch (e) {
       toast({ title: 'Failed to log', description: (e as Error).message, variant: 'error' })
@@ -295,6 +296,10 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
   const protein = selected ? Math.round(selected.food.protein_g_per_100g * factor) : 0
   const carbs   = selected ? Math.round(selected.food.carbs_g_per_100g  * factor) : 0
   const fat     = selected ? Math.round(selected.food.fat_g_per_100g    * factor) : 0
+  const isCountBased = selected?.unit === 'pcs'
+  const amountMin = isCountBased ? 1 : 10
+  const amountMax = isCountBased ? 100 : 1500
+  const amountStep = isCountBased ? 1 : 5
 
   const tabs: { value: Mode; label: string; icon: React.ReactNode }[] = [
     ...(barcodeSupport ? [{ value: 'barcode' as Mode, label: 'Barcode', icon: <ScanLine className="h-4 w-4" /> }] : []),
@@ -524,10 +529,10 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
                   <input
                     type="number"
                     inputMode="numeric"
-                    min={10} max={1500} step={5}
+                    min={amountMin} max={amountMax} step={amountStep}
                     value={grams}
                     onChange={(e) => {
-                      const v = Math.max(10, Math.min(1500, Number(e.target.value) || 10))
+                      const v = Math.max(amountMin, Math.min(amountMax, Number(e.target.value) || amountMin))
                       setGrams(v)
                     }}
                     className="w-[64px] text-center text-[15px] font-bold text-ink rounded-control py-1.5 outline-none bg-surface-2 border border-hairline"
@@ -535,7 +540,7 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
                   <span className="text-[12px] text-ink-2 font-medium">{selected?.unit ?? 'g'}</span>
                 </div>
                 <input
-                  type="range" min={10} max={1500} step={5} value={grams}
+                  type="range" min={amountMin} max={amountMax} step={amountStep} value={grams}
                   onChange={(e) => setGrams(Number(e.target.value))}
                   className="flex-1 accent-brand"
                 />
