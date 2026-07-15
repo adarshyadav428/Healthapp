@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import type { FoodLog, Profile } from '../../types/index'
 import { CalorieHeroCard } from '../home/CalorieHeroCard'
 import { RecentMealCard } from '../home/RecentMealCard'
@@ -9,7 +10,9 @@ import { EmptyMeals } from '../home/EmptyMeals'
 import { EditFoodLogModal } from '../log/EditFoodLogModal'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
-import { Flame, Plus } from 'lucide-react'
+import { Flame, Plus, MessageCircle } from 'lucide-react'
+
+const ChatLogModal = dynamic(() => import('../chat/ChatLogModal').then(m => m.ChatLogModal), { ssr: false })
 
 interface Props {
   profile: Profile
@@ -21,6 +24,7 @@ export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
   const { user } = useUser()
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
   const [editingLog, setEditingLog] = useState<FoodLog | null>(null)
+  const [showChat, setShowChat] = useState(false)
 
   const totals = useMemo(
     () => logs.reduce(
@@ -101,6 +105,19 @@ export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
           onClose={() => setEditingLog(null)}
         />
       )}
+
+      {/* Floating chat entry — describe a meal in free text instead of searching/scanning */}
+      <button
+        type="button"
+        onClick={() => setShowChat(true)}
+        aria-label="Log a meal by describing it"
+        className="fixed right-5 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-surface tap-scale"
+        style={{ bottom: 'calc(84px + env(safe-area-inset-bottom))', boxShadow: 'var(--shadow-float)' }}
+      >
+        <MessageCircle className="h-5 w-5 text-brand" strokeWidth={2} />
+      </button>
+
+      {showChat && <ChatLogModal onClose={() => setShowChat(false)} />}
     </>
   )
 }
