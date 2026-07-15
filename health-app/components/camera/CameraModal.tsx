@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   X, ScanLine, Camera, Loader2, RefreshCw, CheckCircle2, AlertCircle,
-  Hash, Search, AlertTriangle, Pencil,
+  Hash, Search, AlertTriangle, Pencil, ImagePlus,
 } from 'lucide-react'
 import type { Food } from '../../types/index'
 import { toast } from '../ui/use-toast'
@@ -42,6 +42,7 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
   const streamRef   = useRef<MediaStream | null>(null)
   const rafRef      = useRef<number | null>(null)
   const lastBarcode = useRef<string | null>(null)
+  const galleryRef  = useRef<HTMLInputElement>(null)
 
   const [barcodeSupport, setBarcodeSupport] = useState(false)
   const [mode, setMode]                     = useState<Mode>('photo')
@@ -175,6 +176,25 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
     setCaptured(canvas.toDataURL('image/jpeg', 0.85))
   }, [])
 
+  // ── Gallery upload ──────────────────────────────────────────────────────────
+  const onGallerySelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Invalid file', description: 'Please select an image file.', variant: 'error' })
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      setCaptured(dataUrl)
+      setMode('photo')
+    }
+    reader.readAsDataURL(file)
+    // Reset input so the same file can be selected again
+    e.target.value = ''
+  }, [])
+
   const analyzePhoto = useCallback(() => {
     if (!captured) return
     const base64 = captured.split(',')[1]
@@ -282,10 +302,24 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
     { value: 'manual', label: 'Type Code', icon: <Hash   className="h-4 w-4" /> },
   ]
 
+  // Hidden file input for gallery uploads
+  const galleryInput = (
+    <input
+      ref={galleryRef}
+      type="file"
+      accept="image/*"
+      capture={undefined}
+      onChange={onGallerySelect}
+      className="hidden"
+      aria-hidden="true"
+    />
+  )
+
   const showResults = !!(results && selected)
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
+      {galleryInput}
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 py-3 shrink-0">
@@ -590,13 +624,29 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
             </div>
 
             {mode === 'photo' && (
-              <div className="flex justify-center pt-1">
+              <div className="flex items-center justify-center gap-6 pt-1">
+                {/* Gallery upload button */}
+                <button
+                  onClick={() => galleryRef.current?.click()}
+                  aria-label="Upload from gallery"
+                  className="flex flex-col items-center gap-1 group"
+                >
+                  <span className="flex items-center justify-center h-12 w-12 rounded-full bg-white/10 border-2 border-white/25 group-hover:border-white/50 group-active:scale-90 transition-all">
+                    <ImagePlus className="h-5 w-5 text-white/70 group-hover:text-white transition-colors" />
+                  </span>
+                  <span className="text-[10px] font-medium text-white/40 group-hover:text-white/60 transition-colors">Gallery</span>
+                </button>
+
+                {/* Shutter button */}
                 <button
                   onClick={capturePhoto}
                   disabled={!!camError}
                   aria-label="Take photo"
                   className="h-16 w-16 rounded-full bg-white border-4 border-brand active:scale-90 hover:scale-95 transition-transform disabled:opacity-40 shadow-lg"
                 />
+
+                {/* Spacer to keep shutter centered */}
+                <div className="w-12" />
               </div>
             )}
           </>
