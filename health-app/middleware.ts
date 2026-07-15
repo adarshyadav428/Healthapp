@@ -36,22 +36,18 @@ export async function middleware(request: NextRequest) {
 
   let response = NextResponse.next({ request })
 
-  // NOTE: @supabase/ssr@0.2.0 only calls cookies.get(name) internally —
-  // getAll/setAll are silently ignored. We must provide get/set/remove.
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
-      get(name: string) {
-        return request.cookies.get(name)?.value
+      getAll() {
+        return request.cookies.getAll()
       },
-      set(name: string, value: string, options: Record<string, unknown>) {
-        request.cookies.set(name, value)
+      setAll(cookiesToSet, headers) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
         response = NextResponse.next({ request })
-        response.cookies.set(name, value, options as Parameters<typeof response.cookies.set>[2])
-      },
-      remove(name: string, options: Record<string, unknown>) {
-        request.cookies.set(name, '')
-        response = NextResponse.next({ request })
-        response.cookies.set(name, '', options as Parameters<typeof response.cookies.set>[2])
+        cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
+        // Auth cookie writes must never be cached by a CDN/reverse proxy —
+        // otherwise one user's session could be served to a different user.
+        Object.entries(headers).forEach(([key, value]) => response.headers.set(key, value))
       },
     },
   })
