@@ -85,7 +85,7 @@ export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
             <RecentMealCard key={log.id} log={log} onClick={() => setEditingLog(log)} />
           ))}
           <Link
-            href="/log"
+            href="/log?search=1"
             className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-[16px] border border-dashed border-brand-ring py-[13px] text-[13px] font-semibold text-brand-ink tap-scale"
           >
             <Plus className="h-4 w-4" /> Add food manually

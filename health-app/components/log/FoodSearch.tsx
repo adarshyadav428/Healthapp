@@ -205,6 +205,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
+          autoFocus
         />
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
           {query.length > 0 && (

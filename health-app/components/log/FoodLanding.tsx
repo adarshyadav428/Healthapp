@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { Search, ScanLine, Camera, Zap, Plus, Copy, ChevronLeft, Loader2 } from 'lucide-react'
 import type { Food } from '../../types/index'
@@ -46,7 +47,11 @@ function defaultMeal() {
 }
 
 export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYesterdayLogs }: Props) {
-  const [searching, setSearching] = useState(false)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  // Home's "Add food manually" links here with ?search=1 to jump straight
+  // into the search box instead of landing on this page first.
+  const [searching, setSearching] = useState(searchParams.get('search') === '1')
   const [showCamera, setShowCamera] = useState(false)
   const [foundFood, setFoundFood] = useState<Food | null>(null)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
@@ -60,7 +65,7 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
       <div>
         <button
           type="button"
-          onClick={() => setSearching(false)}
+          onClick={() => { setSearching(false); router.replace('/log') }}
           className="mb-3 flex items-center gap-1 text-[13px] font-semibold text-brand-ink tap-scale"
         >
           <ChevronLeft className="h-4 w-4" /> Done
