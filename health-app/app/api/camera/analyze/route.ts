@@ -14,7 +14,7 @@ Adjust these baselines up or down based on what you actually see in the image.
 
 RULES:
 1. Be specific with names: prefer "Aloo Paratha" over "Paratha", "Paneer Butter Masala" over "Curry".
-2. For a thali or plate with multiple distinct items, list the 3 most calorie-significant ones separately.
+2. For a thali or plate with multiple distinct items, list the 3 most calorie-significant ones separately. This also applies to combo meals, buckets, and platters (e.g. a fried-chicken bucket, a burger value meal): decompose them into their distinct recognizable components using the name each item would have on the restaurant's own menu (for example "Hot Wings", "Chicken Strips", "French Fries"), rather than inventing one combined "bucket"/"combo" line for the whole box.
 3. Adjust estimated_grams based on plate/bowl size visible in the image. A restaurant plate is 30-50% larger than a home katori.
 4. When no size reference is visible, default to standard home-cooked Indian portions (NOT Western restaurant sizes).
 5. Set confidence "low" if the image is blurry, partially obscured, or you are genuinely unsure of the dish.
@@ -102,6 +102,55 @@ function num(v: unknown): number | null {
 }
 
 /**
+ * Plausibility guardrail shared by every nutrition-resolution path (label,
+ * pcs-total, freeform per-100g estimate): stated macros can't exceed the
+ * food's own mass, and stated energy must roughly agree with what those
+ * macros imply via Atwater factors (4/4/9 kcal/g). A hallucinated field
+ * (e.g. carbs several times the food's own weight) fails at least one of
+ * these checks.
+ */
+function isPlausible(kcal100: number, protein100: number, carbs100: number, fat100: number): boolean {
+  if (!(kcal100 > 0) || kcal100 > 900) return false // implausible for any real food
+  if (protein100 + carbs100 + fat100 > 105) return false // macros can't exceed ~100g per 100g/ml (small rounding slack)
+  const impliedKcal = protein100 * 4 + carbs100 * 4 + fat100 * 9
+  if (impliedKcal > 20 && (kcal100 < impliedKcal * 0.5 || kcal100 > impliedKcal * 1.8)) return false
+  return true
+}
+
+/**
+ * When Gemini's own numbers fail isPlausible and there's no printed label to
+ * fall back to, clamp rather than display a physically-impossible value:
+ * scale macros down to fit 100g/ml, then recompute kcal from those clamped
+ * macros so the two figures can't contradict each other.
+ */
+function clampToPlausible(protein100: number, carbs100: number, fat100: number) {
+  let protein = Math.max(0, protein100)
+  let carbs = Math.max(0, carbs100)
+  let fat = Math.max(0, fat100)
+  const macroSum = protein + carbs + fat
+  if (macroSum > 100) {
+    const s = 100 / macroSum
+    protein *= s
+    carbs *= s
+    fat *= s
+  }
+  const kcal = Math.min(900, protein * 4 + carbs * 4 + fat * 9)
+  return { kcal_per_100g: kcal, protein_g_per_100g: protein, carbs_g_per_100g: carbs, fat_g_per_100g: fat }
+}
+
+/**
+ * Recovers the piece count a DB row's serving_description represents (e.g.
+ * "5 pieces (150g)" -> 5), so a per-100g row can be converted to a
+ * per-100-pieces rate for "pcs"-unit items. Defaults to 1 — every seeded
+ * piece-based row (007_seed_indian_foods.sql, 013_restaurant_foods.sql)
+ * follows the "N piece(s) (...)" format.
+ */
+function piecesInServing(desc: string | null | undefined): number {
+  const m = desc?.match(/^(\d+)\s*pieces?\b/i)
+  return m ? Number(m[1]) : 1
+}
+
+/**
  * Everything downstream is per-100g/ml, but Indian labels state values per 100g,
  * per serve, or (confusingly) both — "Per 100 ml & Per Serve % RDA" means the
  * nutrients are per 100ml and only the RDA is per serve. Letting the model do
@@ -111,15 +160,21 @@ function num(v: unknown): number | null {
 function resolveNutrition(item: GeminiFood) {
   const itemUnit = item.unit === 'ml' || item.unit === 'pcs' ? item.unit : 'g'
   const portion = num(item.estimated_grams) || 100
+  const rawKcal = num(item.kcal_per_100g) ?? 0
+  const rawProtein = num(item.protein_g_per_100g) ?? 0
+  const rawCarbs = num(item.carbs_g_per_100g) ?? 0
+  const rawFat = num(item.fat_g_per_100g) ?? 0
+  // Freeform estimate has no label to fall back to — clamp rather than trust
+  // an implausible value outright (see isPlausible/clampToPlausible above).
   const fallback = {
-    kcal_per_100g:      num(item.kcal_per_100g) ?? 0,
-    protein_g_per_100g: num(item.protein_g_per_100g) ?? 0,
-    carbs_g_per_100g:   num(item.carbs_g_per_100g) ?? 0,
-    fat_g_per_100g:     num(item.fat_g_per_100g) ?? 0,
+    ...(isPlausible(rawKcal, rawProtein, rawCarbs, rawFat)
+      ? { kcal_per_100g: rawKcal, protein_g_per_100g: rawProtein, carbs_g_per_100g: rawCarbs, fat_g_per_100g: rawFat }
+      : clampToPlausible(rawProtein, rawCarbs, rawFat)),
     portion,
     unit:               itemUnit,
     fromLabel:          false,
     fromServingTotal:   false,
+    plausible:          isPlausible(rawKcal, rawProtein, rawCarbs, rawFat),
   }
 
   // Food logs calculate nutrition from a per-100-unit value. Normalize the
@@ -132,18 +187,30 @@ function resolveNutrition(item: GeminiFood) {
     const fat = num(item.total_fat_g)
     if (kcal !== null && protein !== null && carbs !== null && fat !== null) {
       const scale = 100 / portion
-      return {
-        kcal_per_100g: kcal * scale,
-        protein_g_per_100g: protein * scale,
-        carbs_g_per_100g: carbs * scale,
-        fat_g_per_100g: fat * scale,
-        portion,
-        unit: itemUnit,
-        fromLabel: false,
-        fromServingTotal: true,
+      const kcal100 = kcal * scale
+      const protein100 = protein * scale
+      const carbs100 = carbs * scale
+      const fat100 = fat * scale
+      // Same guard as the label path: a hallucinated total (e.g. reading a
+      // whole bucket as if it were "6 wings") fails this the way a misread
+      // label would.
+      if (isPlausible(kcal100, protein100, carbs100, fat100)) {
+        return {
+          kcal_per_100g: kcal100,
+          protein_g_per_100g: protein100,
+          carbs_g_per_100g: carbs100,
+          fat_g_per_100g: fat100,
+          portion,
+          unit: itemUnit,
+          fromLabel: false,
+          fromServingTotal: true,
+          plausible: true,
+        }
       }
     }
-    return null
+    // Dropping a visibly-present food is worse than a clamped estimate — let
+    // it fall through to the DB-match/estimate path below like any other item.
+    return fallback
   }
 
   const label = item.label
@@ -158,18 +225,14 @@ function resolveNutrition(item: GeminiFood) {
   // to misreading than picking between two abstract categories.
   const scale = 100 / panelAmount
   const kcal100 = energy * scale
-  if (!(kcal100 > 0) || kcal100 > 900) return fallback // implausible for any real food
-
+  const protein100 = (num(label.protein_g) ?? 0) * scale
+  const carbs100 = (num(label.carbs_g) ?? 0) * scale
+  const fat100 = (num(label.fat_g) ?? 0) * scale
   // Sanity check: energy should roughly match what the macros imply (Atwater
-  // factors). A big mismatch means the model likely paired mismatched numbers
-  // (e.g. energy from one column, macros from another) — don't trust the panel.
-  const protein = num(label.protein_g)
-  const carbs = num(label.carbs_g)
-  const fat = num(label.fat_g)
-  if (protein !== null && carbs !== null && fat !== null) {
-    const impliedKcal = protein * 4 + carbs * 4 + fat * 9
-    if (impliedKcal > 20 && (energy < impliedKcal * 0.5 || energy > impliedKcal * 1.8)) return fallback
-  }
+  // factors), and the macros shouldn't exceed the food's own mass. A big
+  // mismatch means the model likely paired mismatched numbers (e.g. energy
+  // from one column, macros from another) — don't trust the panel.
+  if (!isPlausible(kcal100, protein100, carbs100, fat100)) return fallback
 
   const servingSize = num(label.serving_size)
   const net = num(label.net_quantity)
@@ -183,13 +246,14 @@ function resolveNutrition(item: GeminiFood) {
 
   return {
     kcal_per_100g:      kcal100,
-    protein_g_per_100g: (num(label.protein_g) ?? 0) * scale,
-    carbs_g_per_100g:   (num(label.carbs_g) ?? 0) * scale,
-    fat_g_per_100g:     (num(label.fat_g) ?? 0) * scale,
+    protein_g_per_100g: protein100,
+    carbs_g_per_100g:   carbs100,
+    fat_g_per_100g:     fat100,
     portion:            labelPortion,
     unit:               label.unit === 'ml' ? 'ml' : label.unit === 'g' ? 'g' : itemUnit,
     fromLabel:          true,
     fromServingTotal:   false,
+    plausible:          true,
   }
 }
 
@@ -252,7 +316,10 @@ export async function POST(req: Request) {
               { text: promptWithContext },
             ],
           }],
-          generationConfig: { maxOutputTokens: 1024, temperature: 0.05 },
+          // temperature 0 + a fixed seed reduce (but per Google's docs don't
+          // guarantee) run-to-run variance — the real bound on residual
+          // non-determinism is the plausibility validation in resolveNutrition.
+          generationConfig: { maxOutputTokens: 1024, temperature: 0, seed: 42 },
         }),
       }
     )
@@ -286,31 +353,77 @@ export async function POST(req: Request) {
   // For each food: find in DB or create an estimate entry
   const admin = createAdminClient()
   const enrichedFoods = []
+  let anyClamped = false
+  const FOOD_SELECT = 'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions'
 
   for (const item of geminiResult.foods.slice(0, 3)) {
     const n = resolveNutrition(item)
-    if (!n) continue
+    if (!n.plausible) anyClamped = true
     const round1 = (v: number) => Math.round(v * 10) / 10
 
     // A readable printed panel is authoritative for that exact product — never
-    // let a fuzzy name match against a generic DB food override it.
-    if (!n.fromLabel && !n.fromServingTotal) {
+    // let a fuzzy name match against a generic DB food override it. A pcs-total
+    // or freeform estimate is just Gemini's own guess, so it still gets a
+    // chance at the accurate seeded IFCT/restaurant data.
+    if (!n.fromLabel) {
       const { data: existing } = await supabase
         .from('foods')
-        .select('id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions')
+        .select(FOOD_SELECT)
         .ilike('name', `%${item.name}%`)
         .neq('source', 'estimate')
-        .order('source', { ascending: true }) // ifct before off
+        .order('source', { ascending: true }) // ifct before off/restaurant
         .limit(1)
         .maybeSingle()
 
       if (existing) {
-        enrichedFoods.push({
-          ...existing,
-          estimated_grams: n.portion || existing.serving_size_g || 100,
-          unit: n.unit,
-        })
-        continue
+        if (n.unit === 'pcs' && existing.serving_size_g > 0) {
+          // DB rows are per-100g; a "pcs" item needs a per-100-pieces rate.
+          // Convert and cache the derived row so repeat scans of the same
+          // branded item reuse it instead of re-deriving (or drifting on
+          // Gemini's inconsistent phrasing) each time. Gemini's own visible
+          // count (n.portion) stays authoritative — how many pieces are in
+          // the photo varies per scan, but the menu item's per-piece
+          // nutrition doesn't.
+          const gramsPerPiece = existing.serving_size_g / piecesInServing(existing.serving_description)
+          const pcsSourceId = `est_pcs_${existing.source}_${existing.source_id}`
+          const { data: converted, error: convertErr } = await admin
+            .from('foods')
+            .upsert(
+              {
+                source: 'estimate',
+                source_id: pcsSourceId,
+                name: existing.name,
+                brand: existing.brand,
+                serving_size_g: Math.round(n.portion),
+                serving_description: `${Math.round(n.portion)} pcs`,
+                kcal_per_100g: round1(existing.kcal_per_100g * gramsPerPiece),
+                protein_g_per_100g: round1(existing.protein_g_per_100g * gramsPerPiece),
+                carbs_g_per_100g: round1(existing.carbs_g_per_100g * gramsPerPiece),
+                fat_g_per_100g: round1(existing.fat_g_per_100g * gramsPerPiece),
+                fiber_g_per_100g: existing.fiber_g_per_100g != null ? round1(existing.fiber_g_per_100g * gramsPerPiece) : null,
+                common_portions: null,
+              },
+              { onConflict: 'source,source_id' }
+            )
+            .select(FOOD_SELECT)
+            .single()
+
+          if (convertErr) {
+            return NextResponse.json({ error: `DB upsert failed: ${convertErr.message}` }, { status: 500 })
+          }
+          if (converted) {
+            enrichedFoods.push({ ...converted, estimated_grams: n.portion, unit: 'pcs' })
+            continue
+          }
+          // Fall through to the generic estimate upsert below if this failed.
+        } else if (n.unit !== 'pcs') {
+          enrichedFoods.push({
+            ...existing,
+            estimated_grams: n.portion || existing.serving_size_g || 100,
+            unit: n.unit,
+          })
+          continue
+        }
       }
     }
 
@@ -336,7 +449,7 @@ export async function POST(req: Request) {
         },
         { onConflict: 'source,source_id' }
       )
-      .select('id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions')
+      .select(FOOD_SELECT)
       .single()
 
     if (upsertErr) {
@@ -355,7 +468,12 @@ export async function POST(req: Request) {
   // Record the scan (for rate limiting)
   await supabase.from('camera_photo_logs').insert({ user_id: userId })
 
-  captureServerEvent(userId, 'ai_scan_completed', { type: 'camera', confidence: geminiResult.confidence })
+  // A clamped value means at least one item's numbers were implausible as
+  // returned by Gemini — surface the existing low-confidence banner so the
+  // user knows to double-check it, even if Gemini itself reported "high".
+  const confidence = anyClamped ? 'low' : geminiResult.confidence
 
-  return NextResponse.json({ foods: enrichedFoods, confidence: geminiResult.confidence })
+  captureServerEvent(userId, 'ai_scan_completed', { type: 'camera', confidence })
+
+  return NextResponse.json({ foods: enrichedFoods, confidence })
 }
