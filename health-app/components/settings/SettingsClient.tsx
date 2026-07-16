@@ -118,7 +118,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
         const data = await res.json()
         if (!res.ok) throw new Error(data.error)
         queryClient.invalidateQueries({ queryKey: ['subscription', profile.id] })
-        toast({ title: 'Subscription cancelled', duration: 3000 })
+        toast({ title: 'Cancellation scheduled', description: 'Pro stays active until the end of your billing period.', duration: 4000 })
       } catch (err) {
         toast({ title: 'Could not cancel', description: (err as Error).message, variant: 'error', duration: 4000 })
       } finally {

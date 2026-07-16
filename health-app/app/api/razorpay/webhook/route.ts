@@ -45,6 +45,8 @@ export async function POST(req: Request) {
             .update({
               status: 'active',
               current_period_end: sub.current_end ? new Date(sub.current_end * 1000).toISOString() : null,
+              // A charge/activation means no cancellation is pending anymore.
+              cancel_at_period_end: false,
             })
             .eq('razorpay_subscription_id', sub.id)
         }

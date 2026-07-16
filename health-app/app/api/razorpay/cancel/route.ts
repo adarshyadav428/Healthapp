@@ -28,12 +28,16 @@ export async function POST() {
       return NextResponse.json({ error: 'No active Razorpay subscription' }, { status: 400 })
     }
 
+    // Cancel at cycle end, not immediately — the user already paid for the
+    // current period (and the Settings confirm dialog promises they keep it).
+    // Status stays 'active' until Razorpay fires subscription.cancelled at
+    // period end; cancel_at_period_end records the scheduled cancellation.
     const razorpay = getRazorpayClient()
-    await razorpay.subscriptions.cancel(sub.razorpay_subscription_id)
+    await razorpay.subscriptions.cancel(sub.razorpay_subscription_id, true)
 
     const { error: updateError } = await admin
       .from('subscriptions')
-      .update({ status: 'canceled' })
+      .update({ cancel_at_period_end: true })
       .eq('user_id', user.id)
     if (updateError) throw new Error(updateError.message)
 
