@@ -1,3 +1,6 @@
+// Per-user endpoint — never prerender (paramless GET looks static to Next otherwise)
+export const dynamic = 'force-dynamic'
+
 import { NextResponse } from 'next/server'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import type { WeightLog } from '../../../../types/index'
