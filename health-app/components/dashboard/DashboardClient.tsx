@@ -8,6 +8,7 @@ import { CalorieHeroCard } from '../home/CalorieHeroCard'
 import { RecentMealCard } from '../home/RecentMealCard'
 import { EmptyMeals } from '../home/EmptyMeals'
 import { EditFoodLogModal } from '../log/EditFoodLogModal'
+import { RatePromptCard } from './RatePromptCard'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
 import { Flame, Plus, MessageCircle } from 'lucide-react'
@@ -98,6 +99,9 @@ export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
       ) : (
         <EmptyMeals />
       )}
+
+      {/* Play Store rating ask — renders only inside the installed Play build */}
+      <RatePromptCard streakDays={streakDays} />
 
       {editingLog && (
         <EditFoodLogModal
