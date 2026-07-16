@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { z } from 'zod'
 import { captureServerEvent } from '../../../../lib/posthog/server'
-import { getLogActivationContext } from '../../../../lib/logActivation'
+import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
 
 const bulkLogSchema = z.object({
   items: z.array(z.object({
@@ -59,9 +59,14 @@ export async function POST(req: Request) {
     const { error: insertError } = await supabase.from('food_logs').insert(rows)
     if (insertError) throw new Error(insertError.message)
 
-    captureServerEvent(userId, 'meal_logged', { source: 'chat', items: rows.length, ...activation })
+    captureServerEvent(userId, 'meal_logged', {
+      source: 'chat',
+      items: rows.length,
+      is_first_log: activation.is_first_log,
+      days_since_signup: activation.days_since_signup,
+    })
 
-    return NextResponse.json({ ok: true, logged: rows.length })
+    return NextResponse.json({ ok: true, logged: rows.length, milestone: toLogMilestone(activation, rows.length) })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { getIstDayRange } from '../../../../lib/dateUtils'
 import { captureServerEvent } from '../../../../lib/posthog/server'
-import { getLogActivationContext } from '../../../../lib/logActivation'
+import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
 
 export const runtime = 'nodejs'
 
@@ -32,7 +32,7 @@ export async function POST() {
       return NextResponse.json({ error: 'No logs found for yesterday' }, { status: 404 })
     }
 
-    // Check today's log count (free tier limit is 5)
+    // Count today's existing logs — feeds the alreadyHad field in the response.
     const { start: todayStart, end: todayEnd } = getIstDayRange()
     const { count: todayCount, error: countError } = await supabase
       .from('food_logs')
@@ -56,12 +56,18 @@ export async function POST() {
     const { error: insertError } = await supabase.from('food_logs').insert(newLogs)
     if (insertError) throw new Error(insertError.message)
 
-    captureServerEvent(userId, 'meal_logged', { source: 'copy_yesterday', items: newLogs.length, ...activation })
+    captureServerEvent(userId, 'meal_logged', {
+      source: 'copy_yesterday',
+      items: newLogs.length,
+      is_first_log: activation.is_first_log,
+      days_since_signup: activation.days_since_signup,
+    })
 
     return NextResponse.json({
       ok: true,
       copied: newLogs.length,
       alreadyHad: todayCount ?? 0,
+      milestone: toLogMilestone(activation, newLogs.length),
     })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })

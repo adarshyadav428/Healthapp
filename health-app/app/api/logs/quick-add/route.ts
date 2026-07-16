@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { captureServerEvent } from '../../../../lib/posthog/server'
-import { getLogActivationContext } from '../../../../lib/logActivation'
+import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
 
 export const runtime = 'nodejs'
 
@@ -45,9 +45,15 @@ export async function POST(req: Request) {
 
     if (logError) throw new Error(logError.message)
 
-    captureServerEvent(userId, 'meal_logged', { source: 'quick_add', meal, kcal, ...activation })
+    captureServerEvent(userId, 'meal_logged', {
+      source: 'quick_add',
+      meal,
+      kcal,
+      is_first_log: activation.is_first_log,
+      days_since_signup: activation.days_since_signup,
+    })
 
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true, milestone: toLogMilestone(activation, 1) })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }
