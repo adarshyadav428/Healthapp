@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '../../../../lib/supabase/server'
+import { normalizeBarcode } from '../../../../lib/barcode'
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
-  const barcode = searchParams.get('code')
-  if (!barcode) return NextResponse.json({ error: 'No barcode provided' }, { status: 400 })
+  // Digits-only (6–14) — the raw value is interpolated into a PostgREST
+  // .or() filter and the OFF URL path, so it must be validated first.
+  const barcode = normalizeBarcode(searchParams.get('code'))
+  if (!barcode) return NextResponse.json({ error: 'No valid barcode provided' }, { status: 400 })
 
   const supabase = createServerClient()
   const { data: { user } } = await supabase.auth.getUser()

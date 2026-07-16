@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '../../../lib/supabase/server'
+import { csvEscape } from '../../../lib/csv'
 
 export const runtime = 'nodejs'
 
@@ -71,11 +72,4 @@ export async function GET() {
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }
-}
-
-function csvEscape(value: string): string {
-  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-    return `"${value.replace(/"/g, '""')}"`
-  }
-  return value
 }

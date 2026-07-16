@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '../../../../lib/supabase/server'
-import { getUtcDayRange } from '../../../../lib/dateUtils'
+import { getIstDayRange } from '../../../../lib/dateUtils'
 import { captureServerEvent } from '../../../../lib/posthog/server'
 import { getLogActivationContext } from '../../../../lib/logActivation'
 
@@ -14,10 +14,11 @@ export async function POST() {
 
     const userId = user.id
 
-    // Get yesterday's logs
-    const yesterday = new Date()
-    yesterday.setUTCDate(yesterday.getUTCDate() - 1)
-    const { start: yStart, end: yEnd } = getUtcDayRange(yesterday)
+    // Get yesterday's logs. "Yesterday" must be the IST calendar day (see
+    // lib/dateUtils.ts) — the UTC day range copied the wrong day's logs for
+    // anyone using the feature between IST midnight and 5:30 AM IST.
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    const { start: yStart, end: yEnd } = getIstDayRange(yesterday)
 
     const { data: yesterdayLogs, error: fetchError } = await supabase
       .from('food_logs')
@@ -32,7 +33,7 @@ export async function POST() {
     }
 
     // Check today's log count (free tier limit is 5)
-    const { start: todayStart, end: todayEnd } = getUtcDayRange()
+    const { start: todayStart, end: todayEnd } = getIstDayRange()
     const { count: todayCount, error: countError } = await supabase
       .from('food_logs')
       .select('id', { count: 'exact', head: true })

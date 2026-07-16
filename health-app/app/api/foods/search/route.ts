@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
 import { searchOpenFoodFactsIndia, searchOpenFoodFacts } from '../../../../lib/open-food-facts'
 import { expandSearchQuery } from '../../../../lib/food-synonyms'
+import { buildNameIlikeOrFilter } from '../../../../lib/searchFilter'
 import { INDIAN_FOODS } from '../../../../lib/indian-foods-data'
 import type { Food } from '../../../../types/index'
 
@@ -164,11 +165,11 @@ export async function GET(request: Request) {
     // Expand query with Indian food synonyms (e.g. "arhar" → also searches "toor dal")
     const synonymQueries = expandSearchQuery(query)
 
-    // Build Supabase OR filter across all synonym variants (cap at 6 to keep query fast)
-    const orFilter = synonymQueries
-      .slice(0, 6)
-      .map((q) => `name.ilike.%${q}%`)
-      .join(',')
+    // Build Supabase OR filter across all synonym variants (cap at 6 to keep
+    // query fast). Terms are sanitized — PostgREST's or= syntax is
+    // comma/paren-delimited, so raw ",()" in a query would corrupt the filter.
+    const orFilter = buildNameIlikeOrFilter(synonymQueries, 6)
+    if (!orFilter) return NextResponse.json([])
 
     // Search order: local IFCT DB (synonym-expanded, most accurate for Indian foods)
     // → OFF India (Indian packaged/branded products: Amul, Britannia, MTR, etc.)

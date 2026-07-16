@@ -10,23 +10,26 @@ function toIstDateKey(isoString: string): string {
   return new Date(utcMs + IST_OFFSET_MS).toISOString().slice(0, 10)
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000
+
 export function calculateStreak(logs: FoodLog[], referenceDate = new Date()): number {
-  const dayKey = (d: Date) => {
-    const istMs = d.getTime() + IST_OFFSET_MS
-    return new Date(istMs).toISOString().slice(0, 10)
-  }
+  // Derive "today" from the reference instant directly in IST. The previous
+  // implementation truncated referenceDate to UTC midnight first, which made
+  // todayKey the *UTC* calendar date — so between IST midnight and UTC
+  // midnight (18:30–24:00 UTC) the streak was computed against yesterday's
+  // IST day and a log made just after IST midnight didn't count.
+  const dayKeyOf = (utcMs: number) => new Date(utcMs + IST_OFFSET_MS).toISOString().slice(0, 10)
 
   const set = new Set<string>(logs.map((l) => toIstDateKey(l.logged_at)))
 
   let streak = 0
-  const today = new Date(Date.UTC(referenceDate.getUTCFullYear(), referenceDate.getUTCMonth(), referenceDate.getUTCDate()))
-  const todayKey = dayKey(today)
+  const refMs = referenceDate.getTime()
+  const todayKey = dayKeyOf(refMs)
   const startOffset = set.has(todayKey) ? 0 : 1
 
+  // Stepping in fixed 24h increments is safe: IST has no DST.
   for (let i = startOffset; ; i++) {
-    const d = new Date(today)
-    d.setUTCDate(today.getUTCDate() - i)
-    const key = dayKey(d)
+    const key = dayKeyOf(refMs - i * DAY_MS)
     if (set.has(key)) streak += 1
     else break
   }

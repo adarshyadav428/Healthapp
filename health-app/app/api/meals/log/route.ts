@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient } from '../../../../lib/supabase/server'
+import { scaleMacros } from '../../../../lib/nutrition'
 
 const schema = z.object({
   meal_id: z.string().uuid(),
@@ -38,20 +39,16 @@ export async function POST(req: Request) {
 
     const logRows = items
       .filter((item) => item.food !== null)
-      .map((item) => {
-        const factor = item.grams / 100
-        return {
-          user_id: user.id,
-          food_id: item.food_id,
-          meal: parsed.data.meal_type,
-          grams: item.grams,
-          servings: item.servings,
-          kcal:      Math.round((item.food!.kcal_per_100g      * factor) * 100) / 100,
-          protein_g: Math.round((item.food!.protein_g_per_100g * factor) * 100) / 100,
-          carbs_g:   Math.round((item.food!.carbs_g_per_100g   * factor) * 100) / 100,
-          fat_g:     Math.round((item.food!.fat_g_per_100g     * factor) * 100) / 100,
-        }
-      })
+      .map((item) => ({
+        user_id: user.id,
+        food_id: item.food_id,
+        meal: parsed.data.meal_type,
+        grams: item.grams,
+        servings: item.servings,
+        // grams is per-serving; totals must include the servings multiplier
+        // (previously omitted — a 2-serving saved item logged half its kcal)
+        ...scaleMacros(item.food!, item.grams, item.servings ?? 1),
+      }))
 
     const { error: insertErr } = await supabase.from('food_logs').insert(logRows)
     if (insertErr) throw new Error(insertErr.message)
