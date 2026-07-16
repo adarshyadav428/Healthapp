@@ -49,33 +49,7 @@ export default async function LogPage({
   const supabase = createServerClient()
   const user = await getAuthedUser(supabase)
 
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('height_cm, daily_calorie_target, protein_g_target, carbs_g_target, fat_g_target, current_weight_kg, water_target_ml, display_name')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (profileError) throw new Error(profileError.message)
-  if (!profile || profile.height_cm === null) redirect('/onboarding')
-
-  // Check Pro status — free users can only view the last 7 days of history
-  const { data: sub } = await supabase
-    .from('subscriptions').select('status').eq('user_id', user.id).maybeSingle()
-  const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
-
   const { date: viewDate, dateStr } = parseDateParam(searchParams?.date)
-
-  // Free-tier history gate: clamp dates older than 7 days
-  if (!isPro && searchParams?.date) {
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7)
-    const cutoffStr = [
-      sevenDaysAgo.getUTCFullYear(),
-      String(sevenDaysAgo.getUTCMonth() + 1).padStart(2, '0'),
-      String(sevenDaysAgo.getUTCDate()).padStart(2, '0'),
-    ].join('-')
-    if (dateStr < cutoffStr) redirect('/upgrade?reason=history')
-  }
 
   // Today's UTC string for comparison
   const nowUtc = new Date()
@@ -92,7 +66,17 @@ export default async function LogPage({
   const yesterday = new Date(Date.UTC(nowUtc.getUTCFullYear(), nowUtc.getUTCMonth(), nowUtc.getUTCDate() - 1))
   const { start: yStart, end: yEnd } = getUtcDayRange(yesterday)
 
-  const [logSnapshotResult, yesterdayResult, dayResult, dayLogsResult] = await Promise.all([
+  // Every query below only needs user.id — one parallel round trip instead of
+  // three sequential stages (profile → subscription → data). The profile /
+  // onboarding and Pro-history checks run on the results afterwards.
+  const [profileResult, subResult, logSnapshotResult, yesterdayResult, dayResult, dayLogsResult] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('height_cm, daily_calorie_target, protein_g_target, carbs_g_target, fat_g_target, current_weight_kg, water_target_ml, display_name')
+      .eq('id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('subscriptions').select('status').eq('user_id', user.id).maybeSingle(),
     supabase
       .from('food_logs')
       .select(`food_id, grams, kcal, meal, food:foods(${FOOD_SELECT})`)
@@ -119,6 +103,26 @@ export default async function LogPage({
       .lt('logged_at', end)
       .order('logged_at', { ascending: true }),
   ])
+
+  const { data: profile, error: profileError } = profileResult
+  if (profileError) throw new Error(profileError.message)
+  if (!profile || profile.height_cm === null) redirect('/onboarding')
+
+  // Check Pro status — free users can only view the last 7 days of history
+  const sub = subResult.data
+  const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
+
+  // Free-tier history gate: clamp dates older than 7 days
+  if (!isPro && searchParams?.date) {
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7)
+    const cutoffStr = [
+      sevenDaysAgo.getUTCFullYear(),
+      String(sevenDaysAgo.getUTCMonth() + 1).padStart(2, '0'),
+      String(sevenDaysAgo.getUTCDate()).padStart(2, '0'),
+    ].join('-')
+    if (dateStr < cutoffStr) redirect('/upgrade?reason=history')
+  }
 
   if (logSnapshotResult.error) throw new Error(logSnapshotResult.error.message)
   if (yesterdayResult.error) throw new Error(yesterdayResult.error.message)

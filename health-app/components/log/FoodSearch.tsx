@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Food } from '../../types/index'
 import { FoodResult } from './FoodResult'
 import { toast } from '../ui/use-toast'
@@ -106,6 +106,9 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
   const { data, isLoading, error } = useQuery({
     queryKey: ['foods-search', debounced],
     enabled: debounced.trim().length > 1,
+    // Keep the previous results visible while the refined query loads —
+    // without this every keystroke flashes loading skeletons, which reads as lag.
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       const res = await fetch(`/api/foods/search?q=${encodeURIComponent(debounced)}`)
       const json = await res.json().catch(() => ({}))

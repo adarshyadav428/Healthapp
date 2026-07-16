@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '../../../../lib/supabase/server'
+import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { addFoodSchema } from '../../../../lib/validations'
 import { captureServerEvent } from '../../../../lib/posthog/server'
 import { getLogActivationContext } from '../../../../lib/logActivation'
@@ -9,12 +9,9 @@ const round2 = (n: number) => Math.round(n * 100) / 100
 export async function POST(req: Request) {
   try {
     const supabase = createServerClient()
-    const {
-      data: { user },
-      error: sessionError,
-    } = await supabase.auth.getUser()
+    const user = await getApiUser(supabase)
 
-    if (sessionError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const json = await req.json()
     const parsed = addFoodSchema.safeParse(json)
@@ -39,7 +36,7 @@ export async function POST(req: Request) {
     const FOOD_SELECT = 'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions'
     const logged_at = new Date().toISOString()
 
-    const activation = await getLogActivationContext(supabase, user)
+    const activation = await getLogActivationContext(supabase, user.id)
 
     const { data: inserted, error: insertError } = await supabase
       .from('food_logs')

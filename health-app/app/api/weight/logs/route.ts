@@ -1,16 +1,13 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '../../../../lib/supabase/server'
+import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import type { WeightLog } from '../../../../types/index'
 
 export async function GET() {
   try {
     const supabase = createServerClient()
-    const {
-      data: { user },
-      error: sessionError,
-    } = await supabase.auth.getUser()
+    const user = await getApiUser(supabase)
 
-    if (sessionError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { data, error } = await supabase
       .from('weight_logs')
