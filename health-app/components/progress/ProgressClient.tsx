@@ -7,6 +7,7 @@ import { format, parseISO, startOfDay, subDays, eachDayOfInterval, parse, isWith
 import type { Profile, WeightLog } from '../../types/index'
 import { useUser } from '../../hooks/useUser'
 import { DayDiary } from './DayDiary'
+import { ShareProgressButton } from './ShareProgressButton'
 import {
   Flame, Scale, ChevronLeft, ChevronRight, Utensils, CalendarDays, X, Dumbbell, Lock, Crown,
 } from 'lucide-react'
@@ -195,6 +196,13 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
           <p className="mt-[5px] text-[12px] text-ink-3">kg current</p>
         </div>
       </div>
+
+      {/* Share progress card (WhatsApp/IG image) — hidden when nothing to show yet */}
+      <ShareProgressButton
+        streakDays={streak}
+        startWeightKg={weightLogs[weightLogs.length - 1]?.weight_kg ?? null}
+        currentWeightKg={currentWeight}
+      />
 
       {/* ── Stat cards: avg calories + days logged ── */}
       <div className="mt-3 grid grid-cols-2 gap-3">
