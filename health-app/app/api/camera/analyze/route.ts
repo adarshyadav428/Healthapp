@@ -176,7 +176,7 @@ function resolveNutrition(item: GeminiFood) {
   const servings = num(label.servings_per_pack)
 
   // Single-serve pack → default the portion to the whole pack; otherwise one serving.
-  const portion =
+  const labelPortion =
     net && (servings === null || servings <= 1) ? net
     : servingSize ? servingSize
     : (num(item.estimated_grams) || 100)
@@ -186,7 +186,7 @@ function resolveNutrition(item: GeminiFood) {
     protein_g_per_100g: (num(label.protein_g) ?? 0) * scale,
     carbs_g_per_100g:   (num(label.carbs_g) ?? 0) * scale,
     fat_g_per_100g:     (num(label.fat_g) ?? 0) * scale,
-    portion,
+    portion:            labelPortion,
     unit:               label.unit === 'ml' ? 'ml' : label.unit === 'g' ? 'g' : itemUnit,
     fromLabel:          true,
     fromServingTotal:   false,
