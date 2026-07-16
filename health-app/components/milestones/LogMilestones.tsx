@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Check, Crown, X } from 'lucide-react'
 import { Button } from '../ui/button'
 import { ConfettiBurst } from '../ui/ConfettiBurst'
-import { useMilestoneStore, clearPendingMilestone } from '../../store/milestoneStore'
+import { useMilestoneStore, clearPendingMilestone, clearWeightMilestone } from '../../store/milestoneStore'
 import { getLogMilestoneAction, type MilestoneAction } from '../../lib/logMilestones'
 import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { captureEvent } from '../../lib/posthog/client'
@@ -46,7 +46,9 @@ const PRO_FEATURES = [
  */
 export function LogMilestones() {
   const pending = useMilestoneStore((s) => s.pending)
+  const pendingWeightKg = useMilestoneStore((s) => s.pendingWeightKg)
   const [active, setActive] = useState<MilestoneAction>(null)
+  const [weightKg, setWeightKg] = useState<number | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -89,29 +91,49 @@ export function LogMilestones() {
     }
   }, [pending])
 
-  // Celebration auto-dismisses; the paywall waits for an explicit choice.
+  // Weight milestone comes pre-decided by the server (no seen-flags needed —
+  // a threshold can only be crossed for the first time once).
   useEffect(() => {
-    if (active !== 'first_log_celebration') return
-    const t = setTimeout(() => setActive(null), 2600)
-    return () => clearTimeout(t)
-  }, [active])
+    if (!pendingWeightKg) return
+    clearWeightMilestone()
+    captureEvent('weight_milestone_shown', { kg: pendingWeightKg })
+    setWeightKg(pendingWeightKg)
+  }, [pendingWeightKg])
 
-  if (active === 'first_log_celebration') {
+  // Celebrations auto-dismiss; the paywall waits for an explicit choice.
+  useEffect(() => {
+    if (active !== 'first_log_celebration' && weightKg == null) return
+    const t = setTimeout(() => {
+      setActive(null)
+      setWeightKg(null)
+    }, 2600)
+    return () => clearTimeout(t)
+  }, [active, weightKg])
+
+  if (active === 'first_log_celebration' || weightKg != null) {
+    const isWeight = weightKg != null
     return (
       <div
         className="fixed inset-0 z-[100] flex items-center justify-center px-8"
         style={{ background: 'var(--scrim)' }}
-        onClick={() => setActive(null)}
+        onClick={() => {
+          setActive(null)
+          setWeightKg(null)
+        }}
         role="status"
       >
         <div className="relative w-full max-w-xs rounded-sheet bg-surface px-6 pb-7 pt-8 text-center shadow-float">
           <ConfettiBurst />
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-soft text-[28px]">
-            🎉
+            {isWeight ? '⚖️' : '🎉'}
           </div>
-          <h2 className="mt-4 font-display text-[22px] font-bold text-ink">First meal logged!</h2>
+          <h2 className="mt-4 font-display text-[22px] font-bold text-ink">
+            {isWeight ? `${weightKg} kg down!` : 'First meal logged!'}
+          </h2>
           <p className="mt-1.5 text-sm text-ink-2">
-            That&apos;s the hardest part done. Log every meal today and your streak begins.
+            {isWeight
+              ? 'A new milestone — that consistency is paying off.'
+              : "That's the hardest part done. Log every meal today and your streak begins."}
           </p>
         </div>
       </div>

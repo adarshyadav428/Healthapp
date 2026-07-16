@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { weightLogSchema } from '../../../../lib/validations'
 import { calculateTDEE } from '../../../../lib/tdee'
+import { computeWeightMilestone } from '../../../../lib/weightMilestone'
 
 export async function POST(req: Request) {
   try {
@@ -13,6 +14,25 @@ export async function POST(req: Request) {
     const json = await req.json()
     const parsed = weightLogSchema.safeParse(json)
     if (!parsed.success) return NextResponse.json({ error: parsed.error.message }, { status: 400 })
+
+    // Snapshot the loss picture BEFORE the insert (two O(1) head-row reads,
+    // in parallel) — feeds the whole-kg milestone celebration in the response.
+    const [{ data: baselineRow }, { data: minRow }] = await Promise.all([
+      supabase
+        .from('weight_logs')
+        .select('weight_kg, measured_at')
+        .eq('user_id', user.id)
+        .order('measured_at', { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from('weight_logs')
+        .select('weight_kg')
+        .eq('user_id', user.id)
+        .order('weight_kg', { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+    ])
 
     const { data: row, error } = await supabase
       .from('weight_logs')
@@ -64,7 +84,13 @@ export async function POST(req: Request) {
       }
     } catch { /* recalc is best-effort; the weight log itself succeeded */ }
 
-    return NextResponse.json({ ok: true, row })
+    const milestone = computeWeightMilestone({
+      baseline: baselineRow ?? null,
+      minWeightKg: minRow?.weight_kg ?? null,
+      entry: { weight_kg: parsed.data.weight_kg, measured_at: parsed.data.measured_at },
+    })
+
+    return NextResponse.json({ ok: true, row, milestone })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }

@@ -9,12 +9,16 @@ import type { LogMilestone } from '../lib/logMilestones'
  */
 type MilestoneState = {
   pending: LogMilestone | null
+  pendingWeightKg: number | null
   setPending: (m: LogMilestone | null) => void
+  setPendingWeightKg: (kg: number | null) => void
 }
 
 export const useMilestoneStore = create<MilestoneState>((set) => ({
   pending: null,
+  pendingWeightKg: null,
   setPending: (pending) => set({ pending }),
+  setPendingWeightKg: (pendingWeightKg) => set({ pendingWeightKg }),
 }))
 
 /** One-liner for log flows — no-ops when the response carried no milestone. */
@@ -25,4 +29,14 @@ export function reportLogMilestone(m?: LogMilestone | null): void {
 
 export function clearPendingMilestone(): void {
   useMilestoneStore.getState().setPending(null)
+}
+
+/** Whole-kg weight-loss milestone from /api/weight/add — no-ops on null. */
+export function reportWeightMilestone(kg?: number | null): void {
+  if (!kg) return
+  useMilestoneStore.getState().setPendingWeightKg(kg)
+}
+
+export function clearWeightMilestone(): void {
+  useMilestoneStore.getState().setPendingWeightKg(null)
 }

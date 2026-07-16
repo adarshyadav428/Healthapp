@@ -12,6 +12,7 @@ import { Sheet, SheetContent } from '../ui/sheet'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Scale, X } from 'lucide-react'
+import { reportWeightMilestone } from '../../store/milestoneStore'
 
 const QUICK_ADJUSTMENTS = [-1, -0.5, +0.5, +1]
 
@@ -64,7 +65,12 @@ export function WeightLogModal({ onClose }: { onClose: () => void }) {
         queryClient.invalidateQueries({ queryKey: ['weight-logs'] })
       }
 
-      toast({ title: '⚖️ Weight logged!', description: 'Keep it up.', duration: 2500 })
+      if (data.milestone) {
+        // Milestone celebration replaces the plain toast (overlay lives in providers)
+        reportWeightMilestone(data.milestone)
+      } else {
+        toast({ title: '⚖️ Weight logged!', description: 'Keep it up.', duration: 2500 })
+      }
       onClose()
     } catch (err) {
       toast({ title: 'Failed to log weight', description: (err as Error).message, variant: 'error' })
