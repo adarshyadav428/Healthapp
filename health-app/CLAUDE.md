@@ -19,9 +19,10 @@ npm run dev        # start dev server at http://localhost:3000
 npm run build      # production build
 npm run lint       # ESLint (next lint)
 npm run format     # Prettier write
+npm test           # vitest run — unit tests in tests/ (streak, date windows, camera nutrition, search filter, barcode, CSV)
 ```
 
-No test suite — there are no test commands to run.
+Tests cover the pure logic in `lib/` (routes stay thin so the logic is testable). Run them plus `npm run check:tokens` before committing.
 
 ### Local webhook forwarding (Stripe)
 ```bash

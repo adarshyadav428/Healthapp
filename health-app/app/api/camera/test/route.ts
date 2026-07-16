@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server'
+import { createServerClient } from '../../../../lib/supabase/server'
 
+// Debug endpoint: lists Gemini models available to the configured key.
+// Auth-gated — previously this was public, letting anyone probe whether the
+// key was configured and enumerate the account's available models.
 export async function GET() {
+  const supabase = createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const key = process.env.GEMINI_API_KEY
   if (!key) return NextResponse.json({ error: 'GEMINI_API_KEY not set' }, { status: 500 })
 
