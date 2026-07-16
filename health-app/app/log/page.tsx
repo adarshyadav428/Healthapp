@@ -4,6 +4,7 @@ import { FoodLanding } from '../../components/log/FoodLanding'
 import { LogProgressClient } from '../../components/log/LogProgressClient'
 import { TodayFoodLog } from '../../components/log/TodayFoodLog'
 import { FoodHeader } from '../../components/log/FoodHeader'
+import { SwipeDayNav } from '../../components/log/SwipeDayNav'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import type { Food, FoodLog } from '../../types/index'
@@ -186,8 +187,11 @@ export default async function LogPage({
           paddingBottom: 'calc(120px + env(safe-area-inset-bottom))',
         }}
       >
-        {/* Header — date + Food title + prev/next day chips */}
+        {/* Header — date + Food title + Today pill + prev/next day chips */}
         <FoodHeader dateStr={dateStr} />
+
+        {/* Swipe left/right anywhere below the header to change days */}
+        <SwipeDayNav dateStr={dateStr}>
 
         {/* Calorie summary — live for today, static for past */}
         <div className="mt-4">
@@ -223,6 +227,7 @@ export default async function LogPage({
             <ExerciseLogger weightKg={profile.current_weight_kg ?? 70} />
           </div>
         )}
+        </SwipeDayNav>
       </main>
       <BottomNav />
     </div>
