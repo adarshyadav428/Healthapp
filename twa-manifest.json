@@ -1,0 +1,46 @@
+{
+  "packageId": "com.getinshape.app",
+  "host": "getinshape.co.in",
+  "name": "GetInShape — Indian Calorie Tracker",
+  "launcherName": "GetInShape",
+  "display": "standalone",
+  "themeColor": "#F7F6F3",
+  "themeColorDark": "#0F0E0C",
+  "navigationColor": "#F7F6F3",
+  "navigationColorDark": "#0F0E0C",
+  "navigationDividerColor": "#F7F6F3",
+  "navigationDividerColorDark": "#0F0E0C",
+  "backgroundColor": "#F7F6F3",
+  "enableNotifications": true,
+  "startUrl": "/dashboard",
+  "iconUrl": "https://getinshape.co.in/icons/icon-512x512.png",
+  "maskableIconUrl": "https://getinshape.co.in/icons/icon-512x512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://getinshape.co.in/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": {
+      "enabled": true
+    }
+  },
+  "alphaDependencies": {
+    "enabled": true
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://getinshape.co.in/",
+  "minSdkVersion": 21,
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": []
+}

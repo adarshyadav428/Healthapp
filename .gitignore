@@ -1,1 +1,9 @@
 .claude/
+.vercel
+
+# Android/TWA build (Bubblewrap) — never commit signing keys or build output
+*.keystore
+android.keystore
+app-release-*.aab
+app-release-*.apk
+/build/
