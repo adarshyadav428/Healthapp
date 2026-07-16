@@ -29,3 +29,17 @@ export function getIstDayRange(date: Date = new Date()): { start: string; end: s
   const end = new Date(Date.UTC(y, m, d + 1) - IST_OFFSET_MS).toISOString()
   return { start, end }
 }
+
+/**
+ * UTC ISO timestamp of the start of the IST calendar day `days - 1` days
+ * before the one containing `date` — the oldest instant still inside a
+ * "last N days" window of IST days (today counts as day 1). Used to clamp
+ * free-tier history reads to the documented 7 days.
+ */
+export function istDaysAgoStart(days: number, date: Date = new Date()): string {
+  const istShifted = new Date(date.getTime() + IST_OFFSET_MS)
+  const y = istShifted.getUTCFullYear()
+  const m = istShifted.getUTCMonth()
+  const d = istShifted.getUTCDate()
+  return new Date(Date.UTC(y, m, d - (days - 1)) - IST_OFFSET_MS).toISOString()
+}
