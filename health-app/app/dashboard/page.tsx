@@ -53,6 +53,12 @@ export default async function DashboardPage() {
 
   const streakDays = calculateStreak((recentLogs ?? []) as unknown as FoodLog[])
 
+  // UTC date keys with at least one log — feeds the week strip's dots
+  // (same day semantics as /log's ?date= param).
+  const loggedDates = Array.from(
+    new Set((recentLogs ?? []).map((r) => String(r.logged_at).slice(0, 10)))
+  )
+
   const foodLogs = (rawLogs ?? []) as unknown as FoodLog[]
 
   return (
@@ -69,6 +75,7 @@ export default async function DashboardPage() {
           profile={profile}
           initialLogs={foodLogs}
           streakDays={streakDays}
+          loggedDates={loggedDates}
         />
       </main>
       <BottomNav />

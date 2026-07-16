@@ -9,6 +9,8 @@ import { RecentMealCard } from '../home/RecentMealCard'
 import { EmptyMeals } from '../home/EmptyMeals'
 import { EditFoodLogModal } from '../log/EditFoodLogModal'
 import { RatePromptCard } from './RatePromptCard'
+import { WeekStrip } from './WeekStrip'
+import { InstallPromptCard } from '../pwa/InstallPromptCard'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
 import { Flame, Plus, MessageCircle } from 'lucide-react'
@@ -19,9 +21,10 @@ interface Props {
   profile: Profile
   initialLogs: FoodLog[]
   streakDays: number
+  loggedDates: string[]
 }
 
-export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
+export function DashboardClient({ profile, initialLogs, streakDays, loggedDates }: Props) {
   const { user } = useUser()
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
   const [editingLog, setEditingLog] = useState<FoodLog | null>(null)
@@ -61,6 +64,9 @@ export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
           </div>
         )}
       </div>
+
+      {/* ── Week strip: tap a day → that day's diary ── */}
+      <WeekStrip loggedDates={loggedDates} />
 
       {/* ── Calorie hero ── */}
       <div className="mt-4">
@@ -102,6 +108,9 @@ export function DashboardClient({ profile, initialLogs, streakDays }: Props) {
 
       {/* Play Store rating ask — renders only inside the installed Play build */}
       <RatePromptCard streakDays={streakDays} />
+
+      {/* A2HS install ask — renders only for mobile-web Chrome users */}
+      <InstallPromptCard />
 
       {editingLog && (
         <EditFoodLogModal
