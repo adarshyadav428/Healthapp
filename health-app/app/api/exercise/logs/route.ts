@@ -1,29 +1,22 @@
 import { NextResponse } from 'next/server'
-import { createServerClient, getApiUser } from '../../../lib/supabase/server'
-import { istDaysAgoStart } from '../../../lib/dateUtils'
-import { isProStatus } from '../../../lib/subscription'
-import type { FoodLog } from '../../../types/index'
+import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
+import { istDaysAgoStart } from '../../../../lib/dateUtils'
+import { isProStatus } from '../../../../lib/subscription'
 
 const FREE_HISTORY_DAYS = 7
 
-// Same column list the server pages use — `foods(*)` shipped every column of
-// every food row on each refetch, which is dead weight on mobile connections.
-const FOOD_SELECT =
-  'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions'
-
+// Range variant of /api/exercise/today, with the same free-tier history clamp
+// as /api/logs so the 7-day limit holds no matter which endpoint is called.
 export async function GET(req: Request) {
   try {
     const supabase = createServerClient()
     const user = await getApiUser(supabase)
-
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(req.url)
     let start = searchParams.get('start')
     const end = searchParams.get('end')
 
-    // Pro gate: the free tier's "7 days history" was only enforced by the UI —
-    // the API itself returned unlimited history to anyone who called it.
     const { data: sub } = await supabase
       .from('subscriptions')
       .select('status')
@@ -36,16 +29,15 @@ export async function GET(req: Request) {
     }
 
     let query = supabase
-      .from('food_logs')
-      .select(`*, food:foods(${FOOD_SELECT})`)
+      .from('exercise_logs')
+      .select('id, activity, duration_min, calories, logged_at')
       .eq('user_id', user.id)
-      .order('logged_at', { ascending: false })
+      .order('logged_at', { ascending: true })
 
     if (start) query = query.gte('logged_at', start)
     if (end) query = query.lt('logged_at', end)
 
     const { data, error } = await query
-
     if (error) throw new Error(error.message)
     return NextResponse.json(data ?? [])
   } catch (err) {

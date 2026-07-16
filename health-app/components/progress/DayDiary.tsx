@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import type { FoodLog, ExerciseLog } from '../../types/index'
 import { getUtcDayRange } from '../../lib/dateUtils'
 import { Loader2, Dumbbell, Flame, Pencil, Trash2 } from 'lucide-react'
@@ -16,6 +15,8 @@ const MEAL_CONFIG = {
   snack: { emoji: '🥜', label: 'Snack', color: 'text-energy-ink' },
 }
 
+// Both hooks go through the server API (not the browser Supabase client) so
+// the free-tier 7-day history clamp is enforced server-side for every read.
 function useDayLogs(userId: string | null, date: Date) {
   const { start, end } = getUtcDayRange(date)
   return useQuery({
@@ -23,16 +24,15 @@ function useDayLogs(userId: string | null, date: Date) {
     enabled: Boolean(userId),
     queryFn: async () => {
       if (!userId) return [] as FoodLog[]
-      const supabase = getBrowserSupabaseClient()
-      const { data, error } = await supabase
-        .from('food_logs')
-        .select('*, food:foods(name, brand)')
-        .eq('user_id', userId)
-        .gte('logged_at', start)
-        .lt('logged_at', end)
-        .order('logged_at', { ascending: true })
-      if (error) throw error
-      return (data ?? []) as FoodLog[]
+      const params = new URLSearchParams({ start, end })
+      const res = await fetch(`/api/logs?${params}`)
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error ?? 'Failed to fetch day logs')
+      }
+      const data = (await res.json()) as FoodLog[]
+      // API returns newest-first; the diary reads top-to-bottom through the day
+      return data.slice().sort((a, b) => a.logged_at.localeCompare(b.logged_at))
     },
   })
 }
@@ -44,16 +44,10 @@ function useDayExercise(userId: string | null, date: Date) {
     enabled: Boolean(userId),
     queryFn: async () => {
       if (!userId) return [] as ExerciseLog[]
-      const supabase = getBrowserSupabaseClient()
-      const { data, error } = await supabase
-        .from('exercise_logs')
-        .select('id, activity, duration_min, calories, logged_at')
-        .eq('user_id', userId)
-        .gte('logged_at', start)
-        .lt('logged_at', end)
-        .order('logged_at', { ascending: true })
-      if (error) return [] as ExerciseLog[] // table may not exist yet
-      return (data ?? []) as ExerciseLog[]
+      const params = new URLSearchParams({ start, end })
+      const res = await fetch(`/api/exercise/logs?${params}`)
+      if (!res.ok) return [] as ExerciseLog[]
+      return (await res.json()) as ExerciseLog[]
     },
   })
 }
