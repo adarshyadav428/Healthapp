@@ -30,19 +30,20 @@ export async function POST(req: Request) {
 
     if (error) throw new Error(error.message)
 
-    // Auto-recalculate calorie & macro targets when weight shifts ≥ 0.5 kg
-    void (async () => {
-      try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('current_weight_kg, height_cm, age, sex, activity_level, goal, pace_kg_per_week')
-          .eq('id', user.id)
-          .single()
+    // Auto-recalculate calorie & macro targets when weight shifts ≥ 0.5 kg.
+    // Awaited, not fire-and-forget: a serverless function can be frozen the
+    // moment the response is sent, so detached async work may never run.
+    // It's two cheap queries; a recalc failure still shouldn't fail the
+    // weight log itself (the insert above already succeeded).
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('current_weight_kg, height_cm, age, sex, activity_level, goal, pace_kg_per_week')
+        .eq('id', user.id)
+        .single()
 
-        if (!profile) return
-        const diff = Math.abs((profile.current_weight_kg ?? 0) - parsed.data.weight_kg)
-        if (diff < 0.5) return // not significant enough to recalculate
-
+      const diff = profile ? Math.abs((profile.current_weight_kg ?? 0) - parsed.data.weight_kg) : 0
+      if (profile && diff >= 0.5) {
         const targets = calculateTDEE({
           weightKg: parsed.data.weight_kg,
           heightCm: profile.height_cm,
@@ -63,8 +64,8 @@ export async function POST(req: Request) {
             fat_g_target: targets.fat_g_target,
           })
           .eq('id', user.id)
-      } catch { /* fire-and-forget — don't block the response */ }
-    })()
+      }
+    } catch { /* recalc is best-effort; the weight log itself succeeded */ }
 
     return NextResponse.json({ ok: true, row })
   } catch (err) {
