@@ -1,19 +1,21 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '../../../lib/supabase/server'
+import { createServerClient, getApiUser } from '../../../lib/supabase/server'
 import { istDaysAgoStart } from '../../../lib/dateUtils'
 import type { FoodLog } from '../../../types/index'
 
 const FREE_HISTORY_DAYS = 7
 
+// Same column list the server pages use — `foods(*)` shipped every column of
+// every food row on each refetch, which is dead weight on mobile connections.
+const FOOD_SELECT =
+  'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions'
+
 export async function GET(req: Request) {
   try {
     const supabase = createServerClient()
-    const {
-      data: { user },
-      error: sessionError,
-    } = await supabase.auth.getUser()
+    const user = await getApiUser(supabase)
 
-    if (sessionError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(req.url)
     let start = searchParams.get('start')
@@ -35,7 +37,7 @@ export async function GET(req: Request) {
 
     let query = supabase
       .from('food_logs')
-      .select('*, food:foods(*)')
+      .select(`*, food:foods(${FOOD_SELECT})`)
       .eq('user_id', user.id)
       .order('logged_at', { ascending: false })
 

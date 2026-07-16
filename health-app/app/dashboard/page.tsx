@@ -19,35 +19,37 @@ export default async function DashboardPage() {
   const supabase = createServerClient()
   const user = await getAuthedUser(supabase)
 
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle()
+  const { start, end } = getUtcDayRange()
 
+  // Streak looks back 60 days of log timestamps
+  const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
+
+  // All three queries only need user.id — run them in one parallel round trip
+  // instead of three sequential ones (each is a full network hop to Supabase).
+  const [profileResult, logsResult, streakResult] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+    supabase
+      .from('food_logs')
+      .select('id, food_id, meal, grams, servings, kcal, protein_g, carbs_g, fat_g, logged_at, food:foods(id,name,kcal_per_100g,protein_g_per_100g,carbs_g_per_100g,fat_g_per_100g,serving_size_g,serving_description)')
+      .eq('user_id', user.id)
+      .gte('logged_at', start)
+      .lt('logged_at', end)
+      .order('logged_at', { ascending: false }),
+    supabase
+      .from('food_logs')
+      .select('logged_at')
+      .eq('user_id', user.id)
+      .gte('logged_at', sixtyDaysAgo),
+  ])
+
+  const { data: profile, error: profileError } = profileResult
   if (profileError) throw new Error(profileError.message)
   if (!profile || profile.height_cm === null) redirect('/onboarding')
 
-  const { start, end } = getUtcDayRange()
-
-  // Today's food logs
-  const { data: rawLogs, error: logsError } = await supabase
-    .from('food_logs')
-    .select('id, food_id, meal, grams, servings, kcal, protein_g, carbs_g, fat_g, logged_at, food:foods(id,name,kcal_per_100g,protein_g_per_100g,carbs_g_per_100g,fat_g_per_100g,serving_size_g,serving_description)')
-    .eq('user_id', user.id)
-    .gte('logged_at', start)
-    .lt('logged_at', end)
-    .order('logged_at', { ascending: false })
-
+  const { data: rawLogs, error: logsError } = logsResult
   if (logsError) throw new Error(logsError.message)
 
-  // Streak — fetch last 60 days of log timestamps
-  const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
-  const { data: recentLogs } = await supabase
-    .from('food_logs')
-    .select('logged_at')
-    .eq('user_id', user.id)
-    .gte('logged_at', sixtyDaysAgo)
+  const { data: recentLogs } = streakResult
 
   const streakDays = calculateStreak((recentLogs ?? []) as unknown as FoodLog[])
 

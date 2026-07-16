@@ -52,6 +52,22 @@ export async function getAuthedUser(supabase: SupabaseClient): Promise<AuthedUse
 }
 
 /**
+ * Get the current user in an API route handler, or null if unauthenticated.
+ * Same local JWT verification as getAuthedUser() (see rationale above) — the
+ * hot API paths (search-as-you-type, every log action) were paying a full
+ * Supabase Auth-server round trip per request via getUser(), which added
+ * ~100-300ms of latency to every interaction. Postgres RLS remains the real
+ * enforcement layer for all data access. Billing and account-deletion routes
+ * intentionally keep getUser() — for rare, sensitive actions the authoritative
+ * revocation check is worth the extra hop.
+ */
+export async function getApiUser(supabase: SupabaseClient): Promise<AuthedUser | null> {
+  const { data, error } = await supabase.auth.getClaims()
+  if (error || !data?.claims) return null
+  return { id: data.claims.sub, email: (data.claims.email as string | undefined) ?? null }
+}
+
+/**
  * Create an admin Supabase client using the service role key. Only use this on trusted server routes
  * such as webhook handlers.
  */

@@ -1,17 +1,14 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '../../../../lib/supabase/server'
+import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { weightLogSchema } from '../../../../lib/validations'
 import { calculateTDEE } from '../../../../lib/tdee'
 
 export async function POST(req: Request) {
   try {
     const supabase = createServerClient()
-    const {
-      data: { user },
-      error: sessionError,
-    } = await supabase.auth.getUser()
+    const user = await getApiUser(supabase)
 
-    if (sessionError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const json = await req.json()
     const parsed = weightLogSchema.safeParse(json)

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createServerClient } from '../../../../lib/supabase/server'
+import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 
 const createSchema = z.object({
   name: z.string().min(1).max(100),
@@ -16,7 +16,7 @@ const deleteSchema = z.object({ id: z.string().uuid() })
 export async function GET() {
   try {
     const supabase = createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getApiUser(supabase)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { data, error } = await supabase
@@ -35,7 +35,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const supabase = createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getApiUser(supabase)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const supabase = createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getApiUser(supabase)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()

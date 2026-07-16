@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createServerClient } from '../../../../lib/supabase/server'
+import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 
 const FOOD_SELECT =
   'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions'
@@ -10,7 +10,7 @@ const schema = z.object({ food_id: z.string().uuid() })
 export async function GET() {
   try {
     const supabase = createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getApiUser(supabase)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { data, error } = await supabase
@@ -29,7 +29,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const supabase = createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getApiUser(supabase)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const supabase = createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getApiUser(supabase)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()

@@ -12,22 +12,22 @@ export default async function WeightPage() {
   const supabase = createServerClient()
   const user = await getAuthedUser(supabase)
 
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle()
+  // Both queries only need user.id — one parallel round trip, not two sequential
+  const [profileResult, logsResult] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+    supabase
+      .from('weight_logs')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('measured_at', { ascending: false })
+      .limit(60),
+  ])
 
+  const { data: profile, error: profileError } = profileResult
   if (profileError) throw new Error(profileError.message)
   if (!profile || profile.height_cm === null) redirect('/onboarding')
 
-  const { data: logs, error: logsError } = await supabase
-    .from('weight_logs')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('measured_at', { ascending: false })
-    .limit(60)
-
+  const { data: logs, error: logsError } = logsResult
   if (logsError) throw new Error(logsError.message)
 
   const weightLogs = (logs ?? []) as WeightLog[]

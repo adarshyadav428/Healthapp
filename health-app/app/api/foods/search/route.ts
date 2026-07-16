@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
+import { createServerClient, createAdminClient, getApiUser } from '../../../../lib/supabase/server'
 import { searchOpenFoodFactsIndia, searchOpenFoodFacts } from '../../../../lib/open-food-facts'
 import { expandSearchQuery } from '../../../../lib/food-synonyms'
 import { buildNameIlikeOrFilter } from '../../../../lib/searchFilter'
@@ -154,7 +154,7 @@ export async function GET(request: Request) {
     if (rateLimit(ip)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
     const supabase = createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getApiUser(supabase)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const cached = getCached(normalizedQuery)

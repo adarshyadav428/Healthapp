@@ -18,11 +18,21 @@ export default async function DeficitPage() {
   const supabase = createServerClient()
   const user = await getAuthedUser(supabase)
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle()
+  // All three queries only need user.id — one parallel round trip, not three sequential
+  const since = new Date(Date.now() - 28 * 86_400_000).toISOString()
+  const [{ data: profile }, { data: logs }, { data: allLogs }] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+    supabase
+      .from('food_logs')
+      .select('kcal, logged_at')
+      .eq('user_id', user.id)
+      .gte('logged_at', since)
+      .order('logged_at', { ascending: true }),
+    supabase
+      .from('food_logs')
+      .select('kcal, logged_at')
+      .eq('user_id', user.id),
+  ])
 
   if (!profile || !profile.height_cm) redirect('/onboarding')
 
@@ -43,16 +53,7 @@ export default async function DeficitPage() {
     ? Math.round(actualWeeklyTarget / 7700 * 100) / 100
     : 0
 
-  // Fetch last 28 days of logs
-  const since = new Date(Date.now() - 28 * 86_400_000).toISOString()
-  const { data: logs } = await supabase
-    .from('food_logs')
-    .select('kcal, logged_at')
-    .eq('user_id', user.id)
-    .gte('logged_at', since)
-    .order('logged_at', { ascending: true })
-
-  // Group by IST date
+  // Group last 28 days by IST date
   const byDate = new Map<string, number>()
   for (const log of logs ?? []) {
     const date = toIstDateKey(log.logged_at)
@@ -65,11 +66,6 @@ export default async function DeficitPage() {
   const todayKey = toIstDateKey(new Date().toISOString())
 
   // All-time fat burned
-  const { data: allLogs } = await supabase
-    .from('food_logs')
-    .select('kcal, logged_at')
-    .eq('user_id', user.id)
-
   const allByDate = new Map<string, number>()
   for (const log of allLogs ?? []) {
     const date = toIstDateKey(log.logged_at)

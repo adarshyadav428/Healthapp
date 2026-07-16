@@ -18,34 +18,25 @@ export default async function ProgressPage() {
   const supabase = createServerClient()
   const user = await getAuthedUser(supabase)
 
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (profileError) throw new Error(profileError.message)
-  if (!profile || profile.height_cm === null) redirect('/onboarding')
-
-  // Pro status — free users only see the last 7 days of trend history
-  const { data: sub } = await supabase
-    .from('subscriptions')
-    .select('status')
-    .eq('user_id', user.id)
-    .maybeSingle()
-  const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
-
   // Streak always looks back 60 days regardless of Pro status — it's a free,
   // always-on stat, independent of the Pro-gated trend-history depth below.
   const sixtyDaysAgo = new Date()
   sixtyDaysAgo.setUTCDate(sixtyDaysAgo.getUTCDate() - 60)
 
-  // Free → 7 days, Pro → 90 days of trend/macro history
-  const lookbackDays = isPro ? 90 : 7
+  // Free → 7 days, Pro → 90 days of trend/macro history. We don't know Pro
+  // status until the subscriptions query resolves, so fetch the full 90-day
+  // window in the same parallel round trip and trim to 7 days afterwards for
+  // free users — one network stage instead of three sequential ones.
   const cutoff = new Date()
-  cutoff.setUTCDate(cutoff.getUTCDate() - lookbackDays)
+  cutoff.setUTCDate(cutoff.getUTCDate() - 90)
 
-  const [streakResult, weightResult, logsResult, exerciseResult] = await Promise.all([
+  const [profileResult, subResult, streakResult, weightResult, logsResult, exerciseResult] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+    supabase
+      .from('subscriptions')
+      .select('status')
+      .eq('user_id', user.id)
+      .maybeSingle(),
     supabase
       .from('food_logs')
       .select('logged_at')
@@ -71,14 +62,30 @@ export default async function ProgressPage() {
       .order('logged_at', { ascending: false }),
   ])
 
+  const { data: profile, error: profileError } = profileResult
+  if (profileError) throw new Error(profileError.message)
+  if (!profile || profile.height_cm === null) redirect('/onboarding')
+
+  // Pro status — free users only see the last 7 days of trend history
+  const sub = subResult.data
+  const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
+
   if (logsResult.error) throw new Error(logsResult.error.message)
+
+  // Trim the 90-day fetch down to the free-tier window before anything is
+  // passed to the client — free users receive exactly the same 7 days as before.
+  const freeCutoff = new Date()
+  freeCutoff.setUTCDate(freeCutoff.getUTCDate() - 7)
+  const freeCutoffMs = freeCutoff.getTime()
+  const withinTier = <T extends { logged_at: string }>(rows: T[]) =>
+    isPro ? rows : rows.filter((r) => new Date(r.logged_at).getTime() >= freeCutoffMs)
 
   const streak      = calculateStreak((streakResult.data ?? []) as unknown as FoodLog[])
   const weightLogs  = (weightResult.data ?? []) as unknown as WeightLog[]
   const loggedDates = (streakResult.data ?? []).map((r) => r.logged_at as string)
-  const logs        = logsResult.data ?? []
+  const logs        = withinTier(logsResult.data ?? [])
   // Exercise logs are optional — table may not exist yet
-  const exerciseLogs = exerciseResult.error ? [] : (exerciseResult.data ?? [])
+  const exerciseLogs = exerciseResult.error ? [] : withinTier(exerciseResult.data ?? [])
 
   return (
     <div className="min-h-screen">

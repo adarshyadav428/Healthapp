@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '../../../../lib/supabase/server'
+import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { getIstDayRange } from '../../../../lib/dateUtils'
 import { captureServerEvent } from '../../../../lib/posthog/server'
 import { getLogActivationContext } from '../../../../lib/logActivation'
@@ -9,7 +9,7 @@ export const runtime = 'nodejs'
 export async function POST() {
   try {
     const supabase = createServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await getApiUser(supabase)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const userId = user.id
@@ -51,7 +51,7 @@ export async function POST() {
       logged_at: now,
     }))
 
-    const activation = await getLogActivationContext(supabase, user)
+    const activation = await getLogActivationContext(supabase, user.id)
 
     const { error: insertError } = await supabase.from('food_logs').insert(newLogs)
     if (insertError) throw new Error(insertError.message)
