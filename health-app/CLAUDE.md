@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-**GetInShape** — a Next.js 14 (App Router) calorie and weight-tracking PWA targeting the Indian market. Stack: TypeScript, Tailwind CSS, Supabase (auth + Postgres), Stripe (web subscriptions), Google Play Billing (Android TWA), Zustand (client state), TanStack Query (server state), Recharts.
+**GetInShape** — a Next.js 14 (App Router) calorie and weight-tracking PWA targeting the Indian market. Stack: TypeScript, Tailwind CSS, Supabase (auth + Postgres), Razorpay (web subscriptions — replaced Stripe, which remains legacy-only), Google Play Billing (Android TWA), Zustand (client state), TanStack Query (server state), Recharts.
 
 ## Hard constraints (never violate)
 
@@ -24,7 +24,8 @@ npm test           # vitest run — unit tests in tests/ (streak, date windows, 
 
 Tests cover the pure logic in `lib/` (routes stay thin so the logic is testable). Run them plus `npm run check:tokens` before committing.
 
-### Local webhook forwarding (Stripe)
+### Local webhook testing
+Razorpay has no CLI forwarder like `stripe listen` — to exercise `/api/razorpay/webhook` locally, expose the dev server through a tunnel (e.g. `ngrok http 3000`) and point a Dashboard webhook (with `RAZORPAY_WEBHOOK_SECRET`) at it. For the legacy Stripe webhook (pre-Razorpay subscribers only):
 ```bash
 stripe listen --forward-to localhost:3000/api/stripe/webhook
 ```
@@ -34,8 +35,9 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 Copy `.env.local.example` → `.env.local`. Required keys:
 - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` — used only in trusted server routes (webhook, admin)
-- `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
-- `STRIPE_MONTHLY_PRICE_ID` / `STRIPE_ANNUAL_PRICE_ID`
+- `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` / `RAZORPAY_WEBHOOK_SECRET`
+- `RAZORPAY_MONTHLY_PLAN_ID` / `RAZORPAY_ANNUAL_PLAN_ID` (Dashboard → Subscriptions → Plans)
+- `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` — legacy only, keeps pre-Razorpay subscribers' webhook + portal working
 - `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (base64 JSON) / `ANDROID_PACKAGE_NAME` / `PLAY_RTDN_SECRET`
 - `NEXT_PUBLIC_PLAY_PRODUCT_MONTHLY` / `NEXT_PUBLIC_PLAY_PRODUCT_ANNUAL`
 
@@ -55,7 +57,7 @@ All routes except `/`, `/auth/*`, `/api/*`, and `/_next/*` require authenticatio
 
 - **`lib/supabase/server.ts`** — two factories:
   - `createServerClient()` — cookie-bound client for Server Components and Route Handlers acting as the current user.
-  - `createAdminClient()` — service-role client; only use in trusted server-only routes (Stripe webhook, Play RTDN, admin).
+  - `createAdminClient()` — service-role client; only use in trusted server-only routes (Razorpay webhook/verify/cancel, Stripe webhook, Play RTDN, admin).
 - **`lib/supabase/client.ts`** — `getBrowserSupabaseClient()` for Client Components.
 - **Never** import the server client in a Client Component or the browser client in a Server Component/Route Handler.
 
@@ -90,39 +92,53 @@ Example: `app/dashboard/page.tsx` → `components/dashboard/DashboardClient.tsx`
 
 Results are deduplicated by name and returned with a `source` label (`ifct` / `off_india` / `off_world`). USDA is permanently excluded.
 
-### Stripe integration (web/PWA)
+### Razorpay integration (web/PWA — replaced Stripe)
 
-- `app/api/stripe/create-checkout/route.ts` — creates a Checkout Session; passes `user_id` and `plan` in `metadata`.
-- `app/api/stripe/portal/route.ts` — creates a Billing Portal session.
-- `app/api/stripe/webhook/route.ts` — uses `createAdminClient()`; handles `checkout.session.completed`, `customer.subscription.updated/deleted`, and `invoice.payment_failed` to upsert the `subscriptions` table.
+Razorpay is the web checkout path for all **new** subscriptions (Stripe barely supports India-domestic INR recurring billing under RBI mandate rules — see migration `022_razorpay_billing.sql`). Checkout is Razorpay's embedded widget (`checkout.razorpay.com/v1/checkout.js`, loaded via `next/script` on `/upgrade`), not a hosted page.
 
-### Google Play Billing (Android TWA — dual-provider with Stripe)
+- `lib/razorpay/client.ts` — lazily constructs the Razorpay server SDK client from `RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET`.
+- `lib/razorpay/plans.ts` — maps `monthly`/`annual` to `RAZORPAY_*_PLAN_ID` env vars; `total_count` approximates "forever" with a 10-year horizon (Razorpay requires a bounded cycle count).
+- `app/api/razorpay/create-subscription/route.ts` — creates a Razorpay Subscription (`user_id` and `plan` in `notes`) and returns `subscription_id` + `key_id` for the client widget.
+- `app/api/razorpay/verify/route.ts` — called by the client right after the widget completes; validates the payment signature server-side, then optimistically upserts the entitlement (`provider: 'razorpay'`) so the user doesn't wait on webhook latency.
+- `app/api/razorpay/webhook/route.ts` — the authoritative, ongoing source of truth; validates `x-razorpay-signature` against `RAZORPAY_WEBHOOK_SECRET` and handles `subscription.activated`/`charged` (→ `active`), `subscription.halted` (→ `past_due`), `subscription.cancelled`/`completed` (→ `canceled`). Returns 500 on DB failure so Razorpay retries (unlike the Play RTDN handler, which always 200s).
+- `app/api/razorpay/cancel/route.ts` — Razorpay has no hosted self-serve portal; this is the DIY replacement, called from Settings' "Manage Subscription". Cancels at cycle end (`cancel_at_period_end`, migration `023_billing_hardening.sql`), not immediately.
 
-The Android TWA (`com.getinshape.app`) must sell Pro through Google Play Billing (Play policy forbids Stripe for in-app digital goods). Both providers write to the **same `subscriptions` table** using the same `status` vocabulary (`active`/`trialing`/`past_due`/`canceled`), so every Pro gate is provider-agnostic.
+### Stripe (legacy — pre-Razorpay web subscribers only)
 
-- `lib/play/billing.ts` — client-side. Feature-detects the Digital Goods API (`getDigitalGoodsService('https://play.google.com/billing')`); returns `null` off-Play so callers fall back to Stripe. `purchasePlan()` runs the `PaymentRequest` flow and POSTs the token to `/api/play/verify`.
+Existing Stripe subscribers were **not** migrated; they keep their subscription until they cancel or it lapses. Only the routes needed to service them remain — there is no Stripe checkout route anymore, so no new Stripe subscriptions can be created.
+
+- `app/api/stripe/webhook/route.ts` — handles `checkout.session.completed`, `customer.subscription.updated/deleted`, and `invoice.payment_failed`.
+- `app/api/stripe/portal/route.ts` — Billing Portal session for legacy subscribers' self-serve management.
+
+### Google Play Billing (Android TWA — dual-provider with Razorpay)
+
+The Android TWA (`com.getinshape.app`) must sell Pro through Google Play Billing (Play policy forbids third-party checkout for in-app digital goods). All providers (Razorpay, Google Play, legacy Stripe) write to the **same `subscriptions` table** using the same `status` vocabulary (`active`/`trialing`/`past_due`/`canceled`), so every Pro gate is provider-agnostic.
+
+- `lib/play/billing.ts` — client-side. Feature-detects the Digital Goods API (`getDigitalGoodsService('https://play.google.com/billing')`); returns `null` off-Play so callers fall back to Razorpay. `purchasePlan()` runs the `PaymentRequest` flow and POSTs the token to `/api/play/verify`.
 - `lib/play/google-auth.ts` — mints a service-account access token via `google-auth-library` (JWT), cached until ~1 min before expiry.
 - `lib/play/verify.ts` — calls `androidpublisher/v3/.../subscriptionsv2` to verify + acknowledge a purchase token; maps Play states to our status vocab.
 - `lib/play/products.ts` — maps plan names to Play product IDs from env vars.
 - `app/api/play/verify/route.ts` — verifies a purchase token and upserts the entitlement (`provider: 'google_play'`).
 - `app/api/play/rtdn/route.ts` — Pub/Sub push endpoint for Real-time Developer Notifications (the Play analogue of the Stripe webhook). Secret-guarded via `?secret=PLAY_RTDN_SECRET`. Always returns 200 to prevent retry storms.
-- `app/upgrade/page.tsx` branches Play vs Stripe at runtime.
-- `components/settings/SettingsClient.tsx` sends Play users to the Play subscriptions page instead of the Stripe portal.
+- `app/upgrade/page.tsx` branches Play vs Razorpay at runtime (Digital Goods API detection).
+- `components/settings/SettingsClient.tsx` branches "Manage Subscription" by `subscription.provider`: Google Play → the Play subscriptions page, Razorpay → `/api/razorpay/cancel` (with confirm dialog), legacy Stripe → the Stripe Billing Portal.
 
 ### Database tables (Supabase Postgres)
 
 `profiles`, `food_logs`, `foods`, `weight_logs`, `subscriptions`, `water_logs`, `exercise_logs`, `sleep_logs`, `fasting_logs`, `measurements`, `saved_meals`.
 
-Migrations are numbered `001` – `012` in `supabase/migrations/`. Apply **all** in order before running locally. Key ones:
+Migrations are numbered `001` – `023` in `supabase/migrations/`. Apply **all** in order before running locally. Key ones:
 - `001_initial.sql` — core schema
 - `007_seed_indian_foods.sql` / `009_seed_indian_foods_v2.sql` / `010_seed_missing_foods.sql` — IFCT food data
 - `012_play_billing.sql` — adds `provider`, `play_purchase_token`, `play_product_id` to `subscriptions`
+- `022_razorpay_billing.sql` — adds `razorpay_customer_id`, `razorpay_subscription_id`; extends the provider check to `'razorpay'`
+- `023_billing_hardening.sql` — unique index on `play_purchase_token` (one token, one account) + `cancel_at_period_end` flag
 
 ### Types
 
 All shared TypeScript types live in `types/index.ts`: `Profile`, `Food`, `FoodLog`, `WeightLog`, `DailyTotals`, `Subscription`.
 
-The `Subscription` type includes `provider: 'stripe' | 'google_play'` — never assume Stripe-only.
+The `Subscription` type includes `provider: 'stripe' | 'google_play' | 'razorpay'` — never assume a single provider.
 
 ### UI components
 
