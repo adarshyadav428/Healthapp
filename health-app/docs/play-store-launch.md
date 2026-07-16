@@ -80,10 +80,10 @@ bubblewrap build        # produces app-release-bundle.aab (+ .apk for local inst
 >
 > Your data stays yours — no ads, no selling data. Delete your account anytime.
 
-**Assets checklist (create outside the repo, e.g. Canva/Figma):**
-- [ ] App icon 512×512 PNG (32-bit, ≤1 MB) — the current `icon-512x512.png` is flat/simple; consider a refresh
-- [ ] Feature graphic 1024×500 (no essential content near edges)
-- [ ] 4–8 phone screenshots (9:16, ≥1080px) — suggested: dashboard ring, AI photo scan result, food search (Indian foods visible), trends/weight chart, streak, upgrade screen
+**Assets checklist:**
+- [x] App icon 512×512 PNG — `store-assets/play-icon-512.png` (white ember flame on the CTA gradient; SVG source at `store-assets/icon-source.svg`)
+- [x] Feature graphic 1024×500 — `store-assets/feature-graphic-1024x500.png`
+- [ ] 4–8 phone screenshots (9:16, ≥1080px) — take from a real device/emulator once the internal-testing build is installed: dashboard ring, AI photo scan result, food search (Indian foods visible), trends/weight chart, streak, upgrade screen
 - [ ] Optional: 7"/10" tablet screenshots (skippable for v1)
 
 ## 5. Declarations (App content section)
@@ -135,7 +135,7 @@ bubblewrap build        # produces app-release-bundle.aab (+ .apk for local inst
    - [ ] Rating card appears on the dashboard with a 3+ day streak
    - [ ] Push notifications, camera scan, and the paywall interstitial after the 3rd log
 3. 🖐 Complete all "App content" items until the dashboard shows no errors → **Production** release. First-app review can take up to ~7 days.
-4. Post-launch: link the listing from the web app footer, and consider a padded maskable icon (current 512px art may crop inside circular launcher masks).
+4. Post-launch: link the listing from the web app footer. (Padded maskable icons already ship at `/icons/icon-maskable-{192,512}.png`.)
 
 ---
 

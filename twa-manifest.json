@@ -14,7 +14,7 @@
   "enableNotifications": true,
   "startUrl": "/dashboard",
   "iconUrl": "https://getinshape.co.in/icons/icon-512x512.png",
-  "maskableIconUrl": "https://getinshape.co.in/icons/icon-512x512.png",
+  "maskableIconUrl": "https://getinshape.co.in/icons/icon-maskable-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./android.keystore",

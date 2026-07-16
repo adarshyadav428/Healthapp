@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!--
+    GetInShape app icon source. White lucide "flame" on the Ember CTA gradient
+    (matches - -cta-grad in app/globals.css). PNGs in public/icons/ were
+    rendered from this design (glyph at 60% for the "any" icons, 42% for the
+    maskable variants so nothing crops inside launcher masks).
+  -->
+  <defs>
+    <linearGradient id="ember" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#FF8A50"/>
+      <stop offset="1" stop-color="#EB5A20"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#ember)"/>
+  <g transform="translate(102.4 102.4) scale(12.8)">
+    <path
+      d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"
+      fill="#fff" stroke="#fff" stroke-width="1.6"
+      stroke-linejoin="round" stroke-linecap="round"/>
+  </g>
+</svg>
