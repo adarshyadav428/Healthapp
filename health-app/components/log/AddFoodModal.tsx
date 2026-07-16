@@ -8,6 +8,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { getUtcDayRange } from '../../lib/dateUtils'
 import { ArrowLeft, ChevronDown, Check, Drumstick, Droplet, Wheat, Sprout, Loader2 } from 'lucide-react'
 import { Button } from '../ui/button'
+import { reportLogMilestone } from '../../store/milestoneStore'
+import type { LogMilestone } from '../../lib/logMilestones'
 
 const MEAL_OPTIONS = [
   { value: 'breakfast', label: 'Breakfast', emoji: '🥣' },
@@ -627,7 +629,7 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
         }),
       })
 
-      const body = await res.json().catch(() => ({} as { error?: string; row?: FoodLog }))
+      const body = (await res.json().catch(() => ({}))) as { error?: string; row?: FoodLog; milestone?: LogMilestone }
 
       if (!res.ok) throw new Error(body?.error || 'Failed to log food')
 
@@ -640,6 +642,7 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
       }
 
       toast({ title: '✅ Food logged!', description: `${nutrition.kcal} kcal added to ${meal}`, duration: 2500 })
+      reportLogMilestone(body.milestone)
       onClose()
     } catch (err) {
       toast({ title: 'Failed to log food', description: (err as Error).message, variant: 'error', duration: 4000 })

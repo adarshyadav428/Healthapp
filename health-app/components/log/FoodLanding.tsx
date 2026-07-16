@@ -9,6 +9,8 @@ import { Search, ScanLine, Camera, Zap, Plus, Copy, ChevronLeft, Loader2 } from 
 import type { Food } from '../../types/index'
 import { toast } from '../ui/use-toast'
 import { foodEmoji, tintFor } from '../../lib/foodVisual'
+import { reportLogMilestone } from '../../store/milestoneStore'
+import type { LogMilestone } from '../../lib/logMilestones'
 
 // Modals + the full search are only opened on demand — defer their JS.
 const FoodSearch    = dynamic(() => import('./FoodSearch').then(m => m.FoodSearch),        { ssr: false })
@@ -89,9 +91,11 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ food_id: item.food.id, meal: item.meal || defaultMeal(), servings: 1, grams: item.grams }),
       })
-      if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error((j as { error?: string }).error ?? 'Log failed') }
+      const j = (await res.json().catch(() => ({}))) as { error?: string; milestone?: LogMilestone }
+      if (!res.ok) throw new Error(j.error ?? 'Log failed')
       queryClient.invalidateQueries({ queryKey: ['food-logs'] })
       toast({ title: `Logged ${item.food.name}`, duration: 2000 })
+      reportLogMilestone(j.milestone)
     } catch (e) {
       toast({ title: 'Could not log', description: (e as Error).message, variant: 'error' })
     } finally {
@@ -104,10 +108,11 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
     setCopying(true)
     try {
       const res = await fetch('/api/logs/copy-yesterday', { method: 'POST' })
-      const j = (await res.json()) as { copied?: number; error?: string }
+      const j = (await res.json()) as { copied?: number; error?: string; milestone?: LogMilestone }
       if (!res.ok) throw new Error(j.error ?? 'Failed to copy')
       queryClient.invalidateQueries({ queryKey: ['food-logs'] })
       toast({ title: `Copied ${j.copied} meal${(j.copied ?? 0) > 1 ? 's' : ''} from yesterday`, duration: 3000 })
+      reportLogMilestone(j.milestone)
     } catch (e) {
       toast({ title: 'Could not copy', description: (e as Error).message, variant: 'error' })
     } finally {

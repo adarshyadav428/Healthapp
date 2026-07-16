@@ -9,6 +9,8 @@ import { toast } from '../ui/use-toast'
 import { Clock, Copy, Star, Zap, PlusCircle, Search, X, BookOpen, Trash2, ScanLine, MessageSquarePlus, RotateCcw, Plus, Loader2 } from 'lucide-react'
 import { useUser } from '../../hooks/useUser'
 import { useFoodFavourites } from '../../hooks/useFoodFavourites'
+import { reportLogMilestone } from '../../store/milestoneStore'
+import type { LogMilestone } from '../../lib/logMilestones'
 
 // Modals are only opened on user action — defer their JS until then.
 const AddFoodModal    = dynamic(() => import('./AddFoodModal').then(m => m.AddFoodModal),       { ssr: false })
@@ -134,7 +136,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
     setCopying(true)
     try {
       const res = await fetch('/api/logs/copy-yesterday', { method: 'POST' })
-      const json = (await res.json()) as { ok?: boolean; copied?: number; error?: string }
+      const json = (await res.json()) as { ok?: boolean; copied?: number; error?: string; milestone?: LogMilestone }
       if (!res.ok) throw new Error(json.error ?? 'Failed to copy')
       toast({
         title: `Copied ${json.copied} meal${(json.copied ?? 0) > 1 ? 's' : ''} from yesterday`,
@@ -142,6 +144,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
         duration: 3000,
       })
       queryClient.invalidateQueries({ queryKey: ['food-logs'] })
+      reportLogMilestone(json.milestone)
     } catch (err) {
       toast({ title: 'Could not copy', description: (err as Error).message, variant: 'error' })
     } finally {
@@ -160,10 +163,11 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ food_id: food.id, meal: defaultMeal, servings: 1, grams }),
       })
-      const body = await res.json().catch(() => ({} as { error?: string }))
+      const body = (await res.json().catch(() => ({}))) as { error?: string; milestone?: LogMilestone }
       if (!res.ok) throw new Error(body?.error || 'Quick add failed')
       toast({ title: `Quick added ${food.name}`, description: `Logged to ${defaultMeal}. Tap the item to adjust servings.`, duration: 2500 })
       queryClient.invalidateQueries({ queryKey: ['food-logs'] })
+      reportLogMilestone(body.milestone)
     } catch (err) {
       toast({ title: 'Quick add failed', description: (err as Error).message, variant: 'error' })
     } finally {
@@ -181,10 +185,11 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ food_id: item.food.id, meal: item.meal, servings: 1, grams: item.grams }),
       })
-      const body = await res.json().catch(() => ({} as { error?: string }))
+      const body = (await res.json().catch(() => ({}))) as { error?: string; milestone?: LogMilestone }
       if (!res.ok) throw new Error(body?.error || 'Re-log failed')
       toast({ title: `Re-logged ${item.food.name}`, description: `${Math.round(item.grams)}g → ${item.meal}.`, duration: 2500 })
       queryClient.invalidateQueries({ queryKey: ['food-logs'] })
+      reportLogMilestone(body.milestone)
     } catch (err) {
       toast({ title: 'Re-log failed', description: (err as Error).message, variant: 'error' })
     } finally {

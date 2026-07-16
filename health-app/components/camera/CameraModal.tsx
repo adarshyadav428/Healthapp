@@ -11,6 +11,8 @@ import { toast } from '../ui/use-toast'
 import { Button } from '../ui/button'
 import { captureEvent } from '../../lib/posthog/client'
 import { useQueryClient } from '@tanstack/react-query'
+import { reportLogMilestone } from '../../store/milestoneStore'
+import type { LogMilestone } from '../../lib/logMilestones'
 
 type Mode = 'barcode' | 'photo' | 'manual'
 type PhotoResult = { food: Food; estimated_grams: number; unit: string }
@@ -263,8 +265,10 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ food_id: selected.food.id, meal, servings: 1, grams }),
       })
-      if (!res.ok) { const j = await res.json(); throw new Error(j.error ?? 'Log failed') }
+      const j = (await res.json().catch(() => ({}))) as { error?: string; milestone?: LogMilestone }
+      if (!res.ok) throw new Error(j.error ?? 'Log failed')
       queryClient.invalidateQueries({ queryKey: ['food-logs'] })
+      reportLogMilestone(j.milestone)
 
       // Correction signal: did the user change what the AI suggested before confirming?
       const amountCorrected = grams !== selected.estimated_grams

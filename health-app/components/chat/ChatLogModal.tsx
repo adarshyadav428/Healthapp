@@ -8,6 +8,7 @@ import { toast } from '../ui/use-toast'
 import { Sheet, SheetContent } from '../ui/sheet'
 import { Button } from '../ui/button'
 import { captureEvent } from '../../lib/posthog/client'
+import { reportLogMilestone } from '../../store/milestoneStore'
 
 type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
@@ -130,6 +131,7 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
       if (!res.ok) throw new Error(data.error)
       queryClient.invalidateQueries({ queryKey: ['logs'] })
       queryClient.invalidateQueries({ queryKey: ['dailyTotals'] })
+      reportLogMilestone(data.milestone)
 
       // Correction signal per item: did the user adjust the AI's suggested portion?
       for (const item of items) {

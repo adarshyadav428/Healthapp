@@ -7,6 +7,8 @@ import { Sheet, SheetContent, SheetTitle } from '../ui/sheet'
 import { Button } from '../ui/button'
 import { X, Zap, ChevronDown } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { reportLogMilestone } from '../../store/milestoneStore'
+import type { LogMilestone } from '../../lib/logMilestones'
 
 const MEALS = [
   { value: 'breakfast', label: '🥣 Breakfast' },
@@ -54,10 +56,11 @@ export function QuickAddModal({ onClose }: { onClose: () => void }) {
           meal,
         }),
       })
-      const body = await res.json().catch(() => ({} as { error?: string }))
+      const body = (await res.json().catch(() => ({}))) as { error?: string; milestone?: LogMilestone }
       if (!res.ok) throw new Error(body?.error ?? 'Failed')
       toast({ title: `✓ ${kcalNum} kcal added`, description: `Logged to ${meal}`, duration: 2000 })
       queryClient.invalidateQueries({ queryKey: ['food-logs'] })
+      reportLogMilestone(body.milestone)
       onClose()
     } catch (err) {
       toast({ title: 'Failed', description: (err as Error).message, variant: 'error' })

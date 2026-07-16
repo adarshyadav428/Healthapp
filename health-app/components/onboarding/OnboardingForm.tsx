@@ -12,6 +12,7 @@ import { calculateTDEE } from '../../lib/tdee'
 import { captureEvent } from '../../lib/posthog/client'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
+import { ConfettiBurst } from '../ui/ConfettiBurst'
 import type { Food } from '../../types/index'
 
 const CameraModal  = dynamic(() => import('../camera/CameraModal').then(m => m.CameraModal), { ssr: false })
@@ -41,6 +42,7 @@ export function OnboardingForm() {
   const queryClient = useQueryClient()
   const [step, setStep] = useState(1)
   const [isNavigating, setIsNavigating] = useState(false)
+  const [celebrating, setCelebrating] = useState(false)
   const [heightFt, setHeightFt] = useState(5)
   const [heightIn, setHeightIn] = useState(7)
   const [showCamera, setShowCamera] = useState(false)
@@ -104,8 +106,12 @@ export function OnboardingForm() {
       }
 
       queryClient.invalidateQueries({ queryKey: ['profile'] })
-      toast({ title: 'Profile saved!', description: 'Welcome to GetInShape 🎉' })
-      window.location.href = '/dashboard'
+      // Celebration moment instead of an abrupt redirect — the overlay below
+      // shows confetti + "You're all set" while the dashboard loads next.
+      setCelebrating(true)
+      setTimeout(() => {
+        window.location.href = '/dashboard'
+      }, 1600)
     } catch (err) {
       toast({ title: 'Onboarding failed', description: (err as Error).message, variant: 'error' })
     }
@@ -132,6 +138,19 @@ export function OnboardingForm() {
 
   return (
     <div>
+      {celebrating && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-canvas px-8" role="status">
+          <ConfettiBurst />
+          <div className="text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-soft text-3xl">
+              🎉
+            </div>
+            <h2 className="mt-5 font-display text-[26px] font-bold text-ink">You&apos;re all set!</h2>
+            <p className="mt-2 text-sm text-ink-2">Your daily calorie plan is ready.</p>
+          </div>
+        </div>
+      )}
+
       {/* Progress */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">

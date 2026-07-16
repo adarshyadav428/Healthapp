@@ -40,6 +40,7 @@ const REASON_COPY: Record<string, { title: string; description: string }> = {
   exports:            { title: 'Export your data',         description: 'Download your full log as CSV with Pro.' },
   camera_scan_limit:  { title: 'Out of photo scans for today', description: "You've used today's 5 free camera scans. Pro gives you unlimited." },
   chat_scan_limit:    { title: 'Out of chat logs for today',   description: "You've used today's 10 free chat logs. Pro gives you unlimited." },
+  free_logs:          { title: "You're building a real habit", description: 'Keep the momentum — Pro unlocks your full history, unlimited AI logging and custom foods.' },
 }
 
 const plans = [
