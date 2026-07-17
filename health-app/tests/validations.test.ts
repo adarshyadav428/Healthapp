@@ -10,13 +10,18 @@ import {
 } from '../lib/validations'
 
 describe('signUpSchema', () => {
-  it('rejects mismatched passwords', () => {
-    const r = signUpSchema.safeParse({ email: 'a@b.com', password: 'password1', confirmPassword: 'password2' })
-    expect(r.success).toBe(false)
+  it('accepts a valid email + password', () => {
+    const r = signUpSchema.safeParse({ email: 'a@b.com', password: 'password1' })
+    expect(r.success).toBe(true)
   })
 
   it('rejects passwords under 8 chars', () => {
-    const r = signUpSchema.safeParse({ email: 'a@b.com', password: 'short', confirmPassword: 'short' })
+    const r = signUpSchema.safeParse({ email: 'a@b.com', password: 'short' })
+    expect(r.success).toBe(false)
+  })
+
+  it('rejects an invalid email', () => {
+    const r = signUpSchema.safeParse({ email: 'not-an-email', password: 'password1' })
     expect(r.success).toBe(false)
   })
 })

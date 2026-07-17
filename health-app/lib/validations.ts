@@ -5,11 +5,9 @@ export const signInSchema = z.object({
   password: z.string().min(8),
 })
 
-export const signUpSchema = signInSchema.extend({
-  confirmPassword: z.string().min(8),
-}).superRefine((data, ctx) => {
-  if (data.password !== data.confirmPassword) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Passwords must match', path: ['confirmPassword'] })
-})
+// Sign-up asks only for email + password (no confirm field — a show/hide
+// toggle on the password input is friendlier and cuts a step off onboarding).
+export const signUpSchema = signInSchema
 
 export const onboardingSchema = z.object({
   display_name: z.string().min(1),

@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -21,6 +21,7 @@ const ChatLogModal = dynamic(() => import('../chat/ChatLogModal').then(m => m.Ch
 const AddFoodModal = dynamic(() => import('../log/AddFoodModal').then(m => m.AddFoodModal),   { ssr: false })
 
 const TOTAL_STEPS = 6
+const ONBOARDING_STORAGE_KEY = 'gis.onboarding.progress'
 
 const STEP_LABELS = ['Log a meal', 'About you', 'Body stats', 'Your weight', 'Your goal', 'Lifestyle']
 const STEP_EMOJIS = ['📸', '👤', '📏', '⚖️', '🎯', '🏃']
@@ -69,6 +70,20 @@ export function OnboardingForm() {
     },
   })
 
+  // Resume where an abandoner left off instead of restarting at step 1/6.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(ONBOARDING_STORAGE_KEY)
+      if (!raw) return
+      const saved = JSON.parse(raw) as { step?: number; values?: Partial<OnboardingData>; heightFt?: number; heightIn?: number }
+      if (saved.values) form.reset({ ...form.getValues(), ...saved.values })
+      if (typeof saved.heightFt === 'number') setHeightFt(saved.heightFt)
+      if (typeof saved.heightIn === 'number') setHeightIn(saved.heightIn)
+      if (saved.step && saved.step >= 1 && saved.step <= TOTAL_STEPS) setStep(saved.step)
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const nextStep = async () => {
     if (isNavigating) return
     const fieldsByStep: Record<number, (keyof OnboardingData)[]> = {
@@ -106,6 +121,7 @@ export function OnboardingForm() {
         throw new Error(body?.error || 'Failed to save onboarding data')
       }
 
+      try { localStorage.removeItem(ONBOARDING_STORAGE_KEY) } catch { /* ignore */ }
       queryClient.invalidateQueries({ queryKey: ['profile'] })
       // Celebration moment instead of an abrupt redirect — the overlay below
       // shows confetti + "You're all set" while the dashboard loads next.
@@ -122,6 +138,16 @@ export function OnboardingForm() {
 
   // Live TDEE preview for Step 5
   const watchedValues = form.watch()
+
+  // Persist progress (step + values) so a mid-wizard exit can resume.
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        ONBOARDING_STORAGE_KEY,
+        JSON.stringify({ step, values: watchedValues, heightFt, heightIn })
+      )
+    } catch { /* ignore */ }
+  }, [step, watchedValues, heightFt, heightIn])
   let tdeePreview: { daily_calorie_target: number; protein_g_target: number; carbs_g_target: number; fat_g_target: number } | null = null
   try {
     if (watchedValues.height_cm > 0 && watchedValues.current_weight_kg > 0 && watchedValues.age > 0) {

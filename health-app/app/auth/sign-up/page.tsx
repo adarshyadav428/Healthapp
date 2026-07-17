@@ -10,22 +10,28 @@ import { useState } from 'react'
 import { captureEvent, identifyUser } from '../../../lib/posthog/client'
 import { Input } from '../../../components/ui/input'
 import { Button } from '../../../components/ui/button'
-import { Mail, Flame } from 'lucide-react'
+import { Mail, Flame, Eye, EyeOff } from 'lucide-react'
 
 export default function SignUpPage() {
   const [emailSent, setEmailSent] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const form = useForm<SignUpData>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { email: '', password: '', confirmPassword: '' },
+    defaultValues: { email: '', password: '' },
   })
 
   const onSubmit = async (data: SignUpData) => {
     try {
       const supabase = getBrowserSupabaseClient()
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
       const { data: auth, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
+        // If email confirmation is on, the link lands on our callback which
+        // exchanges the code for a session and drops the user straight into
+        // onboarding — no manual re-login (kills the TTFV-killing auth loop).
+        options: { emailRedirectTo: `${appUrl}/auth/callback?next=/onboarding` },
       })
       if (error) throw new Error(error.message)
 
@@ -68,11 +74,8 @@ export default function SignUpPage() {
           </div>
           <h2 className="font-display text-2xl font-bold text-ink">Check your inbox</h2>
           <p className="mt-2 text-sm text-ink-2 max-w-xs mx-auto">
-            We sent you a confirmation link. Click it to activate your account, then sign in.
+            We sent you a confirmation link. Tap it and you&apos;ll be signed in automatically — no need to come back here.
           </p>
-          <Link href="/auth/sign-in">
-            <Button size="lg" className="mt-8 tap-scale">Go to sign in</Button>
-          </Link>
         </div>
       </div>
     )
@@ -113,31 +116,26 @@ export default function SignUpPage() {
             <label htmlFor="password" className="block text-xs font-bold uppercase tracking-wide text-ink-2 mb-1.5">
               Password
             </label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              {...form.register('password')}
-              placeholder="min. 8 characters"
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                {...form.register('password')}
+                placeholder="min. 8 characters"
+                className="pr-11"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink tap-scale"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
             {form.formState.errors.password && (
               <p className="mt-1.5 text-xs text-danger">{form.formState.errors.password.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="confirmPassword" className="block text-xs font-bold uppercase tracking-wide text-ink-2 mb-1.5">
-              Confirm password
-            </label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              {...form.register('confirmPassword')}
-              placeholder="••••••••"
-            />
-            {form.formState.errors.confirmPassword && (
-              <p className="mt-1.5 text-xs text-danger">{form.formState.errors.confirmPassword.message}</p>
             )}
           </div>
 
