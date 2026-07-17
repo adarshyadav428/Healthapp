@@ -16,14 +16,18 @@ import { reportWeightMilestone } from '../../store/milestoneStore'
 
 const QUICK_ADJUSTMENTS = [-1, -0.5, +0.5, +1]
 
-export function WeightLogModal({ onClose }: { onClose: () => void }) {
+export function WeightLogModal({ onClose, defaultWeightKg }: { onClose: () => void; defaultWeightKg?: number }) {
   const { user, profile } = useUser()
   const isImperial = profile?.unit_system === 'imperial'
   const unit = isImperial ? 'lbs' : 'kg'
-  const defaultWeight = profile?.current_weight_kg
+  // Prefer an explicitly passed latest weight (WeightClient always has it), then
+  // the profile weight; the 70 fallback only applies if truly nothing is known,
+  // so a store-hydration gap can't silently seed a phantom -15 kg entry (P1-9a).
+  const baseKg = defaultWeightKg ?? profile?.current_weight_kg
+  const defaultWeight = baseKg
     ? isImperial
-      ? Math.round(profile.current_weight_kg * 2.20462 * 10) / 10
-      : profile.current_weight_kg
+      ? Math.round(baseKg * 2.20462 * 10) / 10
+      : baseKg
     : 70
 
   const form = useForm<WeightLogData>({

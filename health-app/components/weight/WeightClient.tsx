@@ -121,7 +121,7 @@ export function WeightClient({ logs, profile }: { logs: WeightLog[]; profile: Pr
         </div>
       )}
 
-      {open ? <WeightLogModal onClose={() => setOpen(false)} /> : null}
+      {open ? <WeightLogModal onClose={() => setOpen(false)} defaultWeightKg={latestWeight} /> : null}
     </div>
   )
 }

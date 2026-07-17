@@ -52,6 +52,13 @@ export async function POST(req: Request) {
 
     if (error) throw new Error(error.message)
 
+    // Record the onboarding weight as the immutable start baseline (migration
+    // 025). Best-effort + separate so a not-yet-applied column can't break
+    // onboarding — it simply no-ops until 025 is live.
+    try {
+      await supabase.from('profiles').update({ start_weight_kg: data.current_weight_kg }).eq('id', user.id)
+    } catch { /* column not present yet — ignore */ }
+
     captureServerEvent(user.id, 'onboarding_completed', { goal: data.goal })
 
     return NextResponse.json({ ok: true })

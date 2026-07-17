@@ -5,7 +5,10 @@ import type { WeightLog, Profile } from '../../types/index'
 export function WeightStats({ logs, profile }: { logs: WeightLog[] | null | undefined; profile: Profile }) {
   const sorted = (logs ?? []).slice().sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime())
   const current = sorted[sorted.length - 1]?.weight_kg ?? profile.current_weight_kg
-  const starting = sorted[0]?.weight_kg ?? profile.current_weight_kg
+  // Prefer the immutable onboarding baseline so logging a lower weight doesn't
+  // silently reset "start" to that new value (P1-9b). Falls back to the first
+  // logged weigh-in until migration 025 backfills start_weight_kg.
+  const starting = profile.start_weight_kg ?? sorted[0]?.weight_kg ?? profile.current_weight_kg
   const target = profile.target_weight_kg
   const delta = Number((current - starting).toFixed(1))
   const toTarget = Number((current - target).toFixed(1))

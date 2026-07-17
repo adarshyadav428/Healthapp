@@ -12,6 +12,7 @@ Work through the sections **in order**. Steps marked 🖐 are manual (dashboard/
 - [ ] 🖐 **Apply the one pending migration** in Supabase Dashboard → SQL editor. Live-DB state was re-probed 2026-07-17: `012`/`022`/`023` (all billing columns incl. `cancel_at_period_end`) are **already applied** — the earlier "apply 012/022/023" list here was wrong. Only this remains:
   - `015_chat_logs.sql` (**until applied, the 10/day AI-chat limit is silently off** — free unlimited Gemini on your bill)
   - `024_weekly_recaps.sql` (added by the weekly-recap feature; until applied the Pro "Your week" card stays empty and the Sunday recap push doesn't store — no crash)
+  - `025_start_weight.sql` (immutable start-weight baseline + backfill; until applied "since start" uses the first weigh-in — no crash)
   - Do **not** apply `011_weekly_calorie_view.sql` — the view is referenced nowhere in code (deliberately skipped).
   - Full apply-and-verify SQL: `docs/launch-plan-2026-07-17.md` §4.
 - [ ] 🖐 **Flip `NEXT_PUBLIC_APP_URL`** in Vercel env to `https://www.getinshape.co.in` and redeploy — sitemap/robots/canonicals must agree with the TWA host.

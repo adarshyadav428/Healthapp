@@ -4,6 +4,8 @@ export type Profile = {
   display_name: string | null
   height_cm: number
   current_weight_kg: number
+  /** Immutable onboarding baseline (migration 025). Optional until applied. */
+  start_weight_kg?: number | null
   target_weight_kg: number
   age: number
   sex: 'male' | 'female' | 'other'
