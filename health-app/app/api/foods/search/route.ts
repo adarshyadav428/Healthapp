@@ -4,6 +4,7 @@ import { searchOpenFoodFactsIndia, searchOpenFoodFacts } from '../../../../lib/o
 import { expandSearchQuery } from '../../../../lib/food-synonyms'
 import { buildNameIlikeOrFilter } from '../../../../lib/searchFilter'
 import { isPlausibleFood } from '../../../../lib/foodMatch'
+import { dedupeFoodsByNameBrand } from '../../../../lib/mergeSearchResults'
 import { INDIAN_FOODS } from '../../../../lib/indian-foods-data'
 import type { Food } from '../../../../types/index'
 
@@ -158,11 +159,6 @@ export async function GET(request: Request) {
     const user = await getApiUser(supabase)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const cached = getCached(normalizedQuery)
-    if (cached) return NextResponse.json(cached)
-
-    const shouldFetchExternal = query.length >= 3
-
     // Expand query with Indian food synonyms (e.g. "arhar" → also searches "toor dal")
     const synonymQueries = expandSearchQuery(query)
 
@@ -172,54 +168,83 @@ export async function GET(request: Request) {
     const orFilter = buildNameIlikeOrFilter(synonymQueries, 6)
     if (!orFilter) return NextResponse.json([])
 
-    // Search order: local IFCT DB (synonym-expanded, most accurate for Indian foods)
-    // → OFF India (Indian packaged/branded products: Amul, Britannia, MTR, etc.)
-    // → OFF World (international products)
-    // USDA intentionally removed — US-centric data is inaccurate for Indian foods
-    const [localResult, offIndiaRaw, offWorldRaw] = await Promise.all([
-      // Exclude `estimate` rows — those are per-user AI guesses written during
-      // chat/camera logging into the shared table; they must not surface in search.
-      supabase.from('foods').select(FOOD_SELECT).or(orFilter).neq('source', 'estimate').limit(20),
-      shouldFetchExternal ? searchOpenFoodFactsIndia(synonymQueries[0]) : Promise.resolve([]),
-      shouldFetchExternal ? searchOpenFoodFacts(synonymQueries[0]) : Promise.resolve([]),
-    ])
+    // The current user's own AI-estimate foods they've logged before. Estimate
+    // rows are hidden from the shared results below (they're per-user AI guesses
+    // living in a shared table), but a food *you* scanned or chat-logged should be
+    // findable again — scoped to you via food_logs, never leaked to other users.
+    // Fetched fresh every request and deliberately NOT cached, since the query
+    // cache below is shared across all users.
+    const { data: myEstimateLogs } = await supabase
+      .from('food_logs')
+      .select(`food_id, food:foods!inner(${FOOD_SELECT})`)
+      .eq('user_id', user.id)
+      .eq('foods.source', 'estimate')
+      .or(orFilter, { referencedTable: 'foods' })
+      .order('logged_at', { ascending: false })
+      .limit(50)
 
-    if (localResult.error) throw new Error(localResult.error.message)
-    const rawLocal = (localResult.data ?? []) as Food[]
-
-    // Sort local results by relevance
-    const localResults = rawLocal.slice().sort((a, b) => {
-      const diff = relevanceScore(b.name, query) - relevanceScore(a.name, query)
-      return diff !== 0 ? diff : a.name.localeCompare(b.name)
-    })
-
-    // Deduplicate externals against local results
-    const localSourceIdSet = new Set(localResults.map((f) => f.source_id))
-
-    // OFF India first, then world — map to ExternalFood shape and deduplicate
-    const seenExternalIds = new Set<string>()
-    const externalRaw: ExternalFood[] = []
-    for (const f of [...offIndiaRaw.map(offToExternal), ...offWorldRaw.map(offToExternal)]) {
-      if (!localSourceIdSet.has(f.source_id) && !seenExternalIds.has(f.source_id)) {
-        seenExternalIds.add(f.source_id)
-        externalRaw.push(f)
+    const seenEstimateIds = new Set<string>()
+    const myEstimateFoods: Food[] = []
+    for (const row of (myEstimateLogs ?? []) as unknown as { food_id: string; food: Food | null }[]) {
+      if (row.food && !seenEstimateIds.has(row.food_id)) {
+        seenEstimateIds.add(row.food_id)
+        myEstimateFoods.push(row.food)
       }
     }
 
-    const externalWithIds = await persistExternalFoods(externalRaw)
+    // Global (user-independent) results — cached and shared across all users.
+    let globalResults = getCached(normalizedQuery)
+    if (!globalResults) {
+      const shouldFetchExternal = query.length >= 3
 
-    // Merge: local IFCT → OFF India → OFF World. Drop physically-impossible
-    // rows (bad OFF data: 0-kcal solids, >100 g macros/100 g) before dedupe.
-    const combined = [...localResults, ...externalWithIds].filter(isPlausibleFood)
-    const deduped = new Map<string, Food>()
-    for (const food of combined) {
-      const key = `${food.name.toLowerCase().replace(/\s+/g, ' ')}-${(food.brand ?? '').toLowerCase()}`
-      if (!deduped.has(key)) deduped.set(key, food)
+      // Search order: local IFCT DB (synonym-expanded, most accurate for Indian foods)
+      // → OFF India (Indian packaged/branded products: Amul, Britannia, MTR, etc.)
+      // → OFF World (international products)
+      // USDA intentionally removed — US-centric data is inaccurate for Indian foods
+      const [localResult, offIndiaRaw, offWorldRaw] = await Promise.all([
+        // Exclude `estimate` rows — those are per-user AI guesses written during
+        // chat/camera logging into the shared table; they must not surface in the
+        // shared results (the user's own ones are merged back in per-request below).
+        supabase.from('foods').select(FOOD_SELECT).or(orFilter).neq('source', 'estimate').limit(20),
+        shouldFetchExternal ? searchOpenFoodFactsIndia(synonymQueries[0]) : Promise.resolve([]),
+        shouldFetchExternal ? searchOpenFoodFacts(synonymQueries[0]) : Promise.resolve([]),
+      ])
+
+      if (localResult.error) throw new Error(localResult.error.message)
+      const rawLocal = (localResult.data ?? []) as Food[]
+
+      // Sort local results by relevance
+      const localResults = rawLocal.slice().sort((a, b) => {
+        const diff = relevanceScore(b.name, query) - relevanceScore(a.name, query)
+        return diff !== 0 ? diff : a.name.localeCompare(b.name)
+      })
+
+      // Deduplicate externals against local results
+      const localSourceIdSet = new Set(localResults.map((f) => f.source_id))
+
+      // OFF India first, then world — map to ExternalFood shape and deduplicate
+      const seenExternalIds = new Set<string>()
+      const externalRaw: ExternalFood[] = []
+      for (const f of [...offIndiaRaw.map(offToExternal), ...offWorldRaw.map(offToExternal)]) {
+        if (!localSourceIdSet.has(f.source_id) && !seenExternalIds.has(f.source_id)) {
+          seenExternalIds.add(f.source_id)
+          externalRaw.push(f)
+        }
+      }
+
+      const externalWithIds = await persistExternalFoods(externalRaw)
+
+      // Merge: local IFCT → OFF India → OFF World. Drop physically-impossible
+      // rows (bad OFF data: 0-kcal solids, >100 g macros/100 g) before dedupe.
+      globalResults = dedupeFoodsByNameBrand([...localResults, ...externalWithIds].filter(isPlausibleFood))
+      setCached(normalizedQuery, globalResults)
     }
 
-    const result = Array.from(deduped.values()).slice(0, 20)
-    setCached(normalizedQuery, result)
-    return NextResponse.json(result)
+    // Append the user's own estimate foods after the shared results. Global rows
+    // win a name+brand collision (an accurate IFCT/OFF row beats a rough
+    // estimate), so this only surfaces scans/chat foods the shared DB lacks.
+    const finalResult = dedupeFoodsByNameBrand([...globalResults, ...myEstimateFoods].filter(isPlausibleFood))
+    return NextResponse.json(finalResult)
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }
