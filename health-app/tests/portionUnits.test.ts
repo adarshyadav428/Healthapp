@@ -27,12 +27,11 @@ function makeFood(over: Partial<Food> = {}): Food {
 }
 
 describe('buildUnits', () => {
-  it('always offers grams first and ounces last', () => {
+  it('offers grams first and never offers ounces (India-first app)', () => {
     const units = buildUnits(makeFood({ name: 'Unknown mystery dish' }))
     expect(units[0].key).toBe('g')
-    expect(units[units.length - 1].key).toBe('oz')
     expect(units[0].toGrams(180)).toBe(180)
-    expect(units[units.length - 1].toGrams(1)).toBeCloseTo(28.3495)
+    expect(units.some((u) => u.key === 'oz')).toBe(false)
   })
 
   it('smart-matches cooked rice to katori/plate portions', () => {

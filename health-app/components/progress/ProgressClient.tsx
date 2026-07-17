@@ -227,22 +227,27 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
         </div>
       </div>
 
-      {/* ── Avg deficit/surplus ── */}
+      {/* ── Avg deficit/surplus → links to the (previously orphaned) tracker ── */}
       {avgDeficit !== null && (
-        <div className="mt-3 flex items-center justify-between rounded-[24px] bg-surface px-5 py-[18px]" style={AIR}>
-          <div>
-            <p className="text-[12px] text-ink-3">Avg daily {avgDeficit >= 0 ? 'deficit' : 'surplus'}</p>
-            <p className="font-display mt-1 text-[22px] font-bold tabular-nums" style={{ letterSpacing: '-0.02em', color: avgDeficit >= 0 ? 'var(--good)' : 'var(--bad)' }}>
-              {avgDeficit >= 0 ? '-' : '+'}{Math.abs(avgDeficit).toLocaleString('en-IN')} kcal
-            </p>
+        <Link href="/deficit" className="mt-3 block rounded-[24px] bg-surface px-5 py-[18px] tap-scale" style={AIR}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[12px] text-ink-3">Avg daily {avgDeficit >= 0 ? 'deficit' : 'surplus'}</p>
+              <p className="font-display mt-1 text-[22px] font-bold tabular-nums" style={{ letterSpacing: '-0.02em', color: avgDeficit >= 0 ? 'var(--good)' : 'var(--bad)' }}>
+                {avgDeficit >= 0 ? '-' : '+'}{Math.abs(avgDeficit).toLocaleString('en-IN')} kcal
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[12px] text-ink-3">Est. weight {avgDeficit >= 0 ? 'loss' : 'gain'}</p>
+              <p className="mt-1 text-[14px] font-bold tabular-nums" style={{ color: avgDeficit >= 0 ? 'var(--good)' : 'var(--bad)' }}>
+                {Math.abs(avgDeficit * loggedDays.length / 7700).toFixed(2)} kg / {range}d
+              </p>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-[12px] text-ink-3">Est. weight {avgDeficit >= 0 ? 'loss' : 'gain'}</p>
-            <p className="mt-1 text-[14px] font-bold tabular-nums" style={{ color: avgDeficit >= 0 ? 'var(--good)' : 'var(--bad)' }}>
-              {Math.abs(avgDeficit * loggedDays.length / 7700).toFixed(2)} kg / {range}d
-            </p>
-          </div>
-        </div>
+          <p className="mt-2.5 flex items-center gap-1 text-[12px] font-semibold text-brand-ink">
+            Weekly deficit tracker <ChevronRight className="h-3.5 w-3.5" />
+          </p>
+        </Link>
       )}
 
       {/* ── Avg macros ── */}

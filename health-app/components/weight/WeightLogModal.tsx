@@ -85,7 +85,7 @@ export function WeightLogModal({ onClose, defaultWeightKg }: { onClose: () => vo
 
   return (
     <Sheet open onOpenChange={(v) => !v && onClose()}>
-      <SheetContent>
+      <SheetContent title="Log your weight">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2.5">

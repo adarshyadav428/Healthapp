@@ -15,7 +15,6 @@ export default function robots(): MetadataRoute.Robots {
         '/dashboard',
         '/log',
         '/weight',
-        '/history',
         '/settings',
         '/recipes',
         '/onboarding',

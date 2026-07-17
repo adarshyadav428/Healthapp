@@ -31,8 +31,8 @@ SheetOverlay.displayName = 'SheetOverlay'
 
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { title?: string }
+>(({ className, children, title, ...props }, ref) => (
   <SheetPortal>
     <SheetOverlay />
     <DialogPrimitive.Content
@@ -44,6 +44,12 @@ const SheetContent = React.forwardRef<
       )}
       {...props}
     >
+      {/* A11y: Radix requires an accessible name. Sheets with a visible
+          SheetTitle supply their own; those without pass `title` for a
+          screen-reader-only one (silences the DialogContent warning). */}
+      {title ? (
+        <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>
+      ) : null}
       {/* Grabber */}
       <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-hairline" aria-hidden="true" />
       {children}

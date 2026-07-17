@@ -161,7 +161,7 @@ export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDat
 
   return (
     <Sheet open onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className="sm:max-w-lg flex flex-col max-h-[90vh] p-0 pt-3">
+      <SheetContent title="Log a meal with AI" className="sm:max-w-lg flex flex-col max-h-[90vh] p-0 pt-3">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 pb-3 border-b border-hairline">

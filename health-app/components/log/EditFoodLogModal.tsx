@@ -132,7 +132,7 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
 
   return (
     <Sheet open onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className="sm:max-w-sm space-y-4">
+      <SheetContent title="Edit food entry" className="sm:max-w-sm space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="font-display text-base font-bold text-ink">Edit entry</h2>

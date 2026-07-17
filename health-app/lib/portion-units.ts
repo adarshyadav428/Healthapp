@@ -700,9 +700,8 @@ export function buildUnits(food: Food): Unit[] {
     })
   }
 
-  // Always offer ounces at the end
-  units.push({ key: 'oz', label: 'Ounce (oz)', toGrams: (q) => q * 28.3495 })
-
+  // Ounces intentionally omitted — this is an India-first app; grams +
+  // household measures (katori/plate/glass) are what users actually think in.
   return units
 }
 

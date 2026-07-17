@@ -15,7 +15,7 @@ import { useSubscription } from '../../hooks/useSubscription'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  ChevronRight, Crown, Target, Scale, Bell, SunMoon, Download, Sliders, Pencil, Check, X,
+  ChevronRight, Crown, Target, Scale, Bell, SunMoon, Download, Sliders, Pencil, Check, X, BookOpen,
 } from 'lucide-react'
 import {
   Sheet, SheetContent, SheetTrigger, SheetTitle,
@@ -411,6 +411,15 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
         <Link href="/weight" className="flex w-full items-center gap-3.5 px-[18px] py-4 tap-scale">
           <Scale className="h-[19px] w-[19px] shrink-0 text-ink" strokeWidth={1.9} />
           <span className="flex-1 text-[15px] font-medium text-ink">Log weight</span>
+          <RowChevron />
+        </Link>
+
+        <Divider />
+
+        {/* Custom foods & recipes — the recipe builder (was orphaned; P1-13) */}
+        <Link href="/recipes" className="flex w-full items-center gap-3.5 px-[18px] py-4 tap-scale">
+          <BookOpen className="h-[19px] w-[19px] shrink-0 text-ink" strokeWidth={1.9} />
+          <span className="flex-1 text-[15px] font-medium text-ink">Custom foods &amp; recipes</span>
           <RowChevron />
         </Link>
 
