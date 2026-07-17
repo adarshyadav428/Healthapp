@@ -76,9 +76,9 @@ describe('calculateTDEE', () => {
     expect(daily_calorie_target).toBe(1200)
   })
 
-  it('protein = 2 g/kg and fat = 0.8 g/kg, carbs take the remaining calories', () => {
+  it('protein = 1.6 g/kg and fat = 0.8 g/kg, carbs take the remaining calories', () => {
     const t = calculateTDEE({ ...base, goal: 'maintain' })
-    expect(t.protein_g_target).toBe(140) // 2 × 70
+    expect(t.protein_g_target).toBe(112) // 1.6 × 70
     expect(t.fat_g_target).toBe(56) // 0.8 × 70
     const remaining = t.daily_calorie_target - t.protein_g_target * 4 - t.fat_g_target * 9
     expect(t.carbs_g_target).toBe(Math.round(remaining / 4))

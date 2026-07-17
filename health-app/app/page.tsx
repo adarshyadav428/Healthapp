@@ -240,7 +240,7 @@ export default function Home() {
               },
               {
                 q: 'How is my calorie goal calculated?',
-                a: 'Using the Mifflin-St Jeor BMR formula + your activity level and goal (lose/maintain/gain). Protein is set at 2g/kg body weight, fat at 0.8g/kg — the rest goes to carbs.',
+                a: 'Using the Mifflin-St Jeor BMR formula + your activity level and goal (lose/maintain/gain). Protein is set at 1.6g/kg body weight, fat at 0.8g/kg — the rest goes to carbs.',
               },
               {
                 q: 'Is my data safe?',

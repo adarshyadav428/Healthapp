@@ -47,8 +47,10 @@ export function calculateTDEE(profile: { weightKg: number; heightCm: number; age
 
   const daily_calorie_target = Math.max(1200, Math.round(tdee + delta))
 
-  // Protein: 2g/kg bodyweight
-  const protein_g_target = Math.round(2 * weightKg)
+  // Protein: 1.6 g/kg bodyweight. Enough for satiety and muscle retention in a
+  // deficit, but not the 2 g/kg bodybuilder split that left carbs so low it was
+  // near-impossible on a roti/rice/dal diet (users failing macros daily).
+  const protein_g_target = Math.round(1.6 * weightKg)
   // Fat: 0.8g/kg
   const fat_g_target = Math.round(0.8 * weightKg)
   // Remaining calories to carbs
