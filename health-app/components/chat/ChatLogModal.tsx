@@ -9,6 +9,8 @@ import { Sheet, SheetContent } from '../ui/sheet'
 import { Button } from '../ui/button'
 import { captureEvent } from '../../lib/posthog/client'
 import { reportLogMilestone } from '../../store/milestoneStore'
+import { coachingLine } from '../../lib/coaching'
+import { useUser } from '../../hooks/useUser'
 
 type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
@@ -53,6 +55,7 @@ function round1(n: number) { return Math.round(n * 10) / 10 }
 
 export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDate?: string }) {
   const router = useRouter()
+  const { profile } = useUser()
   const queryClient = useQueryClient()
   const [state, setState] = useState<State>({ type: 'idle' })
   const [input, setInput] = useState('')
@@ -158,6 +161,16 @@ export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDat
   const totalKcal = state.type === 'confirm'
     ? Math.round(state.items.reduce((sum, i) => sum + (i.food.kcal_per_100g * i.grams / 100), 0))
     : 0
+  const totalProtein = state.type === 'confirm'
+    ? Math.round(state.items.reduce((sum, i) => sum + (i.food.protein_g_per_100g * i.grams / 100), 0))
+    : 0
+  // One warm coaching sentence, computed locally from totals + targets (no AI call).
+  const coaching = state.type === 'confirm' && profile
+    ? coachingLine(
+        { kcal: totalKcal, protein: totalProtein },
+        { kcal: profile.daily_calorie_target, protein: profile.protein_g_target }
+      )
+    : null
 
   return (
     <Sheet open onOpenChange={(v) => !v && onClose()}>
@@ -265,6 +278,11 @@ export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDat
                   </div>
                 )}
               </div>
+
+              {/* Post-scan coaching line — makes the AI feel like a coach */}
+              {state.type === 'confirm' && coaching && (
+                <p className="mb-2 px-1 text-[12.5px] leading-relaxed text-ink-2">💡 {coaching}</p>
+              )}
 
               {/* Total + actions */}
               {state.type === 'confirm' && (

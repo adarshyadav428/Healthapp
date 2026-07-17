@@ -13,6 +13,8 @@ import { captureEvent } from '../../lib/posthog/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { reportLogMilestone } from '../../store/milestoneStore'
 import type { LogMilestone } from '../../lib/logMilestones'
+import { coachingLine } from '../../lib/coaching'
+import { useUser } from '../../hooks/useUser'
 
 type Mode = 'barcode' | 'photo' | 'manual'
 type PhotoResult = { food: Food; estimated_grams: number; unit: string }
@@ -39,6 +41,7 @@ function defaultMeal() {
 
 export function CameraModal({ onClose, onFoodFound }: Props) {
   const router = useRouter()
+  const { profile } = useUser()
   const videoRef    = useRef<HTMLVideoElement>(null)
   const canvasRef   = useRef<HTMLCanvasElement>(null)
   const streamRef   = useRef<MediaStream | null>(null)
@@ -300,6 +303,9 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
   const protein = selected ? Math.round(selected.food.protein_g_per_100g * factor) : 0
   const carbs   = selected ? Math.round(selected.food.carbs_g_per_100g  * factor) : 0
   const fat     = selected ? Math.round(selected.food.fat_g_per_100g    * factor) : 0
+  const coaching = selected && profile
+    ? coachingLine({ kcal, protein }, { kcal: profile.daily_calorie_target, protein: profile.protein_g_target })
+    : null
   const isCountBased = selected?.unit === 'pcs'
   const amountMin = isCountBased ? 1 : 10
   const amountMax = isCountBased ? 100 : 1500
@@ -524,6 +530,11 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
                 ))}
               </div>
             </div>
+
+            {/* Post-scan coaching line — makes the AI feel like a coach */}
+            {coaching && (
+              <p className="px-1 text-[12.5px] leading-relaxed text-ink-2">💡 {coaching}</p>
+            )}
 
             {/* Portion: number input + slider */}
             <div>
