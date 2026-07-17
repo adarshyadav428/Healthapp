@@ -12,10 +12,27 @@ export function isPushSupported(): boolean {
   return typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window
 }
 
+/**
+ * `navigator.serviceWorker.ready` never resolves if the SW fails to activate
+ * (which happens on some browsers/PWA states) — awaiting it with no timeout is
+ * what left the reminders toggle spinning forever. Race it against a timeout.
+ */
+async function serviceWorkerReady(timeoutMs = 5000): Promise<ServiceWorkerRegistration | null> {
+  if (!isPushSupported()) return null
+  try {
+    return await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    ])
+  } catch {
+    return null
+  }
+}
+
 /** Returns the active push subscription for this browser, if any, without prompting. */
 export async function getCurrentPushSubscription(): Promise<PushSubscription | null> {
-  if (!isPushSupported()) return null
-  const registration = await navigator.serviceWorker.ready
+  const registration = await serviceWorkerReady()
+  if (!registration) return null
   return registration.pushManager.getSubscription()
 }
 
@@ -29,7 +46,8 @@ export async function subscribeToPush(): Promise<{ ok: true } | { ok: false; err
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') return { ok: false, error: 'Notification permission was not granted.' }
 
-  const registration = await navigator.serviceWorker.ready
+  const registration = await serviceWorkerReady()
+  if (!registration) return { ok: false, error: 'Notifications aren\'t ready yet — reopen the app and try again.' }
   const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(publicKey),

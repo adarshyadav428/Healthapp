@@ -11,6 +11,7 @@ import { EditFoodLogModal } from '../log/EditFoodLogModal'
 import { RatePromptCard } from './RatePromptCard'
 import { WeekStrip } from './WeekStrip'
 import { WeeklyRecapCard, type WeeklyRecap } from './WeeklyRecapCard'
+import { NotificationPrimeCard } from './NotificationPrimeCard'
 import { InstallPromptCard } from '../pwa/InstallPromptCard'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
@@ -128,6 +129,9 @@ export function DashboardClient({ profile, initialLogs, streakDays, loggedDates,
       ) : (
         <EmptyMeals />
       )}
+
+      {/* Reminders priming — after the user has logged at least once */}
+      {hasLogs && <NotificationPrimeCard />}
 
       {/* Play Store rating ask — renders only inside the installed Play build */}
       <RatePromptCard streakDays={streakDays} />
