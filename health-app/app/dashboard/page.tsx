@@ -4,8 +4,9 @@ import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import type { FoodLog } from '../../types/index'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { DashboardClient } from '../../components/dashboard/DashboardClient'
-import { getIstDayRange } from '../../lib/dateUtils'
+import { getIstDayRange, istDateStr } from '../../lib/dateUtils'
 import { calculateStreak } from '../../lib/streak'
+import type { WeeklyRecap } from '../../components/dashboard/WeeklyRecapCard'
 
 export const metadata: Metadata = {
   title: 'Home — GetInShape',
@@ -26,7 +27,7 @@ export default async function DashboardPage() {
 
   // All three queries only need user.id — run them in one parallel round trip
   // instead of three sequential ones (each is a full network hop to Supabase).
-  const [profileResult, logsResult, streakResult] = await Promise.all([
+  const [profileResult, logsResult, streakResult, subResult, recapResult] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase
       .from('food_logs')
@@ -40,6 +41,16 @@ export default async function DashboardPage() {
       .select('logged_at')
       .eq('user_id', user.id)
       .gte('logged_at', sixtyDaysAgo),
+    supabase.from('subscriptions').select('status').eq('user_id', user.id).maybeSingle(),
+    // Latest weekly recap for the Pro card. Tolerant of the table not existing
+    // yet (migration 024 pending) — we simply render no recap in that case.
+    supabase
+      .from('weekly_recaps')
+      .select('avg_kcal, days_logged, weight_delta_kg, message')
+      .eq('user_id', user.id)
+      .order('week_start', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ])
 
   const { data: profile, error: profileError } = profileResult
@@ -53,13 +64,26 @@ export default async function DashboardPage() {
 
   const streakDays = calculateStreak((recentLogs ?? []) as unknown as FoodLog[])
 
-  // UTC date keys with at least one log — feeds the week strip's dots
-  // (same day semantics as /log's ?date= param).
+  // IST date keys with at least one log — feeds the week strip's dots, matching
+  // /log's IST ?date= semantics (a 1am-IST log belongs to that IST day).
   const loggedDates = Array.from(
-    new Set((recentLogs ?? []).map((r) => String(r.logged_at).slice(0, 10)))
+    new Set((recentLogs ?? []).map((r) => istDateStr(new Date(String(r.logged_at)))))
   )
 
   const foodLogs = (rawLogs ?? []) as unknown as FoodLog[]
+
+  const sub = subResult.data
+  const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
+
+  const recapRow = recapResult.data
+  const weeklyRecap: WeeklyRecap | null = recapRow
+    ? {
+        daysLogged: recapRow.days_logged as number,
+        avgKcal: recapRow.avg_kcal as number,
+        weightDeltaKg: (recapRow.weight_delta_kg as number | null) ?? null,
+        message: recapRow.message as string,
+      }
+    : null
 
   return (
     // Transparent: the body paints canvas + the ambient light field
@@ -76,6 +100,8 @@ export default async function DashboardPage() {
           initialLogs={foodLogs}
           streakDays={streakDays}
           loggedDates={loggedDates}
+          isPro={isPro}
+          weeklyRecap={weeklyRecap}
         />
       </main>
       <BottomNav />

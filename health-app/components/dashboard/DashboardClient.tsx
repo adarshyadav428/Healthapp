@@ -10,6 +10,7 @@ import { EmptyMeals } from '../home/EmptyMeals'
 import { EditFoodLogModal } from '../log/EditFoodLogModal'
 import { RatePromptCard } from './RatePromptCard'
 import { WeekStrip } from './WeekStrip'
+import { WeeklyRecapCard, type WeeklyRecap } from './WeeklyRecapCard'
 import { InstallPromptCard } from '../pwa/InstallPromptCard'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
@@ -22,9 +23,11 @@ interface Props {
   initialLogs: FoodLog[]
   streakDays: number
   loggedDates: string[]
+  isPro: boolean
+  weeklyRecap: WeeklyRecap | null
 }
 
-export function DashboardClient({ profile, initialLogs, streakDays, loggedDates }: Props) {
+export function DashboardClient({ profile, initialLogs, streakDays, loggedDates, isPro, weeklyRecap }: Props) {
   const { user } = useUser()
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
   const [editingLog, setEditingLog] = useState<FoodLog | null>(null)
@@ -81,6 +84,9 @@ export function DashboardClient({ profile, initialLogs, streakDays, loggedDates 
           fatTarget={profile.fat_g_target ?? 0}
         />
       </div>
+
+      {/* ── Weekly recap (Pro) ── */}
+      <WeeklyRecapCard recap={weeklyRecap} isPro={isPro} />
 
       {/* ── Recently logged ── */}
       <div className="mb-3 mt-6 flex items-baseline justify-between px-0.5">
