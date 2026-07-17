@@ -29,7 +29,7 @@ export default function Home() {
         {/* Hero */}
         <section className="py-10 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-hairline bg-surface px-3 py-1 text-xs font-semibold text-ink-2 mb-6">
-            🇮🇳 Built for Indian diets &middot; 600+ desi foods included
+            🇮🇳 Built for Indian diets &middot; 500+ desi foods included
           </div>
           <h1 className="font-display text-4xl font-bold leading-tight text-ink sm:text-5xl">
             Track calories the<br />
@@ -53,7 +53,7 @@ export default function Home() {
               Sign in
             </Link>
           </div>
-          <p className="mt-3 text-xs text-ink-2">Free forever · No credit card · Works offline</p>
+          <p className="mt-3 text-xs text-ink-2">Free forever · No credit card · Installs like an app</p>
         </section>
 
         {/* App preview mockup */}
@@ -62,7 +62,7 @@ export default function Home() {
             {/* Calorie ring mock */}
             <div className="rounded-card bg-surface border border-hairline p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs text-ink-2 font-semibold uppercase tracking-wide">Net calories</p>
+                <p className="text-xs text-ink-2 font-semibold uppercase tracking-wide">Calories today</p>
                 <p className="font-display text-3xl font-bold text-ink tabular-nums">1,420</p>
                 <p className="text-sm text-ink-2">of 1,800 goal</p>
                 <p className="text-sm font-bold text-good mt-1">380 kcal remaining</p>
@@ -119,9 +119,9 @@ export default function Home() {
         {/* Features */}
         <section className="mt-16 grid gap-4 sm:grid-cols-2">
           {[
-            { emoji: '🍛', title: '600+ Indian foods', desc: 'Dal makhani, biryani, idli, paratha — all with authentic IFCT 2017 nutrition data. Searched in Hindi and English.' },
+            { emoji: '🍛', title: '500+ Indian foods', desc: 'Dal makhani, biryani, idli, paratha — all with authentic IFCT 2017 nutrition data. Searched in Hindi and English.' },
             { emoji: '⚡', title: 'Log in 5 seconds', desc: "Recent foods + quick-add button. Copy yesterday's meals with one tap. Never type the same food twice." },
-            { emoji: '🏋️', title: 'Exercise tracking', desc: 'Log workouts, walks, yoga. Burned calories offset your daily goal automatically with MET-based calculation.' },
+            { emoji: '🏋️', title: 'Exercise tracking', desc: 'Log workouts, walks and yoga with MET-based calorie estimates.' },
             { emoji: '📸', title: 'AI photo scan', desc: 'Point your camera at your plate. Gemini identifies the dish and estimates portions, tuned for Indian home cooking.' },
             { emoji: '📈', title: 'Weight trends', desc: 'Visualize your progress with a trend chart. See BMI, goal prediction, and weeks-to-target at a glance.' },
             { emoji: '🔥', title: 'Daily streaks', desc: 'Build the logging habit with streak badges. Hit 7, 30, 100 days — with milestone celebrations.' },
@@ -147,7 +147,7 @@ export default function Home() {
               <p className="text-sm text-ink-2 leading-relaxed mb-4">
                 I&apos;m Adarsh — engineering student, running a medical store in UP, and on a personal mission to
                 lose weight the right way. HealthifyMe didn&apos;t have accurate data for the food I actually eat.
-                MyFitnessPal is built for the West. So I built GetInShape: 600+ Indian foods from IFCT 2017,
+                MyFitnessPal is built for the West. So I built GetInShape: 500+ Indian foods from IFCT 2017,
                 the same database nutrition researchers use.
               </p>
               <p className="text-sm text-ink-2 leading-relaxed mb-5">
@@ -183,7 +183,7 @@ export default function Home() {
                   'Exercise logging',
                   'AI photo scan (5/day)',
                   'Calorie + macro goals',
-                  '600+ Indian foods database',
+                  '500+ Indian foods database',
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2 text-sm text-ink-2">
                     <CheckCircle className="h-4 w-4 text-good flex-shrink-0" />
@@ -210,8 +210,8 @@ export default function Home() {
                   'Unlimited AI photo & chat logging',
                   'Custom food & recipe builder',
                   'Full nutrition history (30+ days)',
-                  'Data export (CSV)',
-                  'Priority support',
+                  'Weekly AI recap',
+                  'Priority email support',
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2 text-sm text-ink-2">
                     <CheckCircle className="h-4 w-4 text-brand flex-shrink-0" />
@@ -236,7 +236,7 @@ export default function Home() {
             {[
               {
                 q: 'Does it have Indian food data?',
-                a: 'Yes — 600+ Indian dishes from IFCT 2017 (Indian Food Composition Tables) including regional foods like idli, dhokla, pav bhaji, chhole, rajma, biryani and much more.',
+                a: 'Yes — 500+ Indian dishes from IFCT 2017 (Indian Food Composition Tables) including regional foods like idli, dhokla, pav bhaji, chhole, rajma, biryani and much more, plus packaged brands via Open Food Facts.',
               },
               {
                 q: 'How is my calorie goal calculated?',
@@ -247,8 +247,8 @@ export default function Home() {
                 a: 'Yes. All data is encrypted at rest and in transit via Supabase (PostgreSQL). Each user can only see their own data. You can export or delete everything from Settings.',
               },
               {
-                q: 'Does it work offline?',
-                a: "The app is a PWA (Progressive Web App) so you can install it on your phone's home screen. Core features work offline and sync when you reconnect.",
+                q: 'Can I install it like an app?',
+                a: "Yes — it's a PWA (Progressive Web App), so you can add it to your phone's home screen and it opens full-screen like a native app. You'll need an internet connection to log and sync your data.",
               },
               {
                 q: 'Can I cancel my Pro subscription?',

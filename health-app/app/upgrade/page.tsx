@@ -36,7 +36,7 @@ declare global {
 const REASON_COPY: Record<string, { title: string; description: string }> = {
   history:            { title: 'Unlock your full history', description: 'Free users can view the last 7 days. Pro shows everything.' },
   custom_foods:       { title: 'Create custom foods',      description: 'Log your home-cooked dishes and family recipes with Pro.' },
-  ai_insights:        { title: 'See your AI Weekly Insights', description: 'Personal analysis of your eating patterns, every Sunday.' },
+  ai_insights:        { title: 'Get your weekly AI recap', description: 'A summary of your week — calories, days logged, weight change — every Sunday.' },
   exports:            { title: 'Export your data',         description: 'Download your full log as CSV with Pro.' },
   camera_scan_limit:  { title: 'Out of photo scans for today', description: "You've used today's 5 free camera scans. Pro gives you unlimited." },
   chat_scan_limit:    { title: 'Out of chat logs for today',   description: "You've used today's 10 free chat logs. Pro gives you unlimited." },
@@ -67,13 +67,12 @@ const plans = [
 ]
 
 const FEATURES = [
-  'AI Weekly Insights — personal analysis every Sunday',
+  'Unlimited AI photo & chat logging',
+  'Weekly AI recap — your week summarised every Sunday',
   'Full history — beyond the last 7 days',
   'Custom foods & recipes — log your home-cooked dishes',
   'Advanced trends — full weight history, macro breakdown charts',
-  'Export your data to CSV',
-  'Saved meal templates — log a whole meal in one tap',
-  'Priority support',
+  'Priority email support',
   'No ads, ever',
 ]
 
@@ -219,6 +218,7 @@ export default function UpgradePage() {
           </div>
           <h1 className="font-display text-3xl font-bold text-ink">Upgrade to Pro</h1>
           <p className="mt-2 text-sm text-ink-2">Log freely. Get deeper insights when you&apos;re ready.</p>
+          <p className="mt-1.5 text-xs font-semibold text-brand-ink">Founder pricing — lock in ₹699/year while we&apos;re new.</p>
         </div>
 
         {/* Features */}

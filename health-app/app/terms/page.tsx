@@ -36,8 +36,11 @@ export default function TermsPage() {
             GetInShape offers a free tier with limited features and a Pro subscription for unlimited access.
             Billing is handled securely by Razorpay (web), Google Play Billing (Android), or Stripe (for
             accounts that subscribed before we switched web billing to Razorpay). You may cancel your
-            subscription at any time from Settings. Refunds are handled on a case-by-case basis — contact us
-            within 7 days of a charge if you believe you were billed in error.
+            subscription at any time from Settings and keep Pro access until the end of the current billing
+            period. New subscribers can request a full refund of their first payment within 30 days by
+            contacting us — no questions asked. Renewal charges are non-refundable, but you can cancel any
+            time before a renewal date to avoid the next charge. Purchases made through Google Play follow
+            Google Play&apos;s refund policy.
           </Section>
 
           <Section title="5. Data and Privacy">

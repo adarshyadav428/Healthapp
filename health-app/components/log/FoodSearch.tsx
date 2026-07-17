@@ -466,7 +466,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
         <div className="py-10 text-center">
           <p className="text-3xl mb-2">🍱</p>
           <p className="text-sm font-medium" style={{ color: 'var(--ink)' }}>Search for any food above</p>
-          <p className="text-xs mt-1 mb-4" style={{ color: 'var(--ink-3)' }}>Includes 600+ Indian dishes, staples &amp; global foods</p>
+          <p className="text-xs mt-1 mb-4" style={{ color: 'var(--ink-3)' }}>Includes 500+ Indian dishes, staples &amp; global foods</p>
           <button
             type="button"
             onClick={() => setShowCreateFood(true)}
