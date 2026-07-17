@@ -3,6 +3,7 @@ import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { z } from 'zod'
 import { captureServerEvent } from '../../../../lib/posthog/server'
 import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
+import { resolveLoggedAtForRequest } from '../../../../lib/backfill'
 
 const bulkLogSchema = z.object({
   items: z.array(z.object({
@@ -10,6 +11,7 @@ const bulkLogSchema = z.object({
     grams: z.number().positive().max(10000),
     meal: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
   })).min(1).max(8),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 })
 
 const round2 = (n: number) => Math.round(n * 100) / 100
@@ -34,7 +36,10 @@ export async function POST(req: Request) {
     if (foodsError) throw new Error(foodsError.message)
 
     const foodMap = new Map(foods?.map(f => [f.id, f]) ?? [])
-    const logged_at = new Date().toISOString()
+
+    const when = await resolveLoggedAtForRequest(supabase, userId, parsed.data.date)
+    if (!when.ok) return NextResponse.json({ error: when.error, upgrade: when.upgrade }, { status: when.status })
+    const logged_at = when.logged_at
 
     const rows = parsed.data.items.map(item => {
       const food = foodMap.get(item.food_id)

@@ -3,6 +3,7 @@ import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { addFoodSchema } from '../../../../lib/validations'
 import { captureServerEvent } from '../../../../lib/posthog/server'
 import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
+import { resolveLoggedAtForRequest } from '../../../../lib/backfill'
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
@@ -34,7 +35,10 @@ export async function POST(req: Request) {
     const fat = round2(food.fat_g_per_100g * factor * servings)
 
     const FOOD_SELECT = 'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions'
-    const logged_at = new Date().toISOString()
+
+    const when = await resolveLoggedAtForRequest(supabase, user.id, parsed.data.date)
+    if (!when.ok) return NextResponse.json({ error: when.error, upgrade: when.upgrade }, { status: when.status })
+    const logged_at = when.logged_at
 
     const activation = await getLogActivationContext(supabase, user.id)
 

@@ -27,7 +27,7 @@ function defaultMeal(): Meal {
   return 'snack'
 }
 
-export function QuickAddModal({ onClose }: { onClose: () => void }) {
+export function QuickAddModal({ onClose, logDate }: { onClose: () => void; logDate?: string }) {
   const [kcal,    setKcal]    = useState('')
   const [meal,    setMeal]    = useState<Meal>(defaultMeal())
   const [showMacros, setShowMacros] = useState(false)
@@ -54,6 +54,7 @@ export function QuickAddModal({ onClose }: { onClose: () => void }) {
           carbs:   parseFloat(carbs)   || 0,
           fat:     parseFloat(fat)     || 0,
           meal,
+          date:    logDate,
         }),
       })
       const body = (await res.json().catch(() => ({}))) as { error?: string; milestone?: LogMilestone }

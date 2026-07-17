@@ -51,7 +51,7 @@ function inferMeal(): Meal {
 
 function round1(n: number) { return Math.round(n * 10) / 10 }
 
-export function ChatLogModal({ onClose }: { onClose: () => void }) {
+export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDate?: string }) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [state, setState] = useState<State>({ type: 'idle' })
@@ -125,10 +125,12 @@ export function ChatLogModal({ onClose }: { onClose: () => void }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           items: items.map(i => ({ food_id: i.food.id, grams: i.grams, meal })),
+          date: logDate,
         }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
+      queryClient.invalidateQueries({ queryKey: ['food-logs'] })
       queryClient.invalidateQueries({ queryKey: ['logs'] })
       queryClient.invalidateQueries({ queryKey: ['dailyTotals'] })
       reportLogMilestone(data.milestone)

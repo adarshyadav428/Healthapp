@@ -28,6 +28,8 @@ export const addFoodSchema = z.object({
   meal: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
   servings: z.number().positive().max(99, { message: 'Servings cannot exceed 99' }),
   grams: z.number().positive().max(10000, { message: 'Grams cannot exceed 10,000' }),
+  // Optional backfill target — an IST calendar date (YYYY-MM-DD). Absent = today.
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 })
 
 export const weightLogSchema = z.object({

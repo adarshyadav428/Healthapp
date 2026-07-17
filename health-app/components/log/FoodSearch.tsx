@@ -41,9 +41,13 @@ type Props = {
   recentLogItems?: RecentLogItem[]
   frequentFoods: Food[]
   hasYesterdayLogs: boolean
+  /** The IST day being viewed (YYYY-MM-DD). Logs target this day (backfill). */
+  logDate?: string
+  /** Whether the viewed day is today — gates today-only surfaces. */
+  isToday?: boolean
 }
 
-export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, hasYesterdayLogs }: Props) {
+export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, hasYesterdayLogs, logDate, isToday = true }: Props) {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Food | null>(null)
   const [showCamera, setShowCamera] = useState(false)
@@ -161,7 +165,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
       const res = await fetch('/api/logs/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ food_id: food.id, meal: defaultMeal, servings: 1, grams }),
+        body: JSON.stringify({ food_id: food.id, meal: defaultMeal, servings: 1, grams, date: logDate }),
       })
       const body = (await res.json().catch(() => ({}))) as { error?: string; milestone?: LogMilestone }
       if (!res.ok) throw new Error(body?.error || 'Quick add failed')
@@ -183,7 +187,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
       const res = await fetch('/api/logs/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ food_id: item.food.id, meal: item.meal, servings: 1, grams: item.grams }),
+        body: JSON.stringify({ food_id: item.food.id, meal: item.meal, servings: 1, grams: item.grams, date: logDate }),
       })
       const body = (await res.json().catch(() => ({}))) as { error?: string; milestone?: LogMilestone }
       if (!res.ok) throw new Error(body?.error || 'Re-log failed')
@@ -276,8 +280,8 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
         </div>
       )}
 
-      {/* Copy yesterday banner */}
-      {hasYesterdayLogs && !isSearching && (
+      {/* Copy yesterday banner — only on today's view (copies into today) */}
+      {isToday && hasYesterdayLogs && !isSearching && (
         <button
           type="button"
           onClick={copyYesterday}
@@ -294,8 +298,8 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
         </button>
       )}
 
-      {/* Saved meal templates */}
-      {!isSearching && savedMeals.length > 0 && (
+      {/* Saved meal templates — logging targets today, so hide on past-day views */}
+      {isToday && !isSearching && savedMeals.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--ink-3)' }}>
             <BookOpen className="h-3.5 w-3.5" />
@@ -475,8 +479,8 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
         </div>
       )}
 
-      {showChat ? <ChatLogModal onClose={() => setShowChat(false)} /> : null}
-      {selected ? <AddFoodModal food={selected} onClose={() => setSelected(null)} /> : null}
+      {showChat ? <ChatLogModal onClose={() => setShowChat(false)} logDate={logDate} /> : null}
+      {selected ? <AddFoodModal food={selected} onClose={() => setSelected(null)} logDate={logDate} /> : null}
       {showCamera ? (
         <CameraModal
           onClose={() => setShowCamera(false)}

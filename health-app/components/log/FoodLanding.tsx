@@ -25,6 +25,10 @@ type Props = {
   recentLogItems: RecentLogItem[]
   frequentFoods: Food[]
   hasYesterdayLogs: boolean
+  /** The IST day being viewed (YYYY-MM-DD). Logs target this day (backfill). */
+  logDate?: string
+  /** Whether the viewed day is today — gates today-only surfaces (copy-yesterday). */
+  isToday?: boolean
 }
 
 const AIR = { boxShadow: 'var(--shadow-air)' } as const
@@ -48,7 +52,7 @@ function defaultMeal() {
   return 'snack'
 }
 
-export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYesterdayLogs }: Props) {
+export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYesterdayLogs, logDate, isToday = true }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
   // Home's "Add food manually" links here with ?search=1 to jump straight
@@ -77,6 +81,8 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
           recentLogItems={recentLogItems}
           frequentFoods={frequentFoods}
           hasYesterdayLogs={hasYesterdayLogs}
+          logDate={logDate}
+          isToday={isToday}
         />
       </div>
     )
@@ -89,7 +95,7 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
       const res = await fetch('/api/logs/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ food_id: item.food.id, meal: item.meal || defaultMeal(), servings: 1, grams: item.grams }),
+        body: JSON.stringify({ food_id: item.food.id, meal: item.meal || defaultMeal(), servings: 1, grams: item.grams, date: logDate }),
       })
       const j = (await res.json().catch(() => ({}))) as { error?: string; milestone?: LogMilestone }
       if (!res.ok) throw new Error(j.error ?? 'Log failed')
@@ -194,8 +200,8 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
         </div>
       )}
 
-      {/* Copy yesterday */}
-      {hasYesterdayLogs && (
+      {/* Copy yesterday — only meaningful on today's view (it copies into today) */}
+      {isToday && hasYesterdayLogs && (
         <button
           type="button"
           onClick={copyYesterday}
@@ -211,8 +217,8 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
       {showCamera && (
         <CameraModal onClose={() => setShowCamera(false)} onFoodFound={(food) => { setShowCamera(false); setFoundFood(food) }} />
       )}
-      {foundFood && <AddFoodModal food={foundFood} onClose={() => setFoundFood(null)} />}
-      {showQuickAdd && <QuickAddModal onClose={() => setShowQuickAdd(false)} />}
+      {foundFood && <AddFoodModal food={foundFood} onClose={() => setFoundFood(null)} logDate={logDate} />}
+      {showQuickAdd && <QuickAddModal onClose={() => setShowQuickAdd(false)} logDate={logDate} />}
     </div>
   )
 }

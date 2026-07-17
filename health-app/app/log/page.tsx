@@ -9,6 +9,7 @@ import { BottomNav } from '../../components/layout/BottomNav'
 import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import type { Food, FoodLog } from '../../types/index'
 import { getIstDayRange, istDateStr, dateStrToUtcMidnight } from '../../lib/dateUtils'
+import { isWithinFreeLogWindow } from '../../lib/backfill'
 
 // Below-fold widgets — split into separate chunks so they don't block initial JS parse.
 const SkeletonCard = () => <div className="h-32 rounded-2xl bg-card border border-border animate-pulse" />
@@ -102,6 +103,10 @@ export default async function LogPage({
   const sub = subResult.data
   const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
 
+  // A day is editable (backfill-able) if it's within the free 7-day window, or
+  // for any past day when Pro. Drives whether the logging surface renders.
+  const isEditable = isPro || isWithinFreeLogWindow(dateStr)
+
   // Free-tier history gate: clamp dates older than 7 IST days
   if (!isPro && searchParams?.date) {
     const cutoffStr = istDateStr(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
@@ -188,14 +193,17 @@ export default async function LogPage({
           />
         </div>
 
-        {/* 1f landing: search pill + scan/quick-add + log again + copy yesterday */}
-        {isToday && (
+        {/* 1f landing: search pill + scan/quick-add + log again + copy yesterday.
+            Renders on any editable day so a missed day can be backfilled (P1-2). */}
+        {isEditable && (
           <div className="mt-4">
             <FoodLanding
               recentFoods={recentFoods}
               recentLogItems={recentLogItems}
               frequentFoods={frequentFoods}
               hasYesterdayLogs={hasYesterdayLogs}
+              logDate={dateStr}
+              isToday={isToday}
             />
           </div>
         )}

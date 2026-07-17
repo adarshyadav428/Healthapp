@@ -5,7 +5,7 @@ import type { Food, FoodLog } from '../../types/index'
 import { useUser } from '../../hooks/useUser'
 import { toast } from '../ui/use-toast'
 import { useQueryClient } from '@tanstack/react-query'
-import { getIstDayRange } from '../../lib/dateUtils'
+import { getIstDayRange, dateStrToUtcMidnight } from '../../lib/dateUtils'
 import { ArrowLeft, ChevronDown, Drumstick, Droplet, Wheat, Sprout, Loader2 } from 'lucide-react'
 import { reportLogMilestone } from '../../store/milestoneStore'
 import type { LogMilestone } from '../../lib/logMilestones'
@@ -63,7 +63,7 @@ function foodEmoji(name: string): string {
   return '🍽️'
 }
 
-export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => void }) {
+export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: () => void; logDate?: string }) {
   const { user } = useUser()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const inFlightRef = useRef(false)
@@ -108,6 +108,7 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
           meal,
           servings: 1,
           grams,
+          date: logDate,
         }),
       })
 
@@ -115,9 +116,10 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
 
       if (!res.ok) throw new Error(body?.error || 'Failed to log food')
 
-      // API now returns the full inserted row — update cache instantly (no refetch needed)
+      // API now returns the full inserted row — update cache instantly (no refetch needed).
+      // Key by the day the entry belongs to (the viewed day when backfilling).
       if (body.row) {
-        const { start } = getIstDayRange()
+        const { start } = getIstDayRange(logDate ? dateStrToUtcMidnight(logDate) : new Date())
         queryClient.setQueryData<FoodLog[]>(['food-logs', user.id, start], (old = []) => [body.row as FoodLog, ...(old ?? [])])
       } else {
         queryClient.invalidateQueries({ queryKey: ['food-logs'] })
