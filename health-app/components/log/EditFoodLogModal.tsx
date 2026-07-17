@@ -6,9 +6,11 @@ import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
 import { Sheet, SheetContent } from '../ui/sheet'
 import { Button } from '../ui/button'
-import { X } from 'lucide-react'
+import { X, ChevronDown } from 'lucide-react'
 import { getUtcDayRange } from '../../lib/dateUtils'
 import { useUser } from '../../hooks/useUser'
+import { buildUnits, inferPortionSelection, GRAMS_UNIT, type Unit } from '../../lib/portion-units'
+import { UnitPicker } from './UnitPicker'
 
 const MEAL_OPTIONS = [
   { value: 'breakfast', label: '🥣 Breakfast' },
@@ -24,30 +26,67 @@ const round2 = (n: number) => Math.round(n * 100) / 100
 export function EditFoodLogModal({ log, onClose, onSaved }: { log: FoodLog; onClose: () => void; onSaved?: () => void }) {
   const queryClient = useQueryClient()
   const { user } = useUser()
-  // DB stores grams-per-serving + servings count; edit as total grams for simplicity
-  const [grams, setGrams] = useState(Math.round(log.grams * (log.servings || 1)))
-  const [meal, setMeal] = useState<MealValue>(log.meal as MealValue)
-  const [saving, setSaving] = useState(false)
-  const inFlight = useRef(false)
 
   const food = log.food
   const hasFood = Boolean(food)
 
+  // DB stores grams-per-serving + servings count; edit as total grams for simplicity
+  const baseGrams = Math.round(log.grams * (log.servings || 1))
+
+  // Household units (katori / bowl / glass / piece …) — same engine as AddFoodModal.
+  // Open on the unit that most naturally expresses the stored grams
+  // (150g rice → "1 × katori"; irregular amounts fall back to grams).
+  const units = useMemo(() => (food ? buildUnits(food) : [GRAMS_UNIT]), [food])
+  const initial = useMemo(() => inferPortionSelection(units, baseGrams), [units, baseGrams])
+
+  const [unit, setUnit] = useState<Unit>(initial.unit)
+  const [quantityStr, setQuantityStr] = useState(String(initial.quantity))
+  const [showUnitPicker, setShowUnitPicker] = useState(false)
+  const [meal, setMeal] = useState<MealValue>(log.meal as MealValue)
+  const [saving, setSaving] = useState(false)
+  const inFlight = useRef(false)
+
+  const quantity = Math.max(0, parseFloat(quantityStr) || 0)
+  const grams = round2(unit.toGrams(quantity))
+
+  // Stepper granularity: 10g in gram mode, half a portion otherwise
+  const step = unit.key === 'g' ? 10 : unit.key === 'oz' ? 1 : 0.5
+  const minQuantity = unit.key === 'g' ? 5 : 0.25
+  const stepBy = (dir: 1 | -1) =>
+    setQuantityStr(String(Math.max(minQuantity, round2(quantity + dir * step))))
+
+  // Switching measure keeps the amount constant — re-express current grams in the new unit
+  const switchUnit = (u: Unit) => {
+    const per = u.toGrams(1)
+    setUnit(u)
+    setQuantityStr(String(per > 0 ? round2(grams / per) : 1))
+    setShowUnitPicker(false)
+  }
+
   const nutrition = useMemo(() => {
-    if (!food) return { kcal: log.kcal, protein: log.protein_g, carbs: log.carbs_g, fat: log.fat_g }
-    const factor = grams / 100
-    return {
-      kcal:    round2(food.kcal_per_100g      * factor),
-      protein: round2(food.protein_g_per_100g * factor),
-      carbs:   round2(food.carbs_g_per_100g   * factor),
-      fat:     round2(food.fat_g_per_100g     * factor),
+    if (food) {
+      const factor = grams / 100
+      return {
+        kcal:    round2(food.kcal_per_100g      * factor),
+        protein: round2(food.protein_g_per_100g * factor),
+        carbs:   round2(food.carbs_g_per_100g   * factor),
+        fat:     round2(food.fat_g_per_100g     * factor),
+      }
     }
-  }, [food, grams, log])
+    // No linked food (custom/AI entry): scale the stored macros with the grams change
+    const scale = baseGrams > 0 ? grams / baseGrams : 1
+    return {
+      kcal:    round2(log.kcal      * scale),
+      protein: round2(log.protein_g * scale),
+      carbs:   round2(log.carbs_g   * scale),
+      fat:     round2(log.fat_g     * scale),
+    }
+  }, [food, grams, baseGrams, log])
 
   const handleSave = async () => {
     if (inFlight.current || saving) return
     if (grams <= 0 || isNaN(grams)) {
-      toast({ title: 'Invalid grams', description: 'Enter a positive number.', variant: 'error' })
+      toast({ title: 'Invalid amount', description: 'Enter a positive quantity.', variant: 'error' })
       return
     }
     inFlight.current = true
@@ -111,41 +150,48 @@ export function EditFoodLogModal({ log, onClose, onSaved }: { log: FoodLog; onCl
           {food?.brand && <p className="text-xs text-ink-2">{food.brand}</p>}
         </div>
 
-        {/* Grams input */}
+        {/* Quantity + Measure */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wide text-ink-2 mb-1.5">
-            Amount (grams)
+            Amount
           </label>
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setGrams((g) => Math.max(5, Math.round(g - 10)))}
+              onClick={() => stepBy(-1)}
+              aria-label="Decrease amount"
               className="h-10 w-10 rounded-control border border-hairline bg-surface-2 text-ink font-bold hover:bg-hairline flex-shrink-0 transition-colors"
             >
               −
             </button>
             <input
               type="number"
-              value={grams}
-              min={1}
-              step={5}
-              onChange={(e) => setGrams(parseFloat(e.target.value) || 0)}
-              className="flex-1 rounded-control border border-hairline bg-surface text-ink px-4 py-2.5 text-sm text-center outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
+              inputMode="decimal"
+              value={quantityStr}
+              min={0}
+              onChange={(e) => setQuantityStr(e.target.value)}
+              onFocus={(e) => e.target.select()}
+              className="w-20 flex-shrink-0 rounded-control border border-hairline bg-surface text-ink px-2 py-2.5 text-sm text-center outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
             />
             <button
               type="button"
-              onClick={() => setGrams((g) => Math.round(g + 10))}
+              onClick={() => stepBy(1)}
+              aria-label="Increase amount"
               className="h-10 w-10 rounded-control border border-hairline bg-surface-2 text-ink font-bold hover:bg-hairline flex-shrink-0 transition-colors"
             >
               +
             </button>
+            <button
+              type="button"
+              onClick={() => setShowUnitPicker(true)}
+              className="flex-1 min-w-0 h-10 rounded-control border border-hairline bg-surface-2 px-3 flex items-center justify-between text-left hover:bg-hairline transition-colors"
+            >
+              <span className="text-sm font-semibold text-ink truncate">{unit.label}</span>
+              <ChevronDown className="h-4 w-4 text-ink-2 flex-shrink-0 ml-1" />
+            </button>
           </div>
-          {food?.serving_size_g && food.serving_size_g !== 100 && (
-            <p className="mt-1 text-xs text-ink-2">
-              {food.serving_description && food.serving_description !== `${food.serving_size_g}g`
-                ? `1 serving = ${food.serving_description}`
-                : `1 serving = ${food.serving_size_g}g`}
-            </p>
+          {unit.key !== 'g' && (
+            <p className="mt-1 text-xs text-ink-2 tabular-nums">= {Math.round(grams)}g total</p>
           )}
         </div>
 
@@ -171,7 +217,7 @@ export function EditFoodLogModal({ log, onClose, onSaved }: { log: FoodLog; onCl
         </div>
 
         {/* Nutrition preview */}
-        {hasFood && (
+        {(hasFood || baseGrams > 0) && (
           <div className="grid grid-cols-4 gap-2 rounded-card border border-hairline bg-energy-soft px-3 py-2.5">
             <div className="text-center">
               <p className="text-sm font-bold text-energy-ink tabular-nums">{Math.round(nutrition.kcal)}</p>
@@ -201,6 +247,17 @@ export function EditFoodLogModal({ log, onClose, onSaved }: { log: FoodLog; onCl
             {saving ? 'Saving...' : 'Save changes'}
           </Button>
         </div>
+
+        {/* Unit picker bottom sheet */}
+        {showUnitPicker && (
+          <UnitPicker
+            foodName={food?.name ?? 'Food item'}
+            units={units}
+            selected={unit}
+            onSelect={switchUnit}
+            onClose={() => setShowUnitPicker(false)}
+          />
+        )}
       </SheetContent>
     </Sheet>
   )
