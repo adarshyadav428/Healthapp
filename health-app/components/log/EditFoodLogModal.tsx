@@ -23,7 +23,7 @@ type MealValue = (typeof MEAL_OPTIONS)[number]['value']
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
-export function EditFoodLogModal({ log, onClose, onSaved }: { log: FoodLog; onClose: () => void; onSaved?: () => void }) {
+export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }: { log: FoodLog; onClose: () => void; onSaved?: () => void; logDate?: Date }) {
   const queryClient = useQueryClient()
   const { user } = useUser()
 
@@ -109,8 +109,9 @@ export function EditFoodLogModal({ log, onClose, onSaved }: { log: FoodLog; onCl
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Update failed')
 
-      // Update cache in-place — no re-fetch needed
-      const { start } = getUtcDayRange(new Date())
+      // Update cache in-place — no re-fetch needed (keyed to the day this
+      // entry belongs to, not necessarily today — see logDate)
+      const { start } = getUtcDayRange(logDate)
       queryClient.setQueryData<FoodLog[]>(['food-logs', user?.id, start], (old = []) =>
         old.map(f =>
           f.id === log.id

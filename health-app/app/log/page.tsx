@@ -201,6 +201,7 @@ export default async function LogPage({
             proteinTarget={profile.protein_g_target ?? 0}
             carbsTarget={profile.carbs_g_target ?? 0}
             fatTarget={profile.fat_g_target ?? 0}
+            date={viewDate}
           />
         </div>
 
@@ -218,7 +219,7 @@ export default async function LogPage({
 
         {/* Editable day log for the selected day (kept below the landing) */}
         <div className="mt-6">
-          <TodayFoodLog initialLogs={dayFoodLogs} />
+          <TodayFoodLog initialLogs={dayFoodLogs} date={viewDate} />
         </div>
 
         {/* Exercise — always today-specific */}

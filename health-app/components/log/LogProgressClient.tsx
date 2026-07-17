@@ -11,13 +11,14 @@ type Props = {
   proteinTarget: number
   carbsTarget: number
   fatTarget: number
+  date?: Date
 }
 
 // Ember Air Food summary card (1f): eaten / target, over-or-left in ember, a
 // slim ember progress bar, and a compact P/C/F row. Live via useFoodLogs.
-export function LogProgressClient({ initialLogs, kcalTarget }: Props) {
+export function LogProgressClient({ initialLogs, kcalTarget, date = new Date() }: Props) {
   const { user } = useUser()
-  const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
+  const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, date, initialLogs)
 
   const totals = useMemo(
     () =>

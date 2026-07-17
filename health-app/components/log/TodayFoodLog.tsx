@@ -163,10 +163,10 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
   )
 }
 
-export function TodayFoodLog({ initialLogs }: { initialLogs: FoodLog[] }) {
+export function TodayFoodLog({ initialLogs, date = new Date() }: { initialLogs: FoodLog[]; date?: Date }) {
   const { user } = useUser()
   const queryClient = useQueryClient()
-  const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
+  const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, date, initialLogs)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [editingLog, setEditingLog] = useState<FoodLog | null>(null)
 
@@ -198,7 +198,7 @@ export function TodayFoodLog({ initialLogs }: { initialLogs: FoodLog[] }) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Delete failed')
-      const { start } = getUtcDayRange(new Date())
+      const { start } = getUtcDayRange(date)
       queryClient.setQueryData<FoodLog[]>(['food-logs', user?.id, start], (old = []) => old.filter(f => f.id !== id))
       toast({ title: 'Entry deleted', duration: 2000 })
     } catch (err) {
@@ -210,11 +210,13 @@ export function TodayFoodLog({ initialLogs }: { initialLogs: FoodLog[] }) {
 
   if (logs.length === 0) return null
 
+  const isToday = getUtcDayRange(date).start === getUtcDayRange(new Date()).start
+
   return (
     <div className="space-y-2">
       {/* Summary row */}
       <div className="flex items-center justify-between">
-        <p className="text-[10.5px] font-medium uppercase tracking-[.1em] text-ink-3">Today&apos;s log</p>
+        <p className="text-[10.5px] font-medium uppercase tracking-[.1em] text-ink-3">{isToday ? "Today's log" : 'Log'}</p>
         <div className="flex gap-3 text-[11px] tabular-nums">
           <span className="font-semibold text-ink">{Math.round(totals.kcal)} kcal</span>
           <span className="font-medium" style={{ color: 'var(--protein)' }}>P{Math.round(totals.protein)}g</span>
@@ -237,6 +239,7 @@ export function TodayFoodLog({ initialLogs }: { initialLogs: FoodLog[] }) {
         <EditFoodLogModal
           log={editingLog}
           onClose={() => setEditingLog(null)}
+          logDate={date}
         />
       )}
     </div>

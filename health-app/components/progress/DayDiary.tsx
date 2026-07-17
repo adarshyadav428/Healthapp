@@ -183,6 +183,7 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
           log={editingLog}
           onClose={() => setEditingLog(null)}
           onSaved={() => queryClient.invalidateQueries({ queryKey: ['food-logs-diary', userId, start] })}
+          logDate={date}
         />
       )}
 
