@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import type { FoodLog, Profile } from '../../types/index'
@@ -14,6 +14,8 @@ import { WeeklyRecapCard, type WeeklyRecap } from './WeeklyRecapCard'
 import { InstallPromptCard } from '../pwa/InstallPromptCard'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
+import { nextUnseenStreakMilestone } from '../../lib/logMilestones'
+import { reportStreakMilestone } from '../../store/milestoneStore'
 import { Flame, Plus, MessageCircle } from 'lucide-react'
 
 const ChatLogModal = dynamic(() => import('../chat/ChatLogModal').then(m => m.ChatLogModal), { ssr: false })
@@ -32,6 +34,21 @@ export function DashboardClient({ profile, initialLogs, streakDays, loggedDates,
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
   const [editingLog, setEditingLog] = useState<FoodLog | null>(null)
   const [showChat, setShowChat] = useState(false)
+
+  // Celebrate a 7/30/100-day streak once each (localStorage-gated, fail-open).
+  useEffect(() => {
+    if (!user?.id || streakDays <= 0) return
+    const key = `gis.streakMilestones.${user.id}`
+    let seen: number[] = []
+    try {
+      const raw = localStorage.getItem(key)
+      if (raw) seen = JSON.parse(raw)
+    } catch { /* fail open */ }
+    const milestone = nextUnseenStreakMilestone(streakDays, seen)
+    if (milestone == null) return
+    try { localStorage.setItem(key, JSON.stringify([...seen, milestone])) } catch { /* noop */ }
+    reportStreakMilestone(milestone)
+  }, [user?.id, streakDays])
 
   const totals = useMemo(
     () => logs.reduce(

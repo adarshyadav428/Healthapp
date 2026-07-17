@@ -25,6 +25,23 @@ export type MilestoneAction = 'first_log_celebration' | 'log_paywall' | null
 
 export const LOG_PAYWALL_THRESHOLD = 3
 
+/** Streak lengths (days) worth a one-time celebration. */
+export const STREAK_MILESTONES = [7, 30, 100] as const
+
+/**
+ * The highest streak milestone the user has reached but not yet celebrated,
+ * or null. Returning the *highest* means an existing user already past a
+ * threshold celebrates it once (not every lower one), and a normal day-by-day
+ * climb celebrates each in turn.
+ */
+export function nextUnseenStreakMilestone(streakDays: number, seen: readonly number[]): number | null {
+  let best: number | null = null
+  for (const t of STREAK_MILESTONES) {
+    if (streakDays >= t && !seen.includes(t)) best = t
+  }
+  return best
+}
+
 export function getLogMilestoneAction(
   m: LogMilestone,
   seen: { celebrationSeen: boolean; paywallSeen: boolean }

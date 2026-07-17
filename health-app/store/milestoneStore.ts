@@ -10,15 +10,19 @@ import type { LogMilestone } from '../lib/logMilestones'
 type MilestoneState = {
   pending: LogMilestone | null
   pendingWeightKg: number | null
+  pendingStreak: number | null
   setPending: (m: LogMilestone | null) => void
   setPendingWeightKg: (kg: number | null) => void
+  setPendingStreak: (days: number | null) => void
 }
 
 export const useMilestoneStore = create<MilestoneState>((set) => ({
   pending: null,
   pendingWeightKg: null,
+  pendingStreak: null,
   setPending: (pending) => set({ pending }),
   setPendingWeightKg: (pendingWeightKg) => set({ pendingWeightKg }),
+  setPendingStreak: (pendingStreak) => set({ pendingStreak }),
 }))
 
 /** One-liner for log flows — no-ops when the response carried no milestone. */
@@ -39,4 +43,14 @@ export function reportWeightMilestone(kg?: number | null): void {
 
 export function clearWeightMilestone(): void {
   useMilestoneStore.getState().setPendingWeightKg(null)
+}
+
+/** Streak milestone (7/30/100 days), decided client-side on the dashboard. */
+export function reportStreakMilestone(days?: number | null): void {
+  if (!days) return
+  useMilestoneStore.getState().setPendingStreak(days)
+}
+
+export function clearStreakMilestone(): void {
+  useMilestoneStore.getState().setPendingStreak(null)
 }

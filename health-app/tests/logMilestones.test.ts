@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getLogMilestoneAction, LOG_PAYWALL_THRESHOLD } from '../lib/logMilestones'
+import { getLogMilestoneAction, LOG_PAYWALL_THRESHOLD, nextUnseenStreakMilestone } from '../lib/logMilestones'
 
 const seenNone = { celebrationSeen: false, paywallSeen: false }
 
@@ -66,5 +66,25 @@ describe('getLogMilestoneAction', () => {
     expect(
       getLogMilestoneAction({ isFirstLog: true, totalLogs: 3, isPro: false }, seenNone)
     ).toBe('first_log_celebration')
+  })
+})
+
+describe('nextUnseenStreakMilestone', () => {
+  it('celebrates a threshold the day it is reached', () => {
+    expect(nextUnseenStreakMilestone(7, [])).toBe(7)
+    expect(nextUnseenStreakMilestone(30, [7])).toBe(30)
+  })
+
+  it('does not re-celebrate a seen threshold', () => {
+    expect(nextUnseenStreakMilestone(8, [7])).toBeNull()
+  })
+
+  it('returns the highest reached-but-unseen (existing user past a threshold)', () => {
+    expect(nextUnseenStreakMilestone(100, [])).toBe(100)
+    expect(nextUnseenStreakMilestone(45, [])).toBe(30)
+  })
+
+  it('is null below the first milestone', () => {
+    expect(nextUnseenStreakMilestone(6, [])).toBeNull()
   })
 })

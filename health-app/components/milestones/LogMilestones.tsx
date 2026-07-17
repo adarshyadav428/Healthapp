@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Check, Crown, X } from 'lucide-react'
 import { Button } from '../ui/button'
 import { ConfettiBurst } from '../ui/ConfettiBurst'
-import { useMilestoneStore, clearPendingMilestone, clearWeightMilestone } from '../../store/milestoneStore'
+import { useMilestoneStore, clearPendingMilestone, clearWeightMilestone, clearStreakMilestone } from '../../store/milestoneStore'
 import { getLogMilestoneAction, type MilestoneAction } from '../../lib/logMilestones'
 import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { captureEvent } from '../../lib/posthog/client'
@@ -47,8 +47,10 @@ const PRO_FEATURES = [
 export function LogMilestones() {
   const pending = useMilestoneStore((s) => s.pending)
   const pendingWeightKg = useMilestoneStore((s) => s.pendingWeightKg)
+  const pendingStreak = useMilestoneStore((s) => s.pendingStreak)
   const [active, setActive] = useState<MilestoneAction>(null)
   const [weightKg, setWeightKg] = useState<number | null>(null)
+  const [streakDays, setStreakDays] = useState<number | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -100,18 +102,28 @@ export function LogMilestones() {
     setWeightKg(pendingWeightKg)
   }, [pendingWeightKg])
 
+  // Streak milestone comes pre-decided (seen-flag) by the dashboard.
+  useEffect(() => {
+    if (!pendingStreak) return
+    clearStreakMilestone()
+    captureEvent('streak_milestone_shown', { days: pendingStreak })
+    setStreakDays(pendingStreak)
+  }, [pendingStreak])
+
   // Celebrations auto-dismiss; the paywall waits for an explicit choice.
   useEffect(() => {
-    if (active !== 'first_log_celebration' && weightKg == null) return
+    if (active !== 'first_log_celebration' && weightKg == null && streakDays == null) return
     const t = setTimeout(() => {
       setActive(null)
       setWeightKg(null)
+      setStreakDays(null)
     }, 2600)
     return () => clearTimeout(t)
-  }, [active, weightKg])
+  }, [active, weightKg, streakDays])
 
-  if (active === 'first_log_celebration' || weightKg != null) {
+  if (active === 'first_log_celebration' || weightKg != null || streakDays != null) {
     const isWeight = weightKg != null
+    const isStreak = streakDays != null
     return (
       <div
         className="fixed inset-0 z-[100] flex items-center justify-center px-8"
@@ -119,19 +131,22 @@ export function LogMilestones() {
         onClick={() => {
           setActive(null)
           setWeightKg(null)
+          setStreakDays(null)
         }}
         role="status"
       >
         <div className="relative w-full max-w-xs rounded-sheet bg-surface px-6 pb-7 pt-8 text-center shadow-float">
           <ConfettiBurst />
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-soft text-[28px]">
-            {isWeight ? '⚖️' : '🎉'}
+            {isStreak ? '🔥' : isWeight ? '⚖️' : '🎉'}
           </div>
           <h2 className="mt-4 font-display text-[22px] font-bold text-ink">
-            {isWeight ? `${weightKg} kg down!` : 'First meal logged!'}
+            {isStreak ? `${streakDays}-day streak!` : isWeight ? `${weightKg} kg down!` : 'First meal logged!'}
           </h2>
           <p className="mt-1.5 text-sm text-ink-2">
-            {isWeight
+            {isStreak
+              ? `${streakDays} days in a row — this is how the habit sticks. Keep it going.`
+              : isWeight
               ? 'A new milestone — that consistency is paying off.'
               : "That's the hardest part done. Log every meal today and your streak begins."}
           </p>
