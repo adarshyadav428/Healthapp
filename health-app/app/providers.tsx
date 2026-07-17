@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { ThemeProvider } from 'next-themes'
 import { Toaster } from '../components/ui/toaster'
 import { LogMilestones } from '../components/milestones/LogMilestones'
+import { SentryInit } from '../components/SentryInit'
 import { capturePageview } from '../lib/posthog/client'
 
 function PostHogPageView() {
@@ -41,6 +42,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           <PostHogPageView />
         </Suspense>
         {children}
+        <SentryInit />
         <LogMilestones />
         <Toaster />
       </QueryClientProvider>
