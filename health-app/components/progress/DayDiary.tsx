@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { FoodLog, ExerciseLog } from '../../types/index'
-import { getUtcDayRange } from '../../lib/dateUtils'
+import { getIstDayRange } from '../../lib/dateUtils'
 import { Loader2, Dumbbell, Flame, Pencil, Trash2 } from 'lucide-react'
 import { toast } from '../ui/use-toast'
 import { EditFoodLogModal } from '../log/EditFoodLogModal'
@@ -18,7 +18,7 @@ const MEAL_CONFIG = {
 // Both hooks go through the server API (not the browser Supabase client) so
 // the free-tier 7-day history clamp is enforced server-side for every read.
 function useDayLogs(userId: string | null, date: Date) {
-  const { start, end } = getUtcDayRange(date)
+  const { start, end } = getIstDayRange(date)
   return useQuery({
     queryKey: ['food-logs-diary', userId, start],
     enabled: Boolean(userId),
@@ -38,7 +38,7 @@ function useDayLogs(userId: string | null, date: Date) {
 }
 
 function useDayExercise(userId: string | null, date: Date) {
-  const { start, end } = getUtcDayRange(date)
+  const { start, end } = getIstDayRange(date)
   return useQuery({
     queryKey: ['exercise-logs-diary', userId, start],
     enabled: Boolean(userId),
@@ -58,7 +58,7 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
   const queryClient = useQueryClient()
   const [editingLog, setEditingLog] = useState<FoodLog | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const { start } = getUtcDayRange(date)
+  const { start } = getIstDayRange(date)
 
   const deleteLog = async (id: string) => {
     if (deletingId) return

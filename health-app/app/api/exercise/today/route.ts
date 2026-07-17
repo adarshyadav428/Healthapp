@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
-import { getUtcDayRange } from '../../../../lib/dateUtils'
+import { getIstDayRange } from '../../../../lib/dateUtils'
 
 export async function GET() {
   try {
@@ -11,7 +11,7 @@ export async function GET() {
     const user = await getApiUser(supabase)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { start, end } = getUtcDayRange()
+    const { start, end } = getIstDayRange()
     const { data, error } = await supabase
       .from('exercise_logs')
       .select('id, activity, duration_min, calories, logged_at')

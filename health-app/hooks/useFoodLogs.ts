@@ -2,10 +2,10 @@
 
 import { useQuery } from '@tanstack/react-query'
 import type { FoodLog } from '../types/index'
-import { getUtcDayRange } from '../lib/dateUtils'
+import { getIstDayRange } from '../lib/dateUtils'
 
 export function useFoodLogs(userId: string | null, date = new Date(), initialData?: FoodLog[]) {
-  const { start, end } = getUtcDayRange(date)
+  const { start, end } = getIstDayRange(date)
 
   return useQuery({
     queryKey: ['food-logs', userId, start],

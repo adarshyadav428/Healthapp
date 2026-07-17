@@ -43,3 +43,29 @@ export function istDaysAgoStart(days: number, date: Date = new Date()): string {
   const d = istShifted.getUTCDate()
   return new Date(Date.UTC(y, m, d - (days - 1)) - IST_OFFSET_MS).toISOString()
 }
+
+/**
+ * `YYYY-MM-DD` for the IST calendar date containing `date` (default: now).
+ * This is the string the user thinks of as "the day" — use it for "today"
+ * comparisons and date-param defaults instead of UTC calendar fields.
+ */
+export function istDateStr(date: Date = new Date()): string {
+  const istShifted = new Date(date.getTime() + IST_OFFSET_MS)
+  return [
+    istShifted.getUTCFullYear(),
+    String(istShifted.getUTCMonth() + 1).padStart(2, '0'),
+    String(istShifted.getUTCDate()).padStart(2, '0'),
+  ].join('-')
+}
+
+/**
+ * The canonical `Date` for a `YYYY-MM-DD` string: UTC midnight of that date.
+ * Pass it to getIstDayRange to get that IST day's UTC range — getIstDayRange's
+ * +5:30 shift keeps 00:00 → 05:30 on the same calendar date, so the IST day it
+ * extracts is exactly `dateStr`. (Do NOT use date-fns `parse`, which yields
+ * *local*-midnight and drifts by the tz offset.)
+ */
+export function dateStrToUtcMidnight(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d))
+}

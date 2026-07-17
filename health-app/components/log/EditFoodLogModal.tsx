@@ -7,7 +7,7 @@ import { toast } from '../ui/use-toast'
 import { Sheet, SheetContent } from '../ui/sheet'
 import { Button } from '../ui/button'
 import { X, ChevronDown } from 'lucide-react'
-import { getUtcDayRange } from '../../lib/dateUtils'
+import { getIstDayRange } from '../../lib/dateUtils'
 import { useUser } from '../../hooks/useUser'
 import { buildUnits, inferPortionSelection, GRAMS_UNIT, type Unit } from '../../lib/portion-units'
 import { UnitPicker } from './UnitPicker'
@@ -111,7 +111,7 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
 
       // Update cache in-place — no re-fetch needed (keyed to the day this
       // entry belongs to, not necessarily today — see logDate)
-      const { start } = getUtcDayRange(logDate)
+      const { start } = getIstDayRange(logDate)
       queryClient.setQueryData<FoodLog[]>(['food-logs', user?.id, start], (old = []) =>
         old.map(f =>
           f.id === log.id

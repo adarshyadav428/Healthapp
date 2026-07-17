@@ -6,7 +6,7 @@ import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
-import { getUtcDayRange } from '../../lib/dateUtils'
+import { getIstDayRange } from '../../lib/dateUtils'
 import { Trash2, ChevronDown, Pencil, BookmarkPlus, Check, X } from 'lucide-react'
 import { EditFoodLogModal } from './EditFoodLogModal'
 
@@ -198,7 +198,7 @@ export function TodayFoodLog({ initialLogs, date = new Date() }: { initialLogs: 
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Delete failed')
-      const { start } = getUtcDayRange(date)
+      const { start } = getIstDayRange(date)
       queryClient.setQueryData<FoodLog[]>(['food-logs', user?.id, start], (old = []) => old.filter(f => f.id !== id))
       toast({ title: 'Entry deleted', duration: 2000 })
     } catch (err) {
@@ -210,7 +210,7 @@ export function TodayFoodLog({ initialLogs, date = new Date() }: { initialLogs: 
 
   if (logs.length === 0) return null
 
-  const isToday = getUtcDayRange(date).start === getUtcDayRange(new Date()).start
+  const isToday = getIstDayRange(date).start === getIstDayRange(new Date()).start
 
   return (
     <div className="space-y-2">

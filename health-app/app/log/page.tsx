@@ -8,7 +8,7 @@ import { SwipeDayNav } from '../../components/log/SwipeDayNav'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import type { Food, FoodLog } from '../../types/index'
-import { getUtcDayRange } from '../../lib/dateUtils'
+import { getIstDayRange, istDateStr, dateStrToUtcMidnight } from '../../lib/dateUtils'
 
 // Below-fold widgets — split into separate chunks so they don't block initial JS parse.
 const SkeletonCard = () => <div className="h-32 rounded-2xl bg-card border border-border animate-pulse" />
@@ -20,26 +20,21 @@ export const metadata = { robots: { index: false } }
 const FOOD_SELECT =
   'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions'
 
-/** Parse a YYYY-MM-DD string (UTC) into a Date. Returns today on invalid input. */
+/**
+ * Parse a YYYY-MM-DD string as an IST calendar day. Returns today (IST) on
+ * missing/invalid/future input. `date` is what we hand to getIstDayRange:
+ * for today we pass `now` (its IST day is today); for a past day we pass that
+ * date's UTC midnight (getIstDayRange resolves it to the right IST day).
+ */
 function parseDateParam(raw: string | undefined): { date: Date; dateStr: string } {
-  const todayUtc = new Date()
-  const todayStr = [
-    todayUtc.getUTCFullYear(),
-    String(todayUtc.getUTCMonth() + 1).padStart(2, '0'),
-    String(todayUtc.getUTCDate()).padStart(2, '0'),
-  ].join('-')
+  const todayStr = istDateStr()
 
-  if (!raw || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-    return { date: todayUtc, dateStr: todayStr }
+  if (!raw || !/^\d{4}-\d{2}-\d{2}$/.test(raw) || raw >= todayStr) {
+    // Missing, malformed, today, or a future date → clamp to today (IST).
+    return { date: new Date(), dateStr: todayStr }
   }
 
-  const [year, month, day] = raw.split('-').map(Number)
-  const d = new Date(Date.UTC(year, month - 1, day))
-
-  // Clamp: never let future dates be viewed
-  if (raw > todayStr) return { date: todayUtc, dateStr: todayStr }
-
-  return { date: d, dateStr: raw }
+  return { date: dateStrToUtcMidnight(raw), dateStr: raw }
 }
 
 export default async function LogPage({
@@ -52,20 +47,14 @@ export default async function LogPage({
 
   const { date: viewDate, dateStr } = parseDateParam(searchParams?.date)
 
-  // Today's UTC string for comparison
-  const nowUtc = new Date()
-  const todayStr = [
-    nowUtc.getUTCFullYear(),
-    String(nowUtc.getUTCMonth() + 1).padStart(2, '0'),
-    String(nowUtc.getUTCDate()).padStart(2, '0'),
-  ].join('-')
+  // "Today" is the IST calendar date (not UTC — a 1am-IST log is still today).
+  const todayStr = istDateStr()
   const isToday = dateStr === todayStr
 
-  const { start, end } = getUtcDayRange(viewDate)
+  const { start, end } = getIstDayRange(viewDate)
 
-  // Check if user has yesterday's logs (for "copy yesterday" feature — only relevant on today's view)
-  const yesterday = new Date(Date.UTC(nowUtc.getUTCFullYear(), nowUtc.getUTCMonth(), nowUtc.getUTCDate() - 1))
-  const { start: yStart, end: yEnd } = getUtcDayRange(yesterday)
+  // Check if user has yesterday's (IST) logs — for the "copy yesterday" feature.
+  const { start: yStart, end: yEnd } = getIstDayRange(new Date(Date.now() - 24 * 60 * 60 * 1000))
 
   // Every query below only needs user.id — one parallel round trip instead of
   // three sequential stages (profile → subscription → data). The profile /
@@ -113,15 +102,9 @@ export default async function LogPage({
   const sub = subResult.data
   const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
 
-  // Free-tier history gate: clamp dates older than 7 days
+  // Free-tier history gate: clamp dates older than 7 IST days
   if (!isPro && searchParams?.date) {
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7)
-    const cutoffStr = [
-      sevenDaysAgo.getUTCFullYear(),
-      String(sevenDaysAgo.getUTCMonth() + 1).padStart(2, '0'),
-      String(sevenDaysAgo.getUTCDate()).padStart(2, '0'),
-    ].join('-')
+    const cutoffStr = istDateStr(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
     if (dateStr < cutoffStr) redirect('/upgrade?reason=history')
   }
 

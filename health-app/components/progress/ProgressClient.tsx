@@ -7,6 +7,7 @@ import { format, parseISO, startOfDay, subDays, eachDayOfInterval, parse, isWith
 import type { Profile, WeightLog } from '../../types/index'
 import { useUser } from '../../hooks/useUser'
 import { DayDiary } from './DayDiary'
+import { dateStrToUtcMidnight } from '../../lib/dateUtils'
 import { ShareProgressButton } from './ShareProgressButton'
 import {
   Flame, Scale, ChevronLeft, ChevronRight, Utensils, CalendarDays, X, Dumbbell, Lock, Crown,
@@ -326,7 +327,7 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
               <X className="h-4 w-4 text-ink-2" />
             </button>
           </div>
-          <DayDiary userId={user.id} date={parse(selectedDate, 'yyyy-MM-dd', new Date())} />
+          <DayDiary userId={user.id} date={dateStrToUtcMidnight(selectedDate)} />
         </div>
       )}
 

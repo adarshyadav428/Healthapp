@@ -39,28 +39,33 @@ export async function GET() {
     const foodLogs = foodResult.data ?? []
     const weightLogs = weightResult.data ?? []
 
+    // Timestamps are rendered in IST (the day-definition used everywhere in the
+    // app) so an Indian user's 6:58 AM breakfast doesn't export as "01:28" UTC.
+    const IST = 'Asia/Kolkata'
+    const istDate = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: IST })
+    const istTime = (iso: string) =>
+      new Date(iso).toLocaleTimeString('en-GB', { timeZone: IST, hour: '2-digit', minute: '2-digit', hour12: false })
+
     // Build CSV
     const rows: string[] = [
       '# GetInShape Food Log Export (last 90 days)',
-      '# Generated: ' + new Date().toISOString(),
+      '# Generated: ' + new Date().toISOString() + ' — all times below are IST',
       '',
-      'Date,Time,Meal,Food,Brand,Grams,Calories,Protein(g),Carbs(g),Fat(g)',
+      'Date (IST),Time (IST),Meal,Food,Brand,Grams,Calories,Protein(g),Carbs(g),Fat(g)',
     ]
 
     for (const log of foodLogs) {
-      const d = new Date(log.logged_at)
-      const date = d.toISOString().slice(0, 10)
-      const time = d.toISOString().slice(11, 16)
+      const date = istDate(log.logged_at)
+      const time = istTime(log.logged_at)
       const food = (log.food as { name?: string; brand?: string } | null)
       const name = csvEscape(food?.name ?? 'Unknown')
       const brand = csvEscape(food?.brand ?? '')
       rows.push(`${date},${time},${log.meal},${name},${brand},${log.grams},${Math.round(log.kcal)},${log.protein_g},${log.carbs_g},${log.fat_g}`)
     }
 
-    rows.push('', '# Weight Log', 'Date,Weight(kg)')
+    rows.push('', '# Weight Log', 'Date (IST),Weight(kg)')
     for (const log of weightLogs) {
-      const date = new Date(log.measured_at).toISOString().slice(0, 10)
-      rows.push(`${date},${log.weight_kg}`)
+      rows.push(`${istDate(log.measured_at)},${log.weight_kg}`)
     }
 
     const csv = rows.join('\n')

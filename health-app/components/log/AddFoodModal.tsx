@@ -5,7 +5,7 @@ import type { Food, FoodLog } from '../../types/index'
 import { useUser } from '../../hooks/useUser'
 import { toast } from '../ui/use-toast'
 import { useQueryClient } from '@tanstack/react-query'
-import { getUtcDayRange } from '../../lib/dateUtils'
+import { getIstDayRange } from '../../lib/dateUtils'
 import { ArrowLeft, ChevronDown, Drumstick, Droplet, Wheat, Sprout, Loader2 } from 'lucide-react'
 import { reportLogMilestone } from '../../store/milestoneStore'
 import type { LogMilestone } from '../../lib/logMilestones'
@@ -117,7 +117,7 @@ export function AddFoodModal({ food, onClose }: { food: Food; onClose: () => voi
 
       // API now returns the full inserted row — update cache instantly (no refetch needed)
       if (body.row) {
-        const { start } = getUtcDayRange()
+        const { start } = getIstDayRange()
         queryClient.setQueryData<FoodLog[]>(['food-logs', user.id, start], (old = []) => [body.row as FoodLog, ...(old ?? [])])
       } else {
         queryClient.invalidateQueries({ queryKey: ['food-logs'] })

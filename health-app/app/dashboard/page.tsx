@@ -4,7 +4,7 @@ import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import type { FoodLog } from '../../types/index'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { DashboardClient } from '../../components/dashboard/DashboardClient'
-import { getUtcDayRange } from '../../lib/dateUtils'
+import { getIstDayRange } from '../../lib/dateUtils'
 import { calculateStreak } from '../../lib/streak'
 
 export const metadata: Metadata = {
@@ -19,7 +19,7 @@ export default async function DashboardPage() {
   const supabase = createServerClient()
   const user = await getAuthedUser(supabase)
 
-  const { start, end } = getUtcDayRange()
+  const { start, end } = getIstDayRange()
 
   // Streak looks back 60 days of log timestamps
   const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
