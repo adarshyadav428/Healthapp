@@ -39,6 +39,11 @@ export async function POST(req: Request) {
       key_id: process.env.RAZORPAY_KEY_ID,
     })
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message }, { status: 500 })
+    // Never surface internal strings ("Missing RAZORPAY_KEY_ID…") to users.
+    console.error('[razorpay/create-subscription]', err)
+    return NextResponse.json(
+      { error: 'Payments are temporarily unavailable. Please try again in a moment.' },
+      { status: 503 }
+    )
   }
 }
