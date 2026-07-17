@@ -9,6 +9,7 @@ import { toast } from '../../components/ui/use-toast'
 import Link from 'next/link'
 import { Check, Crown, Zap, ArrowLeft, Lock } from 'lucide-react'
 import { useUser } from '../../hooks/useUser'
+import { captureEvent } from '../../lib/posthog/client'
 import { projectGoalDate, formatGoalDate } from '../../lib/projection'
 import { isPlayBillingAvailable, getPlayPrices, purchasePlan } from '../../lib/play/billing'
 import { PLAY_PRODUCTS } from '../../lib/play/products'
@@ -125,6 +126,11 @@ export default function UpgradePage() {
     }
   }, [])
 
+  // Funnel: paywall view (checkout success is covered by subscription_started).
+  useEffect(() => {
+    captureEvent('upgrade_viewed')
+  }, [])
+
   // Google Play Billing path (inside the TWA) — verify happens server-side.
   const startPlayPurchase = async (plan: 'monthly' | 'annual') => {
     const result = await purchasePlan(PLAY_PRODUCT_FOR_PLAN[plan])
@@ -191,12 +197,15 @@ export default function UpgradePage() {
   const startCheckout = async (plan: 'monthly' | 'annual') => {
     if (loading) return
     setLoading(plan)
+    const provider = playAvailable ? 'google_play' : 'razorpay'
+    captureEvent('checkout_attempted', { plan, provider })
     try {
       if (playAvailable) await startPlayPurchase(plan)
       else await startRazorpayCheckout(plan)
     } catch (err) {
       const message = (err as Error).message
       if (message !== 'Checkout cancelled') {
+        captureEvent('checkout_failed', { plan, provider, error: message })
         toast({ title: 'Checkout failed', description: message, variant: 'error' })
       }
       setLoading(null)
