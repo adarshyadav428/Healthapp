@@ -1,6 +1,9 @@
 .claude/
 .vercel
 
+# Personal planning artifacts kept at repo root (not source)
+GetInShape-Roadmap.pdf
+
 # Android/TWA build (Bubblewrap) — never commit signing keys or build output
 *.keystore
 android.keystore
