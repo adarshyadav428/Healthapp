@@ -9,6 +9,7 @@ import { toast } from '../../components/ui/use-toast'
 import Link from 'next/link'
 import { Check, Crown, Zap, ArrowLeft, Lock } from 'lucide-react'
 import { useUser } from '../../hooks/useUser'
+import { projectGoalDate, formatGoalDate } from '../../lib/projection'
 import { isPlayBillingAvailable, getPlayPrices, purchasePlan } from '../../lib/play/billing'
 import { PLAY_PRODUCTS } from '../../lib/play/products'
 
@@ -100,8 +101,14 @@ const PLAY_PRODUCT_FOR_PLAN: Record<'monthly' | 'annual', string> = {
 export default function UpgradePage() {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const { user } = useUser()
+  const { user, profile } = useUser()
   const [loading, setLoading] = useState<string | null>(null)
+
+  // Projected goal-date teaser (Cal AI's conversion trick) — Pro sells the curve.
+  const projection =
+    profile && profile.goal !== 'maintain' && profile.current_weight_kg && profile.target_weight_kg
+      ? projectGoalDate(profile.current_weight_kg, profile.target_weight_kg, profile.pace_kg_per_week ?? 0.5)
+      : null
   // null = still detecting, true = inside Play TWA, false = web (use Stripe)
   const [playAvailable, setPlayAvailable] = useState<boolean | null>(null)
   const [playPrices, setPlayPrices] = useState<Record<string, string>>({})
@@ -219,6 +226,11 @@ export default function UpgradePage() {
           <h1 className="font-display text-3xl font-bold text-ink">Upgrade to Pro</h1>
           <p className="mt-2 text-sm text-ink-2">Log freely. Get deeper insights when you&apos;re ready.</p>
           <p className="mt-1.5 text-xs font-semibold text-brand-ink">Founder pricing — lock in ₹699/year while we&apos;re new.</p>
+          {projection && profile && (
+            <p className="mt-2 text-[13px] text-ink-2">
+              You&apos;re on track for <span className="font-semibold text-ink">{profile.target_weight_kg} kg by ~{formatGoalDate(projection.date)}</span> — see your full curve with Pro.
+            </p>
+          )}
         </div>
 
         {/* Features */}

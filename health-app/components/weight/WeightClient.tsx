@@ -6,6 +6,7 @@ import type { WeightLog, Profile } from '../../types/index'
 import { WeightStats } from './WeightStats'
 import { BmiCard } from './BmiCard'
 import { useWeightLogs } from '../../hooks/useWeightLogs'
+import { projectGoalDate, formatGoalDate } from '../../lib/projection'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
 import { Button } from '../ui/button'
@@ -26,6 +27,13 @@ export function WeightClient({ logs, profile }: { logs: WeightLog[]; profile: Pr
   const recentEntries = [...data]
     .sort((a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime())
     .slice(0, 10)
+
+  // Projected goal date from the latest weigh-in (or the onboarding weight).
+  const latestWeight = recentEntries[0]?.weight_kg ?? profile.current_weight_kg
+  const projection =
+    profile.goal !== 'maintain' && latestWeight
+      ? projectGoalDate(latestWeight, profile.target_weight_kg, profile.pace_kg_per_week ?? 0.5)
+      : null
 
   const deleteLog = async (id: string) => {
     if (deletingId) return
@@ -50,6 +58,18 @@ export function WeightClient({ logs, profile }: { logs: WeightLog[]; profile: Pr
   return (
     <div className="space-y-4">
       <WeightStats logs={data} profile={profile} />
+
+      {/* Projected goal date — the "you'll reach X kg by ~date" moment */}
+      {projection && (
+        <div className="rounded-sheet border border-hairline bg-brand-soft p-4 shadow-rest">
+          <p className="text-[14px] font-bold text-brand-ink">
+            🎯 On track for {profile.target_weight_kg} kg by ~{formatGoalDate(projection.date)}
+          </p>
+          <p className="mt-0.5 text-xs text-ink-2">
+            At {profile.pace_kg_per_week ?? 0.5} kg/week · about {Math.round(projection.weeks)} weeks to go
+          </p>
+        </div>
+      )}
 
       {/* BMI card */}
       <BmiCard logs={data} profile={profile} />

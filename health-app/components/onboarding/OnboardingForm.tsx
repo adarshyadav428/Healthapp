@@ -9,6 +9,7 @@ import { toast } from '../ui/use-toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronRight, ChevronLeft, Camera, MessageSquarePlus } from 'lucide-react'
 import { calculateTDEE } from '../../lib/tdee'
+import { projectGoalDate, formatGoalDate } from '../../lib/projection'
 import { captureEvent } from '../../lib/posthog/client'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
@@ -135,6 +136,14 @@ export function OnboardingForm() {
       })
     }
   } catch { /* ignore */ }
+
+  // "You'll reach X kg by ~date" — the projected-date wow moment (step 6).
+  const goalProjection =
+    watchedValues.goal !== 'maintain' &&
+    watchedValues.current_weight_kg > 0 &&
+    watchedValues.target_weight_kg > 0
+      ? projectGoalDate(watchedValues.current_weight_kg, watchedValues.target_weight_kg, watchedValues.pace_kg_per_week)
+      : null
 
   return (
     <div>
@@ -437,6 +446,13 @@ export function OnboardingForm() {
                 <p className="text-[10px] font-semibold text-ink-2">Fat</p>
               </div>
             </div>
+            {goalProjection && (
+              <div className="mt-3 rounded-control bg-surface p-3 text-center">
+                <p className="text-[13px] font-bold text-brand-ink">
+                  🎯 At this pace, you&apos;ll reach {watchedValues.target_weight_kg} kg by ~{formatGoalDate(goalProjection.date)}
+                </p>
+              </div>
+            )}
             <p className="mt-2 text-[11px] text-energy-ink">Calculated using Mifflin-St Jeor formula. You can adjust this anytime in settings.</p>
           </div>
         )}
