@@ -1,6 +1,6 @@
 # Google Play Store launch runbook — GetInShape
 
-Package: `com.getinshape.app` · Host: `https://getinshape.co.in` · Play Console org: **Plum2408** (DUNS + website verified 2026-07-12)
+Package: `com.getinshape.app` · Host: `https://www.getinshape.co.in` · Play Console org: **Plum2408** (DUNS + website verified 2026-07-12)
 
 Work through the sections **in order**. Steps marked 🖐 are manual (dashboard/console clicks only you can do).
 
@@ -9,12 +9,12 @@ Work through the sections **in order**. Steps marked 🖐 are manual (dashboard/
 ## 1. Pre-flight (before building anything)
 
 - [ ] 🖐 **Rotate the Supabase service-role key** (Supabase Dashboard → Settings → API → regenerate `service_role`). Update `SUPABASE_SERVICE_ROLE_KEY` in Vercel env + local `.env.local`, redeploy. Also delete the old Stripe **test** keys from the Stripe dashboard (Stripe is legacy-only).
-- [ ] 🖐 **Apply pending migrations** in Supabase Dashboard → SQL editor (in order, skip any already applied):
-  - `012_play_billing.sql` (provider / play columns on `subscriptions`)
-  - `022_razorpay_billing.sql` (adds `'razorpay'` to the provider CHECK)
-  - `023_billing_hardening.sql` (unique `play_purchase_token` index + `cancel_at_period_end` — **Razorpay cancel 500s until this runs**)
-- [ ] 🖐 **Flip `NEXT_PUBLIC_APP_URL`** in Vercel env to `https://getinshape.co.in` and redeploy — sitemap/robots/canonicals must agree with the TWA host.
-- [ ] 🖐 **Razorpay (web billing, parallel track):** once KYC approves — create plans Monthly ₹199 / Annual ₹699 (Payments → Subscriptions), add webhook `https://getinshape.co.in/api/razorpay/webhook` (events: `subscription.activated/charged/cancelled/completed`), set the 5 env vars (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_MONTHLY_PLAN_ID`, `RAZORPAY_ANNUAL_PLAN_ID`) in Vercel, redeploy.
+- [ ] 🖐 **Apply the one pending migration** in Supabase Dashboard → SQL editor. Live-DB state was re-probed 2026-07-17: `012`/`022`/`023` (all billing columns incl. `cancel_at_period_end`) are **already applied** — the earlier "apply 012/022/023" list here was wrong. Only this remains:
+  - `015_chat_logs.sql` (**until applied, the 10/day AI-chat limit is silently off** — free unlimited Gemini on your bill)
+  - Do **not** apply `011_weekly_calorie_view.sql` — the view is referenced nowhere in code (deliberately skipped).
+  - Full apply-and-verify SQL: `docs/launch-plan-2026-07-17.md` §4.
+- [ ] 🖐 **Flip `NEXT_PUBLIC_APP_URL`** in Vercel env to `https://www.getinshape.co.in` and redeploy — sitemap/robots/canonicals must agree with the TWA host.
+- [ ] 🖐 **Razorpay (web billing, parallel track):** once KYC approves — create plans Monthly ₹199 / Annual ₹699 (Payments → Subscriptions), add webhook `https://www.getinshape.co.in/api/razorpay/webhook` (events: `subscription.activated/charged/cancelled/completed`), set the 5 env vars (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_MONTHLY_PLAN_ID`, `RAZORPAY_ANNUAL_PLAN_ID`) in Vercel, redeploy.
 - [ ] Confirm Play env vars exist in Vercel (values come from §6–7): `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (base64), `ANDROID_PACKAGE_NAME=com.getinshape.app`, `PLAY_RTDN_SECRET`, `NEXT_PUBLIC_PLAY_PRODUCT_MONTHLY`, `NEXT_PUBLIC_PLAY_PRODUCT_ANNUAL`.
 - [ ] Deploy the current main (new `/delete-account` page + updated `/manifest.webmanifest` must be live **before** running Bubblewrap).
 
@@ -29,7 +29,7 @@ cd "C:\Users\plump\Downloads\Health App"
 # First run: bubblewrap offers to download its own JDK + Android SDK — accept.
 # Init from the LIVE manifest, then diff against the committed twa-manifest.json
 # (the CLI schema drifts between versions; the committed file is the intent).
-bubblewrap init --manifest https://getinshape.co.in/manifest.webmanifest
+bubblewrap init --manifest https://www.getinshape.co.in/manifest.webmanifest
 
 bubblewrap build        # produces app-release-bundle.aab (+ .apk for local install)
 ```
@@ -48,13 +48,13 @@ bubblewrap build        # produces app-release-bundle.aab (+ .apk for local inst
    "sha256_cert_fingerprints": ["<existing upload fp>", "<play app signing fp>"]
    ```
 3. Deploy, then verify with Google's statement list tester:
-   `https://developers.google.com/digital-asset-links/tools/generator` (site `https://getinshape.co.in`, package `com.getinshape.app`).
+   `https://developers.google.com/digital-asset-links/tools/generator` (site `https://www.getinshape.co.in`, package `com.getinshape.app`).
 4. Install the app from the Play testing track — the URL bar must be **gone**. If it shows, the fingerprints don't match.
 
 ## 4. Play Console — create app + store listing
 
 - [ ] 🖐 Create app: name **GetInShape**, default language English (India if offered), **App**, **Free**. Declarations: contains in-app purchases.
-- [ ] Category: **Health & Fitness**. Contact email: `adarshyadavazm123@gmail.com`. Privacy policy URL: `https://getinshape.co.in/privacy`.
+- [ ] Category: **Health & Fitness**. Contact email: `adarshyadavazm123@gmail.com`. Privacy policy URL: `https://www.getinshape.co.in/privacy`.
 
 ### Drafted listing copy
 
@@ -94,7 +94,7 @@ bubblewrap build        # produces app-release-bundle.aab (+ .apk for local inst
 |---|---|
 | Collects data? | Yes |
 | Encrypted in transit? | Yes |
-| Deletion mechanism? | Yes — in-app (Settings → Delete account) + `https://getinshape.co.in/delete-account` |
+| Deletion mechanism? | Yes — in-app (Settings → Delete account) + `https://www.getinshape.co.in/delete-account` |
 | **Personal info** | Email address, Name — app functionality / account management. Collected, not shared. |
 | **Health & fitness** | Health info (food/calorie logs, weight, exercise) — app functionality. Collected, not shared. |
 | **Photos** | Photos (meal scans) — processed ephemerally (sent to Google Gemini for analysis, **not stored**); mark as collected, processed ephemerally, not shared. |
@@ -103,7 +103,7 @@ bubblewrap build        # produces app-release-bundle.aab (+ .apk for local inst
 | Data sold? | No. |
 
 - [ ] 🖐 **Health apps declaration** — declare as a health & fitness app (calorie/weight tracking). Not a medical device; no medical advice given (the Terms page already disclaims this).
-- [ ] 🖐 **Account deletion URL:** `https://getinshape.co.in/delete-account`
+- [ ] 🖐 **Account deletion URL:** `https://www.getinshape.co.in/delete-account`
 - [ ] 🖐 **Content rating questionnaire (IARC):** utility/health app, no violence/sex/gambling/UGC → expect "Everyone"/3+.
 - [ ] 🖐 **Target audience:** 18+ (avoids the child-safety policy track; the privacy policy already says not for under-13s).
 - [ ] 🖐 **Ads declaration:** No ads.
@@ -121,7 +121,7 @@ bubblewrap build        # produces app-release-bundle.aab (+ .apk for local inst
 1. 🖐 Google Cloud Console → create/select a project → enable **Google Play Android Developer API** → create a **service account** → create a JSON key.
 2. 🖐 Play Console → Users and permissions → invite the service account email → grant **View financial data** + **Manage orders and subscriptions**.
 3. Base64 the JSON key → Vercel env `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`; set `ANDROID_PACKAGE_NAME=com.getinshape.app`; pick a random `PLAY_RTDN_SECRET`.
-4. 🖐 Cloud Pub/Sub: create topic `play-rtdn` → add a **push subscription** to `https://getinshape.co.in/api/play/rtdn?secret=<PLAY_RTDN_SECRET>` → grant `google-play-developer-notifications@system.gserviceaccount.com` the **Pub/Sub Publisher** role on the topic.
+4. 🖐 Cloud Pub/Sub: create topic `play-rtdn` → add a **push subscription** to `https://www.getinshape.co.in/api/play/rtdn?secret=<PLAY_RTDN_SECRET>` → grant `google-play-developer-notifications@system.gserviceaccount.com` the **Pub/Sub Publisher** role on the topic.
 5. 🖐 Play Console → Monetize → Monetization setup → enter the topic name → **Send test notification** → confirm a 200 in Vercel logs for `/api/play/rtdn`.
 
 ## 8. Rollout

@@ -125,9 +125,11 @@ The Android TWA (`com.getinshape.app`) must sell Pro through Google Play Billing
 
 ### Database tables (Supabase Postgres)
 
-`profiles`, `food_logs`, `foods`, `weight_logs`, `subscriptions`, `water_logs`, `exercise_logs`, `sleep_logs`, `fasting_logs`, `measurements`, `saved_meals`.
+`profiles`, `food_logs`, `foods`, `weight_logs`, `subscriptions`, `exercise_logs`, `food_favourites`, `saved_meals`, `saved_meal_items`, `camera_photo_logs`, `chat_logs`, `push_subscriptions`.
 
-Migrations are numbered `001` – `023` in `supabase/migrations/`. Apply **all** in order before running locally. Key ones:
+> The five wellness tables (`water_logs`, `sleep_logs`, `fasting_sessions`, `measurements_logs`) were **dropped** by migration `019` — only `exercise_logs` remains of the extended trackers. Do not reference the dropped tables.
+
+Migrations live in `supabase/migrations/` (numbered `001`–`023`, with some duplicate numbers — `002`/`004`/`005`/`009` each appear twice, and there is no `021`; **always reference migrations by exact filename**). Apply **all** in order before running locally. Key ones:
 - `001_initial.sql` — core schema
 - `007_seed_indian_foods.sql` / `009_seed_indian_foods_v2.sql` / `010_seed_missing_foods.sql` — IFCT food data
 - `012_play_billing.sql` — adds `provider`, `play_purchase_token`, `play_product_id` to `subscriptions`

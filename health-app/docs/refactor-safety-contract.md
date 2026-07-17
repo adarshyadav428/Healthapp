@@ -47,7 +47,7 @@ then no behavior listed below can change without a failing check.
 ## Verification gates (run all before shipping)
 
 ```bash
-npm test           # 17 files / 128 tests
+npm test           # 18 files / 151 tests
 npx tsc --noEmit
 npm run lint
 npm run check:tokens
@@ -64,4 +64,8 @@ npm run build
   data-portability right.
 - `/api/logs/copy-yesterday` is not idempotent — a double-tap duplicates yesterday's logs
   (client disables the button in-flight; server-side guard would be nicer).
-- Migration `023_billing_hardening.sql` still needs to be applied manually.
+- Migrations `012`/`022`/`023` (billing columns incl. `cancel_at_period_end`) are **applied in
+  prod** (verified 2026-07-17 via REST probe). The only unapplied migration that matters is
+  `015_chat_logs.sql` (until applied, the 10/day AI-chat limit is silently off). `011_weekly_calorie_view`
+  is unapplied but referenced nowhere in code (deliberately skipped). See
+  `docs/launch-plan-2026-07-17.md` §4 for the exact apply-and-verify playbook.
