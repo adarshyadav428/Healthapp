@@ -37,7 +37,7 @@ export const foodSynonyms: Record<string, string[]> = {
   'chana dal': ['chana dal', 'chana daal', 'bengal gram', 'split chickpea', 'dhuli chana'],
 
   // ── BREADS ────────────────────────────────────────────────────────────────
-  'roti': ['roti', 'chapati', 'chapatti', 'phulka', 'fulka', 'safed roti', 'wheat roti'],
+  'roti': ['roti', 'chapati', 'chapatti', 'chapathi', 'chappathi', 'phulka', 'fulka', 'safed roti', 'wheat roti'],
   'paratha': ['paratha', 'parantha', 'parauntha', 'parotha'],
   'puri': ['puri', 'poori', 'bhatura', 'bhature'],
   'naan': ['naan', 'nan', 'tandoori naan', 'garlic naan'],

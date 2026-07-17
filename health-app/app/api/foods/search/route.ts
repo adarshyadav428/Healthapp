@@ -3,6 +3,7 @@ import { createServerClient, createAdminClient, getApiUser } from '../../../../l
 import { searchOpenFoodFactsIndia, searchOpenFoodFacts } from '../../../../lib/open-food-facts'
 import { expandSearchQuery } from '../../../../lib/food-synonyms'
 import { buildNameIlikeOrFilter } from '../../../../lib/searchFilter'
+import { isPlausibleFood } from '../../../../lib/foodMatch'
 import { INDIAN_FOODS } from '../../../../lib/indian-foods-data'
 import type { Food } from '../../../../types/index'
 
@@ -176,7 +177,9 @@ export async function GET(request: Request) {
     // → OFF World (international products)
     // USDA intentionally removed — US-centric data is inaccurate for Indian foods
     const [localResult, offIndiaRaw, offWorldRaw] = await Promise.all([
-      supabase.from('foods').select(FOOD_SELECT).or(orFilter).limit(20),
+      // Exclude `estimate` rows — those are per-user AI guesses written during
+      // chat/camera logging into the shared table; they must not surface in search.
+      supabase.from('foods').select(FOOD_SELECT).or(orFilter).neq('source', 'estimate').limit(20),
       shouldFetchExternal ? searchOpenFoodFactsIndia(synonymQueries[0]) : Promise.resolve([]),
       shouldFetchExternal ? searchOpenFoodFacts(synonymQueries[0]) : Promise.resolve([]),
     ])
@@ -205,8 +208,9 @@ export async function GET(request: Request) {
 
     const externalWithIds = await persistExternalFoods(externalRaw)
 
-    // Merge: local IFCT → OFF India → OFF World
-    const combined = [...localResults, ...externalWithIds]
+    // Merge: local IFCT → OFF India → OFF World. Drop physically-impossible
+    // rows (bad OFF data: 0-kcal solids, >100 g macros/100 g) before dedupe.
+    const combined = [...localResults, ...externalWithIds].filter(isPlausibleFood)
     const deduped = new Map<string, Food>()
     for (const food of combined) {
       const key = `${food.name.toLowerCase().replace(/\s+/g, ' ')}-${(food.brand ?? '').toLowerCase()}`

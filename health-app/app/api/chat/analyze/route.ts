@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
 import { CHAT_LOG_PROMPT, stripMarkdown } from '../../../../lib/chat-prompt'
 import { getIstDayRange } from '../../../../lib/dateUtils'
+import { pickBestFoodMatch } from '../../../../lib/foodMatch'
 import { captureServerEvent } from '../../../../lib/posthog/server'
 
 const FREE_DAILY_LIMIT = 10
@@ -96,14 +97,13 @@ export async function POST(req: Request) {
 
   const enrichedItems = await Promise.all(
     parsed.items.slice(0, 8).map(async (item) => {
-      const { data: existing } = await supabase
+      const { data: candidates } = await supabase
         .from('foods')
         .select(FOOD_SELECT)
         .ilike('name', `%${item.name}%`)
         .neq('source', 'estimate')
-        .order('source', { ascending: true })
-        .limit(1)
-        .maybeSingle()
+        .limit(10)
+      const existing = pickBestFoodMatch(candidates ?? [], item.name)
 
       if (existing) {
         return { food: existing, grams: item.grams, portion_desc: item.portion_desc }

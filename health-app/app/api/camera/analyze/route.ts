@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
 import { getIstDayRange } from '../../../../lib/dateUtils'
+import { pickBestFoodMatch } from '../../../../lib/foodMatch'
 import { captureServerEvent } from '../../../../lib/posthog/server'
 import { INDIAN_PORTION_REFERENCE } from '../../../../lib/indian-portions'
 import { resolveNutrition, piecesInServing, type GeminiFood } from '../../../../lib/camera-nutrition'
@@ -178,14 +179,13 @@ export async function POST(req: Request) {
     // or freeform estimate is just Gemini's own guess, so it still gets a
     // chance at the accurate seeded IFCT/restaurant data.
     if (!n.fromLabel) {
-      const { data: existing } = await supabase
+      const { data: candidates } = await supabase
         .from('foods')
         .select(FOOD_SELECT)
         .ilike('name', `%${item.name}%`)
         .neq('source', 'estimate')
-        .order('source', { ascending: true }) // ifct before off/restaurant
-        .limit(1)
-        .maybeSingle()
+        .limit(10)
+      const existing = pickBestFoodMatch(candidates ?? [], item.name)
 
       if (existing) {
         if (n.unit === 'pcs' && existing.serving_size_g > 0) {
