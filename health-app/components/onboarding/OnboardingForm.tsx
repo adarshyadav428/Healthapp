@@ -8,7 +8,7 @@ import { onboardingSchema, type OnboardingData } from '../../lib/validations'
 import { toast } from '../ui/use-toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronRight, ChevronLeft, Camera, MessageSquarePlus } from 'lucide-react'
-import { calculateTDEE } from '../../lib/tdee'
+import { calculateTDEE, PROTEIN_G_PER_KG } from '../../lib/tdee'
 import { computeBmi, bmiCategory, healthyWeightRange, suggestedTargets } from '../../lib/bmi'
 import { projectGoalDate, formatGoalDate } from '../../lib/projection'
 import { ftInToCm } from '../../lib/units'
@@ -202,8 +202,8 @@ export function OnboardingForm() {
           </div>
         )}
 
-        {/* Step 3: Age + Sex */}
-        {step === 3 && (
+        {/* Step 2 (cont.): Age + Sex */}
+        {step === 2 && (
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-ink mb-1">Age</label>
@@ -230,8 +230,8 @@ export function OnboardingForm() {
           </div>
         )}
 
-        {/* Step 4: Height + Current weight */}
-        {step === 4 && (
+        {/* Step 3: Height + Current weight */}
+        {step === 3 && (
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-ink mb-1.5">Height</label>
@@ -281,8 +281,8 @@ export function OnboardingForm() {
           </div>
         )}
 
-        {/* Step 5: Target weight + Goal */}
-        {step === 5 && (
+        {/* Step 3 (cont.): Target weight + Goal */}
+        {step === 3 && (
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-ink mb-1">Target weight (kg)</label>
@@ -351,8 +351,8 @@ export function OnboardingForm() {
           </div>
         )}
 
-        {/* Step 6: Activity + Pace */}
-        {step === 6 && (
+        {/* Step 4: Activity + Pace */}
+        {step === 4 && (
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-ink mb-2">Activity level</label>
@@ -394,7 +394,7 @@ export function OnboardingForm() {
         )}
 
         {/* Live TDEE preview — the payoff moment, marigold because it's your data */}
-        {step === 6 && tdeePreview && (
+        {step === 4 && tdeePreview && (
           <div className="rounded-card border border-hairline bg-energy-soft p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-energy-ink mb-2">Your personalised targets</p>
             <div className="flex items-baseline gap-1.5 mb-3">
@@ -422,7 +422,10 @@ export function OnboardingForm() {
                 </p>
               </div>
             )}
-            <p className="mt-2 text-[11px] text-energy-ink">Calculated using Mifflin-St Jeor formula. You can adjust this anytime in settings.</p>
+            <p className="mt-2 text-[11px] text-energy-ink">
+              Mifflin-St Jeor formula, protein at {PROTEIN_G_PER_KG} g per kg of bodyweight.
+              You can adjust this anytime in settings.
+            </p>
           </div>
         )}
 

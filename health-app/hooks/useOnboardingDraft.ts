@@ -6,19 +6,20 @@ import type { OnboardingData } from '../lib/validations'
 import { captureEvent } from '../lib/posthog/client'
 import { EVENTS } from '../lib/posthog/events'
 
-export const TOTAL_STEPS = 6
+// Four screens: the activation log, then three question screens. Was six —
+// each extra screen is a place to drop out, and "What should we call you?"
+// alone did not earn one. Nothing was removed, only regrouped.
+export const TOTAL_STEPS = 4
 const ONBOARDING_STORAGE_KEY = 'gis.onboarding.progress'
 
-export const STEP_LABELS = ['Log a meal', 'About you', 'Body stats', 'Your weight', 'Your goal', 'Lifestyle']
+export const STEP_LABELS = ['Log a meal', 'About you', 'Your body & goal', 'Lifestyle']
 
 // Which fields must validate before advancing past each step.
 const fieldsByStep: Record<number, (keyof OnboardingData)[]> = {
   1: [],
-  2: ['display_name'],
-  3: ['age', 'sex'],
-  4: ['height_cm', 'current_weight_kg'],
-  5: ['target_weight_kg', 'goal'],
-  6: ['activity_level', 'pace_kg_per_week'],
+  2: ['display_name', 'age', 'sex'],
+  3: ['height_cm', 'current_weight_kg', 'target_weight_kg', 'goal'],
+  4: ['activity_level', 'pace_kg_per_week'],
 }
 
 /**

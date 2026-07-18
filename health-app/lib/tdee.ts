@@ -1,5 +1,15 @@
 import type { Profile } from '../types/index'
 
+/**
+ * Grams of protein per kg of bodyweight behind every protein target.
+ * Exported so the UI can state the assumption instead of showing a bare
+ * number the user has no way to sanity-check.
+ */
+export const PROTEIN_G_PER_KG = 1.6
+
+/** 1 kg of body fat ≈ 7,700 kcal — the basis of every pace/projection claim. */
+export const KCAL_PER_KG_FAT = 7700
+
 type MacroTargets = {
   daily_calorie_target: number
   protein_g_target: number
@@ -47,10 +57,10 @@ export function calculateTDEE(profile: { weightKg: number; heightCm: number; age
 
   const daily_calorie_target = Math.max(1200, Math.round(tdee + delta))
 
-  // Protein: 1.6 g/kg bodyweight. Enough for satiety and muscle retention in a
+  // Protein: PROTEIN_G_PER_KG g/kg bodyweight. Enough for satiety and muscle retention in a
   // deficit, but not the 2 g/kg bodybuilder split that left carbs so low it was
   // near-impossible on a roti/rice/dal diet (users failing macros daily).
-  const protein_g_target = Math.round(1.6 * weightKg)
+  const protein_g_target = Math.round(PROTEIN_G_PER_KG * weightKg)
   // Fat: 0.8g/kg
   const fat_g_target = Math.round(0.8 * weightKg)
   // Remaining calories to carbs
