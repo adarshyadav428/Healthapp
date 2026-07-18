@@ -232,7 +232,7 @@ Day 0 = the day Adarsh says "go". Dates in parentheses assume go = Jul 18.
 
 **Daily (~15 min, morning IST):**
 1. **Sentry**: new issues → triage; anything in payments/logging paths = hotfix today.
-2. **PostHog**: funnel (landing → sign-up → wizard → first log), D1 return, `paywall_viewed` → `checkout_attempted` → `subscription_started`. Watch for step cliffs, not absolute numbers.
+2. **PostHog**: funnel (landing → sign-up → wizard → first log), D1 return, `paywall_viewed` → `checkout_attempted` → `upgrade_completed` (renamed from `subscription_started` in the v2 Phase 0 taxonomy). Watch for step cliffs, not absolute numbers.
 3. **Gemini spend** (Cloud console) vs budget alert — P0-2's history means watch this personally for the first week.
 4. **Razorpay dashboard**: webhook delivery failures (retry queue), payment failures.
 5. **Play Console**: crashes/ANRs (vitals), new reviews — **respond within 24 h**, lead with a fix or a timeline.

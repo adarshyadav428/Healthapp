@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { addFoodSchema } from '../../../../lib/validations'
-import { captureServerEvent } from '../../../../lib/posthog/server'
+import { captureFoodLogged } from '../../../../lib/posthog/server'
 import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
 import { resolveLoggedAtForRequest } from '../../../../lib/backfill'
 
@@ -61,14 +61,13 @@ export async function POST(req: Request) {
 
     if (insertError) throw new Error(insertError.message)
 
-    // Explicit props (not ...activation) so the meal_logged payload stays
-    // stable — the milestone-only fields don't belong on the event.
-    captureServerEvent(user.id, 'meal_logged', {
-      source: 'add',
+    // `method` defaults to search: this route backs the search/add-food sheet
+    // unless the client names a more specific path (re-log, quick add).
+    captureFoodLogged(user.id, req, 'search', {
       meal: parsed.data.meal,
       kcal,
-      is_first_log: activation.is_first_log,
-      days_since_signup: activation.days_since_signup,
+      isFirstLog: activation.is_first_log,
+      daysSinceSignup: activation.days_since_signup,
     })
 
     return NextResponse.json({ ok: true, row: inserted, milestone: toLogMilestone(activation, 1) })

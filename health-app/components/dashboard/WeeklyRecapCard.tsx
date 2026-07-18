@@ -1,4 +1,8 @@
+'use client'
+
+import { useEffect } from 'react'
 import { Sparkles } from 'lucide-react'
+import { captureEvent } from '../../lib/posthog/client'
 
 export type WeeklyRecap = {
   daysLogged: number
@@ -15,6 +19,12 @@ const AIR = { boxShadow: 'var(--shadow-air)' } as const
  * feature is discoverable. Non-Pro users see nothing (the paywall sells it).
  */
 export function WeeklyRecapCard({ recap, isPro }: { recap: WeeklyRecap | null; isPro: boolean }) {
+  // Only a real recap counts as "viewed" — the placeholder has nothing to read.
+  const hasRecap = isPro && recap !== null
+  useEffect(() => {
+    if (hasRecap) captureEvent('weekly_recap_viewed')
+  }, [hasRecap])
+
   if (!isPro) return null
 
   if (!recap) {

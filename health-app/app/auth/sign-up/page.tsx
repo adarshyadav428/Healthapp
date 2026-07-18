@@ -42,7 +42,7 @@ export default function SignUpPage() {
 
       if (auth.user) {
         identifyUser(auth.user.id, { email: auth.user.email })
-        captureEvent('user_signed_up', { method: 'email' })
+        captureEvent('signup_completed', { method: 'email' })
       }
 
       window.location.href = '/onboarding'

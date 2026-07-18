@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { getIstDayRange } from '../../../../lib/dateUtils'
-import { captureServerEvent } from '../../../../lib/posthog/server'
+import { captureFoodLogged } from '../../../../lib/posthog/server'
 import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
 
 export const runtime = 'nodejs'
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const supabase = createServerClient()
     const user = await getApiUser(supabase)
@@ -56,11 +56,13 @@ export async function POST() {
     const { error: insertError } = await supabase.from('food_logs').insert(newLogs)
     if (insertError) throw new Error(insertError.message)
 
-    captureServerEvent(userId, 'meal_logged', {
-      source: 'copy_yesterday',
+    // 'mixed': copy-yesterday spans whatever meals yesterday had, so there is
+    // no single honest meal slot to report.
+    captureFoodLogged(userId, req, 'copy_yesterday', {
+      meal: 'mixed',
       items: newLogs.length,
-      is_first_log: activation.is_first_log,
-      days_since_signup: activation.days_since_signup,
+      isFirstLog: activation.is_first_log,
+      daysSinceSignup: activation.days_since_signup,
     })
 
     return NextResponse.json({

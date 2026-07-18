@@ -11,6 +11,7 @@ import { reportLogMilestone } from '../../store/milestoneStore'
 import type { LogMilestone } from '../../lib/logMilestones'
 import { buildUnits, pickDefaultUnit, type Unit } from '../../lib/portion-units'
 import { mealForTime } from '../../lib/meal'
+import { logMetaHeaders } from '../../lib/posthog/client'
 import { UnitPicker } from './UnitPicker'
 
 const MEAL_OPTIONS = [
@@ -95,7 +96,7 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
 
       const res = await fetch('/api/logs/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...logMetaHeaders('search') },
         body: JSON.stringify({
           food_id: food.id,
           meal,

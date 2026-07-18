@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import type { OnboardingData } from '../lib/validations'
 import { captureEvent } from '../lib/posthog/client'
+import { EVENTS } from '../lib/posthog/events'
 
 export const TOTAL_STEPS = 6
 const ONBOARDING_STORAGE_KEY = 'gis.onboarding.progress'
@@ -35,15 +36,23 @@ export function useOnboardingDraft(form: UseFormReturn<OnboardingData>) {
 
   // Resume where an abandoner left off instead of restarting at step 1/6.
   useEffect(() => {
+    let resumedStep = 1
     try {
       const raw = localStorage.getItem(ONBOARDING_STORAGE_KEY)
-      if (!raw) return
-      const saved = JSON.parse(raw) as { step?: number; values?: Partial<OnboardingData>; heightFt?: number; heightIn?: number }
-      if (saved.values) form.reset({ ...form.getValues(), ...saved.values })
-      if (typeof saved.heightFt === 'number') setHeightFt(saved.heightFt)
-      if (typeof saved.heightIn === 'number') setHeightIn(saved.heightIn)
-      if (saved.step && saved.step >= 1 && saved.step <= TOTAL_STEPS) setStep(saved.step)
+      if (raw) {
+        const saved = JSON.parse(raw) as { step?: number; values?: Partial<OnboardingData>; heightFt?: number; heightIn?: number }
+        if (saved.values) form.reset({ ...form.getValues(), ...saved.values })
+        if (typeof saved.heightFt === 'number') setHeightFt(saved.heightFt)
+        if (typeof saved.heightIn === 'number') setHeightIn(saved.heightIn)
+        if (saved.step && saved.step >= 1 && saved.step <= TOTAL_STEPS) {
+          resumedStep = saved.step
+          setStep(saved.step)
+        }
+      }
     } catch { /* ignore */ }
+    // Only a genuine start counts — resuming a half-finished wizard is not a
+    // new `onboarding_started`, or the activation funnel double-counts.
+    if (resumedStep === 1) captureEvent(EVENTS.ONBOARDING_STARTED)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -65,7 +74,7 @@ export function useOnboardingDraft(form: UseFormReturn<OnboardingData>) {
     try {
       const ok = await form.trigger(fieldsByStep[step])
       if (ok) {
-        captureEvent('onboarding_step_completed', { step, label: STEP_LABELS[step - 1] })
+        captureEvent(EVENTS.ONBOARDING_STEP_COMPLETED, { step, label: STEP_LABELS[step - 1] })
         setStep((s) => Math.min(TOTAL_STEPS, s + 1))
       }
     } finally {

@@ -196,7 +196,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
                 key={food.id}
                 food={food}
                 onSelect={setSelected}
-                onQuickAdd={quickAdd}
+                onQuickAdd={(f) => quickAdd(f, 'log_again')}
                 isQuickAdding={quickAddingId === food.id}
                 isFavourite={favouriteIds.has(food.id)}
                 onToggleFavourite={toggleFavourite}
@@ -219,7 +219,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
                 key={food.id}
                 food={food}
                 onSelect={setSelected}
-                onQuickAdd={quickAdd}
+                onQuickAdd={(f) => quickAdd(f, 'log_again')}
                 isQuickAdding={quickAddingId === food.id}
                 isFavourite={favouriteIds.has(food.id)}
                 onToggleFavourite={toggleFavourite}
@@ -242,7 +242,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
                 key={food.id}
                 food={food}
                 onSelect={setSelected}
-                onQuickAdd={quickAdd}
+                onQuickAdd={(f) => quickAdd(f, 'log_again')}
                 isQuickAdding={quickAddingId === food.id}
                 isFavourite={favouriteIds.has(food.id)}
                 onToggleFavourite={toggleFavourite}

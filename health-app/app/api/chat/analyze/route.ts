@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       .eq('user_id', userId)
       .gte('created_at', todayStart)
     if ((count ?? 0) >= FREE_DAILY_LIMIT) {
-      captureServerEvent(userId, 'paywall_viewed', { reason: 'chat_scan_limit' })
+      captureServerEvent(userId, 'paywall_viewed', { source: 'chat_scan_limit' })
       return NextResponse.json(
         { error: `You've used all ${FREE_DAILY_LIMIT} free AI meal logs for today. Upgrade to Pro for unlimited.`, upgrade: true },
         { status: 429 }

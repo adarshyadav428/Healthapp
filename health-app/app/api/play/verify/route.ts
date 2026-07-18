@@ -76,7 +76,7 @@ export async function POST(req: Request) {
     })
     if (error) throw new Error(error.message)
 
-    captureServerEvent(user.id, 'subscription_started', { provider: 'google_play', plan })
+    captureServerEvent(user.id, 'upgrade_completed', { provider: 'google_play', plan })
 
     return NextResponse.json({ ok: true, status: sub.status })
   } catch (err) {

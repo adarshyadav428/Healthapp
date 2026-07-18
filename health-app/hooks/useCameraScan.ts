@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Food } from '../types/index'
 import { toast } from '../components/ui/use-toast'
-import { captureEvent } from '../lib/posthog/client'
+import { captureEvent, logMetaHeaders } from '../lib/posthog/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { reportLogMilestone } from '../store/milestoneStore'
 import type { LogMilestone } from '../lib/logMilestones'
@@ -260,7 +260,7 @@ export function useCameraScan({ onClose, onFoodFound }: Params) {
     try {
       const res = await fetch('/api/logs/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...logMetaHeaders('photo_scan') },
         body: JSON.stringify({ food_id: selected.food.id, meal, servings: 1, grams }),
       })
       const j = (await res.json().catch(() => ({}))) as { error?: string; milestone?: LogMilestone }

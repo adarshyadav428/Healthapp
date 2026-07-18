@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { scaleMacros } from '../../../../lib/nutrition'
+import { captureFoodLogged, captureServerEvent } from '../../../../lib/posthog/server'
+import { getLogActivationContext } from '../../../../lib/logActivation'
 
 const schema = z.object({
   meal_id: z.string().uuid(),
@@ -50,8 +52,21 @@ export async function POST(req: Request) {
         ...scaleMacros(item.food!, item.grams, item.servings ?? 1),
       }))
 
+    const activation = await getLogActivationContext(supabase, user.id)
+
     const { error: insertErr } = await supabase.from('food_logs').insert(logRows)
     if (insertErr) throw new Error(insertErr.message)
+
+    captureServerEvent(user.id, 'meal_template_logged', {
+      meal: parsed.data.meal_type,
+      items: logRows.length,
+    })
+    captureFoodLogged(user.id, req, 'meal_template', {
+      meal: parsed.data.meal_type,
+      items: logRows.length,
+      isFirstLog: activation.is_first_log,
+      daysSinceSignup: activation.days_since_signup,
+    })
 
     return NextResponse.json({ ok: true, logged: logRows.length })
   } catch (err) {

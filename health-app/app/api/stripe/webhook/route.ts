@@ -53,7 +53,7 @@ export async function POST(req: Request) {
             current_period_end,
           })
 
-          captureServerEvent(userId, 'subscription_started', { provider: 'stripe', plan, lifetime: isLifetime })
+          captureServerEvent(userId, 'upgrade_completed', { provider: 'stripe', plan, lifetime: isLifetime })
         }
         break
       }

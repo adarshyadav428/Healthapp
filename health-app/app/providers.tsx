@@ -7,7 +7,18 @@ import { ThemeProvider } from 'next-themes'
 import { Toaster } from '../components/ui/toaster'
 import { LogMilestones } from '../components/milestones/LogMilestones'
 import { SentryInit } from '../components/SentryInit'
-import { capturePageview } from '../lib/posthog/client'
+import { capturePageview, markAppOpened } from '../lib/posthog/client'
+
+/**
+ * Fires `app_opened` once per app load and starts the clock that
+ * `seconds_since_open` is measured against.
+ */
+function AppOpened() {
+  useEffect(() => {
+    markAppOpened()
+  }, [])
+  return null
+}
 
 function PostHogPageView() {
   const pathname = usePathname()
@@ -38,6 +49,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <QueryClientProvider client={queryClient}>
+        <AppOpened />
         <Suspense fallback={null}>
           <PostHogPageView />
         </Suspense>

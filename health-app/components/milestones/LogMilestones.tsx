@@ -80,9 +80,9 @@ export function LogMilestones() {
       } else {
         writeFlag(paywallKey(uid))
         // Client-side deliberately: only the client knows the seen-flag, so
-        // firing here (same event name + reason as the server-side gates)
+        // firing here (same event name + source as the server-side gates)
         // avoids over-counting paywall_viewed.
-        captureEvent('paywall_viewed', { reason: 'free_logs' })
+        captureEvent('paywall_viewed', { source: 'free_logs' })
       }
       setActive(action)
     }

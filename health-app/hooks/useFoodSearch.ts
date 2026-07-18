@@ -9,6 +9,8 @@ import { useFoodFavourites } from './useFoodFavourites'
 import { reportLogMilestone } from '../store/milestoneStore'
 import type { LogMilestone } from '../lib/logMilestones'
 import { mealForTime } from '../lib/meal'
+import { logMetaHeaders } from '../lib/posthog/client'
+import type { FoodLogMethod } from '../lib/posthog/events'
 
 export type SavedMeal = {
   id: string
@@ -72,7 +74,7 @@ export function useFoodSearch({ recentFoods, recentLogItems, frequentFoods, logD
     try {
       const res = await fetch('/api/meals/log', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...logMetaHeaders('meal_template') },
         body: JSON.stringify({ meal_id: mealId, meal_type: mealType }),
       })
       const json = await res.json()
@@ -127,7 +129,10 @@ export function useFoodSearch({ recentFoods, recentLogItems, frequentFoods, logD
     if (copying) return
     setCopying(true)
     try {
-      const res = await fetch('/api/logs/copy-yesterday', { method: 'POST' })
+      const res = await fetch('/api/logs/copy-yesterday', {
+        method: 'POST',
+        headers: logMetaHeaders('copy_yesterday'),
+      })
       const json = (await res.json()) as { ok?: boolean; copied?: number; error?: string; milestone?: LogMilestone }
       if (!res.ok) throw new Error(json.error ?? 'Failed to copy')
       toast({
@@ -144,7 +149,9 @@ export function useFoodSearch({ recentFoods, recentLogItems, frequentFoods, logD
     }
   }
 
-  const quickAdd = async (food: Food) => {
+  // `method` is the analytics surface this tap came from: the search-results
+  // list is a genuine search, while favourites/frequent/recent are re-logs.
+  const quickAdd = async (food: Food, method: FoodLogMethod = 'search') => {
     if (quickAddingId) return
     setQuickAddingId(food.id)
     try {
@@ -152,7 +159,7 @@ export function useFoodSearch({ recentFoods, recentLogItems, frequentFoods, logD
       const grams = food.serving_size_g
       const res = await fetch('/api/logs/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...logMetaHeaders(method) },
         body: JSON.stringify({ food_id: food.id, meal: defaultMeal, servings: 1, grams, date: logDate }),
       })
       const body = (await res.json().catch(() => ({}))) as { error?: string; milestone?: LogMilestone }
@@ -174,7 +181,7 @@ export function useFoodSearch({ recentFoods, recentLogItems, frequentFoods, logD
       if (!user) throw new Error('You must be signed in.')
       const res = await fetch('/api/logs/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...logMetaHeaders('log_again') },
         body: JSON.stringify({ food_id: item.food.id, meal: item.meal, servings: 1, grams: item.grams, date: logDate }),
       })
       const body = (await res.json().catch(() => ({}))) as { error?: string; milestone?: LogMilestone }

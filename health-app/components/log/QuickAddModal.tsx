@@ -10,6 +10,7 @@ import { cn } from '../../lib/utils'
 import { reportLogMilestone } from '../../store/milestoneStore'
 import type { LogMilestone } from '../../lib/logMilestones'
 import { mealForTime } from '../../lib/meal'
+import { logMetaHeaders } from '../../lib/posthog/client'
 
 const MEALS = [
   { value: 'breakfast', label: '🥣 Breakfast' },
@@ -40,7 +41,7 @@ export function QuickAddModal({ onClose, logDate }: { onClose: () => void; logDa
     try {
       const res = await fetch('/api/logs/quick-add', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...logMetaHeaders('quick_add') },
         body:    JSON.stringify({
           kcal:    kcalNum,
           protein: parseFloat(protein) || 0,

@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       .from('subscriptions').select('status').eq('user_id', user.id).maybeSingle()
     const isPro = isProStatus(sub?.status)
     if (!isPro) {
-      captureServerEvent(user.id, 'paywall_viewed', { reason: 'custom_foods' })
+      captureServerEvent(user.id, 'paywall_viewed', { source: 'custom_foods' })
       return NextResponse.json({ error: 'Pro required', upgrade: 'custom_foods' }, { status: 402 })
     }
 

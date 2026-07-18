@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
+import { captureServerEvent } from '../../../../lib/posthog/server'
 
 const createSchema = z.object({
   name: z.string().min(1).max(100),
@@ -58,6 +59,9 @@ export async function POST(req: Request) {
       .insert(parsed.data.items.map((item) => ({ meal_id: meal.id, ...item })))
 
     if (itemsErr) throw new Error(itemsErr.message)
+
+    captureServerEvent(user.id, 'meal_template_saved', { items: parsed.data.items.length })
+
     return NextResponse.json({ ok: true, id: meal.id })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })

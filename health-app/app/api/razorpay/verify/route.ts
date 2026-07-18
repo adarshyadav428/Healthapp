@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     })
     if (error) throw new Error(error.message)
 
-    captureServerEvent(user.id, 'subscription_started', { provider: 'razorpay', plan })
+    captureServerEvent(user.id, 'upgrade_completed', { provider: 'razorpay', plan })
 
     return NextResponse.json({ ok: true })
   } catch (err) {

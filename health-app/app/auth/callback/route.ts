@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       // account created within the last minute of this callback firing.
       const user = data.user
       if (user && Date.now() - new Date(user.created_at).getTime() < 60_000) {
-        captureServerEvent(user.id, 'user_signed_up', { method: 'google' })
+        captureServerEvent(user.id, 'signup_completed', { method: 'google' })
       }
       // Redirect to the intended destination (default: dashboard)
       return NextResponse.redirect(`${origin}${next}`)

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../components/ui/use-toast'
-import { captureEvent } from '../lib/posthog/client'
+import { captureEvent, logMetaHeaders } from '../lib/posthog/client'
 import { reportLogMilestone } from '../store/milestoneStore'
 import { coachingLine } from '../lib/coaching'
 import { useUser } from './useUser'
@@ -123,7 +123,7 @@ export function useChatLog({ onClose, logDate }: Params) {
     try {
       const res = await fetch('/api/logs/add-bulk', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...logMetaHeaders('chat') },
         body: JSON.stringify({
           items: items.map(i => ({ food_id: i.food.id, grams: i.grams, meal })),
           date: logDate,

@@ -15,8 +15,10 @@ import { useManageSubscription } from '../../hooks/useManageSubscription'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  ChevronRight, Crown, Target, Scale, Bell, SunMoon, Download, Sliders, Pencil, Check, X, BookOpen,
+  ChevronRight, Crown, Target, Scale, Bell, SunMoon, Download, Sliders, Pencil, Check, X, BookOpen, BarChart3,
 } from 'lucide-react'
+import { isAnalyticsOptedOut, setAnalyticsOptOut } from '../../lib/posthog/client'
+import { cn } from '../../lib/utils'
 import {
   Sheet, SheetContent, SheetTrigger, SheetTitle,
 } from '../ui/sheet'
@@ -46,7 +48,17 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
   const { data: subscription } = useSubscription(profile.id)
   const { theme } = useTheme()
   const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
+  const [analyticsOptOut, setOptOutState] = useState(false)
+  // localStorage is only readable after mount, so seed the switch there.
+  useEffect(() => {
+    setMounted(true)
+    setOptOutState(isAnalyticsOptedOut())
+  }, [])
+
+  const toggleAnalytics = (next: boolean) => {
+    setOptOutState(next)
+    setAnalyticsOptOut(next)
+  }
 
   const { manageSubscription, portalLoading } = useManageSubscription(subscription, profile.id)
   const [signOutLoading, setSignOutLoading] = useState(false)
@@ -419,6 +431,49 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
             <SheetTitle className="mb-4">Appearance</SheetTitle>
             <ThemeSegmented />
             <p className="mt-2.5 text-xs text-ink-2">System follows your phone&apos;s light/dark setting automatically.</p>
+          </SheetContent>
+        </Sheet>
+
+        <Divider />
+
+        {/* Analytics opt-out */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <button type="button" className="flex w-full items-center gap-3.5 px-[18px] py-4 text-left tap-scale">
+              <BarChart3 className="h-[19px] w-[19px] shrink-0 text-ink" strokeWidth={1.9} />
+              <span className="flex-1 text-[15px] font-medium text-ink">Usage analytics</span>
+              {mounted && <span className="text-[13px] text-ink-3">{analyticsOptOut ? 'Off' : 'On'}</span>}
+              <RowChevron />
+            </button>
+          </SheetTrigger>
+          <SheetContent>
+            <SheetTitle className="mb-1">Usage analytics</SheetTitle>
+            <p className="mb-4 text-sm text-ink-2">
+              Anonymous product usage helps us see which features actually help people stay consistent.
+              We never send your food, weight or personal details.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => toggleAnalytics(false)}
+                className={cn(
+                  'flex-1 rounded-control border py-2.5 text-[13px] font-semibold transition-colors',
+                  analyticsOptOut ? 'border-hairline bg-surface-2 text-ink-2' : 'border-brand bg-brand-soft text-brand-ink'
+                )}
+              >
+                Share usage data
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleAnalytics(true)}
+                className={cn(
+                  'flex-1 rounded-control border py-2.5 text-[13px] font-semibold transition-colors',
+                  analyticsOptOut ? 'border-brand bg-brand-soft text-brand-ink' : 'border-hairline bg-surface-2 text-ink-2'
+                )}
+              >
+                Opt out
+              </button>
+            </div>
           </SheetContent>
         </Sheet>
 

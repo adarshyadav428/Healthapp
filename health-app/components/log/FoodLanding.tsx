@@ -12,6 +12,7 @@ import { foodEmoji, tintFor } from '../../lib/foodVisual'
 import { reportLogMilestone } from '../../store/milestoneStore'
 import type { LogMilestone } from '../../lib/logMilestones'
 import { mealForTime } from '../../lib/meal'
+import { logMetaHeaders } from '../../lib/posthog/client'
 
 // Modals + the full search are only opened on demand — defer their JS.
 const FoodSearch    = dynamic(() => import('./FoodSearch').then(m => m.FoodSearch),        { ssr: false })
@@ -87,7 +88,7 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
     try {
       const res = await fetch('/api/logs/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...logMetaHeaders('log_again') },
         body: JSON.stringify({ food_id: item.food.id, meal: item.meal || mealForTime(), servings: 1, grams: item.grams, date: logDate }),
       })
       const j = (await res.json().catch(() => ({}))) as { error?: string; milestone?: LogMilestone }
@@ -106,7 +107,7 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
     if (copying) return
     setCopying(true)
     try {
-      const res = await fetch('/api/logs/copy-yesterday', { method: 'POST' })
+      const res = await fetch('/api/logs/copy-yesterday', { method: 'POST', headers: logMetaHeaders('copy_yesterday') })
       const j = (await res.json()) as { copied?: number; error?: string; milestone?: LogMilestone }
       if (!res.ok) throw new Error(j.error ?? 'Failed to copy')
       queryClient.invalidateQueries({ queryKey: ['food-logs'] })

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { z } from 'zod'
-import { captureServerEvent } from '../../../../lib/posthog/server'
+import { captureFoodLogged } from '../../../../lib/posthog/server'
 import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
 import { resolveLoggedAtForRequest } from '../../../../lib/backfill'
 
@@ -64,11 +64,13 @@ export async function POST(req: Request) {
     const { error: insertError } = await supabase.from('food_logs').insert(rows)
     if (insertError) throw new Error(insertError.message)
 
-    captureServerEvent(userId, 'meal_logged', {
-      source: 'chat',
+    // Shared by the chat and camera flows — the client's x-log-method header
+    // says which, so 'chat' is only the fallback.
+    captureFoodLogged(userId, req, 'chat', {
+      meal: 'mixed',
       items: rows.length,
-      is_first_log: activation.is_first_log,
-      days_since_signup: activation.days_since_signup,
+      isFirstLog: activation.is_first_log,
+      daysSinceSignup: activation.days_since_signup,
     })
 
     return NextResponse.json({ ok: true, logged: rows.length, milestone: toLogMilestone(activation, rows.length) })
