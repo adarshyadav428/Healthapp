@@ -103,3 +103,7 @@ export type PaywallSource =
   | 'custom_foods'
   | 'history_limit'
   | 'recap_end_card'
+  // Not upgrade prompts — these ask an anonymous user to create a free account
+  // before any Gemini credits are spent. Tracked here so the funnel sees them.
+  | 'camera_scan_anonymous'
+  | 'chat_scan_anonymous'
