@@ -181,7 +181,8 @@ export default function Home() {
                   'Full calorie & macro tracking',
                   'Weight tracking',
                   'Exercise logging',
-                  'AI photo scan (5/day)',
+                  'Barcode scanning',
+                  '3 free AI scans when you confirm your email',
                   'Calorie + macro goals',
                   '500+ Indian foods database',
                 ].map((item) => (

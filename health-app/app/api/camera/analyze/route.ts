@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
 import { isProStatus } from '../../../../lib/subscription'
-import { getIstDayRange } from '../../../../lib/dateUtils'
 import { pickBestFoodMatch } from '../../../../lib/foodMatch'
 import { captureServerEvent } from '../../../../lib/posthog/server'
 import { recordAiUsage } from '../../../../lib/usageCounter'
+import { AI_TRIAL_SCANS } from '../../../../lib/aiTrial'
+import { checkAiTrial } from '../../../../lib/aiTrialServer'
 import { INDIAN_PORTION_REFERENCE } from '../../../../lib/indian-portions'
 import { resolveNutrition, piecesInServing, type GeminiFood } from '../../../../lib/camera-nutrition'
-
-const FREE_DAILY_LIMIT = 5
 
 const PROMPT = `You are a nutrition expert specializing in Indian food. Analyze this food image.
 Use IFCT 2017 values for traditional Indian foods and standard global values for packaged/international foods.
@@ -83,20 +82,25 @@ export async function POST(req: Request) {
     .from('subscriptions').select('status').eq('user_id', userId).maybeSingle()
   const isPro = isProStatus(sub?.status)
 
-  // Rate limit: free users get 5 photo AI scans per IST day
+  // AI photo scan is Pro-only, minus a small lifetime trial for verified free
+  // accounts (see lib/aiTrial). It was previously 5 free scans per IST day —
+  // every scan is a paid Gemini call and signup no longer costs an attacker
+  // anything, so a renewing allowance was an open tab on our API budget.
+  // Enforced here rather than in the UI because the UI is not a security
+  // boundary — this route is reachable directly.
   if (!isPro) {
-    const { start: todayStart } = getIstDayRange()
-    const { count } = await supabase
-      .from('camera_photo_logs')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .gte('created_at', todayStart)
-
-    if ((count ?? 0) >= FREE_DAILY_LIMIT) {
-      captureServerEvent(userId, 'paywall_viewed', { source: 'camera_scan_limit' })
+    const trial = await checkAiTrial(supabase, userId)
+    if (!trial.allowed) {
+      captureServerEvent(userId, 'paywall_viewed', { source: 'camera_scan_pro', block: trial.block })
       return NextResponse.json(
-        { error: `You've used all ${FREE_DAILY_LIMIT} free photo scans for today.`, upgrade: true },
-        { status: 429 }
+        {
+          error: trial.block === 'unverified'
+            ? `Confirm your email to unlock ${AI_TRIAL_SCANS} free AI scans.`
+            : 'AI photo scan is a Pro feature.',
+          upgrade: true,
+          block: trial.block,
+        },
+        { status: 403 }
       )
     }
   }

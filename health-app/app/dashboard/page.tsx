@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import { isProStatus } from '../../lib/subscription'
+import { checkAiTrial } from '../../lib/aiTrialServer'
 import type { FoodLog } from '../../types/index'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { DashboardClient } from '../../components/dashboard/DashboardClient'
@@ -79,6 +80,12 @@ export default async function DashboardPage() {
   const sub = subResult.data
   const isPro = isProStatus(sub?.status)
 
+  // Free users get a small lifetime AI trial once their email is verified. The
+  // FAB needs this so it doesn't bounce someone to the paywall who still has
+  // scans left. Pro skips the query entirely — it can't be gated.
+  const aiTrial = isPro ? null : await checkAiTrial(supabase, user.id)
+  const aiTrialRemaining = aiTrial?.allowed ? aiTrial.remaining : 0
+
   const recapRow = recapResult.data
   const weeklyRecap: WeeklyRecap | null = recapRow
     ? {
@@ -106,6 +113,7 @@ export default async function DashboardPage() {
           freezesBanked={streakState.freezesBanked}
           loggedDates={loggedDates}
           isPro={isPro}
+          aiTrialRemaining={aiTrialRemaining}
           weeklyRecap={weeklyRecap}
         />
       </main>

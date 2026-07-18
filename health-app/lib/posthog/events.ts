@@ -98,8 +98,12 @@ export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 /** The `source` prop on `paywall_viewed`. */
 export type PaywallSource =
   | 'free_logs'
-  | 'camera_scan_limit'
-  | 'chat_scan_limit'
+  // AI is Pro-only as of 2026-07-18. The former `camera_scan_limit` /
+  // `chat_scan_limit` sources meant "hit your free daily cap", which no longer
+  // exists — these are deliberately new names so the funnel doesn't silently
+  // blend two different events with different meanings.
+  | 'camera_scan_pro'
+  | 'chat_scan_pro'
   | 'custom_foods'
   | 'history_limit'
   | 'recap_end_card'
