@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Crown, X } from 'lucide-react'
+import { Check, Crown, X, Share2, Loader2 } from 'lucide-react'
 import { Button } from '../ui/button'
 import { ConfettiBurst } from '../ui/ConfettiBurst'
 import { useMilestoneStore, clearPendingMilestone, clearWeightMilestone, clearStreakMilestone } from '../../store/milestoneStore'
-import { getLogMilestoneAction, type MilestoneAction } from '../../lib/logMilestones'
+import { getLogMilestoneAction, isShareableStreakMilestone, type MilestoneAction } from '../../lib/logMilestones'
 import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { captureEvent } from '../../lib/posthog/client'
+import { buildShareCardData, shareProgressCard } from '../../lib/shareCard'
+import { toast } from '../ui/use-toast'
 
 const celebrationKey = (uid: string) => `gis.firstLogCelebrated.${uid}`
 const paywallKey = (uid: string) => `gis.logPaywallSeen.${uid}`
@@ -51,6 +53,7 @@ export function LogMilestones() {
   const [active, setActive] = useState<MilestoneAction>(null)
   const [weightKg, setWeightKg] = useState<number | null>(null)
   const [streakDays, setStreakDays] = useState<number | null>(null)
+  const [sharing, setSharing] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -110,16 +113,40 @@ export function LogMilestones() {
     setStreakDays(pendingStreak)
   }, [pendingStreak])
 
+  // The three big streak rungs offer a share card, which needs more than 2.6s
+  // of decision time — those wait for a tap instead of vanishing mid-thought.
+  const canShareStreak = streakDays != null && isShareableStreakMilestone(streakDays)
+
   // Celebrations auto-dismiss; the paywall waits for an explicit choice.
   useEffect(() => {
     if (active !== 'first_log_celebration' && weightKg == null && streakDays == null) return
+    if (canShareStreak) return
     const t = setTimeout(() => {
       setActive(null)
       setWeightKg(null)
       setStreakDays(null)
     }, 2600)
     return () => clearTimeout(t)
-  }, [active, weightKg, streakDays])
+  }, [active, weightKg, streakDays, canShareStreak])
+
+  const shareStreak = async () => {
+    if (sharing || streakDays == null) return
+    setSharing(true)
+    try {
+      const data = buildShareCardData({ streakDays, startWeightKg: null, currentWeightKg: null })
+      if (!data) return
+      const method = await shareProgressCard(data)
+      captureEvent('progress_card_shared', { method, streak: streakDays, source: 'streak_milestone' })
+      if (method === 'downloaded') {
+        toast({ title: 'Card saved', description: 'Image downloaded — share it anywhere.', duration: 3000 })
+      }
+      setStreakDays(null)
+    } catch (err) {
+      toast({ title: 'Could not create the card', description: (err as Error).message, variant: 'error' })
+    } finally {
+      setSharing(false)
+    }
+  }
 
   if (active === 'first_log_celebration' || weightKg != null || streakDays != null) {
     const isWeight = weightKg != null
@@ -150,6 +177,29 @@ export function LogMilestones() {
               ? 'A new milestone — that consistency is paying off.'
               : "That's the hardest part done. Log every meal today and your streak begins."}
           </p>
+
+          {canShareStreak && (
+            <div className="mt-5 space-y-2" onClick={(e) => e.stopPropagation()}>
+              <Button
+                type="button"
+                onClick={shareStreak}
+                disabled={sharing}
+                className="w-full gap-2 tap-scale"
+              >
+                {sharing
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <Share2 className="h-4 w-4" strokeWidth={2} />}
+                {sharing ? 'Creating…' : 'Share this'}
+              </Button>
+              <button
+                type="button"
+                onClick={() => setStreakDays(null)}
+                className="w-full py-1.5 text-[13px] font-semibold text-ink-3 tap-scale"
+              >
+                Not now
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )
