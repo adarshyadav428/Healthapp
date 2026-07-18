@@ -208,18 +208,14 @@ export function useCameraScan({ onClose, onFoodFound }: Params) {
     })
       .then(async (res) => {
         const json = await res.json()
-        if (res.status === 429) {
-          toast({
-            title: 'Daily scan limit reached',
-            description: 'Upgrade to Pro for unlimited photo scans.',
-            variant: 'error',
-            action: {
-              label: 'Upgrade',
-              altText: 'Go to upgrade page',
-              onClick: () => { onClose(); router.push('/upgrade?reason=camera_scan_limit') },
-            },
-          })
+        // Gated. Go straight to the paywall rather than showing a toast the
+        // user has to act on — they've already taken the photo, so making them
+        // tap again to find out why it didn't work is a poor trade. An
+        // unverified user gets the verification framing, not the Pro pitch.
+        if (res.status === 403 && json.upgrade) {
           setCaptured(null)
+          onClose()
+          router.push(json.block === 'unverified' ? '/upgrade?reason=verify_ai' : '/upgrade?reason=camera_scan_pro')
           return
         }
         if (!res.ok) throw new Error(json.error ?? 'Analysis failed')

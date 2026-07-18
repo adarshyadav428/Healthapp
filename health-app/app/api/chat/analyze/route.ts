@@ -2,12 +2,11 @@ import { NextResponse } from 'next/server'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
 import { isProStatus } from '../../../../lib/subscription'
 import { CHAT_LOG_PROMPT, stripMarkdown } from '../../../../lib/chat-prompt'
-import { getIstDayRange } from '../../../../lib/dateUtils'
 import { pickBestFoodMatch } from '../../../../lib/foodMatch'
 import { captureServerEvent } from '../../../../lib/posthog/server'
 import { recordAiUsage } from '../../../../lib/usageCounter'
-
-const FREE_DAILY_LIMIT = 10
+import { AI_TRIAL_SCANS } from '../../../../lib/aiTrial'
+import { checkAiTrial } from '../../../../lib/aiTrialServer'
 
 type GeminiItem = {
   name: string
@@ -29,18 +28,21 @@ export async function POST(req: Request) {
     .from('subscriptions').select('status').eq('user_id', userId).maybeSingle()
   const isPro = isProStatus(sub?.status)
 
+  // AI chat logging is Pro-only — same reasoning as the camera scan route, and
+  // it draws on the same shared lifetime trial pool.
   if (!isPro) {
-    const { start: todayStart } = getIstDayRange()
-    const { count } = await supabase
-      .from('chat_logs')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .gte('created_at', todayStart)
-    if ((count ?? 0) >= FREE_DAILY_LIMIT) {
-      captureServerEvent(userId, 'paywall_viewed', { source: 'chat_scan_limit' })
+    const trial = await checkAiTrial(supabase, userId)
+    if (!trial.allowed) {
+      captureServerEvent(userId, 'paywall_viewed', { source: 'chat_scan_pro', block: trial.block })
       return NextResponse.json(
-        { error: `You've used all ${FREE_DAILY_LIMIT} free AI meal logs for today. Upgrade to Pro for unlimited.`, upgrade: true },
-        { status: 429 }
+        {
+          error: trial.block === 'unverified'
+            ? `Confirm your email to unlock ${AI_TRIAL_SCANS} free AI scans.`
+            : 'AI meal logging is a Pro feature.',
+          upgrade: true,
+          block: trial.block,
+        },
+        { status: 403 }
       )
     }
   }

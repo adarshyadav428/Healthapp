@@ -75,18 +75,17 @@ export function useChatLog({ onClose, logDate }: Params) {
       })
       const data = await res.json()
       if (!res.ok) {
-        if (res.status === 429) {
-          toast({
-            title: 'Daily chat-log limit reached',
-            description: 'Upgrade to Pro for unlimited AI meal logging.',
-            variant: 'error',
-            action: {
-              label: 'Upgrade',
-              altText: 'Go to upgrade page',
-              onClick: () => { onClose(); router.push('/upgrade?reason=chat_scan_limit') },
-            },
-          })
-        } else {
+        // Gated — straight to the paywall, no intermediate toast. An unverified
+        // user gets the verification framing instead of the Pro pitch: their
+        // next step is confirming an email, not paying us.
+        if (res.status === 403 && data.upgrade) {
+          setState({ type: 'idle' })
+          setInput(message)
+          onClose()
+          router.push(data.block === 'unverified' ? '/upgrade?reason=verify_ai' : '/upgrade?reason=chat_scan_pro')
+          return
+        }
+        {
           toast({ title: 'Could not analyse meal', description: data.error, variant: 'error' })
         }
         setState({ type: 'idle' })

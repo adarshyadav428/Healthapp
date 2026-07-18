@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import type { FoodLog, Profile } from '../../types/index'
 import { CalorieHeroCard } from '../home/CalorieHeroCard'
@@ -33,10 +34,13 @@ interface Props {
   freezesBanked?: number
   loggedDates: string[]
   isPro: boolean
+  /** Lifetime free AI scans left (0 for Pro — they're unlimited, never gated). */
+  aiTrialRemaining?: number
   weeklyRecap: WeeklyRecap | null
 }
 
-export function DashboardClient({ profile, initialLogs, streakDays, freezesBanked = 0, loggedDates, isPro, weeklyRecap }: Props) {
+export function DashboardClient({ profile, initialLogs, streakDays, freezesBanked = 0, loggedDates, isPro, aiTrialRemaining = 0, weeklyRecap }: Props) {
+  const router = useRouter()
   const { user } = useUser()
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
   const [editingLog, setEditingLog] = useState<FoodLog | null>(null)
@@ -70,6 +74,8 @@ export function DashboardClient({ profile, initialLogs, streakDays, freezesBanke
     ),
     [logs]
   )
+
+  const canUseAi = isPro || aiTrialRemaining > 0
 
   const target = profile.daily_calorie_target
   const hasLogs = logs.length > 0
@@ -199,8 +205,15 @@ export function DashboardClient({ profile, initialLogs, streakDays, freezesBanke
       {/* Floating chat entry — describe a meal in free text instead of searching/scanning */}
       <button
         type="button"
-        onClick={() => setShowChat(true)}
-        aria-label="Log a meal by describing it"
+        // Chat logging is entirely AI, so for a blocked user the modal is a
+        // dead end — they'd type a meal out and only then be told it's Pro.
+        // Send them to the paywall on tap instead. Someone with trial scans
+        // left is not blocked, so they get the modal. (The camera FAB
+        // deliberately isn't gated this way: that modal also does barcode
+        // scanning, which stays free, so its Pro boundary lives at the
+        // photo-scan call.)
+        onClick={() => canUseAi ? setShowChat(true) : router.push('/upgrade?reason=chat_scan_pro')}
+        aria-label={canUseAi ? 'Log a meal by describing it' : 'AI meal logging — a Pro feature'}
         className="fixed right-5 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-surface tap-scale"
         style={{ bottom: 'calc(84px + env(safe-area-inset-bottom))', boxShadow: 'var(--shadow-float)' }}
       >
