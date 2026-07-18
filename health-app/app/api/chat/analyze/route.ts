@@ -5,6 +5,7 @@ import { CHAT_LOG_PROMPT, stripMarkdown } from '../../../../lib/chat-prompt'
 import { getIstDayRange } from '../../../../lib/dateUtils'
 import { pickBestFoodMatch } from '../../../../lib/foodMatch'
 import { captureServerEvent } from '../../../../lib/posthog/server'
+import { recordAiUsage } from '../../../../lib/usageCounter'
 
 const FREE_DAILY_LIMIT = 10
 
@@ -143,7 +144,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Could not match any food to the database.' }, { status: 422 })
   }
 
-  await supabase.from('chat_logs').insert({ user_id: userId })
+  await recordAiUsage(supabase, 'chat_logs', userId)
 
   captureServerEvent(userId, 'ai_scan_completed', { type: 'chat', items: validItems.length })
 

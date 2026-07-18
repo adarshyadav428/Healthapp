@@ -4,6 +4,7 @@ import { isProStatus } from '../../../../lib/subscription'
 import { getIstDayRange } from '../../../../lib/dateUtils'
 import { pickBestFoodMatch } from '../../../../lib/foodMatch'
 import { captureServerEvent } from '../../../../lib/posthog/server'
+import { recordAiUsage } from '../../../../lib/usageCounter'
 import { INDIAN_PORTION_REFERENCE } from '../../../../lib/indian-portions'
 import { resolveNutrition, piecesInServing, type GeminiFood } from '../../../../lib/camera-nutrition'
 
@@ -279,7 +280,7 @@ export async function POST(req: Request) {
   }
 
   // Record the scan (for rate limiting)
-  await supabase.from('camera_photo_logs').insert({ user_id: userId })
+  await recordAiUsage(supabase, 'camera_photo_logs', userId)
 
   // A clamped value means at least one item's numbers were implausible as
   // returned by Gemini — surface the existing low-confidence banner so the
