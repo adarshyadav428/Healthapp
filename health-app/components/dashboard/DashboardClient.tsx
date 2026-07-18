@@ -16,6 +16,8 @@ import { InstallPromptCard } from '../pwa/InstallPromptCard'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
 import { nextUnseenStreakMilestone } from '../../lib/logMilestones'
+import { proteinCoachLine } from '../../lib/proteinCoach'
+import { cn } from '../../lib/utils'
 import { reportStreakMilestone } from '../../store/milestoneStore'
 import { Flame, Plus, MessageCircle, Snowflake } from 'lucide-react'
 
@@ -69,6 +71,15 @@ export function DashboardClient({ profile, initialLogs, streakDays, freezesBanke
 
   const target = profile.daily_calorie_target
   const hasLogs = logs.length > 0
+
+  // Only once something's been logged — a gap line on an empty day is just the
+  // whole target restated, which reads as nagging rather than coaching.
+  const proteinLine = useMemo(
+    () => (logs.length === 0
+      ? null
+      : proteinCoachLine(totals.protein_g, profile.protein_g_target ?? 0, profile.current_weight_kg)),
+    [logs.length, totals.protein_g, profile.protein_g_target, profile.current_weight_kg]
+  )
   const recent = logs.slice(0, 3) // logs arrive newest-first
   const todayDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 
@@ -121,6 +132,18 @@ export function DashboardClient({ profile, initialLogs, streakDays, freezesBanke
           fatTarget={profile.fat_g_target ?? 0}
         />
       </div>
+
+      {/* ── Protein coach: one concrete next step, free for everyone ── */}
+      {proteinLine && (
+        <p
+          className={cn(
+            'mt-2.5 px-1 text-[13px]',
+            proteinLine.tone === 'met' ? 'font-semibold text-good' : 'text-ink-2'
+          )}
+        >
+          {proteinLine.text}
+        </p>
+      )}
 
       {/* ── Weekly recap (Pro) ── */}
       <WeeklyRecapCard recap={weeklyRecap} isPro={isPro} />
