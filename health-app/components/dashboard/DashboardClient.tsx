@@ -11,6 +11,7 @@ import { EditFoodLogModal } from '../log/EditFoodLogModal'
 import { RatePromptCard } from './RatePromptCard'
 import { WeekStrip } from './WeekStrip'
 import { WeeklyRecapCard, type WeeklyRecap } from './WeeklyRecapCard'
+import { AdaptiveTargetCard } from './AdaptiveTargetCard'
 import { NotificationPrimeCard } from './NotificationPrimeCard'
 import { InstallPromptCard } from '../pwa/InstallPromptCard'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
@@ -144,6 +145,9 @@ export function DashboardClient({ profile, initialLogs, streakDays, freezesBanke
           {proteinLine.text}
         </p>
       )}
+
+      {/* ── Suggested target adjustment (opt-in, never auto-applied) ── */}
+      <AdaptiveTargetCard profile={profile} />
 
       {/* ── Weekly recap (Pro) ── */}
       <WeeklyRecapCard recap={weeklyRecap} isPro={isPro} />

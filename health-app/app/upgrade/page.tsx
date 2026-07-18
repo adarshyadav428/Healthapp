@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { Check, Crown, Zap, ArrowLeft, Lock } from 'lucide-react'
 import { useUser } from '../../hooks/useUser'
 import { captureEvent } from '../../lib/posthog/client'
+import type { PaywallSource } from '../../lib/posthog/events'
 import { projectGoalDate, formatGoalDate } from '../../lib/projection'
 import { useCheckout, PLAY_PRODUCT_FOR_PLAN } from '../../hooks/useCheckout'
 
@@ -19,6 +20,16 @@ const REASON_COPY: Record<string, { title: string; description: string }> = {
   camera_scan_limit:  { title: 'Out of photo scans for today', description: "You've used today's 5 free camera scans. Pro gives you unlimited." },
   chat_scan_limit:    { title: 'Out of chat logs for today',   description: "You've used today's 10 free chat logs. Pro gives you unlimited." },
   free_logs:          { title: "You're building a real habit", description: 'Keep the momentum — Pro unlocks your full history, unlimited AI logging and custom foods.' },
+}
+
+/**
+ * Reasons whose only paywall impression is this page. The other reasons already
+ * fire `paywall_viewed` at the gate that blocked the user, so they must not
+ * fire again here.
+ */
+const PAYWALL_SOURCE_ONLY_HERE: Record<string, PaywallSource | undefined> = {
+  history: 'history_limit',
+  ai_insights: 'recap_end_card',
 }
 
 const plans = [
@@ -54,6 +65,32 @@ const FEATURES = [
   'No ads, ever',
 ]
 
+/**
+ * Funnel events for this page. Split out (and Suspense-wrapped) because it
+ * reads the URL params, same reason as ReasonBanner.
+ */
+function PaywallAnalytics() {
+  const searchParams = useSearchParams()
+  const reason = searchParams.get('reason')
+
+  // The upgrade page itself. Checkout success is `upgrade_completed`.
+  useEffect(() => {
+    captureEvent('upgrade_viewed', reason ? { reason } : undefined)
+  }, [reason])
+
+  // `paywall_viewed` means "was shown the wall", and most gates already emit it
+  // where the block happens (camera/chat limits, custom foods, the free-logs
+  // interstitial). These reasons have no such gate — the user is redirected or
+  // linked straight here — so this page is their only impression. Firing for
+  // the others too would double-count every one of them.
+  useEffect(() => {
+    const source = reason ? PAYWALL_SOURCE_ONLY_HERE[reason] : undefined
+    if (source) captureEvent('paywall_viewed', { source })
+  }, [reason])
+
+  return null
+}
+
 function ReasonBanner() {
   const searchParams = useSearchParams()
   const reason = searchParams.get('reason')
@@ -80,11 +117,6 @@ export default function UpgradePage() {
       ? projectGoalDate(profile.current_weight_kg, profile.target_weight_kg, profile.pace_kg_per_week ?? 0.5)
       : null
 
-  // Funnel: paywall view (checkout success is covered by subscription_started).
-  useEffect(() => {
-    captureEvent('upgrade_viewed')
-  }, [])
-
   return (
     <div className="min-h-screen">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
@@ -96,6 +128,7 @@ export default function UpgradePage() {
 
         {/* Contextual banner from gating (Suspense-wrapped because it reads URL params) */}
         <Suspense fallback={null}>
+          <PaywallAnalytics />
           <ReasonBanner />
         </Suspense>
 

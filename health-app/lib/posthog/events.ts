@@ -50,6 +50,8 @@ export const EVENTS = {
   WEIGHT_MILESTONE_SHOWN: 'weight_milestone_shown',
   STREAK_MILESTONE_SHOWN: 'streak_milestone_shown',
   PROGRESS_CARD_SHARED: 'progress_card_shared',
+  TARGET_SUGGESTION_ACCEPTED: 'target_suggestion_accepted',
+  TARGET_SUGGESTION_DISMISSED: 'target_suggestion_dismissed',
   // install / notification / rating prompts
   A2HS_ACCEPTED: 'a2hs_accepted',
   A2HS_DECLINED: 'a2hs_declined',
@@ -95,3 +97,7 @@ export type PaywallSource =
   | 'custom_foods'
   | 'history_limit'
   | 'recap_end_card'
+  // Not upgrade prompts — these ask an anonymous user to create a free account
+  // before any Gemini credits are spent. Tracked here so the funnel sees them.
+  | 'camera_scan_anonymous'
+  | 'chat_scan_anonymous'
