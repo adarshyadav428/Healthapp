@@ -11,14 +11,20 @@ import { captureEvent } from '../../lib/posthog/client'
 import type { PaywallSource } from '../../lib/posthog/events'
 import { projectGoalDate, formatGoalDate } from '../../lib/projection'
 import { useCheckout, PLAY_PRODUCT_FOR_PLAN } from '../../hooks/useCheckout'
+import { useSendVerificationLink } from '../../hooks/useSendVerificationLink'
+import { AI_TRIAL_SCANS } from '../../lib/aiTrial'
 
 const REASON_COPY: Record<string, { title: string; description: string }> = {
   history:            { title: 'Unlock your full history', description: 'Free users can view the last 7 days. Pro shows everything.' },
   custom_foods:       { title: 'Create custom foods',      description: 'Log your home-cooked dishes and family recipes with Pro.' },
   ai_insights:        { title: 'Get your weekly AI recap', description: 'A summary of your week — calories, days logged, weight change — every Sunday.' },
   exports:            { title: 'Export your data',         description: 'Download your full log as CSV with Pro.' },
-  camera_scan_limit:  { title: 'Out of photo scans for today', description: "You've used today's 5 free camera scans. Pro gives you unlimited." },
-  chat_scan_limit:    { title: 'Out of chat logs for today',   description: "You've used today's 10 free chat logs. Pro gives you unlimited." },
+  camera_scan_pro:    { title: "You've used your free AI scans", description: 'Point your camera at your plate and let Gemini do the logging. Unlimited with Pro.' },
+  chat_scan_pro:      { title: "You've used your free AI scans", description: 'Describe your meal in plain English and let Gemini log it. Unlimited with Pro.' },
+  // Not a paywall — the user hasn't spent their trial yet, they just haven't
+  // confirmed an email. The plan buttons below already read "Confirm your
+  // email first", so this banner explains why that's what they're seeing.
+  verify_ai:          { title: `Confirm your email for ${AI_TRIAL_SCANS} free AI scans`, description: `Tap the button below and we'll send you a link. Confirming unlocks ${AI_TRIAL_SCANS} free AI scans — no payment needed.` },
   free_logs:          { title: "You're building a real habit", description: 'Keep the momentum — Pro unlocks your full history, unlimited AI logging and custom foods.' },
 }
 
@@ -110,6 +116,17 @@ function ReasonBanner() {
 export default function UpgradePage() {
   const { user, profile } = useUser()
   const { startCheckout, loading, playAvailable, playPrices } = useCheckout({ userId: user?.id, userEmail: user?.email })
+  const { send: sendVerification, sending: sendingVerification, sent: verificationSent } =
+    useSendVerificationLink(user?.email)
+
+  // Signup no longer proves the address, so a subscriber can reach checkout
+  // with an inbox nobody can read — no receipt, and a refund or dispute later
+  // has no way to reach them. Verification is asked for here specifically
+  // because it's the moment the user is most willing to do it: they're about
+  // to pay. Play Billing is exempt — Google has already verified that account,
+  // and its receipts go through Google, not us.
+  const needsVerification =
+    !playAvailable && profile !== null && !profile.email_verified_at
 
   // Projected goal-date teaser (Cal AI's conversion trick) — Pro sells the curve.
   const projection =
@@ -198,14 +215,26 @@ export default function UpgradePage() {
                 variant={plan.highlight ? 'default' : 'outline'}
                 size="lg"
                 className="mt-4 w-full rounded-full tap-scale"
-                onClick={() => startCheckout(plan.id)}
-                disabled={!!loading}
+                onClick={() => needsVerification ? sendVerification('checkout_gate') : startCheckout(plan.id)}
+                disabled={!!loading || sendingVerification}
+                title={needsVerification ? 'Confirm your email before subscribing' : undefined}
               >
-                {loading === plan.id ? 'Opening checkout...' : plan.cta}
+                {needsVerification
+                  ? (sendingVerification ? 'Sending…' : verificationSent ? 'Resend confirmation link' : 'Confirm your email first')
+                  : (loading === plan.id ? 'Opening checkout...' : plan.cta)}
               </Button>
             </div>
           ))}
         </div>
+
+        {/* Why the buttons say "confirm your email" instead of a price */}
+        {needsVerification && (
+          <p className="mt-4 text-center text-xs text-ink-2">
+            {verificationSent
+              ? `We sent a link to ${user?.email}. Tap it, then come back to subscribe.`
+              : 'We need a working email to send your receipt and handle refunds. Tap above and we’ll send a confirmation link.'}
+          </p>
+        )}
 
         {/* Footer */}
         <div className="mt-8 text-center space-y-2">
