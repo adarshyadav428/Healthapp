@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { CheckCircle, Flame } from 'lucide-react'
-import { StartFreeButton } from '../components/marketing/StartFreeButton'
 
 export default function Home() {
   return (
@@ -17,12 +16,12 @@ export default function Home() {
           <Link href="/auth/sign-in" className="text-sm font-medium text-ink-2 hover:text-ink transition-colors">
             Sign in
           </Link>
-          <StartFreeButton
-            placement="header"
-            className="rounded-full bg-brand px-4 py-2 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-rest disabled:opacity-70"
+          <Link
+            href="/auth/sign-up"
+            className="rounded-full bg-brand px-4 py-2 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-rest"
           >
             Start free
-          </StartFreeButton>
+          </Link>
         </div>
       </header>
 
@@ -41,12 +40,12 @@ export default function Home() {
             Log food in 5 seconds. See your macros, weight trend and calorie deficit — all in one place.
           </p>
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <StartFreeButton
-              placement="hero"
-              className="rounded-full bg-brand px-8 py-3 text-base font-bold text-white hover:opacity-90 transition-opacity shadow-float disabled:opacity-70"
+            <Link
+              href="/auth/sign-up"
+              className="rounded-full bg-brand px-8 py-3 text-base font-bold text-white hover:opacity-90 transition-opacity shadow-float"
             >
               Start for free →
-            </StartFreeButton>
+            </Link>
             <Link
               href="/auth/sign-in"
               className="rounded-full border border-hairline bg-surface px-8 py-3 text-base font-semibold text-ink hover:bg-surface-2 transition-colors"
@@ -192,12 +191,12 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <StartFreeButton
-                placement="pricing"
-                className="mt-6 block w-full rounded-control border border-hairline bg-canvas py-3 text-sm font-bold text-ink text-center hover:bg-surface-2 transition-colors disabled:opacity-70"
+              <Link
+                href="/auth/sign-up"
+                className="mt-6 block w-full rounded-control border border-hairline bg-canvas py-3 text-sm font-bold text-ink text-center hover:bg-surface-2 transition-colors"
               >
                 Start for free
-              </StartFreeButton>
+              </Link>
             </div>
             {/* Pro */}
             <div className="rounded-sheet border-2 border-brand bg-brand-soft p-6 shadow-float relative overflow-hidden">
@@ -272,12 +271,12 @@ export default function Home() {
           <h2 className="font-display text-2xl font-bold text-ink">Ready to start?</h2>
           <p className="mt-2 text-sm text-ink-2">Join GetInShape and take control of your nutrition — the Indian way.</p>
           <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <StartFreeButton
-              placement="footer_cta"
-              className="rounded-full bg-brand px-8 py-3 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-rest disabled:opacity-70"
+            <Link
+              href="/auth/sign-up"
+              className="rounded-full bg-brand px-8 py-3 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-rest"
             >
               Start for free →
-            </StartFreeButton>
+            </Link>
           </div>
           <p className="mt-3 text-xs text-ink-2">No credit card · Cancel anytime</p>
         </section>

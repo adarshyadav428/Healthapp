@@ -7,7 +7,6 @@ import { toast } from '../components/ui/use-toast'
 import { captureEvent, logMetaHeaders } from '../lib/posthog/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { reportLogMilestone } from '../store/milestoneStore'
-import { openSaveAccount } from '../store/saveAccountStore'
 import type { LogMilestone } from '../lib/logMilestones'
 import { coachingLine } from '../lib/coaching'
 import { mealForTime } from '../lib/meal'
@@ -209,12 +208,6 @@ export function useCameraScan({ onClose, onFoodFound }: Params) {
     })
       .then(async (res) => {
         const json = await res.json()
-        if (res.status === 403 && json.createAccount) {
-          onClose()
-          openSaveAccount('camera_scan')
-          setCaptured(null)
-          return
-        }
         if (res.status === 429) {
           toast({
             title: 'Daily scan limit reached',

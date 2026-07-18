@@ -12,10 +12,6 @@
     {
       "path": "/api/cron/weekly-recap",
       "schedule": "30 13 * * 0"
-    },
-    {
-      "path": "/api/cron/cleanup-anon",
-      "schedule": "0 20 * * *"
     }
   ]
 }
