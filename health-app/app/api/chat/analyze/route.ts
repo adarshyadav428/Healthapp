@@ -25,6 +25,17 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const userId = user.id
 
+  // See the equivalent gate in app/api/camera/analyze/route.ts — anonymous
+  // accounts are free to create, so a free daily quota of paid Gemini calls
+  // would be an unauthenticated cost-abuse endpoint.
+  if (user.is_anonymous) {
+    captureServerEvent(userId, 'paywall_viewed', { source: 'chat_scan_anonymous' })
+    return NextResponse.json(
+      { error: 'Create a free account to use AI meal logging.', createAccount: true },
+      { status: 403 }
+    )
+  }
+
   const { data: sub } = await supabase
     .from('subscriptions').select('status').eq('user_id', userId).maybeSingle()
   const isPro = isProStatus(sub?.status)

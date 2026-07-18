@@ -78,6 +78,22 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const userId = user.id
 
+  // Anonymous (deferred-signup) users cannot spend Gemini credits. Anonymous
+  // accounts are free to create, so without this the free tier's 5 scans/day
+  // is effectively an unauthenticated paid-API endpoint — one CAPTCHA-solving
+  // script away from an unbounded bill.
+  //
+  // Requiring an account here is also the strongest conversion prompt we have:
+  // photo scan is the feature people actually come for, so the ask lands at a
+  // moment of clear intent rather than as an upfront toll.
+  if (user.is_anonymous) {
+    captureServerEvent(userId, 'paywall_viewed', { source: 'camera_scan_anonymous' })
+    return NextResponse.json(
+      { error: 'Create a free account to use AI photo scan.', createAccount: true },
+      { status: 403 }
+    )
+  }
+
   // Check Pro status
   const { data: sub } = await supabase
     .from('subscriptions').select('status').eq('user_id', userId).maybeSingle()
