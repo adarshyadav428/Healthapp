@@ -1,7 +1,41 @@
 # Deferred signup (anonymous auth) — implementation plan
 
-**Status:** proposed, not started. Written 2026-07-18.
+**Status:** steps 1–5 implemented on branch `feat/deferred-signup` (2026-07-18).
+**Blocked on two manual steps before it does anything — see "Before this goes live".**
 **Recommendation:** fast-follow after launch, not on `launch-prep-2026-07-17`.
+
+## Before this goes live
+
+Neither of these is code, both are yours, and **order matters**:
+
+1. **Apply `026_anonymous_users.sql`** via the Supabase SQL editor.
+2. **Then** enable anonymous sign-ins (Authentication → Providers), plus CAPTCHA
+   and a per-IP rate limit on that endpoint.
+
+Enabling the provider before applying 026 makes sign-in fail on the NOT NULL
+trigger — the same "half-applied migration" failure mode that made `015_chat_logs`
+hard to diagnose. Migration first.
+
+Until both are done the feature is inert: every "Start free" click falls back to
+`/auth/sign-up` and the funnel behaves exactly as it does today. Verified against
+the live project — the endpoint currently returns `422 anonymous_provider_disabled`
+and the fallback catches it.
+
+### What is verified, and what isn't
+
+Verified in the browser: all four CTAs render and hydrate, the click handler runs,
+anonymous sign-in fails as expected, and the user lands on the sign-up form. Pages
+render with `SaveAccountSheet` mounted, no console errors, production build green,
+248 tests passing.
+
+**Not verified — needs the two manual steps above:** the happy path. No anonymous
+session has ever been created, so nothing has reached `/onboarding` by this route,
+the SaveAccountSheet UI has never been opened, and no conversion has been
+exercised end-to-end. Walk through it manually once anonymous sign-in is on.
+
+The cleanup cron's auth was verified (401s without `CRON_SECRET`). Its delete path
+was deliberately **not** run — `.env.local` points at production. The selection
+predicate is covered by `tests/anonCleanup.test.ts` instead.
 
 ## Goal
 

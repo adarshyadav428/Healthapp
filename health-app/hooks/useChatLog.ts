@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../components/ui/use-toast'
 import { captureEvent, logMetaHeaders } from '../lib/posthog/client'
 import { reportLogMilestone } from '../store/milestoneStore'
+import { openSaveAccount } from '../store/saveAccountStore'
 import { coachingLine } from '../lib/coaching'
 import { useUser } from './useUser'
 
@@ -75,6 +76,13 @@ export function useChatLog({ onClose, logDate }: Params) {
       })
       const data = await res.json()
       if (!res.ok) {
+        if (res.status === 403 && data.createAccount) {
+          onClose()
+          openSaveAccount('chat_log')
+          setState({ type: 'idle' })
+          setInput(message)
+          return
+        }
         if (res.status === 429) {
           toast({
             title: 'Daily chat-log limit reached',

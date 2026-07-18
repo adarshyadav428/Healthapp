@@ -1,12 +1,19 @@
 import { create } from 'zustand'
 import type { Profile } from '../types/index'
 
+/**
+ * `isAnonymous` is carried explicitly rather than inferred from an empty
+ * email: anonymous users are stored with `email: ''`, and treating "falsy
+ * email" as "anonymous" would silently misclassify any registered user whose
+ * email failed to load. Gates that decide whether to spend money or show a
+ * paywall need the real answer.
+ */
 type UserState = {
-  user: { id: string; email: string } | null
+  user: { id: string; email: string; isAnonymous: boolean } | null
   profile: Profile | null
   isLoading: boolean
   error: string | null
-  setUser: (user: { id: string; email: string } | null) => void
+  setUser: (user: { id: string; email: string; isAnonymous: boolean } | null) => void
   setProfile: (p: Profile | null) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void

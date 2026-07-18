@@ -11,6 +11,7 @@ import { captureEvent } from '../../lib/posthog/client'
 import type { PaywallSource } from '../../lib/posthog/events'
 import { projectGoalDate, formatGoalDate } from '../../lib/projection'
 import { useCheckout, PLAY_PRODUCT_FOR_PLAN } from '../../hooks/useCheckout'
+import { openSaveAccount } from '../../store/saveAccountStore'
 
 const REASON_COPY: Record<string, { title: string; description: string }> = {
   history:            { title: 'Unlock your full history', description: 'Free users can view the last 7 days. Pro shows everything.' },
@@ -111,6 +112,18 @@ export default function UpgradePage() {
   const { user, profile } = useUser()
   const { startCheckout, loading, playAvailable, playPrices } = useCheckout({ userId: user?.id, userEmail: user?.email })
 
+  // An anonymous user has no email, so a subscription bought here would have no
+  // receipt address and no way to be recovered if they cleared their browser —
+  // they'd have paid for an entitlement attached to an id they can never reach
+  // again. Convert first, then sell.
+  const beginCheckout = (planId: Parameters<typeof startCheckout>[0]) => {
+    if (user?.isAnonymous) {
+      openSaveAccount('upgrade')
+      return
+    }
+    startCheckout(planId)
+  }
+
   // Projected goal-date teaser (Cal AI's conversion trick) — Pro sells the curve.
   const projection =
     profile && profile.goal !== 'maintain' && profile.current_weight_kg && profile.target_weight_kg
@@ -198,7 +211,7 @@ export default function UpgradePage() {
                 variant={plan.highlight ? 'default' : 'outline'}
                 size="lg"
                 className="mt-4 w-full rounded-full tap-scale"
-                onClick={() => startCheckout(plan.id)}
+                onClick={() => beginCheckout(plan.id)}
                 disabled={!!loading}
               >
                 {loading === plan.id ? 'Opening checkout...' : plan.cta}

@@ -50,8 +50,15 @@ export function useUser() {
           return
         }
 
-        setUser({ id: sessionUser.id, email: sessionUser.email ?? '' })
-        identifyUser(sessionUser.id, { email: sessionUser.email })
+        setUser({
+          id: sessionUser.id,
+          email: sessionUser.email ?? '',
+          isAnonymous: sessionUser.is_anonymous ?? false,
+        })
+        identifyUser(sessionUser.id, {
+          email: sessionUser.email,
+          is_anonymous: sessionUser.is_anonymous ?? false,
+        })
         await fetchProfile(sessionUser.id, reqId)
       } catch (err) {
         if (isMounted && reqId === reqIdRef.current) setError((err as Error).message)
@@ -75,8 +82,15 @@ export function useUser() {
         return
       }
 
-      setUser({ id: session.user.id, email: session.user.email ?? '' })
-      identifyUser(session.user.id, { email: session.user.email })
+      setUser({
+        id: session.user.id,
+        email: session.user.email ?? '',
+        isAnonymous: session.user.is_anonymous ?? false,
+      })
+      identifyUser(session.user.id, {
+        email: session.user.email,
+        is_anonymous: session.user.is_anonymous ?? false,
+      })
       await fetchProfile(session.user.id, reqId)
     })
 

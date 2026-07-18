@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { ThemeProvider } from 'next-themes'
 import { Toaster } from '../components/ui/toaster'
 import { LogMilestones } from '../components/milestones/LogMilestones'
+import { SaveAccountSheet } from '../components/auth/SaveAccountSheet'
 import { SentryInit } from '../components/SentryInit'
 import { capturePageview, markAppOpened } from '../lib/posthog/client'
 
@@ -56,6 +57,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         {children}
         <SentryInit />
         <LogMilestones />
+        <SaveAccountSheet />
         <Toaster />
       </QueryClientProvider>
     </ThemeProvider>
