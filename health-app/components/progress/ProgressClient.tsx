@@ -9,6 +9,8 @@ import { useUser } from '../../hooks/useUser'
 import { DayDiary } from './DayDiary'
 import { dateStrToUtcMidnight } from '../../lib/dateUtils'
 import { ShareProgressButton } from './ShareProgressButton'
+import { computeWeightTrend } from '../../lib/weightTrend'
+import { formatGoalDate } from '../../lib/projection'
 import {
   Flame, Scale, ChevronLeft, ChevronRight, Utensils, CalendarDays, X, Dumbbell, Lock, Crown,
 } from 'lucide-react'
@@ -62,6 +64,14 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
   // share card and the Weight page can't disagree.
   const currentWeight = weightLogs[0]?.weight_kg ?? null
   const startWeight = profile.start_weight_kg ?? weightLogs[weightLogs.length - 1]?.weight_kg ?? null
+
+  // Smoothed trend + projection. Needs 14+ days of weigh-ins; below that it
+  // returns a null rate and this whole surface stays hidden rather than
+  // showing a slope fitted to noise.
+  const trend = useMemo(
+    () => computeWeightTrend(weightLogs, profile.target_weight_kg ?? null),
+    [weightLogs, profile.target_weight_kg]
+  )
   const target = profile.daily_calorie_target
 
   const [range, setRange] = useState(7)
@@ -202,6 +212,36 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
           <p className="mt-[5px] text-[12px] text-ink-3">kg current</p>
         </div>
       </div>
+
+      {/* ── Weight trend: the smoothed answer to "am I actually moving?" ── */}
+      {trend.kgPerWeek !== null && (
+        <div className="mt-3 rounded-[24px] bg-surface p-5" style={AIR}>
+          <p className="text-[14px] font-bold text-ink">Your trend</p>
+          <p className="mt-1.5 text-[13px] text-ink-2">
+            {Math.abs(trend.kgPerWeek) < 0.05
+              ? 'Holding steady over the last few weeks.'
+              : <>
+                  {trend.kgPerWeek < 0 ? 'Down' : 'Up'}{' '}
+                  <span className="font-semibold text-ink">
+                    {Math.abs(trend.kgPerWeek).toFixed(2)} kg/week
+                  </span>{' '}
+                  on a 4-week average.
+                </>}
+          </p>
+          {trend.projectedDate && (
+            <p className="mt-1.5 text-[13px] text-ink-2">
+              At this rate you&apos;ll reach{' '}
+              <span className="font-semibold text-ink">{profile.target_weight_kg} kg</span>{' '}
+              around {formatGoalDate(trend.projectedDate)}.
+            </p>
+          )}
+          {/* The smoothing is the point — say so, or the number looks wrong
+              next to a scale reading the user just took. */}
+          <p className="mt-2 text-[11px] text-ink-3">
+            Averaged over 4 weeks, so day-to-day water weight doesn&apos;t move it.
+          </p>
+        </div>
+      )}
 
       {/* Share progress card (WhatsApp/IG image) — hidden when nothing to show yet */}
       <ShareProgressButton

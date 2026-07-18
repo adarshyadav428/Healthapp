@@ -13,7 +13,9 @@ const AddFoodModal = dynamic(() => import('../log/AddFoodModal').then(m => m.Add
 const TABS = [
   { href: '/dashboard', icon: Home,        label: 'Home'     },
   { href: '/log',       icon: Utensils,    label: 'Food'     },
-  { href: '/progress',  icon: TrendingUp,  label: 'Trends'   },
+  // "Progress" not "Trends": the tab is about whether *you* are moving, which
+  // is the reason to open it. "Trends" describes the charts, not the answer.
+  { href: '/progress',  icon: TrendingUp,  label: 'Progress' },
   { href: '/settings',  icon: User,        label: 'Profile'  },
 ]
 
