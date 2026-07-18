@@ -56,7 +56,12 @@ const METRIC_CONFIG = {
 
 export function ProgressClient({ streak, weightLogs, loggedDates, logs, exerciseLogs, profile, isPro }: Props) {
   const { user } = useUser()
+  // weightLogs arrives newest-first and capped at 30, so its last element is
+  // "oldest of the last 30 weigh-ins" — not the start weight. Prefer the
+  // immutable onboarding baseline, same rule WeightStats uses (P1-9b), so the
+  // share card and the Weight page can't disagree.
   const currentWeight = weightLogs[0]?.weight_kg ?? null
+  const startWeight = profile.start_weight_kg ?? weightLogs[weightLogs.length - 1]?.weight_kg ?? null
   const target = profile.daily_calorie_target
 
   const [range, setRange] = useState(7)
@@ -201,7 +206,7 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
       {/* Share progress card (WhatsApp/IG image) — hidden when nothing to show yet */}
       <ShareProgressButton
         streakDays={streak}
-        startWeightKg={weightLogs[weightLogs.length - 1]?.weight_kg ?? null}
+        startWeightKg={startWeight}
         currentWeightKg={currentWeight}
       />
 
