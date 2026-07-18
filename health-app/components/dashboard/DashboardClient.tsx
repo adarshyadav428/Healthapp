@@ -17,7 +17,7 @@ import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
 import { nextUnseenStreakMilestone } from '../../lib/logMilestones'
 import { reportStreakMilestone } from '../../store/milestoneStore'
-import { Flame, Plus, MessageCircle } from 'lucide-react'
+import { Flame, Plus, MessageCircle, Snowflake } from 'lucide-react'
 
 const ChatLogModal = dynamic(() => import('../chat/ChatLogModal').then(m => m.ChatLogModal), { ssr: false })
 
@@ -25,12 +25,14 @@ interface Props {
   profile: Profile
   initialLogs: FoodLog[]
   streakDays: number
+  /** Streak freezes available — free for everyone, never a Pro gate. */
+  freezesBanked?: number
   loggedDates: string[]
   isPro: boolean
   weeklyRecap: WeeklyRecap | null
 }
 
-export function DashboardClient({ profile, initialLogs, streakDays, loggedDates, isPro, weeklyRecap }: Props) {
+export function DashboardClient({ profile, initialLogs, streakDays, freezesBanked = 0, loggedDates, isPro, weeklyRecap }: Props) {
   const { user } = useUser()
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
   const [editingLog, setEditingLog] = useState<FoodLog | null>(null)
@@ -79,9 +81,26 @@ export function DashboardClient({ profile, initialLogs, streakDays, loggedDates,
           <h1 className="font-display mt-[3px] text-[24px] font-bold tracking-[-0.02em] text-ink">Today</h1>
         </div>
         {streakDays > 0 && (
-          <div className="flex items-center gap-1.5 rounded-full bg-surface px-[13px] py-[7px]" style={{ boxShadow: 'var(--shadow-air)' }}>
+          <div
+            className="flex items-center gap-1.5 rounded-full bg-surface px-[13px] py-[7px]"
+            style={{ boxShadow: 'var(--shadow-air)' }}
+            title={freezesBanked > 0
+              ? `${freezesBanked} streak freeze${freezesBanked > 1 ? 's' : ''} banked — a missed day is covered automatically`
+              : undefined}
+          >
             <Flame className="h-[15px] w-[15px] text-brand" strokeWidth={2} />
             <span className="text-[13.5px] font-semibold tabular-nums text-ink">{streakDays}</span>
+            {/* The in-app counterpart of the freeze-aware push. Ink, not red —
+                a banked freeze is reassurance, never a warning. */}
+            {freezesBanked > 0 && (
+              <span className="flex items-center gap-0.5 border-l border-hairline pl-1.5 text-[12px] font-semibold text-ink-3">
+                <Snowflake className="h-[13px] w-[13px]" strokeWidth={2} aria-hidden="true" />
+                <span className="tabular-nums">{freezesBanked}</span>
+                <span className="sr-only">
+                  streak freeze{freezesBanked > 1 ? 's' : ''} banked
+                </span>
+              </span>
+            )}
           </div>
         )}
       </div>

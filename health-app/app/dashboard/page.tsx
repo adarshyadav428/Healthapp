@@ -6,7 +6,7 @@ import type { FoodLog } from '../../types/index'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { DashboardClient } from '../../components/dashboard/DashboardClient'
 import { getIstDayRange, istDateStr } from '../../lib/dateUtils'
-import { calculateStreak } from '../../lib/streak'
+import { calculateStreakState } from '../../lib/streak'
 import type { WeeklyRecap } from '../../components/dashboard/WeeklyRecapCard'
 
 export const metadata: Metadata = {
@@ -63,7 +63,10 @@ export default async function DashboardPage() {
 
   const { data: recentLogs } = streakResult
 
-  const streakDays = calculateStreak((recentLogs ?? []) as unknown as FoodLog[])
+  // Freeze-aware: a missed day covered by a banked freeze keeps the streak
+  // alive here, so the number the user sees matches the rules we tell them.
+  const streakState = calculateStreakState((recentLogs ?? []) as unknown as FoodLog[])
+  const streakDays = streakState.streak
 
   // IST date keys with at least one log — feeds the week strip's dots, matching
   // /log's IST ?date= semantics (a 1am-IST log belongs to that IST day).
@@ -100,6 +103,7 @@ export default async function DashboardPage() {
           profile={profile}
           initialLogs={foodLogs}
           streakDays={streakDays}
+          freezesBanked={streakState.freezesBanked}
           loggedDates={loggedDates}
           isPro={isPro}
           weeklyRecap={weeklyRecap}

@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '../../../../lib/supabase/server'
 import { getIstDayRange } from '../../../../lib/dateUtils'
-import { calculateStreak } from '../../../../lib/streak'
+import { calculateStreakState } from '../../../../lib/streak'
+
+/** Below this, a streak isn't worth a "don't lose it" notification yet. */
+const STREAK_SAVE_MIN_DAYS = 3
 import { sendPushToUser } from '../../../../lib/push/send'
 import type { FoodLog } from '../../../../types/index'
 
@@ -49,12 +52,21 @@ export async function GET(req: Request) {
       .eq('user_id', userId)
       .gte('logged_at', sixtyDaysAgo)
 
-    const streak = calculateStreak((recentLogs ?? []) as unknown as FoodLog[])
+    const { streak, freezesBanked } = calculateStreakState((recentLogs ?? []) as unknown as FoodLog[])
 
-    const payload = streak > 0
+    // Only nudge about a streak once there's one worth protecting. Below 3 days
+    // "don't lose your 1-day streak" is pressure without stakes, and it trains
+    // people to swipe the notification away.
+    const payload = streak >= STREAK_SAVE_MIN_DAYS
       ? {
-          title: `🔥 Don't lose your ${streak}-day streak!`,
-          body: 'Log a meal before midnight to keep it going.',
+          // Never alarming: if a freeze will cover tonight, say so. Manufacturing
+          // panic about a streak we're about to save anyway is a lie.
+          title: freezesBanked > 0
+            ? `Your ${streak}-day streak is safe tonight`
+            : `Keep your ${streak}-day streak going`,
+          body: freezesBanked > 0
+            ? 'A streak freeze has you covered — log a meal to save it for later.'
+            : 'A quick log before midnight keeps it alive.',
           url: '/log',
           tag: 'streak-save',
         }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getLogMilestoneAction, LOG_PAYWALL_THRESHOLD, nextUnseenStreakMilestone } from '../lib/logMilestones'
+import { getLogMilestoneAction, LOG_PAYWALL_THRESHOLD, nextUnseenStreakMilestone, isShareableStreakMilestone } from '../lib/logMilestones'
 
 const seenNone = { celebrationSeen: false, paywallSeen: false }
 
@@ -85,6 +85,39 @@ describe('nextUnseenStreakMilestone', () => {
   })
 
   it('is null below the first milestone', () => {
-    expect(nextUnseenStreakMilestone(6, [])).toBeNull()
+    expect(nextUnseenStreakMilestone(2, [])).toBeNull()
+    expect(nextUnseenStreakMilestone(0, [])).toBeNull()
+  })
+
+  // The v2 ladder added early rungs (3, 14, 21). Only the highest REACHED rung
+  // is ever a candidate, so gaining rungs cannot hand an established user a
+  // stale celebration for a threshold they passed long ago.
+  it('celebrates the new early rungs', () => {
+    expect(nextUnseenStreakMilestone(3, [])).toBe(3)
+    expect(nextUnseenStreakMilestone(6, [])).toBe(3)
+    expect(nextUnseenStreakMilestone(14, [3, 7])).toBe(14)
+    expect(nextUnseenStreakMilestone(21, [3, 7, 14])).toBe(21)
+    expect(nextUnseenStreakMilestone(50, [30])).toBe(50)
+  })
+
+  it('never surfaces a lower rung once a higher one is seen', () => {
+    // Day-7 celebrated; day 3 was silently passed. Must stay quiet.
+    expect(nextUnseenStreakMilestone(8, [7])).toBeNull()
+    expect(nextUnseenStreakMilestone(13, [7])).toBeNull()
+    // But a genuinely higher unseen rung still fires — at 29 days the highest
+    // reached is 21, which they have not celebrated yet.
+    expect(nextUnseenStreakMilestone(29, [7])).toBe(21)
+  })
+})
+
+describe('isShareableStreakMilestone', () => {
+  it('offers a share card only at the three big rungs', () => {
+    expect(isShareableStreakMilestone(7)).toBe(true)
+    expect(isShareableStreakMilestone(30)).toBe(true)
+    expect(isShareableStreakMilestone(100)).toBe(true)
+  })
+
+  it('stays quiet on the smaller rungs so the prompt keeps its weight', () => {
+    for (const d of [3, 14, 21, 50]) expect(isShareableStreakMilestone(d)).toBe(false)
   })
 })

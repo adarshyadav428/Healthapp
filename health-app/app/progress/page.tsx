@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import { isProStatus } from '../../lib/subscription'
 import type { FoodLog, WeightLog } from '../../types/index'
-import { calculateStreak } from '../../lib/streak'
+import { calculateStreakState } from '../../lib/streak'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { ProgressClient } from '../../components/progress/ProgressClient'
 
@@ -81,7 +81,7 @@ export default async function ProgressPage() {
   const withinTier = <T extends { logged_at: string }>(rows: T[]) =>
     isPro ? rows : rows.filter((r) => new Date(r.logged_at).getTime() >= freeCutoffMs)
 
-  const streak      = calculateStreak((streakResult.data ?? []) as unknown as FoodLog[])
+  const streak      = calculateStreakState((streakResult.data ?? []) as unknown as FoodLog[]).streak
   const weightLogs  = (weightResult.data ?? []) as unknown as WeightLog[]
   const loggedDates = (streakResult.data ?? []).map((r) => r.logged_at as string)
   const logs        = withinTier(logsResult.data ?? [])
