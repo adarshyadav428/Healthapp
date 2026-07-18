@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
+import { isProStatus } from '../../../../lib/subscription'
 import { CHAT_LOG_PROMPT, stripMarkdown } from '../../../../lib/chat-prompt'
 import { getIstDayRange } from '../../../../lib/dateUtils'
 import { pickBestFoodMatch } from '../../../../lib/foodMatch'
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
 
   const { data: sub } = await supabase
     .from('subscriptions').select('status').eq('user_id', userId).maybeSingle()
-  const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
+  const isPro = isProStatus(sub?.status)
 
   if (!isPro) {
     const { start: todayStart } = getIstDayRange()

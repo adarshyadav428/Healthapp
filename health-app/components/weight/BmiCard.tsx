@@ -1,19 +1,22 @@
 'use client'
 
 import type { Profile, WeightLog } from '../../types/index'
+import { computeBmi, bmiCategory, healthyWeightRange } from '../../lib/bmi'
 
-type BmiCategory = {
+type BmiCategoryStyle = {
   label: string
   emoji: string
   color: string
   soft: string
 }
 
-function getBmiCategory(bmi: number): BmiCategory {
-  if (bmi < 18.5) return { label: 'Underweight', emoji: '⚠️', color: 'var(--protein)', soft: 'color-mix(in srgb, var(--protein) 8%, transparent)' }
-  if (bmi < 25)   return { label: 'Healthy',     emoji: '✅', color: 'var(--good)',    soft: 'color-mix(in srgb, var(--good) 8%, transparent)' }
-  if (bmi < 30)   return { label: 'Overweight',  emoji: '⚠️', color: 'var(--energy-ink)', soft: 'var(--energy-soft)' }
-  return             { label: 'Obese',           emoji: '🔴', color: 'var(--bad)',     soft: 'var(--bad-soft)' }
+function getBmiCategory(bmi: number): BmiCategoryStyle {
+  switch (bmiCategory(bmi)) {
+    case 'underweight': return { label: 'Underweight', emoji: '⚠️', color: 'var(--protein)', soft: 'color-mix(in srgb, var(--protein) 8%, transparent)' }
+    case 'healthy':     return { label: 'Healthy',     emoji: '✅', color: 'var(--good)',    soft: 'color-mix(in srgb, var(--good) 8%, transparent)' }
+    case 'overweight':  return { label: 'Overweight',  emoji: '⚠️', color: 'var(--energy-ink)', soft: 'var(--energy-soft)' }
+    case 'obese':       return { label: 'Obese',       emoji: '🔴', color: 'var(--bad)',     soft: 'var(--bad-soft)' }
+  }
 }
 
 function getBmiBarPercent(bmi: number): number {
@@ -26,13 +29,13 @@ export function BmiCard({ logs, profile }: { logs: WeightLog[]; profile: Profile
   // Sort descending so index [0] is always the most recent entry
   const sorted = [...logs].sort((a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime())
   const currentWeightKg = sorted.length > 0 ? sorted[0].weight_kg : profile.current_weight_kg
-  const heightM = profile.height_cm / 100
-  const bmi = currentWeightKg / (heightM * heightM)
+  const bmi = computeBmi(currentWeightKg, profile.height_cm)
   const bmiRounded = Math.round(bmi * 10) / 10
   const cat = getBmiCategory(bmi)
   const barPercent = getBmiBarPercent(bmi)
-  const minIdeal = Math.round(18.5 * heightM * heightM * 10) / 10
-  const maxIdeal = Math.round(24.9 * heightM * heightM * 10) / 10
+  const { minKg, maxKg } = healthyWeightRange(profile.height_cm)
+  const minIdeal = Math.round(minKg * 10) / 10
+  const maxIdeal = Math.round(maxKg * 10) / 10
 
   return (
     <div className="rounded-sheet border border-hairline p-4 shadow-rest" style={{ background: cat.soft }}>

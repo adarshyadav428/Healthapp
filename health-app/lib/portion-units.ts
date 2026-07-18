@@ -15,6 +15,17 @@ import type { Food } from '../types/index'
 
 export type Unit = { key: string; label: string; toGrams: (q: number) => number }
 
+/**
+ * Slider/number-input bounds for a portion amount, keyed by whether the item
+ * is counted in discrete pieces ("pcs") or a continuous weight/volume. Shared
+ * by the camera scan portion control. Pure so it stays unit-testable.
+ */
+export function portionRange(unit: string | undefined): { min: number; max: number; step: number } {
+  return unit === 'pcs'
+    ? { min: 1, max: 100, step: 1 }
+    : { min: 10, max: 1500, step: 5 }
+}
+
 export const GRAMS_UNIT: Unit = { key: 'g', label: 'Grams', toGrams: (q) => q }
 
 export type SmartPortion = { key: string; label: string; grams: number }

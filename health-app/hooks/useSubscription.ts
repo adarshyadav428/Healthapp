@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { getBrowserSupabaseClient } from '../lib/supabase/client'
+import { isProStatus } from '../lib/subscription'
 import type { Subscription } from '../types/index'
 
 export function useSubscription(userId: string | null) {
@@ -21,7 +22,7 @@ export function useSubscription(userId: string | null) {
       return data as Subscription | null
     },
     select: (data) => {
-      const isPro = Boolean(data && (data.status === 'active' || data.status === 'trialing'))
+      const isPro = isProStatus(data?.status)
       return {
         subscription: data,
         isPro,

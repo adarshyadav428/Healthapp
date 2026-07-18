@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { istDateStr } from './dateUtils'
+import { isProStatus } from './subscription'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -47,7 +48,7 @@ export async function resolveLoggedAtForRequest(
   // Past IST day — free users are limited to the last 7 days.
   const { data: sub } = await supabase
     .from('subscriptions').select('status').eq('user_id', userId).maybeSingle()
-  const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
+  const isPro = isProStatus(sub?.status)
   if (!isPro && !isWithinFreeLogWindow(dateStr, now)) {
     return {
       ok: false,

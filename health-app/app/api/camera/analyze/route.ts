@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
+import { isProStatus } from '../../../../lib/subscription'
 import { getIstDayRange } from '../../../../lib/dateUtils'
 import { pickBestFoodMatch } from '../../../../lib/foodMatch'
 import { captureServerEvent } from '../../../../lib/posthog/server'
@@ -79,7 +80,7 @@ export async function POST(req: Request) {
   // Check Pro status
   const { data: sub } = await supabase
     .from('subscriptions').select('status').eq('user_id', userId).maybeSingle()
-  const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
+  const isPro = isProStatus(sub?.status)
 
   // Rate limit: free users get 5 photo AI scans per IST day
   if (!isPro) {

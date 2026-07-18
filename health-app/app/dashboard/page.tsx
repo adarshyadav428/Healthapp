@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
+import { isProStatus } from '../../lib/subscription'
 import type { FoodLog } from '../../types/index'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { DashboardClient } from '../../components/dashboard/DashboardClient'
@@ -73,7 +74,7 @@ export default async function DashboardPage() {
   const foodLogs = (rawLogs ?? []) as unknown as FoodLog[]
 
   const sub = subResult.data
-  const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
+  const isPro = isProStatus(sub?.status)
 
   const recapRow = recapResult.data
   const weeklyRecap: WeeklyRecap | null = recapRow

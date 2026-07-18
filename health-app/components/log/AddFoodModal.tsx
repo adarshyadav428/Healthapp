@@ -10,6 +10,7 @@ import { ArrowLeft, ChevronDown, Drumstick, Droplet, Wheat, Sprout, Loader2 } fr
 import { reportLogMilestone } from '../../store/milestoneStore'
 import type { LogMilestone } from '../../lib/logMilestones'
 import { buildUnits, pickDefaultUnit, type Unit } from '../../lib/portion-units'
+import { mealForTime } from '../../lib/meal'
 import { UnitPicker } from './UnitPicker'
 
 const MEAL_OPTIONS = [
@@ -22,14 +23,6 @@ const MEAL_OPTIONS = [
 type MealValue = (typeof MEAL_OPTIONS)[number]['value']
 
 const round1 = (n: number) => Math.round(n * 10) / 10
-
-function defaultMeal(): MealValue {
-  const hour = new Date().getHours()
-  if (hour < 11) return 'breakfast'
-  if (hour < 16) return 'lunch'
-  if (hour < 21) return 'dinner'
-  return 'snack'
-}
 
 /** Pick an emoji based on the food name — fallback when we have no real image. */
 function foodEmoji(name: string): string {
@@ -72,7 +65,7 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
   const units = useMemo(() => buildUnits(food), [food])
   const [unit, setUnit] = useState<Unit>(() => pickDefaultUnit(units, food))
   const [quantityStr, setQuantityStr] = useState('1')
-  const [meal, setMeal] = useState<MealValue>(defaultMeal())
+  const [meal, setMeal] = useState<MealValue>(mealForTime())
   const [showUnitPicker, setShowUnitPicker] = useState(false)
 
   const quantityNum = Math.max(0, parseFloat(quantityStr) || 0)

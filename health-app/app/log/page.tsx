@@ -7,6 +7,7 @@ import { FoodHeader } from '../../components/log/FoodHeader'
 import { SwipeDayNav } from '../../components/log/SwipeDayNav'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
+import { isProStatus } from '../../lib/subscription'
 import type { Food, FoodLog } from '../../types/index'
 import { getIstDayRange, istDateStr, dateStrToUtcMidnight } from '../../lib/dateUtils'
 import { isWithinFreeLogWindow } from '../../lib/backfill'
@@ -101,7 +102,7 @@ export default async function LogPage({
 
   // Check Pro status — free users can only view the last 7 days of history
   const sub = subResult.data
-  const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
+  const isPro = isProStatus(sub?.status)
 
   // A day is editable (backfill-able) if it's within the free 7-day window, or
   // for any past day when Pro. Drives whether the logging surface renders.

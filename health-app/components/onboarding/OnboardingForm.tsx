@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -9,8 +9,10 @@ import { toast } from '../ui/use-toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronRight, ChevronLeft, Camera, MessageSquarePlus } from 'lucide-react'
 import { calculateTDEE } from '../../lib/tdee'
+import { computeBmi, bmiCategory, healthyWeightRange, suggestedTargets } from '../../lib/bmi'
 import { projectGoalDate, formatGoalDate } from '../../lib/projection'
-import { captureEvent } from '../../lib/posthog/client'
+import { ftInToCm } from '../../lib/units'
+import { useOnboardingDraft, TOTAL_STEPS, STEP_LABELS } from '../../hooks/useOnboardingDraft'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 import { ConfettiBurst } from '../ui/ConfettiBurst'
@@ -20,10 +22,6 @@ const CameraModal  = dynamic(() => import('../camera/CameraModal').then(m => m.C
 const ChatLogModal = dynamic(() => import('../chat/ChatLogModal').then(m => m.ChatLogModal),  { ssr: false })
 const AddFoodModal = dynamic(() => import('../log/AddFoodModal').then(m => m.AddFoodModal),   { ssr: false })
 
-const TOTAL_STEPS = 6
-const ONBOARDING_STORAGE_KEY = 'gis.onboarding.progress'
-
-const STEP_LABELS = ['Log a meal', 'About you', 'Body stats', 'Your weight', 'Your goal', 'Lifestyle']
 const STEP_EMOJIS = ['📸', '👤', '📏', '⚖️', '🎯', '🏃']
 
 const selectClass =
@@ -34,19 +32,9 @@ const pillBase =
 const pillOn = 'border-brand bg-brand-soft text-brand-ink'
 const pillOff = 'border-hairline bg-surface-2 text-ink hover:border-brand-ring'
 
-// Convert feet + inches to cm
-function ftInToCm(ft: number, inches: number): number {
-  return Math.round((ft * 12 + inches) * 2.54)
-}
-
-
 export function OnboardingForm() {
   const queryClient = useQueryClient()
-  const [step, setStep] = useState(1)
-  const [isNavigating, setIsNavigating] = useState(false)
   const [celebrating, setCelebrating] = useState(false)
-  const [heightFt, setHeightFt] = useState(5)
-  const [heightIn, setHeightIn] = useState(7)
   const [showCamera, setShowCamera] = useState(false)
   const [showChat, setShowChat] = useState(false)
   const [barcodeFood, setBarcodeFood] = useState<Food | null>(null)
@@ -70,43 +58,10 @@ export function OnboardingForm() {
     },
   })
 
-  // Resume where an abandoner left off instead of restarting at step 1/6.
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(ONBOARDING_STORAGE_KEY)
-      if (!raw) return
-      const saved = JSON.parse(raw) as { step?: number; values?: Partial<OnboardingData>; heightFt?: number; heightIn?: number }
-      if (saved.values) form.reset({ ...form.getValues(), ...saved.values })
-      if (typeof saved.heightFt === 'number') setHeightFt(saved.heightFt)
-      if (typeof saved.heightIn === 'number') setHeightIn(saved.heightIn)
-      if (saved.step && saved.step >= 1 && saved.step <= TOTAL_STEPS) setStep(saved.step)
-    } catch { /* ignore */ }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const nextStep = async () => {
-    if (isNavigating) return
-    const fieldsByStep: Record<number, (keyof OnboardingData)[]> = {
-      1: [],
-      2: ['display_name'],
-      3: ['age', 'sex'],
-      4: ['height_cm', 'current_weight_kg'],
-      5: ['target_weight_kg', 'goal'],
-      6: ['activity_level', 'pace_kg_per_week'],
-    }
-    setIsNavigating(true)
-    try {
-      const ok = await form.trigger(fieldsByStep[step])
-      if (ok) {
-        captureEvent('onboarding_step_completed', { step, label: STEP_LABELS[step - 1] })
-        setStep((s) => Math.min(TOTAL_STEPS, s + 1))
-      }
-    } finally {
-      setIsNavigating(false)
-    }
-  }
-
-  const prevStep = () => setStep((s) => Math.max(1, s - 1))
+  const {
+    step, isNavigating, heightFt, setHeightFt, heightIn, setHeightIn,
+    nextStep, prevStep, clearDraft,
+  } = useOnboardingDraft(form)
 
   const onSubmit = async (values: OnboardingData) => {
     try {
@@ -121,7 +76,7 @@ export function OnboardingForm() {
         throw new Error(body?.error || 'Failed to save onboarding data')
       }
 
-      try { localStorage.removeItem(ONBOARDING_STORAGE_KEY) } catch { /* ignore */ }
+      clearDraft()
       queryClient.invalidateQueries({ queryKey: ['profile'] })
       // Celebration moment instead of an abrupt redirect — the overlay below
       // shows confetti + "You're all set" while the dashboard loads next.
@@ -139,15 +94,6 @@ export function OnboardingForm() {
   // Live TDEE preview for Step 5
   const watchedValues = form.watch()
 
-  // Persist progress (step + values) so a mid-wizard exit can resume.
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        ONBOARDING_STORAGE_KEY,
-        JSON.stringify({ step, values: watchedValues, heightFt, heightIn })
-      )
-    } catch { /* ignore */ }
-  }, [step, watchedValues, heightFt, heightIn])
   let tdeePreview: { daily_calorie_target: number; protein_g_target: number; carbs_g_target: number; fat_g_target: number } | null = null
   try {
     if (watchedValues.height_cm > 0 && watchedValues.current_weight_kg > 0 && watchedValues.age > 0) {
@@ -350,17 +296,14 @@ export function OnboardingForm() {
                 const hCm = watchedValues.height_cm
                 const wKg = watchedValues.current_weight_kg
                 if (!hCm || !wKg || hCm <= 0 || wKg <= 0) return null
-                const hM = hCm / 100
-                const currentBmi = +(wKg / (hM * hM)).toFixed(1)
-                const bmiLabel = currentBmi < 18.5 ? 'Underweight' : currentBmi < 25 ? 'Healthy weight' : currentBmi < 30 ? 'Overweight' : 'Obese'
-                const bmiColor = currentBmi < 18.5 ? 'text-protein' : currentBmi < 25 ? 'text-good' : currentBmi < 30 ? 'text-energy-ink' : 'text-danger'
-                const suggestions = [
-                  { bmi: 20, kg: +(20 * hM * hM).toFixed(1) },
-                  { bmi: 22, kg: +(22 * hM * hM).toFixed(1) },
-                  { bmi: 24, kg: +(24 * hM * hM).toFixed(1) },
-                ]
-                const minHealthy = +(18.5 * hM * hM).toFixed(1)
-                const maxHealthy = +(24.9 * hM * hM).toFixed(1)
+                const currentBmi = +computeBmi(wKg, hCm).toFixed(1)
+                const cat = bmiCategory(currentBmi)
+                const bmiLabel = cat === 'underweight' ? 'Underweight' : cat === 'healthy' ? 'Healthy weight' : cat === 'overweight' ? 'Overweight' : 'Obese'
+                const bmiColor = cat === 'underweight' ? 'text-protein' : cat === 'healthy' ? 'text-good' : cat === 'overweight' ? 'text-energy-ink' : 'text-danger'
+                const suggestions = suggestedTargets(hCm).map((s) => ({ bmi: s.bmi, kg: +s.kg.toFixed(1) }))
+                const range = healthyWeightRange(hCm)
+                const minHealthy = +range.minKg.toFixed(1)
+                const maxHealthy = +range.maxKg.toFixed(1)
                 return (
                   <div className="mt-2 rounded-card border border-hairline bg-brand-soft p-3 space-y-2">
                     <div className="flex items-center justify-between">

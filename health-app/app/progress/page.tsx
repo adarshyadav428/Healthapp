@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
+import { isProStatus } from '../../lib/subscription'
 import type { FoodLog, WeightLog } from '../../types/index'
 import { calculateStreak } from '../../lib/streak'
 import { BottomNav } from '../../components/layout/BottomNav'
@@ -68,7 +69,7 @@ export default async function ProgressPage() {
 
   // Pro status — free users only see the last 7 days of trend history
   const sub = subResult.data
-  const isPro = Boolean(sub && (sub.status === 'active' || sub.status === 'trialing'))
+  const isPro = isProStatus(sub?.status)
 
   if (logsResult.error) throw new Error(logsResult.error.message)
 

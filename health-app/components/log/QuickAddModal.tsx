@@ -9,6 +9,7 @@ import { X, Zap, ChevronDown } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { reportLogMilestone } from '../../store/milestoneStore'
 import type { LogMilestone } from '../../lib/logMilestones'
+import { mealForTime } from '../../lib/meal'
 
 const MEALS = [
   { value: 'breakfast', label: '🥣 Breakfast' },
@@ -19,17 +20,9 @@ const MEALS = [
 
 type Meal = (typeof MEALS)[number]['value']
 
-function defaultMeal(): Meal {
-  const h = new Date().getHours()
-  if (h < 11) return 'breakfast'
-  if (h < 16) return 'lunch'
-  if (h < 21) return 'dinner'
-  return 'snack'
-}
-
 export function QuickAddModal({ onClose, logDate }: { onClose: () => void; logDate?: string }) {
   const [kcal,    setKcal]    = useState('')
-  const [meal,    setMeal]    = useState<Meal>(defaultMeal())
+  const [meal,    setMeal]    = useState<Meal>(mealForTime())
   const [showMacros, setShowMacros] = useState(false)
   const [protein, setProtein] = useState('')
   const [carbs,   setCarbs]   = useState('')
