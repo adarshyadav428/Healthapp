@@ -9,6 +9,7 @@ import { RecentMealCard } from '../home/RecentMealCard'
 import { EmptyMeals } from '../home/EmptyMeals'
 import { EditFoodLogModal } from '../log/EditFoodLogModal'
 import { RatePromptCard } from './RatePromptCard'
+import { VerifyEmailCard } from './VerifyEmailCard'
 import { WeekStrip } from './WeekStrip'
 import { WeeklyRecapCard, type WeeklyRecap } from './WeeklyRecapCard'
 import { AdaptiveTargetCard } from './AdaptiveTargetCard'
@@ -178,6 +179,9 @@ export function DashboardClient({ profile, initialLogs, streakDays, freezesBanke
 
       {/* Reminders priming — after the user has logged at least once */}
       {hasLogs && <NotificationPrimeCard />}
+
+      {/* Email ownership ask — deferred from signup, renders after a few days */}
+      <VerifyEmailCard />
 
       {/* Play Store rating ask — renders only inside the installed Play build */}
       <RatePromptCard streakDays={streakDays} />

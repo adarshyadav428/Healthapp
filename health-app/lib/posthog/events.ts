@@ -20,6 +20,12 @@ export const EVENTS = {
   ONBOARDING_STEP_COMPLETED: 'onboarding_step_completed',
   ONBOARDING_COMPLETED: 'onboarding_completed',
   SIGNUP_COMPLETED: 'signup_completed',
+  // Deferred email verification. Signup no longer blocks on an inbox round
+  // trip, so proof of ownership is chased later — these two measure whether
+  // that chase actually lands.
+  EMAIL_VERIFICATION_SENT: 'email_verification_sent',
+  EMAIL_VERIFIED: 'email_verified',
+  EMAIL_VERIFY_PROMPT_DISMISSED: 'email_verify_prompt_dismissed',
   // logging (the core loop)
   FIRST_FOOD_LOGGED: 'first_food_logged',
   FOOD_LOGGED: 'food_logged',

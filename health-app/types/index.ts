@@ -6,6 +6,13 @@ export type Profile = {
   current_weight_kg: number
   /** Immutable onboarding baseline (migration 025). Optional until applied. */
   start_weight_kg?: number | null
+  /**
+   * When the user proved they own their email address (migration 027).
+   * NULL = unproven. Deliberately ours rather than
+   * auth.users.email_confirmed_at, which Supabase auto-stamps at signup once
+   * "Confirm email" is off. Optional until the migration is applied.
+   */
+  email_verified_at?: string | null
   target_weight_kg: number
   age: number
   sex: 'male' | 'female' | 'other'
