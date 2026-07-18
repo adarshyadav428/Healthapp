@@ -20,6 +20,13 @@ export const EVENTS = {
   ONBOARDING_STEP_COMPLETED: 'onboarding_step_completed',
   ONBOARDING_COMPLETED: 'onboarding_completed',
   SIGNUP_COMPLETED: 'signup_completed',
+  // deferred signup — an anonymous session is the new top of funnel, and
+  // `account_saved` is the anonymous → registered conversion that
+  // `signup_completed` used to represent. Both are kept: `signup_completed`
+  // still fires on the direct /auth/sign-up path, so the two funnels stay
+  // comparable while the change is measured.
+  ANON_SESSION_STARTED: 'anon_session_started',
+  ACCOUNT_SAVED: 'account_saved',
   // logging (the core loop)
   FIRST_FOOD_LOGGED: 'first_food_logged',
   FOOD_LOGGED: 'food_logged',
