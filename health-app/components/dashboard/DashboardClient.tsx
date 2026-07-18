@@ -151,7 +151,7 @@ export function DashboardClient({ profile, initialLogs, streakDays, freezesBanke
       <AdaptiveTargetCard profile={profile} />
 
       {/* ── Weekly recap (Pro) ── */}
-      <WeeklyRecapCard recap={weeklyRecap} isPro={isPro} />
+      <WeeklyRecapCard recap={weeklyRecap} isPro={isPro} dailyTarget={target} streakDays={streakDays} />
 
       {/* ── Recently logged ── */}
       <div className="mb-3 mt-6 flex items-baseline justify-between px-0.5">

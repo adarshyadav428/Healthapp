@@ -10,7 +10,8 @@
  */
 
 /** How long to let someone explore before asking them to prove their address. */
-export const VERIFY_PROMPT_GRACE_DAYS = 3
+// TEMPORARY — set to 0 for manual testing on a fresh account. RESTORE TO 3.
+export const VERIFY_PROMPT_GRACE_DAYS = 0
 
 /** Cooldown after a "Not now", so the card nudges rather than nags. */
 export const VERIFY_PROMPT_COOLDOWN_DAYS = 7

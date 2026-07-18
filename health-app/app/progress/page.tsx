@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation'
 import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import { isProStatus } from '../../lib/subscription'
 import type { FoodLog, WeightLog } from '../../types/index'
-import { calculateStreakState } from '../../lib/streak'
+import { calculateStreakState, longestStreak } from '../../lib/streak'
+import { istDateStr } from '../../lib/dateUtils'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { ProgressClient } from '../../components/progress/ProgressClient'
 
@@ -31,7 +32,7 @@ export default async function ProgressPage() {
   const cutoff = new Date()
   cutoff.setUTCDate(cutoff.getUTCDate() - 90)
 
-  const [profileResult, subResult, streakResult, weightResult, logsResult, exerciseResult] = await Promise.all([
+  const [profileResult, subResult, streakResult, weightResult, logsResult, exerciseResult, logCountResult, weighInCountResult, savedMealCountResult] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase
       .from('subscriptions')
@@ -61,6 +62,10 @@ export default async function ProgressPage() {
       .eq('user_id', user.id)
       .gte('logged_at', cutoff.toISOString())
       .order('logged_at', { ascending: false }),
+    // Badge counters — head-only counts, so no rows cross the wire.
+    supabase.from('food_logs').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+    supabase.from('weight_logs').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+    supabase.from('saved_meals').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
   ])
 
   const { data: profile, error: profileError } = profileResult
@@ -88,6 +93,35 @@ export default async function ProgressPage() {
   // Exercise logs are optional — table may not exist yet
   const exerciseLogs = exerciseResult.error ? [] : withinTier(exerciseResult.data ?? [])
 
+  // ── Badge stats ─────────────────────────────────────────────────────────────
+  // Badges are free and lifetime, so they read the UNTRIMMED log window — the
+  // Pro history gate limits what you can browse, not what you've achieved.
+  const allRecentLogs = logsResult.data ?? []
+  const proteinTarget = profile.protein_g_target ?? 0
+  const proteinByDay = new Map<string, number>()
+  for (const row of allRecentLogs) {
+    const day = istDateStr(new Date(String(row.logged_at)))
+    proteinByDay.set(day, (proteinByDay.get(day) ?? 0) + (row.protein_g ?? 0))
+  }
+  const proteinTargetDaysHit = proteinTarget > 0
+    ? [...proteinByDay.values()].filter((g) => g >= proteinTarget).length
+    : 0
+
+  const badgeStartWeight = profile.start_weight_kg ?? weightLogs[weightLogs.length - 1]?.weight_kg ?? null
+  const badgeCurrentWeight = weightLogs[0]?.weight_kg ?? profile.current_weight_kg ?? null
+
+  const badgeStats = {
+    totalLogs: logCountResult.count ?? 0,
+    currentStreak: streak,
+    longestStreak: longestStreak((streakResult.data ?? []) as unknown as FoodLog[]),
+    proteinTargetDaysHit,
+    weighIns: weighInCountResult.count ?? 0,
+    savedMealTemplates: savedMealCountResult.count ?? 0,
+    kgLost: badgeStartWeight != null && badgeCurrentWeight != null
+      ? badgeStartWeight - badgeCurrentWeight
+      : null,
+  }
+
   return (
     <div className="min-h-screen">
       <main
@@ -105,6 +139,7 @@ export default async function ProgressPage() {
           exerciseLogs={exerciseLogs}
           profile={profile}
           isPro={isPro}
+          badgeStats={badgeStats}
         />
       </main>
       <BottomNav />

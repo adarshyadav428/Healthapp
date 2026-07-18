@@ -10,6 +10,8 @@ import { DayDiary } from './DayDiary'
 import { dateStrToUtcMidnight } from '../../lib/dateUtils'
 import { ShareProgressButton } from './ShareProgressButton'
 import { computeWeightTrend } from '../../lib/weightTrend'
+import { BadgeShelf } from './BadgeShelf'
+import type { BadgeStats } from '../../lib/badges'
 import { formatGoalDate } from '../../lib/projection'
 import {
   Flame, Scale, ChevronLeft, ChevronRight, Utensils, CalendarDays, X, Dumbbell, Lock, Crown,
@@ -33,6 +35,8 @@ type Props = {
   exerciseLogs: ExerciseRow[]
   profile:     Profile
   isPro:       boolean
+  /** Lifetime counters for the badge shelf. Badges are free — never Pro-gated. */
+  badgeStats?: BadgeStats
 }
 
 // IST calendar date (YYYY-MM-DD) for a timestamp — matches what the user sees.
@@ -56,7 +60,7 @@ const METRIC_CONFIG = {
   fat:     { color: 'var(--fat)', label: 'Fat', unit: 'g' },
 } as const
 
-export function ProgressClient({ streak, weightLogs, loggedDates, logs, exerciseLogs, profile, isPro }: Props) {
+export function ProgressClient({ streak, weightLogs, loggedDates, logs, exerciseLogs, profile, isPro, badgeStats }: Props) {
   const { user } = useUser()
   // weightLogs arrives newest-first and capped at 30, so its last element is
   // "oldest of the last 30 weigh-ins" — not the start weight. Prefer the
@@ -242,6 +246,9 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
           </p>
         </div>
       )}
+
+      {/* ── Badges: free and lifetime, never Pro-gated ── */}
+      {badgeStats && <BadgeShelf stats={badgeStats} />}
 
       {/* Share progress card (WhatsApp/IG image) — hidden when nothing to show yet */}
       <ShareProgressButton

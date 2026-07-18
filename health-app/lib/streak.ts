@@ -82,6 +82,29 @@ export function calculateStreakState(logs: FoodLog[], referenceDate = new Date()
   return { streak, freezesBanked: banked, frozenDays }
 }
 
+/**
+ * The longest run of consecutive logged IST days anywhere in `logs`.
+ *
+ * Badges read from this, not the current streak: a badge that vanishes because
+ * you missed one Tuesday turns the shelf into a source of dread rather than a
+ * record of what you actually did. Freezes are deliberately NOT applied here —
+ * this is the honest "days you really logged" number.
+ */
+export function longestStreak(logs: FoodLog[]): number {
+  const keys = [...new Set(logs.map((l) => toIstDateKey(l.logged_at)))].sort()
+  if (keys.length === 0) return 0
+
+  let best = 1
+  let run = 1
+  for (let i = 1; i < keys.length; i++) {
+    const prev = Date.parse(`${keys[i - 1]}T00:00:00Z`)
+    const curr = Date.parse(`${keys[i]}T00:00:00Z`)
+    run = curr - prev === DAY_MS ? run + 1 : 1
+    if (run > best) best = run
+  }
+  return best
+}
+
 export function calculateStreak(logs: FoodLog[], referenceDate = new Date()): number {
   // Derive "today" from the reference instant directly in IST. The previous
   // implementation truncated referenceDate to UTC midnight first, which made

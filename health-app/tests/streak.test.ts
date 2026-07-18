@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateStreak, calculateStreakState, MAX_FREEZES_BANKED } from '../lib/streak'
+import { calculateStreak, calculateStreakState, longestStreak, MAX_FREEZES_BANKED } from '../lib/streak'
 import type { FoodLog } from '../types/index'
 
 const log = (iso: string) => ({ logged_at: iso }) as FoodLog
@@ -61,6 +61,37 @@ describe('calculateStreak (IST day semantics)', () => {
     const reference = new Date('2026-07-16T18:00:00Z')
     const logs = [log('2026-07-16T17:00:00Z')] // 22:30 IST Jul 16
     expect(calculateStreak(logs, reference)).toBe(1)
+  })
+})
+
+describe('longestStreak', () => {
+  it('is 0 with no logs', () => {
+    expect(longestStreak([])).toBe(0)
+  })
+
+  it('finds the best run, not the most recent one', () => {
+    // A 5-day run in the past, a gap, then a 2-day run at the end.
+    const logs = [...days('2026-07-01', 5), ...days('2026-07-20', 2)].map(onDay)
+    expect(longestStreak(logs)).toBe(5)
+  })
+
+  it('counts a single logged day as 1', () => {
+    expect(longestStreak([onDay('2026-07-01')])).toBe(1)
+  })
+
+  it('de-duplicates several logs on the same IST day', () => {
+    expect(longestStreak([onDay('2026-07-01'), onDay('2026-07-01')])).toBe(1)
+  })
+
+  it('is unaffected by log ordering', () => {
+    const forward = days('2026-07-01', 6).map(onDay)
+    expect(longestStreak([...forward].reverse())).toBe(6)
+  })
+
+  it('does not apply freezes — it is the honest logged-days number', () => {
+    // 7 days, a gap a freeze would have covered, then 1 more.
+    const logs = [...days('2026-07-01', 7), '2026-07-09'].map(onDay)
+    expect(longestStreak(logs)).toBe(7)
   })
 })
 

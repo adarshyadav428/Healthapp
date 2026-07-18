@@ -18,7 +18,14 @@ const AIR = { boxShadow: 'var(--shadow-air)' } as const
  * user who hasn't had their first Sunday yet, a gentle placeholder so the
  * feature is discoverable. Non-Pro users see nothing (the paywall sells it).
  */
-export function WeeklyRecapCard({ recap, isPro }: { recap: WeeklyRecap | null; isPro: boolean }) {
+export function WeeklyRecapCard({ recap, isPro, dailyTarget, streakDays }: {
+  recap: WeeklyRecap | null
+  isPro: boolean
+  /** Daily calorie target, for the derived "vs target" card. */
+  dailyTarget?: number
+  /** Current streak, for the fifth card. */
+  streakDays?: number
+}) {
   // Only a real recap counts as "viewed" — the placeholder has nothing to read.
   const hasRecap = isPro && recap !== null
   useEffect(() => {
@@ -40,6 +47,36 @@ export function WeeklyRecapCard({ recap, isPro }: { recap: WeeklyRecap | null; i
   }
 
   const delta = recap.weightDeltaKg
+  // Two of the five are derived rather than stored — vs-target from the
+  // profile, streak from what Home already computes — so the extra cards
+  // needed no schema change and cannot drift from the numbers elsewhere.
+  const vsTarget = dailyTarget && dailyTarget > 0 && recap.avgKcal > 0
+    ? recap.avgKcal - dailyTarget
+    : null
+
+  const cards: { value: string; label: string; color?: string }[] = [
+    { value: `${recap.daysLogged}/7`, label: 'days logged' },
+    { value: recap.avgKcal.toLocaleString('en-IN'), label: 'avg kcal' },
+  ]
+  if (vsTarget != null) {
+    cards.push({
+      value: `${vsTarget > 0 ? '+' : ''}${vsTarget.toLocaleString('en-IN')}`,
+      label: 'vs target',
+      // Under target is the goal when losing; over is worth flagging, not scolding.
+      color: vsTarget <= 0 ? 'var(--good)' : 'var(--bad)',
+    })
+  }
+  if (delta != null) {
+    cards.push({
+      value: `${delta > 0 ? '+' : ''}${delta} kg`,
+      label: 'weight',
+      color: delta <= 0 ? 'var(--good)' : 'var(--bad)',
+    })
+  }
+  if (streakDays != null && streakDays > 0) {
+    cards.push({ value: String(streakDays), label: 'day streak' })
+  }
+
   return (
     <div className="mt-4 rounded-[24px] bg-surface p-5" style={AIR}>
       <div className="flex items-center gap-2">
@@ -47,26 +84,20 @@ export function WeeklyRecapCard({ recap, isPro }: { recap: WeeklyRecap | null; i
         <p className="text-[14px] font-bold text-ink">Your week</p>
       </div>
 
-      <div className="mt-3 flex gap-6">
-        <div>
-          <p className="font-display text-[22px] font-bold tabular-nums text-ink" style={{ letterSpacing: '-0.02em' }}>{recap.daysLogged}<span className="text-[13px] font-semibold text-ink-3">/7</span></p>
-          <p className="text-[11px] text-ink-3">days logged</p>
-        </div>
-        <div>
-          <p className="font-display text-[22px] font-bold tabular-nums text-ink" style={{ letterSpacing: '-0.02em' }}>{recap.avgKcal.toLocaleString('en-IN')}</p>
-          <p className="text-[11px] text-ink-3">avg kcal</p>
-        </div>
-        {delta != null && (
-          <div>
+      {/* Wraps rather than scrolls — a card that needs a swipe to discover
+          may as well not exist on the one screen people actually read. */}
+      <div className="mt-3 flex flex-wrap gap-x-6 gap-y-3">
+        {cards.map((card) => (
+          <div key={card.label}>
             <p
-              className="font-display text-[22px] font-bold tabular-nums"
-              style={{ letterSpacing: '-0.02em', color: delta <= 0 ? 'var(--good)' : 'var(--bad)' }}
+              className="font-display text-[22px] font-bold tabular-nums text-ink"
+              style={{ letterSpacing: '-0.02em', ...(card.color ? { color: card.color } : {}) }}
             >
-              {delta > 0 ? '+' : ''}{delta} kg
+              {card.value}
             </p>
-            <p className="text-[11px] text-ink-3">weight</p>
+            <p className="text-[11px] text-ink-3">{card.label}</p>
           </div>
-        )}
+        ))}
       </div>
 
       <p className="mt-3.5 text-[13px] leading-relaxed text-ink-2">{recap.message}</p>
