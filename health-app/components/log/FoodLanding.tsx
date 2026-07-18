@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useQueryClient } from '@tanstack/react-query'
-import { Search, ScanLine, Camera, Zap, Plus, Copy, ChevronLeft, Loader2 } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Search, ScanLine, Camera, Zap, Plus, Copy, ChevronLeft, Loader2, Layers } from 'lucide-react'
 import type { Food } from '../../types/index'
 import { toast } from '../ui/use-toast'
 import { foodEmoji, tintFor } from '../../lib/foodVisual'
@@ -21,6 +21,22 @@ const AddFoodModal  = dynamic(() => import('./AddFoodModal').then(m => m.AddFood
 const QuickAddModal = dynamic(() => import('./QuickAddModal').then(m => m.QuickAddModal),   { ssr: false })
 
 type RecentLogItem = { food: Food; grams: number; kcal: number; meal: string }
+
+type SavedMealSummary = {
+  id: string
+  name: string
+  saved_meal_items: { food_id: string; grams: number; servings: number; food: { kcal_per_100g: number } | null }[]
+}
+
+/** Total kcal of a saved template, so the combo chip can show what it costs. */
+function savedMealKcal(meal: SavedMealSummary): number {
+  return Math.round(
+    (meal.saved_meal_items ?? []).reduce((sum, item) => {
+      if (!item.food) return sum
+      return sum + (item.food.kcal_per_100g * item.grams * (item.servings ?? 1)) / 100
+    }, 0)
+  )
+}
 
 type Props = {
   recentFoods: Food[]
@@ -57,7 +73,51 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [relogId, setRelogId] = useState<string | null>(null)
   const [copying, setCopying] = useState(false)
+  const [loggingMealId, setLoggingMealId] = useState<string | null>(null)
   const queryClient = useQueryClient()
+
+  // The meal slot this time of day belongs to — drives both which saved
+  // templates surface first and which past items lead "Log again".
+  const currentMeal = mealForTime()
+
+  // Saved meal templates: the genuine two-tap path (open Food -> tap combo).
+  const { data: savedMeals = [] } = useQuery({
+    queryKey: ['saved-meals-landing'],
+    queryFn: async () => {
+      const res = await fetch('/api/meals/saved')
+      if (!res.ok) return []
+      return res.json() as Promise<SavedMealSummary[]>
+    },
+  })
+
+  const logSavedMeal = async (meal: SavedMealSummary) => {
+    if (loggingMealId) return
+    setLoggingMealId(meal.id)
+    try {
+      const res = await fetch('/api/meals/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...logMetaHeaders('meal_template') },
+        body: JSON.stringify({ meal_id: meal.id, meal_type: currentMeal }),
+      })
+      const j = (await res.json().catch(() => ({}))) as { logged?: number; error?: string }
+      if (!res.ok) throw new Error(j.error ?? 'Could not log meal')
+      queryClient.invalidateQueries({ queryKey: ['food-logs'] })
+      toast({ title: `Logged ${meal.name}`, description: `${j.logged} items → ${currentMeal}.`, duration: 2500 })
+    } catch (e) {
+      toast({ title: 'Could not log meal', description: (e as Error).message, variant: 'error' })
+    } finally {
+      setLoggingMealId(null)
+    }
+  }
+
+  // Items logged to this slot before lead the list — at 8am you want yesterday's
+  // breakfast, not last night's dinner. Everything else still follows, so
+  // nothing becomes unreachable; only the order changes.
+  const orderedRecentItems = useMemo(() => {
+    const forSlot = recentLogItems.filter((i) => i.meal === currentMeal)
+    const rest = recentLogItems.filter((i) => i.meal !== currentMeal)
+    return [...forSlot.slice(0, 3), ...forSlot.slice(3), ...rest]
+  }, [recentLogItems, currentMeal])
 
   // Search mode: hand off to the full search experience.
   if (searching) {
@@ -161,15 +221,55 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
         </button>
       </div>
 
+      {/* Your combos — saved templates, the fastest path to a full meal */}
+      {savedMeals.length > 0 && (
+        <div className="pt-2">
+          <div className="mb-2.5 flex items-baseline gap-2 px-0.5">
+            <p className="text-[16px] font-semibold text-ink">Your combos</p>
+            <span className="text-[12.5px] text-ink-3">one tap → {currentMeal}</span>
+          </div>
+          <div className="flex flex-col gap-2.5">
+            {savedMeals.map((meal) => (
+              <button
+                key={meal.id}
+                type="button"
+                onClick={() => logSavedMeal(meal)}
+                disabled={!!loggingMealId}
+                className="flex items-center gap-3.5 rounded-[20px] bg-surface p-3 text-left tap-scale disabled:opacity-50"
+                style={AIR}
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft">
+                  <Layers className="h-5 w-5 text-brand" strokeWidth={2} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[14.5px] font-semibold text-ink">{meal.name}</p>
+                  <p className="mt-[3px] text-[12px] text-ink-3">
+                    {meal.saved_meal_items?.length ?? 0} items · {savedMealKcal(meal)} kcal
+                  </p>
+                </div>
+                <span
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cta-grad"
+                  style={{ boxShadow: 'var(--fab-shadow)' }}
+                >
+                  {loggingMealId === meal.id
+                    ? <Loader2 className="h-4 w-4 animate-spin text-white" />
+                    : <Plus className="h-[18px] w-[18px] text-white" strokeWidth={2.2} />}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Log again */}
-      {recentLogItems.length > 0 && (
+      {orderedRecentItems.length > 0 && (
         <div className="pt-2">
           <div className="mb-2.5 flex items-baseline justify-between px-0.5">
             <p className="text-[16px] font-semibold text-ink">Log again</p>
             <Link href="/progress" className="text-[13px] font-semibold text-brand-ink tap-scale">History</Link>
           </div>
           <div className="flex flex-col gap-2.5">
-            {recentLogItems.map((item) => (
+            {orderedRecentItems.map((item) => (
               <div key={item.food.id} className="flex items-center gap-3.5 rounded-[20px] bg-surface p-3" style={AIR}>
                 <EmojiTile name={item.food.name} />
                 <div className="min-w-0 flex-1">
