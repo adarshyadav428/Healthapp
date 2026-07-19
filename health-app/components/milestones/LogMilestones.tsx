@@ -8,6 +8,7 @@ import { ConfettiBurst } from '../ui/ConfettiBurst'
 import { useMilestoneStore, clearPendingMilestone, clearWeightMilestone, clearStreakMilestone } from '../../store/milestoneStore'
 import { getLogMilestoneAction, isShareableStreakMilestone, type MilestoneAction } from '../../lib/logMilestones'
 import { getBrowserSupabaseClient } from '../../lib/supabase/client'
+import { formatKg } from '../../lib/formatWeight'
 import { captureEvent } from '../../lib/posthog/client'
 import { buildShareCardData, shareProgressCard } from '../../lib/shareCard'
 import { toast } from '../ui/use-toast'
@@ -168,7 +169,7 @@ export function LogMilestones() {
             {isStreak ? '🔥' : isWeight ? '⚖️' : '🎉'}
           </div>
           <h2 className="mt-4 font-display text-[22px] font-bold text-ink">
-            {isStreak ? `${streakDays}-day streak!` : isWeight ? `${weightKg} kg down!` : 'First meal logged!'}
+            {isStreak ? `${streakDays}-day streak!` : isWeight ? `${formatKg(weightKg)} kg down!` : 'First meal logged!'}
           </h2>
           <p className="mt-1.5 text-sm text-ink-2">
             {isStreak

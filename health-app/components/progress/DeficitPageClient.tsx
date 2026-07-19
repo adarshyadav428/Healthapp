@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import type { ComponentType } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
+import { formatKg } from '../../lib/formatWeight'
 
 const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false })
 const Bar       = dynamic(() => import('recharts').then(m => m.Bar as unknown as ComponentType<any>), { ssr: false })
@@ -125,7 +126,7 @@ export function DeficitPageClient({
         <div className="grid grid-cols-3 gap-2">
           <StatPill label="Maintenance" value={tdee.toLocaleString()} unit="kcal" />
           <StatPill label="Daily deficit" value={`−${actualDailyDeficit.toLocaleString()}`} unit="kcal" highlight />
-          <StatPill label="Goal weight" value={targetWeightKg ? `${targetWeightKg}` : '—'} unit={targetWeightKg ? 'kg' : ''} />
+          <StatPill label="Goal weight" value={targetWeightKg ? formatKg(targetWeightKg) : '—'} unit={targetWeightKg ? 'kg' : ''} />
         </div>
 
         <div className="mt-3 flex items-center justify-between">

@@ -1,6 +1,7 @@
 'use client'
 
 import type { WeightLog, Profile } from '../../types/index'
+import { formatKg } from '../../lib/formatWeight'
 
 export function WeightStats({ logs, profile }: { logs: WeightLog[] | null | undefined; profile: Profile }) {
   const sorted = (logs ?? []).slice().sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime())
@@ -45,13 +46,13 @@ export function WeightStats({ logs, profile }: { logs: WeightLog[] | null | unde
         <div className="flex items-end justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-good">Current weight</p>
-            <p className="font-display text-5xl font-bold text-ink mt-1 leading-none tabular-nums">{current}</p>
+            <p className="font-display text-5xl font-bold text-ink mt-1 leading-none tabular-nums">{formatKg(current)}</p>
             <p className="text-base text-ink-2 mt-0.5">kg</p>
             <p className="text-sm font-bold mt-2 tabular-nums" style={{ color: deltaColor }}>{deltaLabel} since start</p>
           </div>
           <div className="text-right">
             <p className="text-xs text-ink-2">Goal</p>
-            <p className="text-2xl font-bold text-good tabular-nums">{target} kg</p>
+            <p className="text-2xl font-bold text-good tabular-nums">{formatKg(target)} kg</p>
             <p className="text-xs font-semibold mt-1" style={{ color: Math.abs(toTarget) < 0.5 ? 'var(--good)' : 'var(--ink-2)' }}>
               {Math.abs(toTarget) < 0.5 ? '🎯 At goal!' : `${Math.abs(toTarget)} kg to go`}
             </p>
@@ -61,8 +62,8 @@ export function WeightStats({ logs, profile }: { logs: WeightLog[] | null | unde
         {progressToTarget > 0 && (
           <div className="mt-4">
             <div className="flex justify-between text-xs text-ink-2 mb-1">
-              <span>{starting} kg start</span>
-              <span>{target} kg goal</span>
+              <span>{formatKg(starting)} kg start</span>
+              <span>{formatKg(target)} kg goal</span>
             </div>
             <div className="h-2 rounded-full bg-surface overflow-hidden">
               <div
@@ -84,7 +85,7 @@ export function WeightStats({ logs, profile }: { logs: WeightLog[] | null | unde
 
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3">
-        <StatCard label="Start" value={`${starting} kg`} />
+        <StatCard label="Start" value={`${formatKg(starting)} kg`} />
         <StatCard
           label="BMI"
           value={bmi !== null ? String(bmi) : '--'}

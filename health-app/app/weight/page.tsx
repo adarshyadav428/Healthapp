@@ -4,6 +4,7 @@ import { PageHeader } from '../../components/layout/PageHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { WeightClient } from '../../components/weight/WeightClient'
 import type { WeightLog } from '../../types/index'
+import { formatKg } from '../../lib/formatWeight'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { robots: { index: false } }
@@ -38,7 +39,7 @@ export default async function WeightPage() {
         className="mx-auto w-full max-w-md px-6"
         style={{ paddingTop: 'calc(20px + env(safe-area-inset-top))', paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}
       >
-        <PageHeader label={profile.target_weight_kg ? `Toward ${profile.target_weight_kg} kg` : 'Body'} title="Weight" back />
+        <PageHeader label={profile.target_weight_kg ? `Toward ${formatKg(profile.target_weight_kg)} kg` : 'Body'} title="Weight" back />
         <div className="mt-5">
           <WeightClient logs={weightLogs} profile={profile} />
         </div>
