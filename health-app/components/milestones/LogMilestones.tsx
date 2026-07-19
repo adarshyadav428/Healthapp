@@ -249,7 +249,7 @@ export function LogMilestones() {
           <div className="flex-1" />
 
           <p className="mt-8 text-center text-[13px] text-ink-2">
-            ₹199/month or ₹699/year · Cancel anytime
+            ₹299/month or ₹1,999/year · Cancel anytime
           </p>
           <Button
             size="lg"

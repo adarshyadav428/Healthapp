@@ -38,13 +38,18 @@ const PAYWALL_SOURCE_ONLY_HERE: Record<string, PaywallSource | undefined> = {
   ai_insights: 'recap_end_card',
 }
 
+// `note` is the web (Razorpay) wording; `playNote` replaces it inside the TWA.
+// The 3-day free trial is a Play Console offer on both products — Razorpay
+// checkout charges immediately and has no trial — so promising one on the web
+// would be a false claim. Keep these in sync with the Play offers.
 const plans = [
   {
     id: 'monthly' as const,
     title: 'Monthly',
-    price: '₹199',
+    price: '₹299',
     per: '/month',
     note: 'Cancel anytime',
+    playNote: '3-day free trial · cancel anytime',
     badge: null,
     cta: 'Start Monthly',
     highlight: false,
@@ -52,10 +57,11 @@ const plans = [
   {
     id: 'annual' as const,
     title: 'Annual',
-    price: '₹699',
+    price: '₹1,999',
     per: '/year',
-    note: 'Billed ₹699/year · Save ₹1,689',
-    badge: 'Best value — Save 71%',
+    note: 'Billed ₹1,999/year · Save ₹1,589',
+    playNote: '3-day free trial, then ₹1,999/year · Save ₹1,589',
+    badge: 'Best value — Save 44%',
     cta: 'Get Annual Plan',
     highlight: true,
   },
@@ -157,7 +163,7 @@ export default function UpgradePage() {
           </div>
           <h1 className="font-display text-3xl font-bold text-ink">Upgrade to Pro</h1>
           <p className="mt-2 text-sm text-ink-2">Log freely. Get deeper insights when you&apos;re ready.</p>
-          <p className="mt-1.5 text-xs font-semibold text-brand-ink">Founder pricing — lock in ₹699/year while we&apos;re new.</p>
+          <p className="mt-1.5 text-xs font-semibold text-brand-ink">Founder pricing — lock in ₹1,999/year while we&apos;re new.</p>
           {projection && profile && (
             <p className="mt-2 text-[13px] text-ink-2">
               You&apos;re on track for <span className="font-semibold text-ink">{profile.target_weight_kg} kg by ~{formatGoalDate(projection.date)}</span> — see your full curve with Pro.
@@ -203,7 +209,7 @@ export default function UpgradePage() {
                     </span>
                     <span className="text-sm text-ink-2">{plan.per}</span>
                   </div>
-                  <p className="text-xs text-ink-2 mt-0.5">{plan.note}</p>
+                  <p className="text-xs text-ink-2 mt-0.5">{playAvailable ? plan.playNote : plan.note}</p>
                 </div>
                 {plan.badge && (
                   <span className="rounded-full bg-energy px-2.5 py-1 text-xs font-bold text-energy-ink">

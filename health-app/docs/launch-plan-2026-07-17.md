@@ -29,8 +29,8 @@ Made on Adarsh's behalf this session (all reversible — veto by editing this ta
 | D-D | "600+ foods" → **"500+ Indian foods"** | Live DB: 576 curated Indian entries (448 IFCT + 61 branded + 67 restaurant). Alt: seed 24 more IFCT entries to make 600 true — Adarsh's call, copy fix is the default |
 | D-E | Refunds: align on **30-day money-back (first payment)** written into `/terms` | Upgrade footer already promises it publicly; matches the honest-pricing moat. Veto → soften the footer instead |
 | D-F | **Skip migration 011** (`weekly_calorie_view`) | View referenced nowhere in code; keep prod schema clean; annotated in §4 |
-| D-G | Trial copy shown **only inside the Play TWA** (Play annual gets a real 7-day offer per runbook §6); no Razorpay trial in v1 | Web currently promises a trial that doesn't exist (P1-7c) |
-| D-H | Add "founder pricing" line to the paywall (₹699/yr presented as launch pricing, honest, no countdown) | Honest urgency; supports the price moat |
+| D-G | Trial copy shown **only inside the Play TWA** (both Play products get a real 3-day offer per runbook §6); no Razorpay trial in v1 | Web currently promises a trial that doesn't exist (P1-7c) |
+| D-H | Add "founder pricing" line to the paywall (₹1,999/yr presented as launch pricing, honest, no countdown) | Honest urgency; supports the price moat |
 | D-I | Post-scan coaching line = **stretch-gate** (C19): do if the schedule holds, else week 1 | Hours of effort, big perceived-AI-quality win (HealthifyMe Snap's differentiator) |
 
 ---
@@ -100,12 +100,12 @@ Verified still-open: P2-1 (raw error toasts), P2-4 (CSV UTC), P2-6 (countUp from
 
 | ID | Item | Finding(s) | Effort | Depends on | Proof of done | Status |
 |---|---|---|---|---|---|---|
-| A1 | **Razorpay live**: KYC → plans ₹199 monthly / ₹699 annual → webhook `https://www.getinshape.co.in/api/razorpay/webhook` → 5 env vars in Vercel → redeploy | P0-1 | KYC = external; setup ~1 h | KYC approval | Test payment completes E2E on the live site; `subscriptions` row `provider='razorpay', status='active'` | todo |
+| A1 | **Razorpay live**: KYC → plans ₹299 monthly / ₹1,999 annual (no trial — Razorpay has none; trial is Play-only) → webhook `https://www.getinshape.co.in/api/razorpay/webhook` → 5 env vars in Vercel → redeploy | P0-1 | KYC = external; setup ~1 h | KYC approval | Test payment completes E2E on the live site; `subscriptions` row `provider='razorpay', status='active'` | todo |
 | A2 | **Apply migration 015** + run §4 verification SQL | P0-2, N-2 | 15 min | §4 playbook (ready) | `select count(*) from chat_logs` = 0; 11th chat from `+qa2` → 429 | **done** 2026-07-18 (015 was half-applied — table + SELECT policy existed, INSERT policy did not, so RLS silently rejected every counter write; 015 rewritten idempotent and re-run). ⚠️ The acceptance test above is now obsolete: the 10/day chat cap no longer exists — AI is Pro-only with 3 lifetime trial scans (`lib/aiTrial.ts`). Every migration through 027 verified live 2026-07-19. |
 | A3 | **Supabase Auth → disable email confirmation** | P1-15 | 5 min | — | Fresh sign-up lands signed-in at `/onboarding`, no inbox step | todo |
 | A4 | **Vercel domains**: `NEXT_PUBLIC_APP_URL=https://www.getinshape.co.in`; both domains on the project; assetlinks reachable | P1-18 | 30 min | C11 deployed | `curl -I https://www.getinshape.co.in/.well-known/assetlinks.json` → 200; sitemap URLs are www | **done** 2026-07-18 (verified live: apex 308→www; www 200; assetlinks 200 on www / 308 on apex as expected; sitemap 0 apex URLs; manifest standalone+`/dashboard`. Note: `NEXT_PUBLIC_APP_URL` was briefly set to the **apex**, which put apex URLs in the sitemap while the TWA used www — fixed to `https://www.getinshape.co.in`. It's a `NEXT_PUBLIC_` var so it inlines at build time: changing it requires a redeploy **with build cache disabled**, otherwise the old host survives) |
 | A5 | **Gemini budget alert** in Google Cloud (suggest ₹2,000/mo to start) | P0-2 fallout | 15 min | — | Alert email configured; screenshot | todo |
-| A6 | **Play Console**: create app → listing → data-safety → content declarations → Billing products (`pro_monthly`, `pro_annual` + 7-day trial offer on annual) → service account + RTDN | runbook §4–7 | 3–4 h spread | C10 done **before** Data-safety form (deletion answer must be true) | Runbook §4–7 checkboxes; test RTDN shows 200 in Vercel logs | todo |
+| A6 | **Play Console**: create app → listing → data-safety → content declarations → Billing products (`pro_monthly`, `pro_annual` + **3-day** trial offer on **both**) → service account + RTDN | runbook §4–7 | 3–4 h spread | C10 done **before** Data-safety form (deletion answer must be true) | Runbook §4–7 checkboxes; test RTDN shows 200 in Vercel logs | todo |
 | A7 | **Rotate Supabase service-role key** (pending since runbook was written) | security | 15 min | — | New key in Vercel + `.env.local`; old key revoked; app healthy | todo |
 | A8 | **Live PostHog funnel verification** (joint with Claude): run a fresh test account through landing → sign-up → wizard → first log → paywall → checkout-attempt; watch events arrive | Phase D-2, N-7 | 30 min | C15 deployed | Every funnel event visible in PostHog activity for the test user | todo |
 
@@ -215,7 +215,7 @@ Day 0 = the day Adarsh says "go". Dates in parentheses assume go = Jul 18.
 | "AI Weekly Insights — every Sunday" | /upgrade features + reason banner | Not built | **Build** (C6) |
 | "Saved meal templates" as Pro | /upgrade | Free (no gate on `meals/saved`) | **Move to free column** (C4) |
 | "Export your data to CSV" as Pro | /upgrade | Free (90 days) | **Move to free column** (C4); export-as-right stance kept |
-| "7-day free trial on annual" | interstitial (web) | No Razorpay trial | **TWA-only copy** (D-G); Play offer created in A6 |
+| "3-day free trial" on **both** plans (as of 2026-07-19) | Play listing copy; `/upgrade` **only inside the TWA** | Play: offers not yet created — **A6 must create a trial offer on `pro_monthly` AND `pro_annual`**. Web: no Razorpay trial exists; `create-subscription` charges immediately | ✅ Decision 2026-07-19: **trial is Play-only**. `/upgrade` renders `playNote` (trial copy) only when `playAvailable` is true, `note` (no trial) on web. If Play offers aren't created, the TWA copy becomes false — do not ship the app without them |
 | "30-day money back" | /upgrade footer | Terms say case-by-case | **Align terms to 30-day first-payment** (D-E) |
 | "Priority support" | /upgrade + landing Pro column | mailto only | Soften to "Email support (24 h)" in C4; SLA in §6 |
 | "Unlimited AI photo & chat logging" (Pro) | landing | True **only after** 015 applied (chat currently unlimited for everyone) | A2 makes it true |
@@ -224,7 +224,8 @@ Day 0 = the day Adarsh says "go". Dates in parentheses assume go = Jul 18.
 | "400+ foods from IFCT 2017" | Play listing draft | 448 IFCT | ✅ true |
 | "Protein is set at 2g/kg" | landing FAQ | Changing in C13 | Update FAQ in C4/C13 |
 | "Delete your account anytime" | listing draft, /delete-account | Deletes rows but keeps charging Razorpay | **C10 makes it true — must land before Data-safety form (A6)** |
-| "Log in 5 seconds", IFCT accuracy, "Save 71%", "No ads", encryption, cancel-anytime | various | Verified true in audit | ✅ keep |
+| "Log in 5 seconds", IFCT accuracy, "No ads", encryption, cancel-anytime | various | Verified true in audit | ✅ keep |
+| "Save 71%" (annual vs monthly) | landing, /upgrade | **Stale after the 2026-07-19 price change** — ₹1,999 vs ₹299×12 is 44% | ✅ updated to "Save 44%" in `app/page.tsx` + `app/upgrade/page.tsx` |
 | "5 AI photo scans/day free" | Play listing draft (was) | **False since 2026-07-18** — AI is Pro-only with 3 *lifetime* trial scans gated on email verification (`lib/aiTrial.ts`) | ✅ fixed 2026-07-19 in `play-store-launch.md` §listing copy; `app/page.tsx` was already correct |
 
 ---

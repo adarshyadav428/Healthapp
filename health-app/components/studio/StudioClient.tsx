@@ -264,10 +264,10 @@ function PaywallScreen() {
         <div className="st-plan-row">
           <div>
             <div className="st-label">Annual</div>
-            <div className="st-price">₹699<span> / year</span></div>
-            <div className="st-note">7-day free trial · cancel anytime</div>
+            <div className="st-price">₹1,999<span> / year</span></div>
+            <div className="st-note">3-day free trial · cancel anytime</div>
           </div>
-          <div className="st-permo">≈ ₹58 / mo</div>
+          <div className="st-permo">≈ ₹167 / mo</div>
         </div>
         <div className="st-btn st-btn-cta"><Sparkles size={15} strokeWidth={2} /> Start free trial</div>
       </div>
@@ -276,8 +276,8 @@ function PaywallScreen() {
         <div className="st-plan-row">
           <div>
             <div className="st-label">Monthly</div>
-            <div className="st-price">₹199<span> / month</span></div>
-            <div className="st-note">Cancel anytime</div>
+            <div className="st-price">₹299<span> / month</span></div>
+            <div className="st-note">3-day free trial · cancel anytime</div>
           </div>
         </div>
         <div className="st-btn st-btn-quiet">Start monthly</div>

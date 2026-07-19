@@ -16,7 +16,7 @@ Work through the sections **in order**. Steps marked 🖐 are manual (dashboard/
   - Do **not** apply `011_weekly_calorie_view.sql` — the view is referenced nowhere in code (deliberately skipped).
   - Full apply-and-verify SQL: `docs/launch-plan-2026-07-17.md` §4.
 - [ ] 🖐 **Flip `NEXT_PUBLIC_APP_URL`** in Vercel env to `https://www.getinshape.co.in` and redeploy — sitemap/robots/canonicals must agree with the TWA host.
-- [ ] 🖐 **Razorpay (web billing, parallel track):** once KYC approves — create plans Monthly ₹199 / Annual ₹699 (Payments → Subscriptions), add webhook `https://www.getinshape.co.in/api/razorpay/webhook` (events: `subscription.activated/charged/cancelled/completed`), set the 5 env vars (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_MONTHLY_PLAN_ID`, `RAZORPAY_ANNUAL_PLAN_ID`) in Vercel, redeploy.
+- [ ] 🖐 **Razorpay (web billing, parallel track):** once KYC approves — create plans Monthly ₹299 / Annual ₹1,999 (Payments → Subscriptions), add webhook `https://www.getinshape.co.in/api/razorpay/webhook` (events: `subscription.activated/charged/cancelled/completed`), set the 5 env vars (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_MONTHLY_PLAN_ID`, `RAZORPAY_ANNUAL_PLAN_ID`) in Vercel, redeploy.
 - [ ] Confirm Play env vars exist in Vercel (values come from §6–7): `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (base64), `ANDROID_PACKAGE_NAME=com.getinshape.app`, `PLAY_RTDN_SECRET`, `NEXT_PUBLIC_PLAY_PRODUCT_MONTHLY`, `NEXT_PUBLIC_PLAY_PRODUCT_ANNUAL`.
 - [ ] Deploy the current main (new `/delete-account` page + updated `/manifest.webmanifest` must be live **before** running Bubblewrap).
 
@@ -78,7 +78,7 @@ bubblewrap build        # produces app-release-bundle.aab (+ .apk for local inst
 > 🔥 **Stay consistent** — daily streaks, weekly deficit tracker, weight trends, and meal reminders.
 >
 > **Free forever:** unlimited food logging, 7-day history, exercise & weight tracking, barcode scanning — plus 3 free AI scans once you confirm your email.
-> **Pro (₹199/mo or ₹699/yr, 7-day free trial):** full history, unlimited AI logging, custom foods & family recipes.
+> **Pro (₹299/month or ₹1,999/year, both with a 3-day free trial):** full history, unlimited AI logging, custom foods & family recipes.
 >
 > Your data stays yours — no ads, no selling data. Delete your account anytime.
 
@@ -113,8 +113,9 @@ bubblewrap build        # produces app-release-bundle.aab (+ .apk for local inst
 ## 6. Play Billing — subscription products
 
 - [ ] 🖐 Play Console → Monetize → Products → **Subscriptions**:
-  - `pro_monthly` — base plan ₹199/month, auto-renewing.
-  - `pro_annual` — base plan ₹699/year, auto-renewing, **+ offer: 7-day free trial** (new subscribers).
+  - `pro_monthly` — base plan ₹299/month, auto-renewing, **+ offer: 3-day free trial** (new subscribers).
+  - `pro_annual` — base plan ₹1,999/year, auto-renewing, **+ offer: 3-day free trial** (new subscribers).
+  - 3 days is Google's **minimum** allowed free-trial length — Play rejects anything shorter.
 - [ ] Product IDs must equal the env vars `NEXT_PUBLIC_PLAY_PRODUCT_MONTHLY` / `NEXT_PUBLIC_PLAY_PRODUCT_ANNUAL` (`lib/play/products.ts` reads them).
 - [ ] 🖐 Payments profile: uses the **Adarsh Medicals** sole-proprietorship details (same as Razorpay KYC).
 

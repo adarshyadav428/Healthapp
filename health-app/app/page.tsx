@@ -203,8 +203,8 @@ export default function Home() {
             <div className="rounded-sheet border-2 border-brand bg-brand-soft p-6 shadow-float relative overflow-hidden">
               <div className="absolute top-4 right-4 rounded-full bg-energy px-2.5 py-1 text-[10px] font-bold text-energy-ink uppercase tracking-wide">Popular</div>
               <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink mb-1">Pro</p>
-              <p className="font-display text-3xl font-bold text-ink">₹199<span className="text-base font-semibold text-ink-2">/mo</span></p>
-              <p className="text-sm text-ink-2 mt-1 mb-5">or ₹699/year · save 71%</p>
+              <p className="font-display text-3xl font-bold text-ink">₹299<span className="text-base font-semibold text-ink-2">/mo</span></p>
+              <p className="text-sm text-ink-2 mt-1 mb-5">or ₹1,999/year · save 44%</p>
               <ul className="space-y-2.5">
                 {[
                   'Everything in Free',
