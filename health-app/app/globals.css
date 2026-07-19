@@ -127,6 +127,17 @@
   * {
     @apply border-hairline;
   }
+  /* Kill pull-to-refresh. Inside the TWA the app is still a Chrome tab, so
+     dragging down past the top triggers a full page reload — jarring in
+     something presenting itself as an app, and easy to hit by accident when
+     scrolling a long food list or weight history back to the top. `contain`
+     stops the gesture and the scroll chaining without disabling scrolling
+     inside nested containers the way `none` would. Data freshness doesn't
+     depend on it: TanStack Query already refetches on mount and focus. */
+  html,
+  body {
+    overscroll-behavior-y: contain;
+  }
   body {
     @apply text-ink antialiased;
     /* Canvas + the ambient light field, fixed so it doesn't scroll away */
