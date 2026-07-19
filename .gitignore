@@ -9,4 +9,20 @@ GetInShape-Roadmap.pdf
 android.keystore
 app-release-*.aab
 app-release-*.apk
+app-release-*.idsig
 /build/
+
+# Bubblewrap-generated Android project. Regenerated from twa-manifest.json by
+# `bubblewrap update`, so the manifest is the source of truth, not this output.
+# Paths are root-anchored on purpose: a bare `app/` would also swallow
+# health-app/app/, which is the Next.js source.
+/app/
+/gradle/
+/.gradle/
+/gradlew
+/gradlew.bat
+/build.gradle
+/settings.gradle
+/gradle.properties
+/manifest-checksum.txt
+/store_icon.png

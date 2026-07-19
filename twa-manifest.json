@@ -1,7 +1,7 @@
 {
   "packageId": "com.getinshape.app",
   "host": "www.getinshape.co.in",
-  "name": "GetInShape — Indian Calorie Tracker",
+  "name": "GetInShape - Lose Weight",
   "launcherName": "GetInShape",
   "display": "standalone",
   "themeColor": "#F7F6F3",
@@ -20,8 +20,8 @@
     "path": "./android.keystore",
     "alias": "android"
   },
-  "appVersionName": "1.0.0",
-  "appVersionCode": 1,
+  "appVersionName": "2",
+  "appVersionCode": 2,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://www.getinshape.co.in/manifest.webmanifest",
@@ -32,7 +32,7 @@
     }
   },
   "alphaDependencies": {
-    "enabled": true
+    "enabled": false
   },
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
@@ -42,5 +42,10 @@
   "orientation": "portrait",
   "fingerprints": [],
   "additionalTrustedOrigins": [],
-  "retainedBundles": []
+  "retainedBundles": [],
+  "protocolHandlers": [],
+  "fileHandlers": [],
+  "launchHandlerClientMode": "",
+  "displayOverride": [],
+  "appVersion": "2"
 }
