@@ -77,7 +77,7 @@ bubblewrap build        # produces app-release-bundle.aab (+ .apk for local inst
 >
 > 🔥 **Stay consistent** — daily streaks, weekly deficit tracker, weight trends, and meal reminders.
 >
-> **Free forever:** unlimited food logging, 7-day history, 5 AI photo scans/day.
+> **Free forever:** unlimited food logging, 7-day history, exercise & weight tracking, barcode scanning — plus 3 free AI scans once you confirm your email.
 > **Pro (₹199/mo or ₹699/yr, 7-day free trial):** full history, unlimited AI logging, custom foods & family recipes.
 >
 > Your data stays yours — no ads, no selling data. Delete your account anytime.

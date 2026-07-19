@@ -101,7 +101,7 @@ Verified still-open: P2-1 (raw error toasts), P2-4 (CSV UTC), P2-6 (countUp from
 | ID | Item | Finding(s) | Effort | Depends on | Proof of done | Status |
 |---|---|---|---|---|---|---|
 | A1 | **Razorpay live**: KYC → plans ₹199 monthly / ₹699 annual → webhook `https://www.getinshape.co.in/api/razorpay/webhook` → 5 env vars in Vercel → redeploy | P0-1 | KYC = external; setup ~1 h | KYC approval | Test payment completes E2E on the live site; `subscriptions` row `provider='razorpay', status='active'` | todo |
-| A2 | **Apply migration 015** + run §4 verification SQL | P0-2, N-2 | 15 min | §4 playbook (ready) | `select count(*) from chat_logs` = 0; 11th chat from `+qa2` → 429 | todo |
+| A2 | **Apply migration 015** + run §4 verification SQL | P0-2, N-2 | 15 min | §4 playbook (ready) | `select count(*) from chat_logs` = 0; 11th chat from `+qa2` → 429 | **done** 2026-07-18 (015 was half-applied — table + SELECT policy existed, INSERT policy did not, so RLS silently rejected every counter write; 015 rewritten idempotent and re-run). ⚠️ The acceptance test above is now obsolete: the 10/day chat cap no longer exists — AI is Pro-only with 3 lifetime trial scans (`lib/aiTrial.ts`). Every migration through 027 verified live 2026-07-19. |
 | A3 | **Supabase Auth → disable email confirmation** | P1-15 | 5 min | — | Fresh sign-up lands signed-in at `/onboarding`, no inbox step | todo |
 | A4 | **Vercel domains**: `NEXT_PUBLIC_APP_URL=https://www.getinshape.co.in`; both domains on the project; assetlinks reachable | P1-18 | 30 min | C11 deployed | `curl -I https://www.getinshape.co.in/.well-known/assetlinks.json` → 200; sitemap URLs are www | **done** 2026-07-18 (verified live: apex 308→www; www 200; assetlinks 200 on www / 308 on apex as expected; sitemap 0 apex URLs; manifest standalone+`/dashboard`. Note: `NEXT_PUBLIC_APP_URL` was briefly set to the **apex**, which put apex URLs in the sitemap while the TWA used www — fixed to `https://www.getinshape.co.in`. It's a `NEXT_PUBLIC_` var so it inlines at build time: changing it requires a redeploy **with build cache disabled**, otherwise the old host survives) |
 | A5 | **Gemini budget alert** in Google Cloud (suggest ₹2,000/mo to start) | P0-2 fallout | 15 min | — | Alert email configured; screenshot | todo |
@@ -224,7 +224,8 @@ Day 0 = the day Adarsh says "go". Dates in parentheses assume go = Jul 18.
 | "400+ foods from IFCT 2017" | Play listing draft | 448 IFCT | ✅ true |
 | "Protein is set at 2g/kg" | landing FAQ | Changing in C13 | Update FAQ in C4/C13 |
 | "Delete your account anytime" | listing draft, /delete-account | Deletes rows but keeps charging Razorpay | **C10 makes it true — must land before Data-safety form (A6)** |
-| "Log in 5 seconds", IFCT accuracy, 5 scans/day free, "Save 71%", "No ads", encryption, cancel-anytime | various | Verified true in audit | ✅ keep |
+| "Log in 5 seconds", IFCT accuracy, "Save 71%", "No ads", encryption, cancel-anytime | various | Verified true in audit | ✅ keep |
+| "5 AI photo scans/day free" | Play listing draft (was) | **False since 2026-07-18** — AI is Pro-only with 3 *lifetime* trial scans gated on email verification (`lib/aiTrial.ts`) | ✅ fixed 2026-07-19 in `play-store-launch.md` §listing copy; `app/page.tsx` was already correct |
 
 ---
 
