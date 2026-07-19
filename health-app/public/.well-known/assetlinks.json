@@ -3,6 +3,9 @@
   "target": {
     "namespace": "android_app",
     "package_name": "in.co.getinshape.app",
-    "sha256_cert_fingerprints": ["09:5C:9C:F7:D7:C4:30:B9:5A:E0:DE:92:B7:6E:37:35:D1:69:01:DB:7D:91:53:45:D4:7F:3A:98:B9:63:87:5D"]
+    "sha256_cert_fingerprints": [
+      "09:5C:9C:F7:D7:C4:30:B9:5A:E0:DE:92:B7:6E:37:35:D1:69:01:DB:7D:91:53:45:D4:7F:3A:98:B9:63:87:5D",
+      "1B:72:36:A5:AE:8A:32:1D:85:92:4B:E7:7D:7E:AC:CF:A2:62:14:23:60:09:43:16:16:A8:E0:4F:F5:9F:E5:7E"
+    ]
   }
 }]
