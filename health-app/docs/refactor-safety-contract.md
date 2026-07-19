@@ -47,7 +47,7 @@ then no behavior listed below can change without a failing check.
 ## Verification gates (run all before shipping)
 
 ```bash
-npm test           # 18 files / 151 tests
+npm test           # 34 files / 299 tests
 npx tsc --noEmit
 npm run lint
 npm run check:tokens

@@ -61,7 +61,11 @@ const plans = [
     per: '/year',
     note: 'Billed ₹1,999/year · Save ₹1,589',
     playNote: '3-day free trial, then ₹1,999/year · Save ₹1,589',
-    badge: 'Best value — Save 44%',
+    // Kept short on purpose: the full "Best value — Save 44%" needs ~291dp
+    // beside the price block, and a 360dp phone only has ~288dp of card to
+    // give it. The 44% figure is the one recomputed for the ₹1,999 reprice
+    // (₹1,999 vs ₹299x12), so it stays; "Best value" is what gives way.
+    badge: 'Save 44%',
     cta: 'Get Annual Plan',
     highlight: true,
   },
@@ -212,7 +216,10 @@ export default function UpgradePage() {
                   <p className="text-xs text-ink-2 mt-0.5">{playAvailable ? plan.playNote : plan.note}</p>
                 </div>
                 {plan.badge && (
-                  <span className="rounded-full bg-energy px-2.5 py-1 text-xs font-bold text-energy-ink">
+                  // shrink-0 + nowrap: as a plain flex child this pill got
+                  // squeezed by the price block and wrapped onto a second line
+                  // that spilled past its own rounded edge.
+                  <span className="shrink-0 whitespace-nowrap rounded-full bg-energy px-2.5 py-1 text-xs font-bold text-energy-ink">
                     {plan.badge}
                   </span>
                 )}

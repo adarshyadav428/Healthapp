@@ -20,38 +20,60 @@ Work through the sections **in order**. Steps marked 🖐 are manual (dashboard/
 - [ ] Confirm Play env vars exist in Vercel (values come from §6–7): `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (base64), `ANDROID_PACKAGE_NAME=com.getinshape.app`, `PLAY_RTDN_SECRET`, `NEXT_PUBLIC_PLAY_PRODUCT_MONTHLY`, `NEXT_PUBLIC_PLAY_PRODUCT_ANNUAL`.
 - [ ] Deploy the current main (new `/delete-account` page + updated `/manifest.webmanifest` must be live **before** running Bubblewrap).
 
-## 2. Build the TWA (Bubblewrap)
+## 2. Build the TWA (Bubblewrap) — ✅ DONE 2026-07-19
 
-`twa-manifest.json` is committed at the repo root (one level above `health-app/`). It has Play Billing enabled (`features.playBilling` + `alphaDependencies`).
+`app-release-bundle.aab` (2.19 MB) and `app-release-signed.apk` (1.90 MB) are built and sitting at the repo root, git-ignored. Bubblewrap 1.24.1.
+
+**If you ever need to rebuild**, the toolchain is already set up and its config lives at `C:\Users\plump\.bubblewrap\config.json`:
 
 ```bash
-npm i -g @bubblewrap/cli
 cd "C:\Users\plump\Downloads\Health App"
-
-# First run: bubblewrap offers to download its own JDK + Android SDK — accept.
-# Init from the LIVE manifest, then diff against the committed twa-manifest.json
-# (the CLI schema drifts between versions; the committed file is the intent).
-bubblewrap init --manifest https://www.getinshape.co.in/manifest.webmanifest
-
-bubblewrap build        # produces app-release-bundle.aab (+ .apk for local install)
+bubblewrap update      # re-applies twa-manifest.json to the Android project
+bubblewrap build       # prompts for the two keystore passwords
 ```
 
-- When asked to create a signing key, let it generate `android.keystore` (alias `android`).
-- 🖐 **Back up `android.keystore` + its passwords somewhere safe (password manager + offline copy).** Losing the upload key is recoverable via Play support; still painful.
-- **Never commit the keystore.** Add to `.gitignore`: `android.keystore`, `*.keystore`, and the Bubblewrap output dirs (`app/`, `build/`) if they land in the repo.
+### Traps this build actually hit — read before rebuilding on a new machine
 
-## 3. Digital Asset Links (kills the browser URL bar)
+- **Bubblewrap's bundled downloader silently produces broken installs.** It fetched the JDK *sources* archive instead of a runnable JDK, and extracted only 6 of 87 files from the Android command-line tools zip — leaving `sdklib.jar` missing, which surfaces as `ClassNotFoundException: SdkManagerCli`. Both downloads were intact; only the extraction failed, and it wrote nothing to its config either time. Install the JDK yourself (`winget install Microsoft.OpenJDK.17`) and unzip the SDK tools manually if `bubblewrap doctor` reports invalid paths.
+- **The JDK must live in a path with no spaces.** Bubblewrap builds the `apksigner` command without quoting it, so a JDK under `C:\Program Files\…` fails with `'C:\Program' is not recognized`. It is installed at `C:\Users\plump\jdk17` for this reason.
+- **`bubblewrap init` overwrites the committed `twa-manifest.json`.** It reset the light-mode `navigationColor` to `#000000` (black nav bar against the Porcelain canvas), flattened the Onyx darks to pure black, and hardcoded an absolute keystore path containing the username. Always `git diff twa-manifest.json` after `init` and restore the deliberate values.
+- **`alphaDependencies: false` is correct now** and should not be "fixed" back to `true`. Bubblewrap 1.24.1 pulls Play Billing from the stable `com.google.androidbrowserhelper:billing:1.1.0`; the committed `true` was for an older CLI. Verify with `grep billing app/build.gradle` after a build.
+- `bubblewrap update` bumps `appVersionCode`/`appVersionName` on every run. Play only requires `versionCode` to increase, so this is harmless — but set `appVersionName` deliberately before a release build if you care what users see.
 
-`health-app/public/.well-known/assetlinks.json` currently has one fingerprint (the local/upload key). After you upload the first build and enroll in **Play App Signing** (default for new apps):
+🖐 **The keystore is the one irreplaceable artifact.** `android.keystore` (alias `android`) is git-ignored, so git is *not* a backup. Keep it plus both passwords in a password manager and one offline copy.
 
-1. 🖐 Play Console → your app → **Test and release → Setup → App signing** (previously "App integrity") → copy the **App signing key certificate** SHA-256.
-2. Append it as a second fingerprint in `assetlinks.json` (keep the upload-key one for local installs):
+## 3. Digital Asset Links (kills the browser URL bar) — ✅ upload key done, Play key pending
+
+**Upload-key fingerprint is live and verified** (2026-07-19):
+
+```
+09:5C:9C:F7:D7:C4:30:B9:5A:E0:DE:92:B7:6E:37:35:D1:69:01:DB:7D:91:53:45:D4:7F:3A:98:B9:63:87:5D
+```
+
+> ⚠️ The fingerprint that sat in this file until today (`41:BD:A6:3D:…`) was a **ghost** — committed in `53bc318`, matching no key that has ever existed here. Shipping it would have left the installed app showing a browser URL bar. If you see that value again, something restored a stale copy.
+
+Verified three ways: read from the signed APK via `apksigner verify --print-certs` (no keystore password needed), confirmed served at `https://www.getinshape.co.in/.well-known/assetlinks.json`, and confirmed accepted by **Google's own Digital Asset Links API** — the same service Android queries:
+
+```bash
+curl "https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://www.getinshape.co.in&relation=delegate_permission%2Fcommon.handle_all_urls"
+# → 1 statement, package com.getinshape.app, cert 09:5C:9C:...
+```
+
+On-device confirmation: the sideloaded APK opens **full-screen with no URL bar**, and logcat shows `Verification result: ... --> true` / `Verification 4 complete. Success:true. Failed hosts:.`
+
+### Remaining step — after the first upload
+
+Play App Signing issues a **second, different** certificate. Both fingerprints must be listed: the upload key covers your local/test installs, Google's key covers everything users download from the store.
+
+1. 🖐 Play Console → **Test and release → Setup → App signing** → copy the **App signing key certificate** SHA-256.
+2. Add it alongside the existing one (do **not** replace it):
    ```json
-   "sha256_cert_fingerprints": ["<existing upload fp>", "<play app signing fp>"]
+   "sha256_cert_fingerprints": ["09:5C:9C:...:87:5D", "<play app signing fp>"]
    ```
-3. Deploy, then verify with Google's statement list tester:
-   `https://developers.google.com/digital-asset-links/tools/generator` (site `https://www.getinshape.co.in`, package `com.getinshape.app`).
-4. Install the app from the Play testing track — the URL bar must be **gone**. If it shows, the fingerprints don't match.
+3. Deploy, re-run the Google API check above — it should return **2** statements.
+4. Install from the Play testing track and confirm the URL bar is still gone.
+
+> If a freshly deployed change appears not to have landed, give it a few minutes before concluding anything. Vercel reporting "Ready" precedes edge propagation, and the service worker revalidates on a cycle — a stale render was mistaken for a caching bug during this build. `sw.js` is regenerated per deploy and already calls `skipWaiting()`/`clientsClaim()`; the `pages` cache is NetworkFirst. Updates do reach installed apps.
 
 ## 4. Play Console — create app + store listing
 
@@ -85,10 +107,34 @@ bubblewrap build        # produces app-release-bundle.aab (+ .apk for local inst
 **Assets checklist:**
 - [x] App icon 512×512 PNG — `store-assets/play-icon-512.png` (white ember flame on the CTA gradient; SVG source at `store-assets/icon-source.svg`)
 - [x] Feature graphic 1024×500 — `store-assets/feature-graphic-1024x500.png`
-- [ ] 4–8 phone screenshots (9:16, ≥1080px) — take from a real device/emulator once the internal-testing build is installed: dashboard ring, AI photo scan result, food search (Indian foods visible), trends/weight chart, streak, upgrade screen
+- [x] **6 phone screenshots — `store-assets/screenshots/`**, captured 2026-07-19 from the Android 14 emulator on the `+qa1` fixture. All **1080×1920** (exactly the 9:16 Play wants, so no cropping) and ~230–290 KB each, far under the 8 MB cap:
+  | File | Shows |
+  |---|---|
+  | `01-dashboard.png` | Calorie ring at 1,142/1,600, macro rings, 8-day streak, coaching line |
+  | `02-food-search.png` | Indian search placeholder, Scan meal CTA, Shahi paneer + Tandoori Roti |
+  | `03-trends-badges.png` | Streak, current weight, badge shelf (4 of 10) |
+  | `04-weight-progress.png` | 84.5 kg, 5.5 kg lost, progress bar to the 70 kg goal |
+  | `05-weight-trend.png` | BMI scale + trend chart falling 90 → 84.5 |
+  | `06-upgrade-pricing.png` | ₹299/mo and ₹1,999/yr, 3-day trial on both |
+  Upload order matters — Play shows them left-to-right, so `01` should stay first.
 - [ ] Optional: 7"/10" tablet screenshots (skippable for v1)
 
+**Emulator recipe** (for re-shooting later — the AVD already exists):
+```bash
+SDK=~/.bubblewrap/android_sdk
+$SDK/emulator/emulator.exe -avd getinshape        # Pixel 2 profile = 1080x1920 = 9:16
+$SDK/platform-tools/adb.exe install -r app-release-signed.apk
+$SDK/platform-tools/adb.exe shell screencap -p /sdcard/s.png
+$SDK/platform-tools/adb.exe pull /sdcard/s.png ./shot.png
+```
+Two gotchas: in Git Bash prefix with `MSYS_NO_PATHCONV=1` or `/sdcard/…` gets rewritten into a Windows path; and pull the file rather than redirecting `exec-out` through PowerShell, which corrupts the PNG with a BOM.
+
 ## 5. Declarations (App content section)
+
+- [ ] 🖐 **App access — REQUIRED, and a common rejection cause.** Every route except `/`, `/auth/*`, `/api/*`, `/privacy`, `/terms`, `/upgrade`, `/delete-account`, `/studio` and `/foods/*` is behind a login (`middleware.ts`), so Play **requires** reviewer credentials under **App access → All or some functionality is restricted**. Supply the permanent `+qa1` account and its password, plus this note verbatim:
+  > AI photo scan and AI chat logging are Pro features. Free accounts get 3 lifetime trial scans, which unlock only after the account's email address is verified. The test account provided is already verified, so the AI features are accessible.
+
+  Without that note a reviewer hits the gate and can file the app's headline feature as broken.
 
 - [ ] 🖐 **Data safety form** — answers derived from the privacy policy (§1):
 
