@@ -13,6 +13,7 @@ import { computeWeightTrend } from '../../lib/weightTrend'
 import { BadgeShelf } from './BadgeShelf'
 import type { BadgeStats } from '../../lib/badges'
 import { formatGoalDate } from '../../lib/projection'
+import { formatKg } from '../../lib/formatWeight'
 import {
   Flame, Scale, ChevronLeft, ChevronRight, Utensils, CalendarDays, X, Dumbbell, Lock, Crown,
 } from 'lucide-react'
@@ -211,7 +212,7 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
             <Scale className="h-[18px] w-[18px]" strokeWidth={2} style={{ color: 'var(--carbs)' }} />
           </div>
           <p className="font-display mt-3.5 text-[34px] font-bold leading-none tabular-nums text-ink" style={{ letterSpacing: '-0.03em' }}>
-            {currentWeight ?? '—'}
+            {formatKg(currentWeight)}
           </p>
           <p className="mt-[5px] text-[12px] text-ink-3">kg current</p>
         </div>
@@ -235,7 +236,7 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
           {trend.projectedDate && (
             <p className="mt-1.5 text-[13px] text-ink-2">
               At this rate you&apos;ll reach{' '}
-              <span className="font-semibold text-ink">{profile.target_weight_kg} kg</span>{' '}
+              <span className="font-semibold text-ink">{formatKg(profile.target_weight_kg)} kg</span>{' '}
               around {formatGoalDate(trend.projectedDate)}.
             </p>
           )}

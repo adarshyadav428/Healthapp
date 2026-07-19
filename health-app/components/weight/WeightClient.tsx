@@ -7,6 +7,7 @@ import { WeightStats } from './WeightStats'
 import { BmiCard } from './BmiCard'
 import { useWeightLogs } from '../../hooks/useWeightLogs'
 import { projectGoalDate, formatGoalDate } from '../../lib/projection'
+import { formatKg } from '../../lib/formatWeight'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
 import { Button } from '../ui/button'
@@ -63,7 +64,7 @@ export function WeightClient({ logs, profile }: { logs: WeightLog[]; profile: Pr
       {projection && (
         <div className="rounded-sheet border border-hairline bg-brand-soft p-4 shadow-rest">
           <p className="text-[14px] font-bold text-brand-ink">
-            🎯 On track for {profile.target_weight_kg} kg by ~{formatGoalDate(projection.date)}
+            🎯 On track for {formatKg(profile.target_weight_kg)} kg by ~{formatGoalDate(projection.date)}
           </p>
           <p className="mt-0.5 text-xs text-ink-2">
             At {profile.pace_kg_per_week ?? 0.5} kg/week · about {Math.round(projection.weeks)} weeks to go
@@ -104,7 +105,7 @@ export function WeightClient({ logs, profile }: { logs: WeightLog[]; profile: Pr
               <div key={log.id} className="flex items-center justify-between rounded-control bg-surface-2 px-4 py-2.5">
                 <span className="text-sm text-ink-2">{label}</span>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-ink tabular-nums">{log.weight_kg} kg</span>
+                  <span className="text-sm font-bold text-ink tabular-nums">{formatKg(log.weight_kg)} kg</span>
                   <button
                     type="button"
                     onClick={() => deleteLog(log.id)}
