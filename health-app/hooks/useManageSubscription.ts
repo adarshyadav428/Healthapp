@@ -25,7 +25,7 @@ export function useManageSubscription(subscription: SubscriptionView, profileId:
     if (subscription?.provider === 'google_play') {
       const sku = subscription.playProductId
       window.location.href = sku
-        ? `https://play.google.com/store/account/subscriptions?sku=${sku}&package=com.getinshape.app`
+        ? `https://play.google.com/store/account/subscriptions?sku=${sku}&package=in.co.getinshape.app`
         : 'https://play.google.com/store/account/subscriptions'
       return
     }

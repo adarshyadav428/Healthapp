@@ -112,7 +112,7 @@ Existing Stripe subscribers were **not** migrated; they keep their subscription 
 
 ### Google Play Billing (Android TWA — dual-provider with Razorpay)
 
-The Android TWA (`com.getinshape.app`) must sell Pro through Google Play Billing (Play policy forbids third-party checkout for in-app digital goods). All providers (Razorpay, Google Play, legacy Stripe) write to the **same `subscriptions` table** using the same `status` vocabulary (`active`/`trialing`/`past_due`/`canceled`), so every Pro gate is provider-agnostic.
+The Android TWA (`in.co.getinshape.app`) must sell Pro through Google Play Billing (Play policy forbids third-party checkout for in-app digital goods). All providers (Razorpay, Google Play, legacy Stripe) write to the **same `subscriptions` table** using the same `status` vocabulary (`active`/`trialing`/`past_due`/`canceled`), so every Pro gate is provider-agnostic.
 
 - `lib/play/billing.ts` — client-side. Feature-detects the Digital Goods API (`getDigitalGoodsService('https://play.google.com/billing')`); returns `null` off-Play so callers fall back to Razorpay. `purchasePlan()` runs the `PaymentRequest` flow and POSTs the token to `/api/play/verify`.
 - `lib/play/google-auth.ts` — mints a service-account access token via `google-auth-library` (JWT), cached until ~1 min before expiry.

@@ -1,6 +1,6 @@
 # Google Play Store launch runbook — GetInShape
 
-Package: `com.getinshape.app` · Host: `https://www.getinshape.co.in` · Play Console org: **Plum2408** (DUNS + website verified 2026-07-12)
+Package: `in.co.getinshape.app` · Host: `https://www.getinshape.co.in` · Play Console org: **Plum2408** (DUNS + website verified 2026-07-12)
 
 Work through the sections **in order**. Steps marked 🖐 are manual (dashboard/console clicks only you can do).
 
@@ -17,7 +17,7 @@ Work through the sections **in order**. Steps marked 🖐 are manual (dashboard/
   - Full apply-and-verify SQL: `docs/launch-plan-2026-07-17.md` §4.
 - [ ] 🖐 **Flip `NEXT_PUBLIC_APP_URL`** in Vercel env to `https://www.getinshape.co.in` and redeploy — sitemap/robots/canonicals must agree with the TWA host.
 - [ ] 🖐 **Razorpay (web billing, parallel track):** once KYC approves — create plans Monthly ₹299 / Annual ₹1,999 (Payments → Subscriptions), add webhook `https://www.getinshape.co.in/api/razorpay/webhook` (events: `subscription.activated/charged/cancelled/completed`), set the 5 env vars (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_MONTHLY_PLAN_ID`, `RAZORPAY_ANNUAL_PLAN_ID`) in Vercel, redeploy.
-- [ ] Confirm Play env vars exist in Vercel (values come from §6–7): `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (base64), `ANDROID_PACKAGE_NAME=com.getinshape.app`, `PLAY_RTDN_SECRET`, `NEXT_PUBLIC_PLAY_PRODUCT_MONTHLY`, `NEXT_PUBLIC_PLAY_PRODUCT_ANNUAL`.
+- [ ] Confirm Play env vars exist in Vercel (values come from §6–7): `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (base64), `ANDROID_PACKAGE_NAME=in.co.getinshape.app`, `PLAY_RTDN_SECRET`, `NEXT_PUBLIC_PLAY_PRODUCT_MONTHLY`, `NEXT_PUBLIC_PLAY_PRODUCT_ANNUAL`.
 - [ ] Deploy the current main (new `/delete-account` page + updated `/manifest.webmanifest` must be live **before** running Bubblewrap).
 
 ## 2. Build the TWA (Bubblewrap) — ✅ DONE 2026-07-19
@@ -56,7 +56,7 @@ Verified three ways: read from the signed APK via `apksigner verify --print-cert
 
 ```bash
 curl "https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://www.getinshape.co.in&relation=delegate_permission%2Fcommon.handle_all_urls"
-# → 1 statement, package com.getinshape.app, cert 09:5C:9C:...
+# → 1 statement, package in.co.getinshape.app, cert 09:5C:9C:...
 ```
 
 On-device confirmation: the sideloaded APK opens **full-screen with no URL bar**, and logcat shows `Verification result: ... --> true` / `Verification 4 complete. Success:true. Failed hosts:.`
@@ -169,7 +169,7 @@ Two gotchas: in Git Bash prefix with `MSYS_NO_PATHCONV=1` or `/sdcard/…` gets 
 
 1. 🖐 Google Cloud Console → create/select a project → enable **Google Play Android Developer API** → create a **service account** → create a JSON key.
 2. 🖐 Play Console → Users and permissions → invite the service account email → grant **View financial data** + **Manage orders and subscriptions**.
-3. Base64 the JSON key → Vercel env `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`; set `ANDROID_PACKAGE_NAME=com.getinshape.app`; pick a random `PLAY_RTDN_SECRET`.
+3. Base64 the JSON key → Vercel env `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`; set `ANDROID_PACKAGE_NAME=in.co.getinshape.app`; pick a random `PLAY_RTDN_SECRET`.
 4. 🖐 Cloud Pub/Sub: create topic `play-rtdn` → add a **push subscription** to `https://www.getinshape.co.in/api/play/rtdn?secret=<PLAY_RTDN_SECRET>` → grant `google-play-developer-notifications@system.gserviceaccount.com` the **Pub/Sub Publisher** role on the topic.
 5. 🖐 Play Console → Monetize → Monetization setup → enter the topic name → **Send test notification** → confirm a 200 in Vercel logs for `/api/play/rtdn`.
 

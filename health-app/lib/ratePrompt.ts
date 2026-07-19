@@ -1,5 +1,5 @@
 export const PLAY_STORE_URL =
-  'https://play.google.com/store/apps/details?id=com.getinshape.app'
+  'https://play.google.com/store/apps/details?id=in.co.getinshape.app'
 
 export const RATE_PROMPT_MIN_STREAK = 3
 export const RATE_PROMPT_COOLDOWN_DAYS = 90
