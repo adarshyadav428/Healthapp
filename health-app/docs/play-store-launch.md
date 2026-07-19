@@ -65,7 +65,7 @@ On-device confirmation: the sideloaded APK opens **full-screen with no URL bar**
 
 Play App Signing issues a **second, different** certificate. Both fingerprints must be listed: the upload key covers your local/test installs, Google's key covers everything users download from the store.
 
-1. 🖐 Play Console → **Test and release → Setup → App signing** → copy the **App signing key certificate** SHA-256.
+1. 🖐 Play Console → **Test and release → App integrity → App signing** tab → copy the **App signing key certificate** SHA-256. (There is no "Setup" section — an earlier draft of this runbook said so and it was wrong. The page also lists the **Upload key certificate**, which is the `09:5C:9C:…` one you already have; make sure you copy the other block.)
 2. Add it alongside the existing one (do **not** replace it):
    ```json
    "sha256_cert_fingerprints": ["09:5C:9C:...:87:5D", "<play app signing fp>"]
