@@ -6,6 +6,7 @@ import * as fs from 'fs'
 import * as https from 'https'
 import * as path from 'path'
 import { INDIAN_FOODS, type FoodSeed } from '../lib/indian-foods-data'
+import { CURATED_FOODS } from '../lib/curated-foods-data'
 
 // Read .env.local manually (no dotenv dependency needed)
 const envPath = path.join(process.cwd(), '.env.local')
@@ -20,16 +21,12 @@ const SUPABASE_URL = getEnv('NEXT_PUBLIC_SUPABASE_URL')
 const SERVICE_KEY = getEnv('SUPABASE_SERVICE_ROLE_KEY')
 const host = new URL(SUPABASE_URL).hostname
 
-const jsonDataPath = path.join(process.cwd(), 'data', 'indian-foods.json')
-
-const loadFoods = (): FoodSeed[] => {
-  if (!fs.existsSync(jsonDataPath)) return INDIAN_FOODS
-  const raw = fs.readFileSync(jsonDataPath, 'utf8').trim()
-  if (!raw) return INDIAN_FOODS
-  const data = JSON.parse(raw)
-  if (!Array.isArray(data)) throw new Error('data/indian-foods.json must be an array')
-  return data as FoodSeed[]
-}
+// Seed exactly what the app's own auto-seed would insert. This deliberately no
+// longer reads data/indian-foods.json directly: the raw file still contains the
+// ~60 names that duplicate a measured IFCT entry, and `CURATED_FOODS` is the
+// filtered view that drops them. Reading the JSON straight would put both rows
+// in the table and let an estimate shadow a measurement.
+const loadFoods = (): FoodSeed[] => [...INDIAN_FOODS, ...CURATED_FOODS]
 
 function post(body: string): Promise<{ status: number; body: string }> {
   return new Promise((resolve, reject) => {
@@ -61,7 +58,7 @@ async function seed() {
   let inserted = 0
   let skipped = 0
   const foods = loadFoods()
-  const sourceLabel = fs.existsSync(jsonDataPath) ? 'data/indian-foods.json' : 'lib/indian-foods-data.ts'
+  const sourceLabel = `lib/indian-foods-data.ts (${INDIAN_FOODS.length}) + lib/curated-foods-data.ts (${CURATED_FOODS.length})`
 
   console.log(`Seeding ${foods.length} Indian foods in batches of ${BATCH}...`)
   console.log(`Source: ${sourceLabel}`)

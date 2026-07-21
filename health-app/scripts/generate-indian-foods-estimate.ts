@@ -117,6 +117,65 @@ const vary = (base: number, key: string, variance: number): number => {
   return base * (1 + v * variance)
 }
 
+// ── Protein floors ───────────────────────────────────────────────────────────
+// A category's baseline describes the *carrier* — the rice, the bread, the
+// wrapper — so a meat or paneer dish filed under one of them inherited a plain
+// carb dish's protein. Chicken Biryani came out at 4.3 g/100 g against the
+// measured IFCT value of 10.2, and Amul Paneer at 4.2 against a real ~18.
+// These floors put the protein back. Categories that already model a protein
+// (chicken, mutton, fish, egg, paneer, dal, nut) are left alone.
+const CARRIER_CATEGORIES: CategoryKey[] = [
+  'rice_dish',
+  'bread',
+  'street',
+  'snack',
+  'south_indian',
+  'packaged_snack',
+  'packaged_noodles',
+  'packaged_dairy',
+]
+
+const PROTEIN_SOURCE =
+  /chicken|mutton|fish|prawn|egg|keema|kheema|murg|gosht|lamb|paneer|tikka|kebab|kabab|seekh|soya|tofu/
+
+// Regional biryanis are meat dishes unless the name says otherwise — nobody
+// means a vegetable plate by "Hyderabadi Biryani". Without this they'd inherit
+// the plain rice_dish baseline and read as a veg dish's protein.
+const MEAT_BY_DEFAULT = /\b(hyderabadi|lucknowi|kolkata|ambur|thalassery|dindigul|awadhi|bhatkali)\b/
+
+// A carrier word means the protein is a filling, not the dish — a lower floor.
+const CARRIER_WORD =
+  /biryani|pulao|rice|roll|paratha|sandwich|noodle|chowmein|momo|manchurian|maggi|pasta|burger|pizza|dosa|idli|uttapam|frankie|kathi|puff|samosa|soup/
+
+const MIXED_PROTEIN_FLOOR = 8
+const FORWARD_PROTEIN_FLOOR = 14
+
+const applyProteinFloor = (name: string, category: CategoryKey, macros: Macros): Macros => {
+  if (!CARRIER_CATEGORIES.includes(category)) return macros
+  const lower = name.toLowerCase()
+  if (!PROTEIN_SOURCE.test(lower) && !(MEAT_BY_DEFAULT.test(lower) && /biryani/.test(lower))) return macros
+  const floor = CARRIER_WORD.test(lower) ? MIXED_PROTEIN_FLOOR : FORWARD_PROTEIN_FLOOR
+  return macros.protein >= floor ? macros : { ...macros, protein: floor }
+}
+
+// Macros can't exceed ~95 g per 100 g — real food carries water and ash, and
+// `isPlausibleFood` rejects anything over 100.5 outright. Variance stacked on
+// the packaged_biscuit baseline used to push a few rows past 100, which meant
+// they were seeded but silently dropped from every search result.
+const MAX_MACRO_SUM = 95
+
+const scaleMacrosToLimit = (macros: Macros): Macros => {
+  const sum = macros.protein + macros.carbs + macros.fat
+  if (sum <= MAX_MACRO_SUM) return macros
+  const k = MAX_MACRO_SUM / sum
+  return {
+    protein: macros.protein * k,
+    carbs: macros.carbs * k,
+    fat: macros.fat * k,
+    fiber: Math.min(macros.fiber, macros.carbs * k),
+  }
+}
+
 const applyKeywordAdjustments = (name: string, macros: Macros): Macros => {
   const lower = name.toLowerCase()
   let { protein, carbs, fat, fiber } = macros
@@ -182,6 +241,8 @@ const makeFood = (item: Item): FoodSeed => {
   let fiber = vary(spec.base.fiber, `${name}-fi`, spec.variance)
 
   ;({ protein, carbs, fat, fiber } = applyKeywordAdjustments(name, { protein, carbs, fat, fiber }))
+  ;({ protein, carbs, fat, fiber } = applyProteinFloor(name, item.category, { protein, carbs, fat, fiber }))
+  ;({ protein, carbs, fat, fiber } = scaleMacrosToLimit({ protein, carbs, fat, fiber }))
 
   protein = clamp(round1(protein))
   carbs = clamp(round1(carbs))
@@ -191,7 +252,10 @@ const makeFood = (item: Item): FoodSeed => {
   const kcal = clamp(round1(protein * 4 + carbs * 4 + fat * 9))
 
   return {
-    source: 'estimate',
+    // `estimate` is reserved for per-user AI guesses written into the shared
+    // foods table by camera/chat logging, which search deliberately hides.
+    // This dataset is a shared catalogue, so it gets its own label.
+    source: 'curated',
     source_id: makeSourceId(name, brand),
     name,
     brand,
@@ -295,8 +359,17 @@ addMany(
     'Chicken Biryani',
     'Mutton Biryani',
     'Hyderabadi Biryani',
+    'Hyderabadi Chicken Biryani',
+    'Hyderabadi Mutton Biryani',
     'Kolkata Biryani',
+    'Kolkata Chicken Biryani',
     'Lucknowi Biryani',
+    'Lucknowi Chicken Biryani',
+    'Ambur Biryani',
+    'Thalassery Biryani',
+    'Dindigul Biryani',
+    'Egg Biryani',
+    'Paneer Biryani',
     'Prawn Biryani',
     'Fish Biryani',
     'Veg Fried Rice',

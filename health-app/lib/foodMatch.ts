@@ -1,13 +1,17 @@
-// Source trust for tie-breaking. IFCT (curated Indian) is most trustworthy for
-// home food; branded/OFF are last. `estimate` rows never reach here (queries
-// exclude them), but rank them lowest for safety.
-const SOURCE_RANK: Record<string, number> = {
-  ifct: 5,
-  restaurant: 4,
-  branded: 3,
-  off_india: 2,
-  off: 2,
-  off_world: 1,
+// Source trust for tie-breaking. IFCT (measured Indian data) is most
+// trustworthy for home food; branded/OFF are next. `curated` sits below every
+// measured source — it's the shared India-first catalogue whose values are
+// category estimates, so it should only win when nothing measured matches.
+// `estimate` rows (per-user AI guesses) never reach here — queries exclude
+// them — but rank lowest for safety.
+export const SOURCE_RANK: Record<string, number> = {
+  ifct: 6,
+  restaurant: 5,
+  branded: 4,
+  off_india: 3,
+  off: 3,
+  off_world: 2,
+  curated: 1,
   estimate: 0,
 }
 

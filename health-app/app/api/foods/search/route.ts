@@ -3,9 +3,10 @@ import { createServerClient, createAdminClient, getApiUser } from '../../../../l
 import { searchOpenFoodFactsIndia, searchOpenFoodFacts } from '../../../../lib/open-food-facts'
 import { expandSearchQuery } from '../../../../lib/food-synonyms'
 import { buildNameIlikeOrFilter } from '../../../../lib/searchFilter'
-import { isPlausibleFood } from '../../../../lib/foodMatch'
+import { isPlausibleFood, SOURCE_RANK } from '../../../../lib/foodMatch'
 import { dedupeFoodsByNameBrand } from '../../../../lib/mergeSearchResults'
 import { INDIAN_FOODS } from '../../../../lib/indian-foods-data'
+import { CURATED_FOODS } from '../../../../lib/curated-foods-data'
 import type { Food } from '../../../../types/index'
 
 export const runtime = 'nodejs'
@@ -24,17 +25,25 @@ let autoSeedDone = false
 
 async function autoSeedIfNeeded(): Promise<void> {
   if (autoSeedDone) return
+  // `next build` invokes this handler once while deciding whether the route can
+  // be statically rendered, which means a plain `npm run build` would write
+  // every seed row into whatever database .env.local points at — including
+  // production, from any laptop or CI job. Seeding is a request-time concern.
+  if (process.env.NEXT_PHASE === 'phase-production-build') return
   autoSeedDone = true // optimistic — prevents parallel calls within one server instance
   try {
     const admin = createAdminClient()
     // Always upsert all seed entries — idempotent via ON CONFLICT source,source_id.
     // Previously this was gated on count >= INDIAN_FOODS.length, but that caused
     // items added to the seed file after migrations ran to never reach the DB.
+    // IFCT first, then the curated long tail (regional biryanis, street food,
+    // packaged brands) that IFCT doesn't cover.
     const BATCH = 50
-    for (let i = 0; i < INDIAN_FOODS.length; i += BATCH) {
+    const seeds = [...INDIAN_FOODS, ...CURATED_FOODS]
+    for (let i = 0; i < seeds.length; i += BATCH) {
       await admin
         .from('foods')
-        .upsert(INDIAN_FOODS.slice(i, i + BATCH), { onConflict: 'source,source_id', ignoreDuplicates: true })
+        .upsert(seeds.slice(i, i + BATCH), { onConflict: 'source,source_id', ignoreDuplicates: true })
     }
   } catch (e) {
     autoSeedDone = false // allow retry next request
@@ -205,7 +214,12 @@ export async function GET(request: Request) {
         // Exclude `estimate` rows — those are per-user AI guesses written during
         // chat/camera logging into the shared table; they must not surface in the
         // shared results (the user's own ones are merged back in per-request below).
-        supabase.from('foods').select(FOOD_SELECT).or(orFilter).neq('source', 'estimate').limit(20),
+        // Fetch generously (60, not 20): the table now holds ~870 seeded rows,
+        // and Postgres applies LIMIT before our relevance/source sort below —
+        // so a tight limit would hand back an arbitrary slice and could cut the
+        // measured IFCT row out of a broad query like "rice" entirely.
+        // `dedupeFoodsByNameBrand` caps the response at 20 regardless.
+        supabase.from('foods').select(FOOD_SELECT).or(orFilter).neq('source', 'estimate').limit(60),
         shouldFetchExternal ? searchOpenFoodFactsIndia(synonymQueries[0]) : Promise.resolve([]),
         shouldFetchExternal ? searchOpenFoodFacts(synonymQueries[0]) : Promise.resolve([]),
       ])
@@ -213,10 +227,17 @@ export async function GET(request: Request) {
       if (localResult.error) throw new Error(localResult.error.message)
       const rawLocal = (localResult.data ?? []) as Food[]
 
-      // Sort local results by relevance
+      // Sort local results by relevance, then by how much we trust the source.
+      // The source tie-break matters because the table holds both measured IFCT
+      // rows and estimated `curated` ones — without it, two rows scoring the
+      // same on name would be ordered by name alone, and `dedupeFoodsByNameBrand`
+      // (which keeps the first occurrence) could drop the measured row.
       const localResults = rawLocal.slice().sort((a, b) => {
-        const diff = relevanceScore(b.name, query) - relevanceScore(a.name, query)
-        return diff !== 0 ? diff : a.name.localeCompare(b.name)
+        const byRelevance = relevanceScore(b.name, query) - relevanceScore(a.name, query)
+        if (byRelevance !== 0) return byRelevance
+        const bySource = (SOURCE_RANK[b.source] ?? 0) - (SOURCE_RANK[a.source] ?? 0)
+        if (bySource !== 0) return bySource
+        return a.name.localeCompare(b.name)
       })
 
       // Deduplicate externals against local results

@@ -1,6 +1,6 @@
 [
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cooked-rice-chawal",
     "name": "Cooked Rice (Chawal)",
     "brand": null,
@@ -13,7 +13,7 @@
     "fiber_g_per_100g": 0.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cooked-basmati-rice",
     "name": "Cooked Basmati Rice",
     "brand": null,
@@ -26,7 +26,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-brown-rice-cooked",
     "name": "Brown Rice (Cooked)",
     "brand": null,
@@ -39,7 +39,7 @@
     "fiber_g_per_100g": 0.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-red-rice-cooked",
     "name": "Red Rice (Cooked)",
     "brand": null,
@@ -52,7 +52,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-steamed-rice",
     "name": "Steamed Rice",
     "brand": null,
@@ -65,7 +65,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-hand-pounded-rice-cooked",
     "name": "Hand Pounded Rice (Cooked)",
     "brand": null,
@@ -78,7 +78,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bajra-cooked",
     "name": "Bajra (Cooked)",
     "brand": null,
@@ -91,7 +91,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-jowar-cooked",
     "name": "Jowar (Cooked)",
     "brand": null,
@@ -104,7 +104,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-ragi-cooked",
     "name": "Ragi (Cooked)",
     "brand": null,
@@ -117,7 +117,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-foxtail-millet-cooked",
     "name": "Foxtail Millet (Cooked)",
     "brand": null,
@@ -130,7 +130,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-barnyard-millet-cooked",
     "name": "Barnyard Millet (Cooked)",
     "brand": null,
@@ -143,7 +143,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-little-millet-cooked",
     "name": "Little Millet (Cooked)",
     "brand": null,
@@ -156,7 +156,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kodo-millet-cooked",
     "name": "Kodo Millet (Cooked)",
     "brand": null,
@@ -169,7 +169,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-samak-rice-cooked",
     "name": "Samak Rice (Cooked)",
     "brand": null,
@@ -182,7 +182,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-broken-wheat-dalia-cooked",
     "name": "Broken Wheat (Dalia) Cooked",
     "brand": null,
@@ -195,7 +195,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-oats-cooked",
     "name": "Oats (Cooked)",
     "brand": null,
@@ -208,7 +208,7 @@
     "fiber_g_per_100g": 0.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-quinoa-cooked",
     "name": "Quinoa (Cooked)",
     "brand": null,
@@ -221,7 +221,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-barley-cooked",
     "name": "Barley (Cooked)",
     "brand": null,
@@ -234,7 +234,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-poha-cooked",
     "name": "Poha (Cooked)",
     "brand": null,
@@ -247,7 +247,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sabudana-cooked",
     "name": "Sabudana (Cooked)",
     "brand": null,
@@ -260,7 +260,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-raw-rice-chawal",
     "name": "Raw Rice (Chawal)",
     "brand": null,
@@ -273,7 +273,7 @@
     "fiber_g_per_100g": 6.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-basmati-rice-raw",
     "name": "Basmati Rice (Raw)",
     "brand": null,
@@ -286,7 +286,7 @@
     "fiber_g_per_100g": 7.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-brown-rice-raw",
     "name": "Brown Rice (Raw)",
     "brand": null,
@@ -299,7 +299,7 @@
     "fiber_g_per_100g": 6.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-wheat-flour-atta",
     "name": "Wheat Flour (Atta)",
     "brand": null,
@@ -312,7 +312,7 @@
     "fiber_g_per_100g": 7.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bajra-flour",
     "name": "Bajra Flour",
     "brand": null,
@@ -325,7 +325,7 @@
     "fiber_g_per_100g": 6.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-jowar-flour",
     "name": "Jowar Flour",
     "brand": null,
@@ -338,7 +338,7 @@
     "fiber_g_per_100g": 6.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-ragi-flour",
     "name": "Ragi Flour",
     "brand": null,
@@ -351,7 +351,7 @@
     "fiber_g_per_100g": 6.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-besan-gram-flour",
     "name": "Besan (Gram Flour)",
     "brand": null,
@@ -364,7 +364,7 @@
     "fiber_g_per_100g": 6.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sooji-semolina",
     "name": "Sooji (Semolina)",
     "brand": null,
@@ -377,7 +377,7 @@
     "fiber_g_per_100g": 7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-maida-refined-flour",
     "name": "Maida (Refined Flour)",
     "brand": null,
@@ -390,7 +390,7 @@
     "fiber_g_per_100g": 6.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-rice-flour",
     "name": "Rice Flour",
     "brand": null,
@@ -403,7 +403,7 @@
     "fiber_g_per_100g": 7.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-poha-flattened-rice",
     "name": "Poha (Flattened Rice)",
     "brand": null,
@@ -416,7 +416,7 @@
     "fiber_g_per_100g": 7.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-dalia-broken-wheat",
     "name": "Dalia (Broken Wheat)",
     "brand": null,
@@ -429,7 +429,7 @@
     "fiber_g_per_100g": 7.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sabudana-tapioca-pearls",
     "name": "Sabudana (Tapioca Pearls)",
     "brand": null,
@@ -442,7 +442,7 @@
     "fiber_g_per_100g": 7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-makki-flour-corn-flour",
     "name": "Makki Flour (Corn Flour)",
     "brand": null,
@@ -455,7 +455,7 @@
     "fiber_g_per_100g": 7.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sattu-roasted-gram-flour",
     "name": "Sattu (Roasted Gram Flour)",
     "brand": null,
@@ -468,7 +468,7 @@
     "fiber_g_per_100g": 6.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-roti-chapati-wheat",
     "name": "Roti / Chapati (Wheat)",
     "brand": null,
@@ -481,7 +481,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-tandoori-roti",
     "name": "Tandoori Roti",
     "brand": null,
@@ -494,7 +494,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-missi-roti",
     "name": "Missi Roti",
     "brand": null,
@@ -507,7 +507,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bajra-roti",
     "name": "Bajra Roti",
     "brand": null,
@@ -520,7 +520,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-jowar-roti",
     "name": "Jowar Roti",
     "brand": null,
@@ -533,7 +533,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-ragi-roti",
     "name": "Ragi Roti",
     "brand": null,
@@ -546,7 +546,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-makki-ki-roti",
     "name": "Makki ki Roti",
     "brand": null,
@@ -559,7 +559,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-thepla",
     "name": "Thepla",
     "brand": null,
@@ -572,7 +572,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-khakra",
     "name": "Khakra",
     "brand": null,
@@ -585,7 +585,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bhakri",
     "name": "Bhakri",
     "brand": null,
@@ -598,7 +598,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-naan",
     "name": "Naan",
     "brand": null,
@@ -611,7 +611,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-butter-naan",
     "name": "Butter Naan",
     "brand": null,
@@ -624,7 +624,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-garlic-naan",
     "name": "Garlic Naan",
     "brand": null,
@@ -637,7 +637,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kulcha",
     "name": "Kulcha",
     "brand": null,
@@ -650,7 +650,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-amritsari-kulcha",
     "name": "Amritsari Kulcha",
     "brand": null,
@@ -663,7 +663,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bhatura",
     "name": "Bhatura",
     "brand": null,
@@ -676,7 +676,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-puri",
     "name": "Puri",
     "brand": null,
@@ -689,7 +689,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-luchi",
     "name": "Luchi",
     "brand": null,
@@ -702,7 +702,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paratha-plain",
     "name": "Paratha (Plain)",
     "brand": null,
@@ -715,7 +715,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-aloo-paratha",
     "name": "Aloo Paratha",
     "brand": null,
@@ -728,7 +728,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-gobi-paratha",
     "name": "Gobi Paratha",
     "brand": null,
@@ -741,7 +741,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-methi-paratha",
     "name": "Methi Paratha",
     "brand": null,
@@ -754,20 +754,20 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-paratha",
     "name": "Paneer Paratha",
     "brand": null,
     "serving_size_g": 110,
     "serving_description": "1 paratha (110g)",
-    "kcal_per_100g": 321,
-    "protein_g_per_100g": 6.7,
+    "kcal_per_100g": 326.2,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 61.4,
     "fat_g_per_100g": 5.4,
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-lachha-paratha",
     "name": "Lachha Paratha",
     "brand": null,
@@ -780,7 +780,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-roomali-roti",
     "name": "Roomali Roti",
     "brand": null,
@@ -793,7 +793,7 @@
     "fiber_g_per_100g": 1.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pav-bread-roll",
     "name": "Pav (Bread Roll)",
     "brand": null,
@@ -806,7 +806,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-white-bread-slice",
     "name": "White Bread Slice",
     "brand": null,
@@ -819,7 +819,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-brown-bread-slice",
     "name": "Brown Bread Slice",
     "brand": null,
@@ -832,7 +832,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-veg-pulao",
     "name": "Veg Pulao",
     "brand": null,
@@ -845,7 +845,7 @@
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-peas-pulao",
     "name": "Peas Pulao",
     "brand": null,
@@ -858,20 +858,20 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-pulao",
     "name": "Paneer Pulao",
     "brand": null,
     "serving_size_g": 250,
     "serving_description": "1 plate (250g)",
-    "kcal_per_100g": 137.3,
-    "protein_g_per_100g": 4.2,
+    "kcal_per_100g": 152.5,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 20,
     "fat_g_per_100g": 4.5,
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mushroom-pulao",
     "name": "Mushroom Pulao",
     "brand": null,
@@ -884,7 +884,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kashmiri-pulao",
     "name": "Kashmiri Pulao",
     "brand": null,
@@ -897,7 +897,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-veg-biryani",
     "name": "Veg Biryani",
     "brand": null,
@@ -910,98 +910,215 @@
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-biryani",
     "name": "Chicken Biryani",
     "brand": null,
     "serving_size_g": 250,
     "serving_description": "1 plate (250g)",
-    "kcal_per_100g": 128.8,
-    "protein_g_per_100g": 4.3,
+    "kcal_per_100g": 143.6,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 19.8,
     "fat_g_per_100g": 3.6,
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mutton-biryani",
     "name": "Mutton Biryani",
     "brand": null,
     "serving_size_g": 250,
     "serving_description": "1 plate (250g)",
-    "kcal_per_100g": 157.2,
-    "protein_g_per_100g": 4.5,
+    "kcal_per_100g": 171.2,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 24.9,
     "fat_g_per_100g": 4.4,
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-hyderabadi-biryani",
     "name": "Hyderabadi Biryani",
     "brand": null,
     "serving_size_g": 250,
     "serving_description": "1 plate (250g)",
-    "kcal_per_100g": 144,
-    "protein_g_per_100g": 4.4,
+    "kcal_per_100g": 158.4,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 22.6,
     "fat_g_per_100g": 4,
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
+    "source_id": "est-hyderabadi-chicken-biryani",
+    "name": "Hyderabadi Chicken Biryani",
+    "brand": null,
+    "serving_size_g": 250,
+    "serving_description": "1 plate (250g)",
+    "kcal_per_100g": 175.2,
+    "protein_g_per_100g": 8,
+    "carbs_g_per_100g": 25.9,
+    "fat_g_per_100g": 4.4,
+    "fiber_g_per_100g": 1
+  },
+  {
+    "source": "curated",
+    "source_id": "est-hyderabadi-mutton-biryani",
+    "name": "Hyderabadi Mutton Biryani",
+    "brand": null,
+    "serving_size_g": 250,
+    "serving_description": "1 plate (250g)",
+    "kcal_per_100g": 145.4,
+    "protein_g_per_100g": 8,
+    "carbs_g_per_100g": 20.7,
+    "fat_g_per_100g": 3.4,
+    "fiber_g_per_100g": 1.3
+  },
+  {
+    "source": "curated",
     "source_id": "est-kolkata-biryani",
     "name": "Kolkata Biryani",
     "brand": null,
     "serving_size_g": 250,
     "serving_description": "1 plate (250g)",
-    "kcal_per_100g": 155.9,
-    "protein_g_per_100g": 4.8,
+    "kcal_per_100g": 168.7,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 26.3,
     "fat_g_per_100g": 3.5,
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
+    "source_id": "est-kolkata-chicken-biryani",
+    "name": "Kolkata Chicken Biryani",
+    "brand": null,
+    "serving_size_g": 250,
+    "serving_description": "1 plate (250g)",
+    "kcal_per_100g": 163.2,
+    "protein_g_per_100g": 8,
+    "carbs_g_per_100g": 23.8,
+    "fat_g_per_100g": 4,
+    "fiber_g_per_100g": 1
+  },
+  {
+    "source": "curated",
     "source_id": "est-lucknowi-biryani",
     "name": "Lucknowi Biryani",
     "brand": null,
     "serving_size_g": 250,
     "serving_description": "1 plate (250g)",
-    "kcal_per_100g": 136.4,
-    "protein_g_per_100g": 4.3,
+    "kcal_per_100g": 151.2,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 21.7,
     "fat_g_per_100g": 3.6,
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
+    "source_id": "est-lucknowi-chicken-biryani",
+    "name": "Lucknowi Chicken Biryani",
+    "brand": null,
+    "serving_size_g": 250,
+    "serving_description": "1 plate (250g)",
+    "kcal_per_100g": 158.4,
+    "protein_g_per_100g": 8,
+    "carbs_g_per_100g": 22.6,
+    "fat_g_per_100g": 4,
+    "fiber_g_per_100g": 1.1
+  },
+  {
+    "source": "curated",
+    "source_id": "est-ambur-biryani",
+    "name": "Ambur Biryani",
+    "brand": null,
+    "serving_size_g": 250,
+    "serving_description": "1 plate (250g)",
+    "kcal_per_100g": 166.2,
+    "protein_g_per_100g": 8,
+    "carbs_g_per_100g": 25.9,
+    "fat_g_per_100g": 3.4,
+    "fiber_g_per_100g": 1.4
+  },
+  {
+    "source": "curated",
+    "source_id": "est-thalassery-biryani",
+    "name": "Thalassery Biryani",
+    "brand": null,
+    "serving_size_g": 250,
+    "serving_description": "1 plate (250g)",
+    "kcal_per_100g": 169.8,
+    "protein_g_per_100g": 8,
+    "carbs_g_per_100g": 25,
+    "fat_g_per_100g": 4.2,
+    "fiber_g_per_100g": 1.2
+  },
+  {
+    "source": "curated",
+    "source_id": "est-dindigul-biryani",
+    "name": "Dindigul Biryani",
+    "brand": null,
+    "serving_size_g": 250,
+    "serving_description": "1 plate (250g)",
+    "kcal_per_100g": 165.3,
+    "protein_g_per_100g": 8,
+    "carbs_g_per_100g": 24.1,
+    "fat_g_per_100g": 4.1,
+    "fiber_g_per_100g": 1.4
+  },
+  {
+    "source": "curated",
+    "source_id": "est-egg-biryani",
+    "name": "Egg Biryani",
+    "brand": null,
+    "serving_size_g": 250,
+    "serving_description": "1 plate (250g)",
+    "kcal_per_100g": 149,
+    "protein_g_per_100g": 8,
+    "carbs_g_per_100g": 20.7,
+    "fat_g_per_100g": 3.8,
+    "fiber_g_per_100g": 1.1
+  },
+  {
+    "source": "curated",
+    "source_id": "est-paneer-biryani",
+    "name": "Paneer Biryani",
+    "brand": null,
+    "serving_size_g": 250,
+    "serving_description": "1 plate (250g)",
+    "kcal_per_100g": 166.7,
+    "protein_g_per_100g": 8,
+    "carbs_g_per_100g": 24,
+    "fat_g_per_100g": 4.3,
+    "fiber_g_per_100g": 1.4
+  },
+  {
+    "source": "curated",
     "source_id": "est-prawn-biryani",
     "name": "Prawn Biryani",
     "brand": null,
     "serving_size_g": 250,
     "serving_description": "1 plate (250g)",
-    "kcal_per_100g": 135.2,
-    "protein_g_per_100g": 4.2,
+    "kcal_per_100g": 150.4,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 19.7,
     "fat_g_per_100g": 4.4,
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-fish-biryani",
     "name": "Fish Biryani",
     "brand": null,
     "serving_size_g": 250,
     "serving_description": "1 plate (250g)",
-    "kcal_per_100g": 132.7,
-    "protein_g_per_100g": 4.4,
+    "kcal_per_100g": 147.1,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 20.9,
     "fat_g_per_100g": 3.5,
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-veg-fried-rice",
     "name": "Veg Fried Rice",
     "brand": null,
@@ -1014,33 +1131,33 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-egg-fried-rice",
     "name": "Egg Fried Rice",
     "brand": null,
     "serving_size_g": 250,
     "serving_description": "1 plate (250g)",
-    "kcal_per_100g": 167.5,
-    "protein_g_per_100g": 4.8,
+    "kcal_per_100g": 180.3,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 25.6,
     "fat_g_per_100g": 5.1,
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-fried-rice",
     "name": "Chicken Fried Rice",
     "brand": null,
     "serving_size_g": 250,
     "serving_description": "1 plate (250g)",
-    "kcal_per_100g": 159.3,
-    "protein_g_per_100g": 4.5,
+    "kcal_per_100g": 173.3,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 24.3,
     "fat_g_per_100g": 4.9,
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-jeera-rice",
     "name": "Jeera Rice",
     "brand": null,
@@ -1053,7 +1170,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-ghee-rice",
     "name": "Ghee Rice",
     "brand": null,
@@ -1066,7 +1183,7 @@
     "fiber_g_per_100g": 1.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-lemon-rice",
     "name": "Lemon Rice",
     "brand": null,
@@ -1079,7 +1196,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-tamarind-rice",
     "name": "Tamarind Rice",
     "brand": null,
@@ -1092,7 +1209,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-curd-rice",
     "name": "Curd Rice",
     "brand": null,
@@ -1105,7 +1222,7 @@
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-coconut-rice",
     "name": "Coconut Rice",
     "brand": null,
@@ -1118,7 +1235,7 @@
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-tomato-rice",
     "name": "Tomato Rice",
     "brand": null,
@@ -1131,7 +1248,7 @@
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sambar-rice",
     "name": "Sambar Rice",
     "brand": null,
@@ -1144,7 +1261,7 @@
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pepper-rice",
     "name": "Pepper Rice",
     "brand": null,
@@ -1157,7 +1274,7 @@
     "fiber_g_per_100g": 1.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-khichdi-moong-dal",
     "name": "Khichdi (Moong Dal)",
     "brand": null,
@@ -1170,7 +1287,7 @@
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-khichdi-masala",
     "name": "Khichdi (Masala)",
     "brand": null,
@@ -1183,7 +1300,7 @@
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-masala-khichdi",
     "name": "Masala Khichdi",
     "brand": null,
@@ -1196,7 +1313,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-veg-tehri",
     "name": "Veg Tehri",
     "brand": null,
@@ -1209,7 +1326,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-zarda-rice-sweet-rice",
     "name": "Zarda Rice (Sweet Rice)",
     "brand": null,
@@ -1222,7 +1339,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-idli",
     "name": "Idli",
     "brand": null,
@@ -1235,7 +1352,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-rava-idli",
     "name": "Rava Idli",
     "brand": null,
@@ -1248,7 +1365,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-plain-dosa",
     "name": "Plain Dosa",
     "brand": null,
@@ -1261,7 +1378,7 @@
     "fiber_g_per_100g": 1.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-masala-dosa",
     "name": "Masala Dosa",
     "brand": null,
@@ -1274,7 +1391,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-rava-dosa",
     "name": "Rava Dosa",
     "brand": null,
@@ -1287,7 +1404,7 @@
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-onion-dosa",
     "name": "Onion Dosa",
     "brand": null,
@@ -1300,7 +1417,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-uttapam-plain",
     "name": "Uttapam (Plain)",
     "brand": null,
@@ -1313,7 +1430,7 @@
     "fiber_g_per_100g": 1.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-uttapam-onion",
     "name": "Uttapam (Onion)",
     "brand": null,
@@ -1326,7 +1443,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-medu-vada",
     "name": "Medu Vada",
     "brand": null,
@@ -1339,7 +1456,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sambhar",
     "name": "Sambhar",
     "brand": null,
@@ -1352,7 +1469,7 @@
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-rasam",
     "name": "Rasam",
     "brand": null,
@@ -1365,7 +1482,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-coconut-chutney",
     "name": "Coconut Chutney",
     "brand": null,
@@ -1378,7 +1495,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-tomato-chutney",
     "name": "Tomato Chutney",
     "brand": null,
@@ -1391,7 +1508,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pesarattu",
     "name": "Pesarattu",
     "brand": null,
@@ -1404,7 +1521,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-appam",
     "name": "Appam",
     "brand": null,
@@ -1417,7 +1534,7 @@
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-puttu",
     "name": "Puttu",
     "brand": null,
@@ -1430,7 +1547,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-ven-pongal",
     "name": "Ven Pongal",
     "brand": null,
@@ -1443,7 +1560,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sweet-pongal",
     "name": "Sweet Pongal",
     "brand": null,
@@ -1456,7 +1573,7 @@
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bisi-bele-bath",
     "name": "Bisi Bele Bath",
     "brand": null,
@@ -1469,7 +1586,7 @@
     "fiber_g_per_100g": 1.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-avial",
     "name": "Avial",
     "brand": null,
@@ -1482,7 +1599,7 @@
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kadala-curry",
     "name": "Kadala Curry",
     "brand": null,
@@ -1495,7 +1612,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kootu",
     "name": "Kootu",
     "brand": null,
@@ -1508,7 +1625,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-poriyal",
     "name": "Poriyal",
     "brand": null,
@@ -1521,7 +1638,7 @@
     "fiber_g_per_100g": 1.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kozhukattai",
     "name": "Kozhukattai",
     "brand": null,
@@ -1534,7 +1651,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-idiyappam",
     "name": "Idiyappam",
     "brand": null,
@@ -1547,7 +1664,7 @@
     "fiber_g_per_100g": 1.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-toor-dal-plain",
     "name": "Toor Dal (Plain)",
     "brand": null,
@@ -1560,7 +1677,7 @@
     "fiber_g_per_100g": 3.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-toor-dal-tadka",
     "name": "Toor Dal Tadka",
     "brand": null,
@@ -1573,7 +1690,7 @@
     "fiber_g_per_100g": 3.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-moong-dal-yellow",
     "name": "Moong Dal (Yellow)",
     "brand": null,
@@ -1586,7 +1703,7 @@
     "fiber_g_per_100g": 3.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-moong-dal-green",
     "name": "Moong Dal (Green)",
     "brand": null,
@@ -1599,7 +1716,7 @@
     "fiber_g_per_100g": 3.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-masoor-dal",
     "name": "Masoor Dal",
     "brand": null,
@@ -1612,7 +1729,7 @@
     "fiber_g_per_100g": 3.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chana-dal",
     "name": "Chana Dal",
     "brand": null,
@@ -1625,7 +1742,7 @@
     "fiber_g_per_100g": 3.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-urad-dal",
     "name": "Urad Dal",
     "brand": null,
@@ -1638,7 +1755,7 @@
     "fiber_g_per_100g": 3.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-dal-fry",
     "name": "Dal Fry",
     "brand": null,
@@ -1651,7 +1768,7 @@
     "fiber_g_per_100g": 3.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-dal-tadka",
     "name": "Dal Tadka",
     "brand": null,
@@ -1664,7 +1781,7 @@
     "fiber_g_per_100g": 3.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-dal-makhani",
     "name": "Dal Makhani",
     "brand": null,
@@ -1677,7 +1794,7 @@
     "fiber_g_per_100g": 3.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-rajma",
     "name": "Rajma",
     "brand": null,
@@ -1690,7 +1807,7 @@
     "fiber_g_per_100g": 3.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chole-chana-masala",
     "name": "Chole / Chana Masala",
     "brand": null,
@@ -1703,7 +1820,7 @@
     "fiber_g_per_100g": 3.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-lobia-curry",
     "name": "Lobia Curry",
     "brand": null,
@@ -1716,7 +1833,7 @@
     "fiber_g_per_100g": 3.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kala-chana-curry",
     "name": "Kala Chana Curry",
     "brand": null,
@@ -1729,7 +1846,7 @@
     "fiber_g_per_100g": 3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-gujarati-kadhi",
     "name": "Gujarati Kadhi",
     "brand": null,
@@ -1742,7 +1859,7 @@
     "fiber_g_per_100g": 3.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-punjabi-kadhi",
     "name": "Punjabi Kadhi",
     "brand": null,
@@ -1755,7 +1872,7 @@
     "fiber_g_per_100g": 4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-rasam-dal",
     "name": "Rasam Dal",
     "brand": null,
@@ -1768,7 +1885,7 @@
     "fiber_g_per_100g": 3.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sprouted-moong-salad",
     "name": "Sprouted Moong Salad",
     "brand": null,
@@ -1781,7 +1898,7 @@
     "fiber_g_per_100g": 3.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sprouted-kala-chana",
     "name": "Sprouted Kala Chana",
     "brand": null,
@@ -1794,7 +1911,7 @@
     "fiber_g_per_100g": 3.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pachranga-dal",
     "name": "Pachranga Dal",
     "brand": null,
@@ -1807,7 +1924,7 @@
     "fiber_g_per_100g": 3.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-dal-palak",
     "name": "Dal Palak",
     "brand": null,
@@ -1820,7 +1937,7 @@
     "fiber_g_per_100g": 3.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-dal-dhokli",
     "name": "Dal Dhokli",
     "brand": null,
@@ -1833,7 +1950,7 @@
     "fiber_g_per_100g": 3.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-gatte-ki-sabzi",
     "name": "Gatte ki Sabzi",
     "brand": null,
@@ -1846,7 +1963,7 @@
     "fiber_g_per_100g": 3.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chana-sundal",
     "name": "Chana Sundal",
     "brand": null,
@@ -1859,7 +1976,7 @@
     "fiber_g_per_100g": 3.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-masoor-dal-tadka",
     "name": "Masoor Dal Tadka",
     "brand": null,
@@ -1872,7 +1989,7 @@
     "fiber_g_per_100g": 3.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-aloo-sabzi",
     "name": "Aloo Sabzi",
     "brand": null,
@@ -1885,7 +2002,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-aloo-masala",
     "name": "Aloo Masala",
     "brand": null,
@@ -1898,7 +2015,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-aloo-bhaji",
     "name": "Aloo Bhaji",
     "brand": null,
@@ -1911,7 +2028,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-aloo-stir-fry",
     "name": "Aloo Stir Fry",
     "brand": null,
@@ -1924,7 +2041,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bhindi-sabzi",
     "name": "Bhindi Sabzi",
     "brand": null,
@@ -1937,7 +2054,7 @@
     "fiber_g_per_100g": 2.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bhindi-masala",
     "name": "Bhindi Masala",
     "brand": null,
@@ -1950,7 +2067,7 @@
     "fiber_g_per_100g": 2.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bhindi-bhaji",
     "name": "Bhindi Bhaji",
     "brand": null,
@@ -1963,7 +2080,7 @@
     "fiber_g_per_100g": 2.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bhindi-stir-fry",
     "name": "Bhindi Stir Fry",
     "brand": null,
@@ -1976,7 +2093,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-baingan-sabzi",
     "name": "Baingan Sabzi",
     "brand": null,
@@ -1989,7 +2106,7 @@
     "fiber_g_per_100g": 2.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-baingan-masala",
     "name": "Baingan Masala",
     "brand": null,
@@ -2002,7 +2119,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-baingan-bhaji",
     "name": "Baingan Bhaji",
     "brand": null,
@@ -2015,7 +2132,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-baingan-stir-fry",
     "name": "Baingan Stir Fry",
     "brand": null,
@@ -2028,7 +2145,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-gobi-sabzi",
     "name": "Gobi Sabzi",
     "brand": null,
@@ -2041,7 +2158,7 @@
     "fiber_g_per_100g": 2.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-gobi-masala",
     "name": "Gobi Masala",
     "brand": null,
@@ -2054,7 +2171,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-gobi-bhaji",
     "name": "Gobi Bhaji",
     "brand": null,
@@ -2067,7 +2184,7 @@
     "fiber_g_per_100g": 2.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-gobi-stir-fry",
     "name": "Gobi Stir Fry",
     "brand": null,
@@ -2080,7 +2197,7 @@
     "fiber_g_per_100g": 3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-matar-sabzi",
     "name": "Matar Sabzi",
     "brand": null,
@@ -2093,7 +2210,7 @@
     "fiber_g_per_100g": 2.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-matar-masala",
     "name": "Matar Masala",
     "brand": null,
@@ -2106,7 +2223,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-matar-bhaji",
     "name": "Matar Bhaji",
     "brand": null,
@@ -2119,7 +2236,7 @@
     "fiber_g_per_100g": 2.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-matar-stir-fry",
     "name": "Matar Stir Fry",
     "brand": null,
@@ -2132,7 +2249,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-palak-sabzi",
     "name": "Palak Sabzi",
     "brand": null,
@@ -2145,7 +2262,7 @@
     "fiber_g_per_100g": 2.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-palak-masala",
     "name": "Palak Masala",
     "brand": null,
@@ -2158,7 +2275,7 @@
     "fiber_g_per_100g": 2.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-palak-bhaji",
     "name": "Palak Bhaji",
     "brand": null,
@@ -2171,7 +2288,7 @@
     "fiber_g_per_100g": 2.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-palak-stir-fry",
     "name": "Palak Stir Fry",
     "brand": null,
@@ -2184,7 +2301,7 @@
     "fiber_g_per_100g": 2.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-lauki-sabzi",
     "name": "Lauki Sabzi",
     "brand": null,
@@ -2197,7 +2314,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-lauki-masala",
     "name": "Lauki Masala",
     "brand": null,
@@ -2210,7 +2327,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-lauki-bhaji",
     "name": "Lauki Bhaji",
     "brand": null,
@@ -2223,7 +2340,7 @@
     "fiber_g_per_100g": 2.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-lauki-stir-fry",
     "name": "Lauki Stir Fry",
     "brand": null,
@@ -2236,7 +2353,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-tinda-sabzi",
     "name": "Tinda Sabzi",
     "brand": null,
@@ -2249,7 +2366,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-tinda-masala",
     "name": "Tinda Masala",
     "brand": null,
@@ -2262,7 +2379,7 @@
     "fiber_g_per_100g": 2.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-tinda-bhaji",
     "name": "Tinda Bhaji",
     "brand": null,
@@ -2275,7 +2392,7 @@
     "fiber_g_per_100g": 2.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-tinda-stir-fry",
     "name": "Tinda Stir Fry",
     "brand": null,
@@ -2288,7 +2405,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-torai-sabzi",
     "name": "Torai Sabzi",
     "brand": null,
@@ -2301,7 +2418,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-torai-masala",
     "name": "Torai Masala",
     "brand": null,
@@ -2314,7 +2431,7 @@
     "fiber_g_per_100g": 2.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-torai-bhaji",
     "name": "Torai Bhaji",
     "brand": null,
@@ -2327,7 +2444,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-torai-stir-fry",
     "name": "Torai Stir Fry",
     "brand": null,
@@ -2340,7 +2457,7 @@
     "fiber_g_per_100g": 3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-karela-sabzi",
     "name": "Karela Sabzi",
     "brand": null,
@@ -2353,7 +2470,7 @@
     "fiber_g_per_100g": 2.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-karela-masala",
     "name": "Karela Masala",
     "brand": null,
@@ -2366,7 +2483,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-karela-bhaji",
     "name": "Karela Bhaji",
     "brand": null,
@@ -2379,7 +2496,7 @@
     "fiber_g_per_100g": 2.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-karela-stir-fry",
     "name": "Karela Stir Fry",
     "brand": null,
@@ -2392,7 +2509,7 @@
     "fiber_g_per_100g": 3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-methi-sabzi",
     "name": "Methi Sabzi",
     "brand": null,
@@ -2405,7 +2522,7 @@
     "fiber_g_per_100g": 2.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-methi-masala",
     "name": "Methi Masala",
     "brand": null,
@@ -2418,7 +2535,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-methi-bhaji",
     "name": "Methi Bhaji",
     "brand": null,
@@ -2431,7 +2548,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-methi-stir-fry",
     "name": "Methi Stir Fry",
     "brand": null,
@@ -2444,7 +2561,7 @@
     "fiber_g_per_100g": 2.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-shimla-mirch-sabzi",
     "name": "Shimla Mirch Sabzi",
     "brand": null,
@@ -2457,7 +2574,7 @@
     "fiber_g_per_100g": 2.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-shimla-mirch-masala",
     "name": "Shimla Mirch Masala",
     "brand": null,
@@ -2470,7 +2587,7 @@
     "fiber_g_per_100g": 2.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-shimla-mirch-bhaji",
     "name": "Shimla Mirch Bhaji",
     "brand": null,
@@ -2483,7 +2600,7 @@
     "fiber_g_per_100g": 2.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-shimla-mirch-stir-fry",
     "name": "Shimla Mirch Stir Fry",
     "brand": null,
@@ -2496,7 +2613,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cabbage-sabzi",
     "name": "Cabbage Sabzi",
     "brand": null,
@@ -2509,7 +2626,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cabbage-masala",
     "name": "Cabbage Masala",
     "brand": null,
@@ -2522,7 +2639,7 @@
     "fiber_g_per_100g": 2.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cabbage-bhaji",
     "name": "Cabbage Bhaji",
     "brand": null,
@@ -2535,7 +2652,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cabbage-stir-fry",
     "name": "Cabbage Stir Fry",
     "brand": null,
@@ -2548,7 +2665,7 @@
     "fiber_g_per_100g": 3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-carrot-sabzi",
     "name": "Carrot Sabzi",
     "brand": null,
@@ -2561,7 +2678,7 @@
     "fiber_g_per_100g": 2.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-carrot-masala",
     "name": "Carrot Masala",
     "brand": null,
@@ -2574,7 +2691,7 @@
     "fiber_g_per_100g": 2.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-carrot-bhaji",
     "name": "Carrot Bhaji",
     "brand": null,
@@ -2587,7 +2704,7 @@
     "fiber_g_per_100g": 2.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-carrot-stir-fry",
     "name": "Carrot Stir Fry",
     "brand": null,
@@ -2600,7 +2717,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-beetroot-sabzi",
     "name": "Beetroot Sabzi",
     "brand": null,
@@ -2613,7 +2730,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-beetroot-masala",
     "name": "Beetroot Masala",
     "brand": null,
@@ -2626,7 +2743,7 @@
     "fiber_g_per_100g": 2.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-beetroot-bhaji",
     "name": "Beetroot Bhaji",
     "brand": null,
@@ -2639,7 +2756,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-beetroot-stir-fry",
     "name": "Beetroot Stir Fry",
     "brand": null,
@@ -2652,7 +2769,7 @@
     "fiber_g_per_100g": 2.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-beans-sabzi",
     "name": "Beans Sabzi",
     "brand": null,
@@ -2665,7 +2782,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-beans-masala",
     "name": "Beans Masala",
     "brand": null,
@@ -2678,7 +2795,7 @@
     "fiber_g_per_100g": 2.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-beans-bhaji",
     "name": "Beans Bhaji",
     "brand": null,
@@ -2691,7 +2808,7 @@
     "fiber_g_per_100g": 2.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-beans-stir-fry",
     "name": "Beans Stir Fry",
     "brand": null,
@@ -2704,7 +2821,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kaddu-sabzi",
     "name": "Kaddu Sabzi",
     "brand": null,
@@ -2717,7 +2834,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kaddu-masala",
     "name": "Kaddu Masala",
     "brand": null,
@@ -2730,7 +2847,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kaddu-bhaji",
     "name": "Kaddu Bhaji",
     "brand": null,
@@ -2743,7 +2860,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kaddu-stir-fry",
     "name": "Kaddu Stir Fry",
     "brand": null,
@@ -2756,7 +2873,7 @@
     "fiber_g_per_100g": 3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-arbi-sabzi",
     "name": "Arbi Sabzi",
     "brand": null,
@@ -2769,7 +2886,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-arbi-masala",
     "name": "Arbi Masala",
     "brand": null,
@@ -2782,7 +2899,7 @@
     "fiber_g_per_100g": 2.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-arbi-bhaji",
     "name": "Arbi Bhaji",
     "brand": null,
@@ -2795,7 +2912,7 @@
     "fiber_g_per_100g": 2.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-arbi-stir-fry",
     "name": "Arbi Stir Fry",
     "brand": null,
@@ -2808,7 +2925,7 @@
     "fiber_g_per_100g": 2.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-parwal-sabzi",
     "name": "Parwal Sabzi",
     "brand": null,
@@ -2821,7 +2938,7 @@
     "fiber_g_per_100g": 2.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-parwal-masala",
     "name": "Parwal Masala",
     "brand": null,
@@ -2834,7 +2951,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-parwal-bhaji",
     "name": "Parwal Bhaji",
     "brand": null,
@@ -2847,7 +2964,7 @@
     "fiber_g_per_100g": 2.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-parwal-stir-fry",
     "name": "Parwal Stir Fry",
     "brand": null,
@@ -2860,7 +2977,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kundru-sabzi",
     "name": "Kundru Sabzi",
     "brand": null,
@@ -2873,7 +2990,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kundru-masala",
     "name": "Kundru Masala",
     "brand": null,
@@ -2886,7 +3003,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kundru-bhaji",
     "name": "Kundru Bhaji",
     "brand": null,
@@ -2899,7 +3016,7 @@
     "fiber_g_per_100g": 2.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kundru-stir-fry",
     "name": "Kundru Stir Fry",
     "brand": null,
@@ -2912,7 +3029,7 @@
     "fiber_g_per_100g": 2.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-jackfruit-kathal-sabzi",
     "name": "Jackfruit (Kathal) Sabzi",
     "brand": null,
@@ -2925,7 +3042,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-jackfruit-kathal-masala",
     "name": "Jackfruit (Kathal) Masala",
     "brand": null,
@@ -2938,7 +3055,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-jackfruit-kathal-bhaji",
     "name": "Jackfruit (Kathal) Bhaji",
     "brand": null,
@@ -2951,7 +3068,7 @@
     "fiber_g_per_100g": 2.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-jackfruit-kathal-stir-fry",
     "name": "Jackfruit (Kathal) Stir Fry",
     "brand": null,
@@ -2964,7 +3081,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-drumstick-moringa-sabzi",
     "name": "Drumstick (Moringa) Sabzi",
     "brand": null,
@@ -2977,7 +3094,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-drumstick-moringa-masala",
     "name": "Drumstick (Moringa) Masala",
     "brand": null,
@@ -2990,7 +3107,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-drumstick-moringa-bhaji",
     "name": "Drumstick (Moringa) Bhaji",
     "brand": null,
@@ -3003,7 +3120,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-drumstick-moringa-stir-fry",
     "name": "Drumstick (Moringa) Stir Fry",
     "brand": null,
@@ -3016,7 +3133,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cauliflower-sabzi",
     "name": "Cauliflower Sabzi",
     "brand": null,
@@ -3029,7 +3146,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cauliflower-masala",
     "name": "Cauliflower Masala",
     "brand": null,
@@ -3042,7 +3159,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cauliflower-bhaji",
     "name": "Cauliflower Bhaji",
     "brand": null,
@@ -3055,7 +3172,7 @@
     "fiber_g_per_100g": 2.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cauliflower-stir-fry",
     "name": "Cauliflower Stir Fry",
     "brand": null,
@@ -3068,7 +3185,7 @@
     "fiber_g_per_100g": 2.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-broccoli-sabzi",
     "name": "Broccoli Sabzi",
     "brand": null,
@@ -3081,7 +3198,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-broccoli-masala",
     "name": "Broccoli Masala",
     "brand": null,
@@ -3094,7 +3211,7 @@
     "fiber_g_per_100g": 2.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-broccoli-bhaji",
     "name": "Broccoli Bhaji",
     "brand": null,
@@ -3107,7 +3224,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-broccoli-stir-fry",
     "name": "Broccoli Stir Fry",
     "brand": null,
@@ -3120,7 +3237,7 @@
     "fiber_g_per_100g": 2.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mushroom-sabzi",
     "name": "Mushroom Sabzi",
     "brand": null,
@@ -3133,7 +3250,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mushroom-masala",
     "name": "Mushroom Masala",
     "brand": null,
@@ -3146,7 +3263,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mushroom-bhaji",
     "name": "Mushroom Bhaji",
     "brand": null,
@@ -3159,7 +3276,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mushroom-stir-fry",
     "name": "Mushroom Stir Fry",
     "brand": null,
@@ -3172,7 +3289,7 @@
     "fiber_g_per_100g": 3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-corn-sabzi",
     "name": "Corn Sabzi",
     "brand": null,
@@ -3185,7 +3302,7 @@
     "fiber_g_per_100g": 2.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-corn-masala",
     "name": "Corn Masala",
     "brand": null,
@@ -3198,7 +3315,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-corn-bhaji",
     "name": "Corn Bhaji",
     "brand": null,
@@ -3211,7 +3328,7 @@
     "fiber_g_per_100g": 2.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-corn-stir-fry",
     "name": "Corn Stir Fry",
     "brand": null,
@@ -3224,7 +3341,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-okra-sabzi",
     "name": "Okra Sabzi",
     "brand": null,
@@ -3237,7 +3354,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-okra-masala",
     "name": "Okra Masala",
     "brand": null,
@@ -3250,7 +3367,7 @@
     "fiber_g_per_100g": 2.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-okra-bhaji",
     "name": "Okra Bhaji",
     "brand": null,
@@ -3263,7 +3380,7 @@
     "fiber_g_per_100g": 2.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-okra-stir-fry",
     "name": "Okra Stir Fry",
     "brand": null,
@@ -3276,7 +3393,7 @@
     "fiber_g_per_100g": 2.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pumpkin-sabzi",
     "name": "Pumpkin Sabzi",
     "brand": null,
@@ -3289,7 +3406,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pumpkin-masala",
     "name": "Pumpkin Masala",
     "brand": null,
@@ -3302,7 +3419,7 @@
     "fiber_g_per_100g": 2.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pumpkin-bhaji",
     "name": "Pumpkin Bhaji",
     "brand": null,
@@ -3315,7 +3432,7 @@
     "fiber_g_per_100g": 2.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pumpkin-stir-fry",
     "name": "Pumpkin Stir Fry",
     "brand": null,
@@ -3328,7 +3445,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-zucchini-sabzi",
     "name": "Zucchini Sabzi",
     "brand": null,
@@ -3341,7 +3458,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-zucchini-masala",
     "name": "Zucchini Masala",
     "brand": null,
@@ -3354,7 +3471,7 @@
     "fiber_g_per_100g": 3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-zucchini-bhaji",
     "name": "Zucchini Bhaji",
     "brand": null,
@@ -3367,7 +3484,7 @@
     "fiber_g_per_100g": 2.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-zucchini-stir-fry",
     "name": "Zucchini Stir Fry",
     "brand": null,
@@ -3380,7 +3497,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bottle-gourd-sabzi",
     "name": "Bottle Gourd Sabzi",
     "brand": null,
@@ -3393,7 +3510,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bottle-gourd-masala",
     "name": "Bottle Gourd Masala",
     "brand": null,
@@ -3406,7 +3523,7 @@
     "fiber_g_per_100g": 2.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bottle-gourd-bhaji",
     "name": "Bottle Gourd Bhaji",
     "brand": null,
@@ -3419,7 +3536,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bottle-gourd-stir-fry",
     "name": "Bottle Gourd Stir Fry",
     "brand": null,
@@ -3432,7 +3549,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-aloo-gobi",
     "name": "Aloo Gobi",
     "brand": null,
@@ -3445,7 +3562,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-aloo-matar",
     "name": "Aloo Matar",
     "brand": null,
@@ -3458,7 +3575,7 @@
     "fiber_g_per_100g": 2.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-aloo-palak",
     "name": "Aloo Palak",
     "brand": null,
@@ -3471,7 +3588,7 @@
     "fiber_g_per_100g": 2.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-aloo-baingan",
     "name": "Aloo Baingan",
     "brand": null,
@@ -3484,7 +3601,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-aloo-shimla-mirch",
     "name": "Aloo Shimla Mirch",
     "brand": null,
@@ -3497,7 +3614,7 @@
     "fiber_g_per_100g": 2.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bhindi-aloo",
     "name": "Bhindi Aloo",
     "brand": null,
@@ -3510,7 +3627,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chana-aloo",
     "name": "Chana Aloo",
     "brand": null,
@@ -3523,7 +3640,7 @@
     "fiber_g_per_100g": 3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-methi-aloo",
     "name": "Methi Aloo",
     "brand": null,
@@ -3536,7 +3653,7 @@
     "fiber_g_per_100g": 2.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mix-veg-sabzi",
     "name": "Mix Veg Sabzi",
     "brand": null,
@@ -3549,7 +3666,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-veg-korma",
     "name": "Veg Korma",
     "brand": null,
@@ -3562,7 +3679,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kofta-curry-veg",
     "name": "Kofta Curry (Veg)",
     "brand": null,
@@ -3575,7 +3692,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-aloo-jeera",
     "name": "Aloo Jeera",
     "brand": null,
@@ -3588,7 +3705,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-palak-corn",
     "name": "Palak Corn",
     "brand": null,
@@ -3601,7 +3718,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-corn-matar",
     "name": "Corn Matar",
     "brand": null,
@@ -3614,7 +3731,7 @@
     "fiber_g_per_100g": 2.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mushroom-masala-2",
     "name": "Mushroom Masala",
     "brand": null,
@@ -3627,7 +3744,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kadai-veg",
     "name": "Kadai Veg",
     "brand": null,
@@ -3640,7 +3757,7 @@
     "fiber_g_per_100g": 2.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-veg-jalfrezi",
     "name": "Veg Jalfrezi",
     "brand": null,
@@ -3653,7 +3770,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-veg-kolhapuri",
     "name": "Veg Kolhapuri",
     "brand": null,
@@ -3666,7 +3783,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-navratan-korma",
     "name": "Navratan Korma",
     "brand": null,
@@ -3679,7 +3796,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-veg-handi",
     "name": "Veg Handi",
     "brand": null,
@@ -3692,7 +3809,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-butter-masala",
     "name": "Paneer Butter Masala",
     "brand": null,
@@ -3705,7 +3822,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-shahi-paneer",
     "name": "Shahi Paneer",
     "brand": null,
@@ -3718,7 +3835,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kadai-paneer",
     "name": "Kadai Paneer",
     "brand": null,
@@ -3731,7 +3848,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-palak-paneer",
     "name": "Palak Paneer",
     "brand": null,
@@ -3744,7 +3861,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-matar-paneer",
     "name": "Matar Paneer",
     "brand": null,
@@ -3757,7 +3874,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-tikka",
     "name": "Paneer Tikka",
     "brand": null,
@@ -3770,7 +3887,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-bhurji",
     "name": "Paneer Bhurji",
     "brand": null,
@@ -3783,7 +3900,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-pasanda",
     "name": "Paneer Pasanda",
     "brand": null,
@@ -3796,7 +3913,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-lababdar",
     "name": "Paneer Lababdar",
     "brand": null,
@@ -3809,7 +3926,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-do-pyaza",
     "name": "Paneer Do Pyaza",
     "brand": null,
@@ -3822,7 +3939,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-kofta-curry",
     "name": "Paneer Kofta Curry",
     "brand": null,
@@ -3835,7 +3952,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-kali-mirch",
     "name": "Paneer Kali Mirch",
     "brand": null,
@@ -3848,7 +3965,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-malai",
     "name": "Paneer Malai",
     "brand": null,
@@ -3861,7 +3978,7 @@
     "fiber_g_per_100g": 0.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-achari-paneer",
     "name": "Achari Paneer",
     "brand": null,
@@ -3874,7 +3991,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chilli-paneer-dry",
     "name": "Chilli Paneer (Dry)",
     "brand": null,
@@ -3887,7 +4004,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chilli-paneer-gravy",
     "name": "Chilli Paneer (Gravy)",
     "brand": null,
@@ -3900,7 +4017,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-65",
     "name": "Paneer 65",
     "brand": null,
@@ -3913,7 +4030,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-jalfrezi",
     "name": "Paneer Jalfrezi",
     "brand": null,
@@ -3926,7 +4043,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-saag",
     "name": "Paneer Saag",
     "brand": null,
@@ -3939,7 +4056,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-korma",
     "name": "Paneer Korma",
     "brand": null,
@@ -3952,7 +4069,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-curry",
     "name": "Chicken Curry",
     "brand": null,
@@ -3965,7 +4082,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-butter-chicken",
     "name": "Butter Chicken",
     "brand": null,
@@ -3978,7 +4095,7 @@
     "fiber_g_per_100g": 0.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-tikka-masala",
     "name": "Chicken Tikka Masala",
     "brand": null,
@@ -3991,7 +4108,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-korma",
     "name": "Chicken Korma",
     "brand": null,
@@ -4004,7 +4121,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-chettinad",
     "name": "Chicken Chettinad",
     "brand": null,
@@ -4017,7 +4134,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-65",
     "name": "Chicken 65",
     "brand": null,
@@ -4030,7 +4147,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-tandoori-chicken",
     "name": "Tandoori Chicken",
     "brand": null,
@@ -4043,7 +4160,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-sukka",
     "name": "Chicken Sukka",
     "brand": null,
@@ -4056,7 +4173,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-jalfrezi",
     "name": "Chicken Jalfrezi",
     "brand": null,
@@ -4069,7 +4186,7 @@
     "fiber_g_per_100g": 0.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-do-pyaza",
     "name": "Chicken Do Pyaza",
     "brand": null,
@@ -4082,7 +4199,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-saag",
     "name": "Chicken Saag",
     "brand": null,
@@ -4095,7 +4212,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-rezala",
     "name": "Chicken Rezala",
     "brand": null,
@@ -4108,7 +4225,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-stew",
     "name": "Chicken Stew",
     "brand": null,
@@ -4121,7 +4238,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-vindaloo",
     "name": "Chicken Vindaloo",
     "brand": null,
@@ -4134,7 +4251,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-kolhapuri",
     "name": "Chicken Kolhapuri",
     "brand": null,
@@ -4147,7 +4264,7 @@
     "fiber_g_per_100g": 0.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-afghani",
     "name": "Chicken Afghani",
     "brand": null,
@@ -4160,7 +4277,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-pepper-fry",
     "name": "Chicken Pepper Fry",
     "brand": null,
@@ -4173,7 +4290,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-manchurian",
     "name": "Chicken Manchurian",
     "brand": null,
@@ -4186,7 +4303,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-lollipop",
     "name": "Chicken Lollipop",
     "brand": null,
@@ -4199,7 +4316,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-kebab",
     "name": "Chicken Kebab",
     "brand": null,
@@ -4212,7 +4329,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-keema",
     "name": "Chicken Keema",
     "brand": null,
@@ -4225,7 +4342,7 @@
     "fiber_g_per_100g": 0.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-sausage-curry",
     "name": "Chicken Sausage Curry",
     "brand": null,
@@ -4238,7 +4355,7 @@
     "fiber_g_per_100g": 0.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-roast",
     "name": "Chicken Roast",
     "brand": null,
@@ -4251,7 +4368,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-bhuna",
     "name": "Chicken Bhuna",
     "brand": null,
@@ -4264,7 +4381,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-hyderabadi",
     "name": "Chicken Hyderabadi",
     "brand": null,
@@ -4277,7 +4394,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-boiled-egg",
     "name": "Boiled Egg",
     "brand": null,
@@ -4290,7 +4407,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-fried-egg",
     "name": "Fried Egg",
     "brand": null,
@@ -4303,7 +4420,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-omelette-plain",
     "name": "Omelette (Plain)",
     "brand": null,
@@ -4316,7 +4433,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-omelette-masala",
     "name": "Omelette (Masala)",
     "brand": null,
@@ -4329,7 +4446,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-egg-bhurji",
     "name": "Egg Bhurji",
     "brand": null,
@@ -4342,7 +4459,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-egg-curry",
     "name": "Egg Curry",
     "brand": null,
@@ -4355,7 +4472,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-egg-masala",
     "name": "Egg Masala",
     "brand": null,
@@ -4368,7 +4485,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-egg-roast",
     "name": "Egg Roast",
     "brand": null,
@@ -4381,7 +4498,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-egg-korma",
     "name": "Egg Korma",
     "brand": null,
@@ -4394,7 +4511,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-egg-tikka",
     "name": "Egg Tikka",
     "brand": null,
@@ -4407,7 +4524,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-egg-pulusu",
     "name": "Egg Pulusu",
     "brand": null,
@@ -4420,7 +4537,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-egg-pakora",
     "name": "Egg Pakora",
     "brand": null,
@@ -4433,7 +4550,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-egg-bhaji",
     "name": "Egg Bhaji",
     "brand": null,
@@ -4446,7 +4563,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-egg-pepper-fry",
     "name": "Egg Pepper Fry",
     "brand": null,
@@ -4459,7 +4576,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-egg-salad",
     "name": "Egg Salad",
     "brand": null,
@@ -4472,7 +4589,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mutton-curry",
     "name": "Mutton Curry",
     "brand": null,
@@ -4485,7 +4602,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mutton-rogan-josh",
     "name": "Mutton Rogan Josh",
     "brand": null,
@@ -4498,7 +4615,7 @@
     "fiber_g_per_100g": 0.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mutton-korma",
     "name": "Mutton Korma",
     "brand": null,
@@ -4511,7 +4628,7 @@
     "fiber_g_per_100g": 0.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mutton-keema",
     "name": "Mutton Keema",
     "brand": null,
@@ -4524,7 +4641,7 @@
     "fiber_g_per_100g": 0.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mutton-do-pyaza",
     "name": "Mutton Do Pyaza",
     "brand": null,
@@ -4537,7 +4654,7 @@
     "fiber_g_per_100g": 0.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mutton-saag",
     "name": "Mutton Saag",
     "brand": null,
@@ -4550,7 +4667,7 @@
     "fiber_g_per_100g": 0.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mutton-nihari",
     "name": "Mutton Nihari",
     "brand": null,
@@ -4563,7 +4680,7 @@
     "fiber_g_per_100g": 0.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mutton-vindaloo",
     "name": "Mutton Vindaloo",
     "brand": null,
@@ -4576,7 +4693,7 @@
     "fiber_g_per_100g": 0.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mutton-kolhapuri",
     "name": "Mutton Kolhapuri",
     "brand": null,
@@ -4589,7 +4706,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mutton-kebab",
     "name": "Mutton Kebab",
     "brand": null,
@@ -4602,7 +4719,7 @@
     "fiber_g_per_100g": 0.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mutton-stew",
     "name": "Mutton Stew",
     "brand": null,
@@ -4615,7 +4732,7 @@
     "fiber_g_per_100g": 0.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mutton-rara",
     "name": "Mutton Rara",
     "brand": null,
@@ -4628,7 +4745,7 @@
     "fiber_g_per_100g": 0.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mutton-masala",
     "name": "Mutton Masala",
     "brand": null,
@@ -4641,7 +4758,7 @@
     "fiber_g_per_100g": 0.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mutton-pepper-fry",
     "name": "Mutton Pepper Fry",
     "brand": null,
@@ -4654,7 +4771,7 @@
     "fiber_g_per_100g": 0.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mutton-bhuna",
     "name": "Mutton Bhuna",
     "brand": null,
@@ -4667,7 +4784,7 @@
     "fiber_g_per_100g": 0.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-fish-curry",
     "name": "Fish Curry",
     "brand": null,
@@ -4680,7 +4797,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-fish-fry",
     "name": "Fish Fry",
     "brand": null,
@@ -4693,7 +4810,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-fish-tikka",
     "name": "Fish Tikka",
     "brand": null,
@@ -4706,7 +4823,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-fish-masala",
     "name": "Fish Masala",
     "brand": null,
@@ -4719,7 +4836,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-fish-korma",
     "name": "Fish Korma",
     "brand": null,
@@ -4732,7 +4849,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-fish-moilee",
     "name": "Fish Moilee",
     "brand": null,
@@ -4745,7 +4862,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-fish-recheado",
     "name": "Fish Recheado",
     "brand": null,
@@ -4758,7 +4875,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pomfret-fry",
     "name": "Pomfret Fry",
     "brand": null,
@@ -4771,7 +4888,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-rohu-curry",
     "name": "Rohu Curry",
     "brand": null,
@@ -4784,7 +4901,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-hilsa-curry",
     "name": "Hilsa Curry",
     "brand": null,
@@ -4797,7 +4914,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mackerel-fry",
     "name": "Mackerel Fry",
     "brand": null,
@@ -4810,7 +4927,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sardine-curry",
     "name": "Sardine Curry",
     "brand": null,
@@ -4823,7 +4940,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-prawn-curry",
     "name": "Prawn Curry",
     "brand": null,
@@ -4836,7 +4953,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-prawn-masala",
     "name": "Prawn Masala",
     "brand": null,
@@ -4849,7 +4966,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-prawn-fry",
     "name": "Prawn Fry",
     "brand": null,
@@ -4862,7 +4979,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-crab-curry",
     "name": "Crab Curry",
     "brand": null,
@@ -4875,7 +4992,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-crab-masala",
     "name": "Crab Masala",
     "brand": null,
@@ -4888,7 +5005,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-squid-fry",
     "name": "Squid Fry",
     "brand": null,
@@ -4901,7 +5018,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-prawn-koliwada",
     "name": "Prawn Koliwada",
     "brand": null,
@@ -4914,7 +5031,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-fish-pulusu",
     "name": "Fish Pulusu",
     "brand": null,
@@ -4927,7 +5044,7 @@
     "fiber_g_per_100g": 0.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-samosa",
     "name": "Samosa",
     "brand": null,
@@ -4940,7 +5057,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kachori",
     "name": "Kachori",
     "brand": null,
@@ -4953,7 +5070,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pani-puri",
     "name": "Pani Puri",
     "brand": null,
@@ -4966,7 +5083,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sev-puri",
     "name": "Sev Puri",
     "brand": null,
@@ -4979,7 +5096,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bhel-puri",
     "name": "Bhel Puri",
     "brand": null,
@@ -4992,7 +5109,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-dahi-puri",
     "name": "Dahi Puri",
     "brand": null,
@@ -5005,7 +5122,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-ragda-pattice",
     "name": "Ragda Pattice",
     "brand": null,
@@ -5018,7 +5135,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pav-bhaji",
     "name": "Pav Bhaji",
     "brand": null,
@@ -5031,7 +5148,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-vada-pav",
     "name": "Vada Pav",
     "brand": null,
@@ -5044,7 +5161,7 @@
     "fiber_g_per_100g": 1.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-misal-pav",
     "name": "Misal Pav",
     "brand": null,
@@ -5057,7 +5174,7 @@
     "fiber_g_per_100g": 1.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-dabeli",
     "name": "Dabeli",
     "brand": null,
@@ -5070,7 +5187,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chole-bhature",
     "name": "Chole Bhature",
     "brand": null,
@@ -5083,7 +5200,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-aloo-tikki",
     "name": "Aloo Tikki",
     "brand": null,
@@ -5096,7 +5213,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-papdi-chaat",
     "name": "Papdi Chaat",
     "brand": null,
@@ -5109,7 +5226,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-aloo-chaat",
     "name": "Aloo Chaat",
     "brand": null,
@@ -5122,7 +5239,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-dhokla-chaat",
     "name": "Dhokla Chaat",
     "brand": null,
@@ -5135,7 +5252,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-khaman",
     "name": "Khaman",
     "brand": null,
@@ -5148,7 +5265,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-veg-momos",
     "name": "Veg Momos",
     "brand": null,
@@ -5161,20 +5278,20 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-momos",
     "name": "Chicken Momos",
     "brand": null,
     "serving_size_g": 150,
     "serving_description": "1 plate (150g)",
-    "kcal_per_100g": 228.9,
-    "protein_g_per_100g": 5.7,
+    "kcal_per_100g": 238.1,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 27.9,
     "fat_g_per_100g": 10.5,
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-veg-chowmein",
     "name": "Veg Chowmein",
     "brand": null,
@@ -5187,20 +5304,20 @@
     "fiber_g_per_100g": 1.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-chowmein",
     "name": "Chicken Chowmein",
     "brand": null,
     "serving_size_g": 150,
     "serving_description": "1 plate (150g)",
-    "kcal_per_100g": 218.7,
-    "protein_g_per_100g": 5,
+    "kcal_per_100g": 230.7,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 25.6,
     "fat_g_per_100g": 10.7,
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-frankie-roll-veg",
     "name": "Frankie Roll (Veg)",
     "brand": null,
@@ -5213,46 +5330,46 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-frankie-roll-chicken",
     "name": "Frankie Roll (Chicken)",
     "brand": null,
     "serving_size_g": 150,
     "serving_description": "1 plate (150g)",
-    "kcal_per_100g": 287.8,
-    "protein_g_per_100g": 5.6,
+    "kcal_per_100g": 297.4,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 34.4,
     "fat_g_per_100g": 14.2,
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kathi-roll-paneer",
     "name": "Kathi Roll (Paneer)",
     "brand": null,
     "serving_size_g": 150,
     "serving_description": "1 plate (150g)",
-    "kcal_per_100g": 289.9,
-    "protein_g_per_100g": 5.3,
+    "kcal_per_100g": 300.7,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 35.9,
     "fat_g_per_100g": 13.9,
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kathi-roll-chicken",
     "name": "Kathi Roll (Chicken)",
     "brand": null,
     "serving_size_g": 150,
     "serving_description": "1 plate (150g)",
-    "kcal_per_100g": 246.6,
-    "protein_g_per_100g": 6.5,
+    "kcal_per_100g": 252.6,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 29.5,
     "fat_g_per_100g": 11.4,
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bread-pakora",
     "name": "Bread Pakora",
     "brand": null,
@@ -5265,7 +5382,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mirchi-bajji",
     "name": "Mirchi Bajji",
     "brand": null,
@@ -5278,7 +5395,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-onion-pakora",
     "name": "Onion Pakora",
     "brand": null,
@@ -5291,7 +5408,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-gobi-manchurian-dry",
     "name": "Gobi Manchurian (Dry)",
     "brand": null,
@@ -5304,33 +5421,33 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-manchurian",
     "name": "Paneer Manchurian",
     "brand": null,
     "serving_size_g": 150,
     "serving_description": "1 plate (150g)",
-    "kcal_per_100g": 227.1,
-    "protein_g_per_100g": 5.2,
+    "kcal_per_100g": 238.3,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 26.6,
     "fat_g_per_100g": 11.1,
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-soya-chaap",
     "name": "Soya Chaap",
     "brand": null,
     "serving_size_g": 150,
     "serving_description": "1 plate (150g)",
-    "kcal_per_100g": 235.8,
-    "protein_g_per_100g": 6.5,
+    "kcal_per_100g": 265.8,
+    "protein_g_per_100g": 14,
     "carbs_g_per_100g": 26.8,
     "fat_g_per_100g": 11.4,
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-tandoori-momos",
     "name": "Tandoori Momos",
     "brand": null,
@@ -5343,7 +5460,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kulcha-chole",
     "name": "Kulcha Chole",
     "brand": null,
@@ -5356,7 +5473,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-idli-sambar",
     "name": "Idli Sambar",
     "brand": null,
@@ -5369,7 +5486,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bhutta-roasted-corn",
     "name": "Bhutta (Roasted Corn)",
     "brand": null,
@@ -5382,7 +5499,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-corn-chaat",
     "name": "Corn Chaat",
     "brand": null,
@@ -5395,7 +5512,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chilli-potato",
     "name": "Chilli Potato",
     "brand": null,
@@ -5408,7 +5525,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-veg-spring-roll",
     "name": "Veg Spring Roll",
     "brand": null,
@@ -5421,33 +5538,33 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chicken-spring-roll",
     "name": "Chicken Spring Roll",
     "brand": null,
     "serving_size_g": 150,
     "serving_description": "1 plate (150g)",
-    "kcal_per_100g": 290.2,
-    "protein_g_per_100g": 6.3,
+    "kcal_per_100g": 297,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 34.3,
     "fat_g_per_100g": 14.2,
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-roll",
     "name": "Paneer Roll",
     "brand": null,
     "serving_size_g": 150,
     "serving_description": "1 plate (150g)",
-    "kcal_per_100g": 239.6,
-    "protein_g_per_100g": 7,
+    "kcal_per_100g": 243.6,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 28.6,
     "fat_g_per_100g": 10.8,
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-poha-kanda",
     "name": "Poha (Kanda)",
     "brand": null,
@@ -5460,7 +5577,7 @@
     "fiber_g_per_100g": 1.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-poha-batata",
     "name": "Poha (Batata)",
     "brand": null,
@@ -5473,7 +5590,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-upma-rava",
     "name": "Upma (Rava)",
     "brand": null,
@@ -5486,7 +5603,7 @@
     "fiber_g_per_100g": 1.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-dhokla",
     "name": "Dhokla",
     "brand": null,
@@ -5499,7 +5616,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-khandvi",
     "name": "Khandvi",
     "brand": null,
@@ -5512,7 +5629,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-handvo",
     "name": "Handvo",
     "brand": null,
@@ -5525,7 +5642,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-besan-chilla",
     "name": "Besan Chilla",
     "brand": null,
@@ -5538,7 +5655,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-moong-chilla",
     "name": "Moong Chilla",
     "brand": null,
@@ -5551,7 +5668,7 @@
     "fiber_g_per_100g": 1.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sabudana-khichdi",
     "name": "Sabudana Khichdi",
     "brand": null,
@@ -5564,7 +5681,7 @@
     "fiber_g_per_100g": 1.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sabudana-vada",
     "name": "Sabudana Vada",
     "brand": null,
@@ -5577,7 +5694,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-masala-oats",
     "name": "Masala Oats",
     "brand": null,
@@ -5590,7 +5707,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-daliya-porridge",
     "name": "Daliya Porridge",
     "brand": null,
@@ -5603,7 +5720,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-ragi-porridge",
     "name": "Ragi Porridge",
     "brand": null,
@@ -5616,7 +5733,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sprout-salad",
     "name": "Sprout Salad",
     "brand": null,
@@ -5629,7 +5746,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-corn-chaat-2",
     "name": "Corn Chaat",
     "brand": null,
@@ -5642,7 +5759,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-aloo-toast",
     "name": "Aloo Toast",
     "brand": null,
@@ -5655,7 +5772,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-vegetable-sandwich",
     "name": "Vegetable Sandwich",
     "brand": null,
@@ -5668,20 +5785,20 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paneer-sandwich",
     "name": "Paneer Sandwich",
     "brand": null,
     "serving_size_g": 120,
     "serving_description": "1 plate (120g)",
-    "kcal_per_100g": 179.1,
-    "protein_g_per_100g": 4.4,
+    "kcal_per_100g": 193.5,
+    "protein_g_per_100g": 8,
     "carbs_g_per_100g": 21.7,
     "fat_g_per_100g": 8.3,
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-idli-upma",
     "name": "Idli Upma",
     "brand": null,
@@ -5694,7 +5811,7 @@
     "fiber_g_per_100g": 1.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-poha-cutlet",
     "name": "Poha Cutlet",
     "brand": null,
@@ -5707,7 +5824,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-methi-thepla-snack",
     "name": "Methi Thepla (Snack)",
     "brand": null,
@@ -5720,7 +5837,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cheela-mixed-dal",
     "name": "Cheela (Mixed Dal)",
     "brand": null,
@@ -5733,7 +5850,7 @@
     "fiber_g_per_100g": 1.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-vermicelli-upma",
     "name": "Vermicelli Upma",
     "brand": null,
@@ -5746,7 +5863,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-suji-toast",
     "name": "Suji Toast",
     "brand": null,
@@ -5759,7 +5876,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-rice-upma",
     "name": "Rice Upma",
     "brand": null,
@@ -5772,7 +5889,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-gulab-jamun",
     "name": "Gulab Jamun",
     "brand": null,
@@ -5785,7 +5902,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-jalebi",
     "name": "Jalebi",
     "brand": null,
@@ -5798,7 +5915,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-rasgulla",
     "name": "Rasgulla",
     "brand": null,
@@ -5811,7 +5928,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-rasmalai",
     "name": "Rasmalai",
     "brand": null,
@@ -5824,7 +5941,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kheer",
     "name": "Kheer",
     "brand": null,
@@ -5837,7 +5954,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-rice-kheer",
     "name": "Rice Kheer",
     "brand": null,
@@ -5850,7 +5967,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-vermicelli-kheer",
     "name": "Vermicelli Kheer",
     "brand": null,
@@ -5863,7 +5980,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-gajar-halwa",
     "name": "Gajar Halwa",
     "brand": null,
@@ -5876,7 +5993,7 @@
     "fiber_g_per_100g": 0.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-suji-halwa",
     "name": "Suji Halwa",
     "brand": null,
@@ -5889,7 +6006,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-moong-dal-halwa",
     "name": "Moong Dal Halwa",
     "brand": null,
@@ -5902,7 +6019,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-besan-ladoo",
     "name": "Besan Ladoo",
     "brand": null,
@@ -5915,7 +6032,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-boondi-ladoo",
     "name": "Boondi Ladoo",
     "brand": null,
@@ -5928,7 +6045,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-motichoor-ladoo",
     "name": "Motichoor Ladoo",
     "brand": null,
@@ -5941,7 +6058,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-coconut-ladoo",
     "name": "Coconut Ladoo",
     "brand": null,
@@ -5954,7 +6071,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-rava-ladoo",
     "name": "Rava Ladoo",
     "brand": null,
@@ -5967,7 +6084,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kaju-katli",
     "name": "Kaju Katli",
     "brand": null,
@@ -5980,7 +6097,7 @@
     "fiber_g_per_100g": 0.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-badam-barfi",
     "name": "Badam Barfi",
     "brand": null,
@@ -5993,7 +6110,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-milk-cake",
     "name": "Milk Cake",
     "brand": null,
@@ -6006,7 +6123,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kalakand",
     "name": "Kalakand",
     "brand": null,
@@ -6019,7 +6136,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sandesh",
     "name": "Sandesh",
     "brand": null,
@@ -6032,7 +6149,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-peda",
     "name": "Peda",
     "brand": null,
@@ -6045,7 +6162,7 @@
     "fiber_g_per_100g": 0.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mysore-pak",
     "name": "Mysore Pak",
     "brand": null,
@@ -6058,7 +6175,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-rabri",
     "name": "Rabri",
     "brand": null,
@@ -6071,7 +6188,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-malpua",
     "name": "Malpua",
     "brand": null,
@@ -6084,7 +6201,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-shrikhand",
     "name": "Shrikhand",
     "brand": null,
@@ -6097,7 +6214,7 @@
     "fiber_g_per_100g": 0.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-basundi",
     "name": "Basundi",
     "brand": null,
@@ -6110,7 +6227,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-phirni",
     "name": "Phirni",
     "brand": null,
@@ -6123,7 +6240,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kulfi",
     "name": "Kulfi",
     "brand": null,
@@ -6136,7 +6253,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-falooda",
     "name": "Falooda",
     "brand": null,
@@ -6149,7 +6266,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-imarti",
     "name": "Imarti",
     "brand": null,
@@ -6162,7 +6279,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chum-chum",
     "name": "Chum Chum",
     "brand": null,
@@ -6175,7 +6292,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-soan-papdi",
     "name": "Soan Papdi",
     "brand": null,
@@ -6188,7 +6305,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-balushahi",
     "name": "Balushahi",
     "brand": null,
@@ -6201,7 +6318,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-modak",
     "name": "Modak",
     "brand": null,
@@ -6214,7 +6331,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-gujiya",
     "name": "Gujiya",
     "brand": null,
@@ -6227,7 +6344,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-til-ladoo",
     "name": "Til Ladoo",
     "brand": null,
@@ -6240,7 +6357,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-petha",
     "name": "Petha",
     "brand": null,
@@ -6253,7 +6370,7 @@
     "fiber_g_per_100g": 0.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pineapple-halwa",
     "name": "Pineapple Halwa",
     "brand": null,
@@ -6266,7 +6383,7 @@
     "fiber_g_per_100g": 1.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-jaggery-chikki",
     "name": "Jaggery Chikki",
     "brand": null,
@@ -6279,7 +6396,7 @@
     "fiber_g_per_100g": 1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-nariyal-barfi",
     "name": "Nariyal Barfi",
     "brand": null,
@@ -6292,7 +6409,7 @@
     "fiber_g_per_100g": 1.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-masala-chai",
     "name": "Masala Chai",
     "brand": null,
@@ -6305,7 +6422,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-ginger-tea",
     "name": "Ginger Tea",
     "brand": null,
@@ -6318,7 +6435,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cardamom-tea",
     "name": "Cardamom Tea",
     "brand": null,
@@ -6331,7 +6448,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cutting-chai",
     "name": "Cutting Chai",
     "brand": null,
@@ -6344,7 +6461,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-filter-coffee",
     "name": "Filter Coffee",
     "brand": null,
@@ -6357,7 +6474,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cold-coffee",
     "name": "Cold Coffee",
     "brand": null,
@@ -6370,7 +6487,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-lassi-sweet",
     "name": "Lassi (Sweet)",
     "brand": null,
@@ -6383,7 +6500,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-lassi-salted",
     "name": "Lassi (Salted)",
     "brand": null,
@@ -6396,7 +6513,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mango-lassi",
     "name": "Mango Lassi",
     "brand": null,
@@ -6409,7 +6526,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-buttermilk-chaas",
     "name": "Buttermilk (Chaas)",
     "brand": null,
@@ -6422,7 +6539,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-nimbu-pani",
     "name": "Nimbu Pani",
     "brand": null,
@@ -6435,7 +6552,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-jaljeera",
     "name": "Jaljeera",
     "brand": null,
@@ -6448,7 +6565,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-aam-panna",
     "name": "Aam Panna",
     "brand": null,
@@ -6461,7 +6578,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-thandai",
     "name": "Thandai",
     "brand": null,
@@ -6474,7 +6591,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sugarcane-juice",
     "name": "Sugarcane Juice",
     "brand": null,
@@ -6487,7 +6604,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-coconut-water",
     "name": "Coconut Water",
     "brand": null,
@@ -6500,7 +6617,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-badam-milk",
     "name": "Badam Milk",
     "brand": null,
@@ -6513,7 +6630,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-rose-milk",
     "name": "Rose Milk",
     "brand": null,
@@ -6526,7 +6643,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sattu-drink",
     "name": "Sattu Drink",
     "brand": null,
@@ -6539,7 +6656,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sol-kadhi",
     "name": "Sol Kadhi",
     "brand": null,
@@ -6552,7 +6669,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kashmiri-kahwa",
     "name": "Kashmiri Kahwa",
     "brand": null,
@@ -6565,7 +6682,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-tulsi-tea",
     "name": "Tulsi Tea",
     "brand": null,
@@ -6578,7 +6695,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-green-tea",
     "name": "Green Tea",
     "brand": null,
@@ -6591,7 +6708,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-black-tea",
     "name": "Black Tea",
     "brand": null,
@@ -6604,7 +6721,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-lemon-tea",
     "name": "Lemon Tea",
     "brand": null,
@@ -6617,7 +6734,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-banana-shake",
     "name": "Banana Shake",
     "brand": null,
@@ -6630,7 +6747,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mango-shake",
     "name": "Mango Shake",
     "brand": null,
@@ -6643,7 +6760,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-papaya-shake",
     "name": "Papaya Shake",
     "brand": null,
@@ -6656,7 +6773,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chikoo-shake",
     "name": "Chikoo Shake",
     "brand": null,
@@ -6669,7 +6786,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-amla-juice",
     "name": "Amla Juice",
     "brand": null,
@@ -6682,7 +6799,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-apple",
     "name": "Apple",
     "brand": null,
@@ -6695,7 +6812,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-banana",
     "name": "Banana",
     "brand": null,
@@ -6708,7 +6825,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mango",
     "name": "Mango",
     "brand": null,
@@ -6721,7 +6838,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-papaya",
     "name": "Papaya",
     "brand": null,
@@ -6734,7 +6851,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pomegranate",
     "name": "Pomegranate",
     "brand": null,
@@ -6747,7 +6864,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-guava",
     "name": "Guava",
     "brand": null,
@@ -6760,7 +6877,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-orange",
     "name": "Orange",
     "brand": null,
@@ -6773,7 +6890,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sweet-lime-mosambi",
     "name": "Sweet Lime (Mosambi)",
     "brand": null,
@@ -6786,7 +6903,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-grapes",
     "name": "Grapes",
     "brand": null,
@@ -6799,7 +6916,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-watermelon",
     "name": "Watermelon",
     "brand": null,
@@ -6812,7 +6929,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-muskmelon",
     "name": "Muskmelon",
     "brand": null,
@@ -6825,7 +6942,7 @@
     "fiber_g_per_100g": 1.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pineapple",
     "name": "Pineapple",
     "brand": null,
@@ -6838,7 +6955,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pear",
     "name": "Pear",
     "brand": null,
@@ -6851,7 +6968,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-peach",
     "name": "Peach",
     "brand": null,
@@ -6864,7 +6981,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-plum",
     "name": "Plum",
     "brand": null,
@@ -6877,7 +6994,7 @@
     "fiber_g_per_100g": 2.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-apricot",
     "name": "Apricot",
     "brand": null,
@@ -6890,7 +7007,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kiwi",
     "name": "Kiwi",
     "brand": null,
@@ -6903,7 +7020,7 @@
     "fiber_g_per_100g": 1.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-strawberry",
     "name": "Strawberry",
     "brand": null,
@@ -6916,7 +7033,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-blueberry",
     "name": "Blueberry",
     "brand": null,
@@ -6929,7 +7046,7 @@
     "fiber_g_per_100g": 1.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-jamun",
     "name": "Jamun",
     "brand": null,
@@ -6942,7 +7059,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-litchi",
     "name": "Litchi",
     "brand": null,
@@ -6955,7 +7072,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chikoo-sapota",
     "name": "Chikoo (Sapota)",
     "brand": null,
@@ -6968,7 +7085,7 @@
     "fiber_g_per_100g": 1.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-custard-apple",
     "name": "Custard Apple",
     "brand": null,
@@ -6981,7 +7098,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-jackfruit",
     "name": "Jackfruit",
     "brand": null,
@@ -6994,7 +7111,7 @@
     "fiber_g_per_100g": 1.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-fig",
     "name": "Fig",
     "brand": null,
@@ -7007,7 +7124,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-dates-fresh",
     "name": "Dates (Fresh)",
     "brand": null,
@@ -7020,7 +7137,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-amla",
     "name": "Amla",
     "brand": null,
@@ -7033,7 +7150,7 @@
     "fiber_g_per_100g": 1.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-coconut-raw",
     "name": "Coconut (Raw)",
     "brand": null,
@@ -7046,7 +7163,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-avocado",
     "name": "Avocado",
     "brand": null,
@@ -7059,7 +7176,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-dragon-fruit",
     "name": "Dragon Fruit",
     "brand": null,
@@ -7072,7 +7189,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-passion-fruit",
     "name": "Passion Fruit",
     "brand": null,
@@ -7085,7 +7202,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-star-fruit",
     "name": "Star Fruit",
     "brand": null,
@@ -7098,7 +7215,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-tamarind-raw",
     "name": "Tamarind (Raw)",
     "brand": null,
@@ -7111,7 +7228,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pomegranate-arils",
     "name": "Pomegranate Arils",
     "brand": null,
@@ -7124,7 +7241,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pineapple-chunks",
     "name": "Pineapple Chunks",
     "brand": null,
@@ -7137,7 +7254,7 @@
     "fiber_g_per_100g": 1.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-almonds",
     "name": "Almonds",
     "brand": null,
@@ -7150,7 +7267,7 @@
     "fiber_g_per_100g": 5.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cashews",
     "name": "Cashews",
     "brand": null,
@@ -7163,7 +7280,7 @@
     "fiber_g_per_100g": 7.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pistachios",
     "name": "Pistachios",
     "brand": null,
@@ -7176,7 +7293,7 @@
     "fiber_g_per_100g": 5.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-walnuts",
     "name": "Walnuts",
     "brand": null,
@@ -7189,7 +7306,7 @@
     "fiber_g_per_100g": 6.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-peanuts",
     "name": "Peanuts",
     "brand": null,
@@ -7202,7 +7319,7 @@
     "fiber_g_per_100g": 6.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-roasted-peanuts",
     "name": "Roasted Peanuts",
     "brand": null,
@@ -7215,7 +7332,7 @@
     "fiber_g_per_100g": 5.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sesame-seeds",
     "name": "Sesame Seeds",
     "brand": null,
@@ -7228,7 +7345,7 @@
     "fiber_g_per_100g": 5.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-flax-seeds",
     "name": "Flax Seeds",
     "brand": null,
@@ -7241,7 +7358,7 @@
     "fiber_g_per_100g": 6.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-chia-seeds",
     "name": "Chia Seeds",
     "brand": null,
@@ -7254,7 +7371,7 @@
     "fiber_g_per_100g": 7.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pumpkin-seeds",
     "name": "Pumpkin Seeds",
     "brand": null,
@@ -7267,7 +7384,7 @@
     "fiber_g_per_100g": 6.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sunflower-seeds",
     "name": "Sunflower Seeds",
     "brand": null,
@@ -7280,7 +7397,7 @@
     "fiber_g_per_100g": 6.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-watermelon-seeds",
     "name": "Watermelon Seeds",
     "brand": null,
@@ -7293,7 +7410,7 @@
     "fiber_g_per_100g": 6.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-fox-nuts-makhana",
     "name": "Fox Nuts (Makhana)",
     "brand": null,
@@ -7306,7 +7423,7 @@
     "fiber_g_per_100g": 6.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-roasted-makhana",
     "name": "Roasted Makhana",
     "brand": null,
@@ -7319,7 +7436,7 @@
     "fiber_g_per_100g": 8.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-dry-coconut",
     "name": "Dry Coconut",
     "brand": null,
@@ -7332,7 +7449,7 @@
     "fiber_g_per_100g": 6.5
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-raisins",
     "name": "Raisins",
     "brand": null,
@@ -7345,7 +7462,7 @@
     "fiber_g_per_100g": 7.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-dates-dry",
     "name": "Dates (Dry)",
     "brand": null,
@@ -7358,7 +7475,7 @@
     "fiber_g_per_100g": 6.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-figs-dry",
     "name": "Figs (Dry)",
     "brand": null,
@@ -7371,7 +7488,7 @@
     "fiber_g_per_100g": 7.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-hazelnuts",
     "name": "Hazelnuts",
     "brand": null,
@@ -7384,7 +7501,7 @@
     "fiber_g_per_100g": 7.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-pine-nuts",
     "name": "Pine Nuts",
     "brand": null,
@@ -7397,7 +7514,7 @@
     "fiber_g_per_100g": 8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-brazil-nuts",
     "name": "Brazil Nuts",
     "brand": null,
@@ -7410,7 +7527,7 @@
     "fiber_g_per_100g": 6.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-poppy-seeds",
     "name": "Poppy Seeds",
     "brand": null,
@@ -7423,7 +7540,7 @@
     "fiber_g_per_100g": 5.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-melon-seeds",
     "name": "Melon Seeds",
     "brand": null,
@@ -7436,7 +7553,7 @@
     "fiber_g_per_100g": 8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-lotus-seeds",
     "name": "Lotus Seeds",
     "brand": null,
@@ -7449,7 +7566,7 @@
     "fiber_g_per_100g": 8.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-peanut-chikki",
     "name": "Peanut Chikki",
     "brand": null,
@@ -7462,7 +7579,7 @@
     "fiber_g_per_100g": 6.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-parle-parle-g-glucose-biscuits",
     "name": "Parle-G Glucose Biscuits",
     "brand": "Parle",
@@ -7475,7 +7592,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-parle-parle-krackjack-biscuits",
     "name": "Parle Krackjack Biscuits",
     "brand": "Parle",
@@ -7488,33 +7605,33 @@
     "fiber_g_per_100g": 1.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-britannia-britannia-good-day-cookies",
     "name": "Britannia Good Day Cookies",
     "brand": "Britannia",
     "serving_size_g": 30,
     "serving_description": "3 biscuits (30g)",
-    "kcal_per_100g": 511,
-    "protein_g_per_100g": 6,
-    "carbs_g_per_100g": 78.1,
-    "fat_g_per_100g": 19.4,
+    "kcal_per_100g": 469,
+    "protein_g_per_100g": 5.5,
+    "carbs_g_per_100g": 71.7,
+    "fat_g_per_100g": 17.8,
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-britannia-britannia-marie-gold-biscuits",
     "name": "Britannia Marie Gold Biscuits",
     "brand": "Britannia",
     "serving_size_g": 30,
     "serving_description": "3 biscuits (30g)",
-    "kcal_per_100g": 527,
-    "protein_g_per_100g": 5.1,
-    "carbs_g_per_100g": 81.2,
-    "fat_g_per_100g": 20.2,
+    "kcal_per_100g": 470,
+    "protein_g_per_100g": 4.6,
+    "carbs_g_per_100g": 72.4,
+    "fat_g_per_100g": 18,
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-britannia-britannia-50-50-biscuits",
     "name": "Britannia 50-50 Biscuits",
     "brand": "Britannia",
@@ -7527,20 +7644,20 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sunfeast-sunfeast-dark-fantasy-cookies",
     "name": "Sunfeast Dark Fantasy Cookies",
     "brand": "Sunfeast",
     "serving_size_g": 30,
     "serving_description": "3 biscuits (30g)",
-    "kcal_per_100g": 504.7,
-    "protein_g_per_100g": 7.2,
-    "carbs_g_per_100g": 76.9,
-    "fat_g_per_100g": 18.7,
+    "kcal_per_100g": 466.5,
+    "protein_g_per_100g": 6.6,
+    "carbs_g_per_100g": 71.1,
+    "fat_g_per_100g": 17.3,
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sunfeast-sunfeast-marie-light-biscuits",
     "name": "Sunfeast Marie Light Biscuits",
     "brand": "Sunfeast",
@@ -7553,7 +7670,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-oreo-oreo-original-biscuits",
     "name": "Oreo Original Biscuits",
     "brand": "Oreo",
@@ -7566,7 +7683,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-britannia-bourbon-biscuits",
     "name": "Bourbon Biscuits",
     "brand": "Britannia",
@@ -7579,20 +7696,20 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-britannia-milk-bikis-biscuits",
     "name": "Milk Bikis Biscuits",
     "brand": "Britannia",
     "serving_size_g": 30,
     "serving_description": "3 biscuits (30g)",
-    "kcal_per_100g": 478,
-    "protein_g_per_100g": 6.3,
-    "carbs_g_per_100g": 74.5,
-    "fat_g_per_100g": 17.2,
+    "kcal_per_100g": 463,
+    "protein_g_per_100g": 6.1,
+    "carbs_g_per_100g": 72.3,
+    "fat_g_per_100g": 16.6,
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-haldiram-s-haldirams-bhujia-sev",
     "name": "Haldirams Bhujia Sev",
     "brand": "Haldiram's",
@@ -7605,7 +7722,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-haldiram-s-haldirams-aloo-bhujia",
     "name": "Haldirams Aloo Bhujia",
     "brand": "Haldiram's",
@@ -7618,7 +7735,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-haldiram-s-haldirams-moong-dal-namkeen",
     "name": "Haldirams Moong Dal Namkeen",
     "brand": "Haldiram's",
@@ -7631,7 +7748,7 @@
     "fiber_g_per_100g": 1.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bikaji-bikaji-bikaneri-bhujia",
     "name": "Bikaji Bikaneri Bhujia",
     "brand": "Bikaji",
@@ -7644,7 +7761,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-balaji-balaji-aloo-sev",
     "name": "Balaji Aloo Sev",
     "brand": "Balaji",
@@ -7657,7 +7774,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kurkure-kurkure-masala-munch",
     "name": "Kurkure Masala Munch",
     "brand": "Kurkure",
@@ -7670,7 +7787,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-lay-s-lay-s-magic-masala-chips",
     "name": "Lay's Magic Masala Chips",
     "brand": "Lay's",
@@ -7683,7 +7800,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-uncle-chipps-uncle-chipps-classic-salted",
     "name": "Uncle Chipps Classic Salted",
     "brand": "Uncle Chipps",
@@ -7696,7 +7813,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bingo-bingo-mad-angles",
     "name": "Bingo Mad Angles",
     "brand": "Bingo",
@@ -7709,7 +7826,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bingo-bingo-tedhe-medhe",
     "name": "Bingo Tedhe Medhe",
     "brand": "Bingo",
@@ -7722,7 +7839,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-too-yumm-too-yumm-multigrain-chips",
     "name": "Too Yumm Multigrain Chips",
     "brand": "Too Yumm",
@@ -7735,7 +7852,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-haldiram-s-haldirams-aloo-lachha",
     "name": "Haldirams Aloo Lachha",
     "brand": "Haldiram's",
@@ -7748,7 +7865,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-haldiram-s-haldirams-khatta-meetha",
     "name": "Haldirams Khatta Meetha",
     "brand": "Haldiram's",
@@ -7761,7 +7878,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-haldiram-s-haldirams-navratan-mixture",
     "name": "Haldirams Navratan Mixture",
     "brand": "Haldiram's",
@@ -7774,7 +7891,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-bikaji-khatta-meetha-mix",
     "name": "Khatta Meetha Mix",
     "brand": "Bikaji",
@@ -7787,7 +7904,7 @@
     "fiber_g_per_100g": 1.8
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-maggi-maggi-2-minute-noodles",
     "name": "Maggi 2-Minute Noodles",
     "brand": "Maggi",
@@ -7800,7 +7917,7 @@
     "fiber_g_per_100g": 2.4
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-top-ramen-top-ramen-curry-noodles",
     "name": "Top Ramen Curry Noodles",
     "brand": "Top Ramen",
@@ -7813,7 +7930,7 @@
     "fiber_g_per_100g": 3.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-yippee-yippee-magic-masala-noodles",
     "name": "Yippee Magic Masala Noodles",
     "brand": "Yippee",
@@ -7826,7 +7943,7 @@
     "fiber_g_per_100g": 2.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-ching-s-ching-s-secret-schezwan-noodles",
     "name": "Ching's Secret Schezwan Noodles",
     "brand": "Ching's",
@@ -7839,7 +7956,7 @@
     "fiber_g_per_100g": 3.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-maggi-maggi-masala-noodles",
     "name": "Maggi Masala Noodles",
     "brand": "Maggi",
@@ -7852,7 +7969,7 @@
     "fiber_g_per_100g": 3.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-knorr-knorr-soupy-noodles",
     "name": "Knorr Soupy Noodles",
     "brand": "Knorr",
@@ -7865,7 +7982,7 @@
     "fiber_g_per_100g": 3.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mtr-mtr-ready-to-eat-rajma-chawal",
     "name": "MTR Ready-to-Eat Rajma Chawal",
     "brand": "MTR",
@@ -7878,20 +7995,20 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mtr-mtr-ready-to-eat-paneer-butter-masala",
     "name": "MTR Ready-to-Eat Paneer Butter Masala",
     "brand": "MTR",
     "serving_size_g": 50,
     "serving_description": "1 packet (50g)",
-    "kcal_per_100g": 389.7,
-    "protein_g_per_100g": 7.1,
+    "kcal_per_100g": 417.3,
+    "protein_g_per_100g": 14,
     "carbs_g_per_100g": 39.7,
     "fat_g_per_100g": 22.5,
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mtr-mtr-ready-to-eat-dal-makhani",
     "name": "MTR Ready-to-Eat Dal Makhani",
     "brand": "MTR",
@@ -7904,7 +8021,7 @@
     "fiber_g_per_100g": 1.6
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mtr-mtr-ready-to-eat-veg-pulao",
     "name": "MTR Ready-to-Eat Veg Pulao",
     "brand": "MTR",
@@ -7917,20 +8034,20 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-haldiram-s-haldirams-frozen-paneer-tikka",
     "name": "Haldirams Frozen Paneer Tikka",
     "brand": "Haldiram's",
     "serving_size_g": 50,
     "serving_description": "1 packet (50g)",
-    "kcal_per_100g": 386.2,
-    "protein_g_per_100g": 6.7,
+    "kcal_per_100g": 415.4,
+    "protein_g_per_100g": 14,
     "carbs_g_per_100g": 37.2,
     "fat_g_per_100g": 23.4,
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-amul-amul-taaza-milk",
     "name": "Amul Taaza Milk",
     "brand": "Amul",
@@ -7943,7 +8060,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-amul-amul-gold-milk",
     "name": "Amul Gold Milk",
     "brand": "Amul",
@@ -7956,7 +8073,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-amul-amul-masti-dahi",
     "name": "Amul Masti Dahi",
     "brand": "Amul",
@@ -7969,7 +8086,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-amul-amul-butter",
     "name": "Amul Butter",
     "brand": "Amul",
@@ -7982,7 +8099,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-amul-amul-cheese-slice",
     "name": "Amul Cheese Slice",
     "brand": "Amul",
@@ -7995,20 +8112,20 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-amul-amul-paneer",
     "name": "Amul Paneer",
     "brand": "Amul",
     "serving_size_g": 200,
     "serving_description": "1 cup (200g)",
-    "kcal_per_100g": 121.4,
-    "protein_g_per_100g": 4.2,
+    "kcal_per_100g": 160.6,
+    "protein_g_per_100g": 14,
     "carbs_g_per_100g": 11.3,
     "fat_g_per_100g": 6.6,
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mother-dairy-mother-dairy-classic-curd",
     "name": "Mother Dairy Classic Curd",
     "brand": "Mother Dairy",
@@ -8021,7 +8138,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-mother-dairy-mother-dairy-full-cream-milk",
     "name": "Mother Dairy Full Cream Milk",
     "brand": "Mother Dairy",
@@ -8034,7 +8151,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-nestle-nestle-munch-chocolate",
     "name": "Nestle Munch Chocolate",
     "brand": "Nestle",
@@ -8047,7 +8164,7 @@
     "fiber_g_per_100g": 2.2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cadbury-cadbury-dairy-milk-chocolate",
     "name": "Cadbury Dairy Milk Chocolate",
     "brand": "Cadbury",
@@ -8060,7 +8177,7 @@
     "fiber_g_per_100g": 2
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cadbury-cadbury-5-star-chocolate",
     "name": "Cadbury 5 Star Chocolate",
     "brand": "Cadbury",
@@ -8073,7 +8190,7 @@
     "fiber_g_per_100g": 2.3
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-cadbury-cadbury-gems",
     "name": "Cadbury Gems",
     "brand": "Cadbury",
@@ -8086,7 +8203,7 @@
     "fiber_g_per_100g": 2.1
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-nestle-kitkat-chocolate",
     "name": "KitKat Chocolate",
     "brand": "Nestle",
@@ -8099,7 +8216,7 @@
     "fiber_g_per_100g": 1.7
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-kissan-kissan-mixed-fruit-jam",
     "name": "Kissan Mixed Fruit Jam",
     "brand": "Kissan",
@@ -8112,7 +8229,7 @@
     "fiber_g_per_100g": 1.9
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-frooti-frooti-mango-drink",
     "name": "Frooti Mango Drink",
     "brand": "Frooti",
@@ -8125,7 +8242,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-maaza-maaza-mango-drink",
     "name": "Maaza Mango Drink",
     "brand": "Maaza",
@@ -8138,7 +8255,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-slice-slice-mango-drink",
     "name": "Slice Mango Drink",
     "brand": "Slice",
@@ -8151,7 +8268,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-real-real-mixed-fruit-juice",
     "name": "Real Mixed Fruit Juice",
     "brand": "Real",
@@ -8164,7 +8281,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paper-boat-paper-boat-aam-panna",
     "name": "Paper Boat Aam Panna",
     "brand": "Paper Boat",
@@ -8177,7 +8294,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-paper-boat-paper-boat-jaljeera",
     "name": "Paper Boat Jaljeera",
     "brand": "Paper Boat",
@@ -8190,7 +8307,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-thums-up-thums-up-cola",
     "name": "Thums Up Cola",
     "brand": "Thums Up",
@@ -8203,7 +8320,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-limca-limca-lemon-drink",
     "name": "Limca Lemon Drink",
     "brand": "Limca",
@@ -8216,7 +8333,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-sprite-sprite-lemon-drink",
     "name": "Sprite Lemon Drink",
     "brand": "Sprite",
@@ -8229,7 +8346,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-coca-cola-coca-cola",
     "name": "Coca-Cola",
     "brand": "Coca-Cola",
@@ -8242,7 +8359,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-appy-appy-fizz",
     "name": "Appy Fizz",
     "brand": "Appy",
@@ -8255,7 +8372,7 @@
     "fiber_g_per_100g": 0
   },
   {
-    "source": "estimate",
+    "source": "curated",
     "source_id": "est-red-bull-red-bull-energy-drink",
     "name": "Red Bull Energy Drink",
     "brand": "Red Bull",

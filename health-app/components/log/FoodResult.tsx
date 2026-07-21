@@ -6,6 +6,7 @@ const SOURCE_BADGE: Record<string, { label: string; color: string }> = {
   usda:     { label: '🇺🇸 USDA',          color: 'bg-surface-2 text-ink-2' },
   user:     { label: '👤 Custom',         color: 'bg-brand-soft text-brand-ink' },
   off:      { label: '✓ Open Food Facts', color: 'bg-surface-2 text-good' },
+  curated:  { label: '📊 Estimated',      color: 'bg-energy-soft text-energy-ink' },
   estimate: { label: '📊 Est.',           color: 'bg-energy-soft text-energy-ink' },
 }
 
