@@ -20,6 +20,20 @@ export type OFFFood = {
   source_id: string
 }
 
+/**
+ * The outcome of one OFF query.
+ *
+ * `ok` distinguishes "OFF answered, and had nothing" from "OFF never answered".
+ * Both used to come back as a bare `[]`, so a timeout on a slow phone connection
+ * looked identical to a genuine miss — and the caller happily cached it. That is
+ * how a food could be invisible on mobile and visible on desktop minutes apart.
+ */
+export type OFFSearchResult = {
+  foods: OFFFood[]
+  /** False when the request timed out, errored, or returned a non-2xx. */
+  ok: boolean
+}
+
 type OFFProduct = {
   code?: string
   product_name?: string
@@ -70,10 +84,15 @@ function parseProduct(p: OFFProduct, idPrefix: string): OFFFood | null {
   }
 }
 
-async function fetchOFF(baseUrl: string, query: string, idPrefix: string, pageSize = 15): Promise<OFFFood[]> {
+async function fetchOFF(
+  baseUrl: string,
+  query: string,
+  idPrefix: string,
+  pageSize = 15
+): Promise<OFFSearchResult> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 5000)
   try {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
     const url =
       `${baseUrl}/cgi/search.pl?search_terms=${encodeURIComponent(query)}` +
       `&search_simple=1&action=process&json=1` +
@@ -83,14 +102,18 @@ async function fetchOFF(baseUrl: string, query: string, idPrefix: string, pageSi
       signal: controller.signal,
       headers: { 'User-Agent': 'GetInShape/1.0 (getinshape.app, Indian calorie tracker)' },
     })
-    clearTimeout(timeoutId)
-    if (!res.ok) return []
+    if (!res.ok) return { foods: [], ok: false }
     const data = (await res.json()) as { products?: OFFProduct[] }
-    return (data.products ?? [])
+    const foods = (data.products ?? [])
       .map((p) => parseProduct(p, idPrefix))
       .filter((f): f is OFFFood => f !== null)
+    return { foods, ok: true }
   } catch {
-    return []
+    // Abort (5 s timeout), DNS/TLS failure, or malformed JSON — we simply don't
+    // know what OFF holds for this query, so say so rather than implying "none".
+    return { foods: [], ok: false }
+  } finally {
+    clearTimeout(timeoutId)
   }
 }
 
@@ -98,13 +121,13 @@ async function fetchOFF(baseUrl: string, query: string, idPrefix: string, pageSi
  * Search Open Food Facts India — best for Indian packaged & branded foods
  * (Amul, Britannia, MTR, Haldiram's, Maggi, Patanjali, etc.)
  */
-export function searchOpenFoodFactsIndia(query: string): Promise<OFFFood[]> {
+export function searchOpenFoodFactsIndia(query: string): Promise<OFFSearchResult> {
   return fetchOFF('https://in.openfoodfacts.org', query, 'offi', 15)
 }
 
 /**
  * Search Open Food Facts worldwide — fallback for international products.
  */
-export function searchOpenFoodFacts(query: string): Promise<OFFFood[]> {
+export function searchOpenFoodFacts(query: string): Promise<OFFSearchResult> {
   return fetchOFF('https://world.openfoodfacts.org', query, 'off', 10)
 }

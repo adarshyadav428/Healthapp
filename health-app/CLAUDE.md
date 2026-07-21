@@ -91,6 +91,10 @@ Example: `app/dashboard/page.tsx` → `components/dashboard/DashboardClient.tsx`
 2. **Open Food Facts India** — `lib/open-food-facts.ts` → `world.openfoodfacts.org` filtered to `countries_tags:en:india`. Best for packaged/branded Indian products (Amul, Britannia, MTR).
 3. **Open Food Facts World** — international packaged goods fallback.
 
+Every OFF row that surfaces is also written into the `foods` table (`persistExternalFoods`), so the *first* successful search for a packaged food anywhere makes it permanently local for every user.
+
+**Failure handling — do not regress this.** The OFF helpers return `{ foods, ok }`, never a bare array: `ok: false` means the request timed out (5 s), errored, or returned non-2xx, which is *not* the same as "OFF has nothing". The route's in-memory result cache is keyed by query alone and therefore **shared across all users**, so caching a failure is expensive — a result assembled while either OFF endpoint was down gets `DEGRADED_CACHE_TTL_MS` (10 s) instead of the normal 120 s. `lib/searchCache.ts` (`TtlCache`) holds that logic so it stays testable. The service worker also serves `/api/foods/search` `NetworkOnly` (`next.config.js`, prepended via `extendDefaultRuntimeCaching`) — the default `apis` rule is NetworkFirst with a 10 s network timeout and would hand a phone a previous query's results. Symptom when these break: a food is invisible on mobile, visible on desktop, then visible on mobile again.
+
 Results are deduplicated by name and returned with a `source` label (`ifct` / `curated` / `off_india` / `off_world`). Rows with `source = 'estimate'` are excluded — that label means a per-user AI guess written into the shared table by camera/chat logging, and only the user who created one ever sees it back. USDA is permanently excluded.
 
 ### Razorpay integration (web/PWA — replaced Stripe)
