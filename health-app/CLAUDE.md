@@ -87,7 +87,13 @@ Example: `app/dashboard/page.tsx` → `components/dashboard/DashboardClient.tsx`
 
 `app/api/foods/search/route.ts` runs three sources in parallel, ranked by relevance:
 
-1. **Local DB** — synonym-expanded `ilike %query%` across the `foods` table, holding both the measured `ifct` rows (most accurate for Indian home cooking) and the estimated `curated` long tail. Rows are fetched 60-deep — Postgres applies `LIMIT` before the in-memory sort, so a tight limit would hand back an arbitrary slice — then sorted by relevance → `SOURCE_RANK` → name, so a measured row always outranks an estimate at equal relevance.
+1. **Local DB** — synonym-expanded `ilike` across the `foods` table, holding both the measured `ifct` rows (most accurate for Indian home cooking) and the estimated `curated` long tail. Rows are fetched 60-deep — Postgres applies `LIMIT` before the in-memory sort, so a tight limit would hand back an arbitrary slice.
+
+**Multi-word queries match word by word, not as a literal string** (`lib/searchFilter.ts`): a term of two or more words becomes `and(name.ilike.%word1%,name.ilike.%word2%)`. `%bhutta corn%` required adjacency in that exact order, so "bhutta corn" found nothing and "biryani chicken" found nothing that "chicken biryani" found. The words are sanitized before the `and(...)` is assembled, so the grouping is ours alone and the injection guard in `tests/searchFilter.test.ts` still holds.
+
+Ordering lives in `lib/searchRanking.ts` (`compareFoodsForQuery`): **relevance → name coverage → `SOURCE_RANK` → name**. Source rank comes last on purpose — it breaks a tie between comparable matches (measured IFCT over a `curated` estimate), and must never promote a poorly-matching row from a trusted source above a good one. Coverage exists because "Bhutta (Roasted Corn)" and "Black bean crusted cod with roasted corn & red pepper salsa" both contain every query word, but only one *is* the dish. `capOpenFoodFactsDominance` (`lib/mergeSearchResults.ts`) then holds OFF to 10 of the 20 slots: every OFF row we display is persisted into `foods`, so popular queries silently accumulate near-identical packaged products that crowd out Indian food — "corn" once returned twenty cornflakes variants and no roasted corn cob.
+
+**Synonyms are load-bearing, and their order matters.** `buildNameIlikeOrFilter` keeps only the first 6 terms, so put the widely-typed spellings first in each group in `lib/food-synonyms.ts`. A food whose regional names share no substring (corn: bhutta / makki / makkai / challi / maize) is unreachable without a group — `tests/foodSynonyms.test.ts` guards this.
 2. **Open Food Facts India** — `lib/open-food-facts.ts` → `world.openfoodfacts.org` filtered to `countries_tags:en:india`. Best for packaged/branded Indian products (Amul, Britannia, MTR).
 3. **Open Food Facts World** — international packaged goods fallback.
 

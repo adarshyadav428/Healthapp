@@ -7,10 +7,11 @@ import {
   type OFFSearchResult,
 } from '../../../../lib/open-food-facts'
 import { TtlCache } from '../../../../lib/searchCache'
+import { compareFoodsForQuery } from '../../../../lib/searchRanking'
 import { expandSearchQuery } from '../../../../lib/food-synonyms'
 import { buildNameIlikeOrFilter } from '../../../../lib/searchFilter'
 import { isPlausibleFood, SOURCE_RANK } from '../../../../lib/foodMatch'
-import { dedupeFoodsByNameBrand } from '../../../../lib/mergeSearchResults'
+import { dedupeFoodsByNameBrand, capOpenFoodFactsDominance } from '../../../../lib/mergeSearchResults'
 import { INDIAN_FOODS } from '../../../../lib/indian-foods-data'
 import { CURATED_FOODS } from '../../../../lib/curated-foods-data'
 import type { Food } from '../../../../types/index'
@@ -73,16 +74,6 @@ function rateLimit(ip: string, limit = 30, windowMs = 60_000) {
   if (entry.count >= limit) return true
   entry.count += 1
   return false
-}
-
-/** Score a food name for relevance against the query (higher = better match). */
-function relevanceScore(name: string, query: string): number {
-  const n = name.toLowerCase()
-  const q = query.toLowerCase()
-  if (n === q) return 4
-  if (n.startsWith(q)) return 3
-  if (n.split(/[\s/,(]+/).some((w) => w.startsWith(q))) return 2
-  return 1
 }
 
 type ExternalFood = Omit<Food, 'id'> & { source_id: string }
@@ -228,18 +219,13 @@ export async function GET(request: Request) {
       if (localResult.error) throw new Error(localResult.error.message)
       const rawLocal = (localResult.data ?? []) as Food[]
 
-      // Sort local results by relevance, then by how much we trust the source.
-      // The source tie-break matters because the table holds both measured IFCT
-      // rows and estimated `curated` ones — without it, two rows scoring the
-      // same on name would be ordered by name alone, and `dedupeFoodsByNameBrand`
-      // (which keeps the first occurrence) could drop the measured row.
-      const localResults = rawLocal.slice().sort((a, b) => {
-        const byRelevance = relevanceScore(b.name, query) - relevanceScore(a.name, query)
-        if (byRelevance !== 0) return byRelevance
-        const bySource = (SOURCE_RANK[b.source] ?? 0) - (SOURCE_RANK[a.source] ?? 0)
-        if (bySource !== 0) return bySource
-        return a.name.localeCompare(b.name)
-      })
+      // Name match first, then how much of the name the query explains, then
+      // source trust. The source tie-break matters because the table holds both
+      // measured IFCT rows and estimated `curated` ones — without it, two rows
+      // scoring the same on name would be ordered by name alone, and
+      // `dedupeFoodsByNameBrand` (which keeps the first occurrence) could drop
+      // the measured row. See lib/searchRanking.ts for why it ranks last.
+      const localResults = rawLocal.slice().sort(compareFoodsForQuery(query, SOURCE_RANK))
 
       // Deduplicate externals against local results
       const localSourceIdSet = new Set(localResults.map((f) => f.source_id))
@@ -258,7 +244,9 @@ export async function GET(request: Request) {
 
       // Merge: local IFCT → OFF India → OFF World. Drop physically-impossible
       // rows (bad OFF data: 0-kcal solids, >100 g macros/100 g) before dedupe.
-      globalResults = dedupeFoodsByNameBrand([...localResults, ...externalWithIds].filter(isPlausibleFood))
+      globalResults = dedupeFoodsByNameBrand(
+        capOpenFoodFactsDominance([...localResults, ...externalWithIds].filter(isPlausibleFood))
+      )
 
       // Only a result built from healthy upstreams earns the full TTL. If OFF
       // timed out, this list is missing every packaged food we don't already

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { dedupeFoodsByNameBrand } from '../lib/mergeSearchResults'
+import { dedupeFoodsByNameBrand, capOpenFoodFactsDominance } from '../lib/mergeSearchResults'
 import type { Food } from '../types/index'
 
 // Minimal Food factory — only the fields dedupe reads matter.
@@ -49,5 +49,56 @@ describe('dedupeFoodsByNameBrand', () => {
   it('caps the result at the given limit', () => {
     const many = Array.from({ length: 30 }, (_, i) => food({ name: `Food ${i}` }))
     expect(dedupeFoodsByNameBrand(many, 20)).toHaveLength(20)
+  })
+})
+
+describe('capOpenFoodFactsDominance', () => {
+  it('leaves a list alone when OFF is under the cap', () => {
+    const rows = [
+      food({ name: 'Cornflakes', source: 'off' }),
+      food({ name: 'Bhutta (Roasted Corn)', source: 'curated' }),
+    ]
+    expect(capOpenFoodFactsDominance(rows, 10).map((f) => f.name)).toEqual([
+      'Cornflakes',
+      'Bhutta (Roasted Corn)',
+    ])
+  })
+
+  it('lets an Indian food through when OFF would have filled the whole page', () => {
+    // The real "corn" case: 20 cornflakes variants accumulated in `foods`, all
+    // outranking a roasted corn cob, which then fell past the 20-row cap.
+    const rows = [
+      ...Array.from({ length: 25 }, (_, i) => food({ name: `Corn Flakes ${i}`, source: 'off' })),
+      food({ name: 'Bhutta (Roasted Corn)', source: 'curated' }),
+    ]
+    const capped = capOpenFoodFactsDominance(rows, 10)
+    const visible = dedupeFoodsByNameBrand(capped, 20).map((f) => f.name)
+    expect(visible).toContain('Bhutta (Roasted Corn)')
+  })
+
+  it('counts every OFF flavour against one shared budget', () => {
+    const rows = [
+      ...Array.from({ length: 3 }, (_, i) => food({ name: `A${i}`, source: 'off_india' })),
+      ...Array.from({ length: 3 }, (_, i) => food({ name: `B${i}`, source: 'off_world' })),
+      food({ name: 'Bhutta', source: 'curated' }),
+    ]
+    const capped = capOpenFoodFactsDominance(rows, 4)
+    expect(capped.slice(0, 5).map((f) => f.name)).toEqual(['A0', 'A1', 'A2', 'B0', 'Bhutta'])
+  })
+
+  it('demotes surplus rows rather than discarding them', () => {
+    const rows = Array.from({ length: 6 }, (_, i) => food({ name: `Off ${i}`, source: 'off' }))
+    const capped = capOpenFoodFactsDominance(rows, 2)
+    expect(capped).toHaveLength(6)
+    expect(capped.map((f) => f.name)).toEqual(['Off 0', 'Off 1', 'Off 2', 'Off 3', 'Off 4', 'Off 5'])
+  })
+
+  it('never demotes a measured IFCT row', () => {
+    const rows = [
+      ...Array.from({ length: 12 }, (_, i) => food({ name: `Off ${i}`, source: 'off' })),
+      food({ name: 'Sweet Corn (Makkai)', source: 'ifct' }),
+    ]
+    const capped = capOpenFoodFactsDominance(rows, 5)
+    expect(capped[5].name).toBe('Sweet Corn (Makkai)')
   })
 })

@@ -2,12 +2,17 @@ import type { Food } from '../../types/index'
 import { Loader2, Plus, Star } from 'lucide-react'
 
 const SOURCE_BADGE: Record<string, { label: string; color: string }> = {
-  ifct:     { label: '🇮🇳 IFCT',          color: 'bg-brand-soft text-brand-ink' },
-  usda:     { label: '🇺🇸 USDA',          color: 'bg-surface-2 text-ink-2' },
-  user:     { label: '👤 Custom',         color: 'bg-brand-soft text-brand-ink' },
-  off:      { label: '✓ Open Food Facts', color: 'bg-surface-2 text-good' },
-  curated:  { label: '📊 Estimated',      color: 'bg-energy-soft text-energy-ink' },
-  estimate: { label: '📊 Est.',           color: 'bg-energy-soft text-energy-ink' },
+  ifct:       { label: '🇮🇳 IFCT',          color: 'bg-brand-soft text-brand-ink' },
+  user:       { label: '👤 Custom',         color: 'bg-brand-soft text-brand-ink' },
+  off:        { label: '✓ Open Food Facts', color: 'bg-surface-2 text-good' },
+  off_india:  { label: '✓ Open Food Facts', color: 'bg-surface-2 text-good' },
+  off_world:  { label: '✓ Open Food Facts', color: 'bg-surface-2 text-good' },
+  // Real label data, but not from OFF — they were falling through to the OFF
+  // badge and claiming a source they don't have.
+  branded:    { label: '🏷️ Branded',        color: 'bg-surface-2 text-ink-2' },
+  restaurant: { label: '🍽️ Restaurant',     color: 'bg-surface-2 text-ink-2' },
+  curated:    { label: '📊 Estimated',      color: 'bg-energy-soft text-energy-ink' },
+  estimate:   { label: '📊 Est.',           color: 'bg-energy-soft text-energy-ink' },
 }
 
 export function FoodResult({

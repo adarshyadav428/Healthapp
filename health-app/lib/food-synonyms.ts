@@ -73,6 +73,11 @@ export const foodSynonyms: Record<string, string[]> = {
   'aloo': ['aloo', 'alu', 'potato', 'aloo sabzi'],
   'matar': ['matar', 'peas', 'green peas', 'muttar'],
   'methi': ['methi', 'fenugreek leaves', 'fenugreek'],
+  // Corn has more regional names than almost anything else on an Indian street
+  // cart, and none of them share a substring — a "makki" search would never
+  // reach "Bhutta (Roasted Corn)". Order matters: `buildNameIlikeOrFilter` keeps
+  // only the first 6 terms, so the widely-typed ones come first.
+  'bhutta': ['bhutta', 'corn', 'makki', 'makkai', 'maize', 'challi', 'butta', 'bhutte', 'makka', 'makai', 'chhalli', 'mokka jonna', 'sweet corn', 'roasted corn', 'corn on the cob'],
   'sarson': ['sarson', 'sarso', 'mustard greens', 'saag'],
 
   // ── EGGS ──────────────────────────────────────────────────────────────────

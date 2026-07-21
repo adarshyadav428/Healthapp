@@ -37,7 +37,22 @@ export type FoodPortion = {
 
 export type Food = {
   id: string
-  source: 'usda' | 'off' | 'user' | 'ifct' | 'estimate'
+  /**
+   * Where the row's nutrition came from. Only `ifct`, `off*` and `branded` are
+   * measured; `curated` is a category estimate and `estimate` is one user's AI
+   * guess. See SOURCE_RANK in lib/foodMatch.ts for how they order. (`usda` was
+   * removed permanently — US data is inaccurate for Indian foods.)
+   */
+  source:
+    | 'ifct'
+    | 'curated'
+    | 'off'
+    | 'off_india'
+    | 'off_world'
+    | 'branded'
+    | 'restaurant'
+    | 'user'
+    | 'estimate'
   source_id: string | null
   name: string
   brand: string | null
