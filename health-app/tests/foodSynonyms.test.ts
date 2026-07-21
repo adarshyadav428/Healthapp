@@ -30,6 +30,43 @@ describe('corn synonyms', () => {
   })
 })
 
+/**
+ * Terms found broken by probing the live catalogue: the food was there, but the
+ * word a user would type reached nothing. Each pair is [what you type, a word in
+ * the catalogue name it must now reach]. Terms whose food does not exist at all
+ * (turnip/shalgam, yam/suran, cluster beans/gwar, lotus stem) are deliberately
+ * absent — a synonym pointing at no row is worse than none.
+ */
+const brokenTerms: [string, string][] = [
+  ['ananas', 'pineapple'],
+  ['khajoor', 'dates'],
+  ['anjeer', 'fig'],
+  ['kishmish', 'raisins'],
+  ['laddu', 'ladoo'],
+  ['laddoo', 'ladoo'],
+  ['rosogolla', 'rasgulla'],
+  ['burfi', 'barfi'],
+  ['chhena', 'paneer'],
+  ['chach', 'chaas'],
+  ['chaach', 'chaas'],
+  ['matha', 'chaas'],
+  ['sevai', 'vermicelli'],
+  ['semiya', 'vermicelli'],
+  ['uttappam', 'uttapam'],
+  ['thengai', 'coconut'],
+  ['muri', 'murmura'],
+  ['murmure', 'murmura'],
+  ['jhalmuri', 'murmura'],
+  ['machhli', 'fish'],
+  ['kachalu', 'arbi'],
+]
+
+describe('regional names that used to reach nothing', () => {
+  it.each(brokenTerms)('"%s" now expands to reach "%s"', (typed, expected) => {
+    expect(expandSearchQuery(typed)).toContain(expected)
+  })
+})
+
 describe('synonym groups', () => {
   it('lists every group member as a synonym of itself', () => {
     // A group whose members do not expand to each other is a silent dead end —
@@ -39,6 +76,20 @@ describe('synonym groups', () => {
         expect(expandSearchQuery(word), `"${word}" (group "${canonical}")`).toContain(canonical)
       }
     }
+  })
+
+  it('does not match a synonym buried inside an unrelated word', () => {
+    // "nan" is a substring of "ananas": the naan group used to match, and its
+    // terms filled the 6-term filter budget before "pineapple" was reached, so
+    // searching for pineapple returned bread.
+    const expanded = expandSearchQuery('ananas')
+    expect(expanded).toContain('pineapple')
+    expect(expanded).not.toContain('naan')
+  })
+
+  it('still matches a synonym that is a whole word inside a longer query', () => {
+    expect(expandSearchQuery('aloo paratha')).toContain('potato')
+    expect(expandSearchQuery('garlic naan')).toContain('naan')
   })
 
   it('has no empty or whitespace-padded entries', () => {

@@ -202,12 +202,13 @@ export async function GET(request: Request) {
         // Exclude `estimate` rows — those are per-user AI guesses written during
         // chat/camera logging into the shared table; they must not surface in the
         // shared results (the user's own ones are merged back in per-request below).
-        // Fetch generously (60, not 20): the table now holds ~870 seeded rows,
-        // and Postgres applies LIMIT before our relevance/source sort below —
-        // so a tight limit would hand back an arbitrary slice and could cut the
-        // measured IFCT row out of a broad query like "rice" entirely.
-        // `dedupeFoodsByNameBrand` caps the response at 20 regardless.
-        supabase.from('foods').select(FOOD_SELECT).or(orFilter).neq('source', 'estimate').limit(60),
+        // Fetch generously (200, not 20): Postgres applies LIMIT *before* our
+        // sort below, so a tight limit hands back an arbitrary slice. Measured
+        // at 60 against the live table, "rice" and "dal" returned a different
+        // top result than at 200 purely because of where the slice fell.
+        // Synonym expansion widens these queries further. The client still gets
+        // 20 — `dedupeFoodsByNameBrand` caps the response regardless.
+        supabase.from('foods').select(FOOD_SELECT).or(orFilter).neq('source', 'estimate').limit(200),
         shouldFetchExternal
           ? searchOpenFoodFactsIndia(synonymQueries[0])
           : Promise.resolve(OFF_NOT_FETCHED),
@@ -225,7 +226,10 @@ export async function GET(request: Request) {
       // scoring the same on name would be ordered by name alone, and
       // `dedupeFoodsByNameBrand` (which keeps the first occurrence) could drop
       // the measured row. See lib/searchRanking.ts for why it ranks last.
-      const localResults = rawLocal.slice().sort(compareFoodsForQuery(query, SOURCE_RANK))
+      // Ranked against every synonym variant, not just the typed word — a row
+      // matched only via a synonym would otherwise score zero and be ordered by
+      // source alone.
+      const localResults = rawLocal.slice().sort(compareFoodsForQuery(synonymQueries, SOURCE_RANK))
 
       // Deduplicate externals against local results
       const localSourceIdSet = new Set(localResults.map((f) => f.source_id))

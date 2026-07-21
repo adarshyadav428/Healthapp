@@ -120,6 +120,50 @@ describe('compareFoodsForQuery', () => {
     expect(rank(foods, 'biryani chicken')[0]).toBe('Chicken Biryani')
   })
 
+  it('ranks synonym-matched rows on the synonym, not on source alone', () => {
+    // "anjeer" appears in no food name, so every row scored 0 against it and
+    // an OFF protein bar outranked the actual dried figs.
+    const foods = [
+      { name: 'Breakfast Protein Bar Apricot Fig', source: 'off' },
+      { name: 'Figs (Dry)', source: 'curated' },
+    ]
+    const typedOnly = foods.slice().sort(compareFoodsForQuery('anjeer', SOURCE_RANK))
+    expect(typedOnly[0].name).toBe('Breakfast Protein Bar Apricot Fig')
+
+    const expanded = foods.slice().sort(compareFoodsForQuery(['anjeer', 'fig', 'figs'], SOURCE_RANK))
+    expect(expanded[0].name).toBe('Figs (Dry)')
+  })
+
+  it('never lets a synonym hijack the word the user typed', () => {
+    // "Cornflakes" matches the synonym `corn` more completely than
+    // "Bhutta (Roasted Corn)" does, and briefly took the top slot for "bhutta".
+    const foods = [
+      { name: 'Cornflakes', source: 'ifct' },
+      { name: 'Bhutta (Roasted Corn)', source: 'curated' },
+    ]
+    const sorted = foods.slice().sort(compareFoodsForQuery(['bhutta', 'corn', 'makki'], SOURCE_RANK))
+    expect(sorted[0].name).toBe('Bhutta (Roasted Corn)')
+  })
+
+  it('keeps the more specific dish when the query names it', () => {
+    const foods = [
+      { name: 'Naan', source: 'ifct' },
+      { name: 'Garlic Naan', source: 'ifct' },
+    ]
+    const sorted = foods.slice().sort(compareFoodsForQuery(['garlic naan', 'naan', 'nan'], SOURCE_RANK))
+    expect(sorted[0].name).toBe('Garlic Naan')
+  })
+
+  it('accepts a bare string as a single-term list', () => {
+    const foods = [
+      { name: 'Veg Biryani', source: 'ifct' },
+      { name: 'Chicken Biryani', source: 'ifct' },
+    ]
+    expect(foods.slice().sort(compareFoodsForQuery('chicken biryani', SOURCE_RANK))[0].name).toBe(
+      'Chicken Biryani'
+    )
+  })
+
   it('is a stable, total ordering (no comparator contradictions)', () => {
     const foods: [string, string][] = [
       ['Cornflakes', 'ifct'],

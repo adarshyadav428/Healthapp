@@ -20,9 +20,9 @@ export const foodSynonyms: Record<string, string[]> = {
   'soya': ['soya', 'soy', 'soyabean', 'soybean'],
 
   // ── DAIRY ─────────────────────────────────────────────────────────────────
-  'chaas': ['chaas', 'chhaas', 'buttermilk', 'amul chaas', 'masala chaas', 'mattha', 'takra'],
+  'chaas': ['chaas', 'chhaas', 'buttermilk', 'chach', 'chaach', 'matha', 'mattha', 'takra', 'majjige', 'amul chaas', 'masala chaas'],
   'dahi': ['dahi', 'curd', 'yogurt', 'yoghurt', 'doi', 'curds'],
-  'paneer': ['paneer', 'cottage cheese', 'chenna', 'chena'],
+  'paneer': ['paneer', 'cottage cheese', 'chenna', 'chena', 'chhena', 'chhana'],
   'lassi': ['lassi', 'sweet lassi', 'salted lassi', 'mango lassi'],
   'kheer': ['kheer', 'rice pudding', 'payasam', 'payesh', 'phirni'],
   'dudh': ['dudh', 'milk', 'doodh'],
@@ -79,6 +79,8 @@ export const foodSynonyms: Record<string, string[]> = {
   // only the first 6 terms, so the widely-typed ones come first.
   'bhutta': ['bhutta', 'corn', 'makki', 'makkai', 'maize', 'challi', 'butta', 'bhutte', 'makka', 'makai', 'chhalli', 'mokka jonna', 'sweet corn', 'roasted corn', 'corn on the cob'],
   'sarson': ['sarson', 'sarso', 'mustard greens', 'saag'],
+  'arbi': ['arbi', 'arvi', 'colocasia', 'taro', 'kachalu', 'ghuiyan'],
+  'nariyal': ['nariyal', 'coconut', 'thengai', 'kobbari', 'naariyal', 'copra'],
 
   // ── EGGS ──────────────────────────────────────────────────────────────────
   'anda': ['anda', 'egg', 'eggs', 'anday', 'baida', 'ande', 'boiled egg', 'egg boiled'],
@@ -104,13 +106,15 @@ export const foodSynonyms: Record<string, string[]> = {
   'seekh kebab': ['seekh kebab', 'shish kebab', 'chicken seekh', 'mutton seekh', 'seekh', 'kebab'],
   'keema': ['keema', 'kheema', 'minced meat', 'qeema', 'mince'],
   'mutton': ['mutton', 'lamb', 'gosht', 'bakra'],
+  'machli': ['machli', 'fish', 'machhli', 'machchi', 'meen', 'maach', 'macher', 'matsya'],
 
   // ── BREAKFAST ─────────────────────────────────────────────────────────────
   'poha': ['poha', 'pohe', 'flattened rice', 'beaten rice', 'flaked rice'],
   'upma': ['upma', 'uppma', 'uppumavu'],
   'idli': ['idli', 'idly', 'idlies', 'idlis'],
   'dosa': ['dosa', 'dosai', 'dose', 'dosha'],
-  'uttapam': ['uttapam', 'oothappam', 'uthappam'],
+  'uttapam': ['uttapam', 'oothappam', 'uthappam', 'uttappam', 'ootappam', 'uthapam'],
+  'seviyan': ['seviyan', 'vermicelli', 'semiya', 'sevai', 'semiyan', 'shavige', 'semiyaa'],
   'vada': ['vada', 'wada', 'medu vada', 'uzhunnu vada'],
   'dhokla': ['dhokla', 'dhokra'],
   'daliya': ['daliya', 'broken wheat', 'lapsi', 'gehun daliya', 'wheat porridge'],
@@ -122,6 +126,14 @@ export const foodSynonyms: Record<string, string[]> = {
   'aam': ['aam', 'mango', 'mangoes', 'alphonso', 'hapus', 'kesari'],
   'angoor': ['angoor', 'grapes', 'grape', 'draksh'],
   'nashpati': ['nashpati', 'pear', 'pears', 'naspati'],
+  'ananas': ['ananas', 'pineapple', 'annanas', 'anannas'],
+
+  // ── DRY FRUITS ────────────────────────────────────────────────────────────
+  // The English names are what the catalogue rows are called, so a shopper
+  // typing the Hindi name found nothing at all.
+  'khajoor': ['khajoor', 'dates', 'date', 'khajur', 'chhuara', 'chuhara'],
+  'anjeer': ['anjeer', 'fig', 'figs', 'anjir'],
+  'kishmish': ['kishmish', 'raisins', 'raisin', 'sultana', 'munakka'],
 
   // ── SNACKS & STREET FOOD ──────────────────────────────────────────────────
   'samosa': ['samosa', 'samoosa', 'samusa'],
@@ -131,6 +143,14 @@ export const foodSynonyms: Record<string, string[]> = {
   'vada pav': ['vada pav', 'wada pav', 'vada paav', 'vada pao'],
   'kachori': ['kachori', 'kachodi', 'kachauree'],
   'namkeen': ['namkeen', 'mixture', 'farsan', 'chivda', 'chevda'],
+  'murmura': ['murmura', 'puffed rice', 'muri', 'murmure', 'kurmura', 'mamra', 'churmuri', 'jhalmuri'],
+
+  // ── SWEETS ────────────────────────────────────────────────────────────────
+  // Spelling, not translation: nobody agrees how to romanise these, and the
+  // variants share no usable substring with the catalogue spelling.
+  'ladoo': ['ladoo', 'laddu', 'laddoo', 'ladu', 'laddoos', 'ladoos'],
+  'rasgulla': ['rasgulla', 'rosogolla', 'roshogolla', 'rasgola', 'rossogolla', 'rasagola'],
+  'barfi': ['barfi', 'burfi', 'burfee', 'barfee'],
 
   // ── DRINKS ────────────────────────────────────────────────────────────────
   'chai': ['chai', 'tea', 'milk tea', 'cutting chai', 'masala chai', 'chiya'],
@@ -165,14 +185,24 @@ export const foodSynonyms: Record<string, string[]> = {
  *
  * Example: "arhar dal" → ["arhar dal", "toor dal", "tuvar dal", "pigeon pea", ...]
  */
+/** Does `haystack` contain `needle` as a whole word (not mid-word)? */
+function containsWord(haystack: string, needle: string): boolean {
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(^|\\s)${escaped}($|\\s)`).test(haystack)
+}
+
 export function expandSearchQuery(query: string): string[] {
   const lower = query.toLowerCase().trim()
   const queries = new Set<string>([lower])
 
   for (const [canonical, synonyms] of Object.entries(foodSynonyms)) {
-    // Match if any synonym contains the query OR the query contains any synonym
+    // Whole-word match in either direction. Plain substring matching was too
+    // greedy: "nan" sits inside "ananas", so searching for pineapple pulled in
+    // the naan group and its terms ate the 6-term filter budget before
+    // "pineapple" was ever reached. Mid-word hits are always accidents here —
+    // real synonyms are whole words.
     const matched = synonyms.some(
-      (s) => lower.includes(s) || s.includes(lower)
+      (s) => s === lower || containsWord(lower, s) || containsWord(s, lower)
     )
     if (matched) {
       synonyms.forEach((s) => queries.add(s))

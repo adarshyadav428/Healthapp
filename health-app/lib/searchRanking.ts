@@ -60,14 +60,54 @@ export function nameCoverage(name: string, query: string): number {
  * to promote a poorly-matching row from a trusted source above a good one.
  */
 export function compareFoodsForQuery<T extends { name: string; source: string }>(
-  query: string,
+  query: string | string[],
   sourceRank: Record<string, number>
 ): (a: T, b: T) => number {
+  // Two tiers, and the order between them is the whole point.
+  //
+  // The word the user typed always decides first. Synonym matches only break a
+  // tie among rows that the typed word ranked equally — otherwise a synonym
+  // hijacks the query: searching "bhutta" put "Cornflakes" on top, because
+  // `corn` is a synonym of bhutta and "Cornflakes" matches `corn` more
+  // completely than "Bhutta (Roasted Corn)" does.
+  //
+  // Without the synonym tier at all, every row reached *only* through a synonym
+  // scores zero and falls back to source rank — which is how "anjeer" returned
+  // an Open Food Facts protein bar above "Figs (Dry)".
+  const terms = (typeof query === 'string' ? [query] : query).filter(Boolean)
+  const typed = terms[0] ?? ''
+  const synonyms = terms.slice(1)
+  const cache = new Map<string, number[]>()
+
+  const score = (name: string): number[] => {
+    const cached = cache.get(name)
+    if (cached) return cached
+    let synRelevance = 0
+    let synCoverage = 0
+    for (const term of synonyms) {
+      const relevance = relevanceScore(name, term)
+      const coverage = nameCoverage(name, term)
+      if (relevance > synRelevance || (relevance === synRelevance && coverage > synCoverage)) {
+        synRelevance = relevance
+        synCoverage = coverage
+      }
+    }
+    const scored = [
+      relevanceScore(name, typed),
+      nameCoverage(name, typed),
+      synRelevance,
+      synCoverage,
+    ]
+    cache.set(name, scored)
+    return scored
+  }
+
   return (a, b) => {
-    const byRelevance = relevanceScore(b.name, query) - relevanceScore(a.name, query)
-    if (byRelevance !== 0) return byRelevance
-    const byCoverage = nameCoverage(b.name, query) - nameCoverage(a.name, query)
-    if (Math.abs(byCoverage) > 1e-9) return byCoverage > 0 ? 1 : -1
+    const sa = score(a.name)
+    const sb = score(b.name)
+    for (let i = 0; i < sa.length; i++) {
+      if (Math.abs(sa[i] - sb[i]) > 1e-9) return sb[i] > sa[i] ? 1 : -1
+    }
     const bySource = (sourceRank[b.source] ?? 0) - (sourceRank[a.source] ?? 0)
     if (bySource !== 0) return bySource
     return a.name.localeCompare(b.name)
