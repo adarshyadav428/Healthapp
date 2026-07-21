@@ -13,16 +13,27 @@ describe('relevanceScore', () => {
     expect(relevanceScore('Bhutta', 'bhutta')).toBe(4)
   })
 
-  it('ranks a whole-query prefix above a word match', () => {
-    expect(relevanceScore('Cornflakes', 'corn')).toBe(3)
-    expect(relevanceScore('Sweet Corn (Makkai)', 'corn')).toBe(2)
+  it('ranks a complete word above a mere prefix', () => {
+    // "corn" is a whole word in "Sweet Corn" but only the start of a longer
+    // word in "Cornflakes" — the food called corn should win.
+    expect(relevanceScore('Sweet Corn (Makkai)', 'corn')).toBe(3)
+    expect(relevanceScore('Cornflakes', 'corn')).toBe(2)
+  })
+
+  it('does not let a leading word masquerade as the food itself', () => {
+    // Regression: "milk bikis" (a biscuit) beat "Toned Milk" for "milk",
+    // purely by starting with the word. "Milk Barfi" starts with it too.
+    expect(relevanceScore('Toned Milk', 'milk')).toBe(3)
+    expect(relevanceScore('milk bikis', 'milk')).toBe(3)
+    expect(relevanceScore('Masala Chai (with milk & sugar)', 'chai')).toBe(3)
+    expect(relevanceScore('Chai Latte Stick - Cinnamon', 'chai')).toBe(3)
   })
 
   it('scores every query word independently, ignoring order', () => {
     const cob = 'Bhutta (Roasted Corn)'
-    expect(relevanceScore(cob, 'roasted corn')).toBe(2)
-    expect(relevanceScore(cob, 'corn roasted')).toBe(2)
-    expect(relevanceScore(cob, 'bhutta corn')).toBe(2)
+    expect(relevanceScore(cob, 'roasted corn')).toBe(3)
+    expect(relevanceScore(cob, 'corn roasted')).toBe(3)
+    expect(relevanceScore(cob, 'bhutta corn')).toBe(3)
   })
 
   it('puts the exact dish above an unrelated one that shares a single word', () => {
@@ -43,14 +54,16 @@ describe('relevanceScore', () => {
   })
 
   it('is unaffected by punctuation and casing in the name', () => {
-    expect(relevanceScore('MASALA CORN / CORN CHAAT', 'corn chaat')).toBe(2)
-    expect(relevanceScore('Dal, Toor', 'toor')).toBe(2)
+    expect(relevanceScore('MASALA CORN / CORN CHAAT', 'corn chaat')).toBe(3)
+    expect(relevanceScore('Dal, Toor', 'toor')).toBe(3)
   })
 
-  it('preserves single-word behaviour exactly', () => {
+  it('treats a word as equally matched wherever it sits in the name', () => {
     expect(relevanceScore('Chicken Biryani', 'chicken biryani')).toBe(4)
+    // Position no longer decides; both contain "chicken" as a whole word, and
+    // source rank / coverage settle it rather than word order.
     expect(relevanceScore('Chicken Biryani Hyderabadi', 'chicken')).toBe(3)
-    expect(relevanceScore('Hyderabadi Chicken Biryani', 'chicken')).toBe(2)
+    expect(relevanceScore('Hyderabadi Chicken Biryani', 'chicken')).toBe(3)
   })
 
   it('handles an empty query without claiming a match', () => {
@@ -80,6 +93,41 @@ describe('compareFoodsForQuery', () => {
       .map(([name, source]) => ({ name, source }))
       .sort(compareFoodsForQuery(query, SOURCE_RANK))
       .map((f) => f.name)
+
+  it('prefers the plainer food when everything else ties', () => {
+    const order = rank(
+      [
+        ['Masala Milk (Spiced Milk)', 'ifct'],
+        ['Toned Milk', 'ifct'],
+      ],
+      'milk'
+    )
+    expect(order[0]).toBe('Toned Milk')
+  })
+
+  it('puts the real milk above a biscuit named after it', () => {
+    const order = rank(
+      [
+        ['milk bikis', 'off'],
+        ['Toned Milk', 'ifct'],
+      ],
+      'milk'
+    )
+    expect(order[0]).toBe('Toned Milk')
+  })
+
+  it('puts real chai above a latte stick, despite the longer name', () => {
+    // Raw coverage ranked these by name length (1-of-5 beat 1-of-6) and the
+    // source tie-break never ran. Descriptive IFCT names must not be punished.
+    const order = rank(
+      [
+        ['Chai Latte Stick - Cinnamon', 'off'],
+        ['Masala Chai (with milk & sugar)', 'ifct'],
+      ],
+      'chai'
+    )
+    expect(order[0]).toBe('Masala Chai (with milk & sugar)')
+  })
 
   it('puts the roasted corn cob above an OFF row that outranks it by source', () => {
     // The live regression: both score 2 on "roasted corn", and off (3) beats

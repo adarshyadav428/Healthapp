@@ -15,20 +15,26 @@ const normalize = (s: string): string => s.toLowerCase().replace(/\s+/g, ' ').tr
  * not things a user should have to guess at.
  *
  *   4  exact name
- *   3  name starts with the whole query
- *   2  every query word starts a word in the name
+ *   3  every query word appears in the name as a complete word
+ *   2  the name starts with the query, or every query word starts a word in it
  *   1  every query word appears somewhere in the name
  *   0  the name matched only via a synonym, not the words typed
+ *
+ * A complete-word match outranks a mere prefix on purpose. "Starts with" used to
+ * score highest, which meant a biscuit called "milk bikis" beat "Toned Milk" for
+ * the query "milk", and "Chai Latte Stick" beat "Masala Chai" — leading the
+ * name is not evidence of being the thing, since "Milk Barfi" leads with it too.
  */
 export function relevanceScore(name: string, query: string): number {
   const n = normalize(name)
   const q = normalize(query)
   if (!q) return 0
   if (n === q) return 4
-  if (n.startsWith(q)) return 3
 
   const words = q.split(' ').filter(Boolean)
   const parts = nameWords(n)
+  if (words.every((w) => parts.includes(w))) return 3
+  if (n.startsWith(q)) return 2
   if (words.every((w) => parts.some((p) => p.startsWith(w)))) return 2
   if (words.every((w) => n.includes(w))) return 1
   return 0
@@ -49,6 +55,23 @@ export function nameCoverage(name: string, query: string): number {
   const words = normalize(query).split(' ').filter(Boolean)
   const matched = parts.filter((p) => words.some((w) => p.startsWith(w))).length
   return matched / parts.length
+}
+
+/** Coverage at or above this share means the name is *about* the query. */
+const DOMINANT_COVERAGE = 0.5
+
+/**
+ * Coverage as a yes/no signal: is the name about the query, or does it merely
+ * mention it?
+ *
+ * Ranking on the raw fraction sorts by name length among rows that are equally
+ * about the query — "Chai Latte Stick" (1 of 5 words) edged out "Masala Chai
+ * (with milk & sugar)" (1 of 6) and took the top slot for "chai", because the
+ * source tie-break below never got to run. Descriptive IFCT names should not be
+ * punished for being descriptive.
+ */
+export function isCoverageDominant(name: string, query: string): boolean {
+  return nameCoverage(name, query) >= DOMINANT_COVERAGE
 }
 
 /**
@@ -86,7 +109,7 @@ export function compareFoodsForQuery<T extends { name: string; source: string }>
     let synCoverage = 0
     for (const term of synonyms) {
       const relevance = relevanceScore(name, term)
-      const coverage = nameCoverage(name, term)
+      const coverage = isCoverageDominant(name, term) ? 1 : 0
       if (relevance > synRelevance || (relevance === synRelevance && coverage > synCoverage)) {
         synRelevance = relevance
         synCoverage = coverage
@@ -94,7 +117,7 @@ export function compareFoodsForQuery<T extends { name: string; source: string }>
     }
     const scored = [
       relevanceScore(name, typed),
-      nameCoverage(name, typed),
+      isCoverageDominant(name, typed) ? 1 : 0,
       synRelevance,
       synCoverage,
     ]
@@ -110,6 +133,10 @@ export function compareFoodsForQuery<T extends { name: string; source: string }>
     }
     const bySource = (sourceRank[b.source] ?? 0) - (sourceRank[a.source] ?? 0)
     if (bySource !== 0) return bySource
+    // Everything else equal, the shorter name is the plainer food: "Toned Milk"
+    // over "Masala Milk (Spiced Milk)", "Sweet Corn" over "Masala Corn / Corn
+    // Chaat". Alphabetical order — the previous last resort — is arbitrary.
+    if (a.name.length !== b.name.length) return a.name.length - b.name.length
     return a.name.localeCompare(b.name)
   }
 }
