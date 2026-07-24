@@ -6,19 +6,17 @@ Work through the sections **in order**. Steps marked 🖐 are manual (dashboard/
 
 ---
 
-## 1. Pre-flight (before building anything)
+## 1. Pre-flight (before building anything) — mostly ✅ as of 2026-07-24
 
-- [ ] 🖐 **Rotate the Supabase service-role key** (Supabase Dashboard → Settings → API → regenerate `service_role`). Update `SUPABASE_SERVICE_ROLE_KEY` in Vercel env + local `.env.local`, redeploy. Also delete the old Stripe **test** keys from the Stripe dashboard (Stripe is legacy-only).
-- [ ] 🖐 **Apply the one pending migration** in Supabase Dashboard → SQL editor. Live-DB state was re-probed 2026-07-17: `012`/`022`/`023` (all billing columns incl. `cancel_at_period_end`) are **already applied** — the earlier "apply 012/022/023" list here was wrong. Only this remains:
-  - `015_chat_logs.sql` (**until applied, the 10/day AI-chat limit is silently off** — free unlimited Gemini on your bill)
-  - `024_weekly_recaps.sql` (added by the weekly-recap feature; until applied the Pro "Your week" card stays empty and the Sunday recap push doesn't store — no crash)
-  - `025_start_weight.sql` (immutable start-weight baseline + backfill; until applied "since start" uses the first weigh-in — no crash)
-  - Do **not** apply `011_weekly_calorie_view.sql` — the view is referenced nowhere in code (deliberately skipped).
-  - Full apply-and-verify SQL: `docs/launch-plan-2026-07-17.md` §4.
-- [ ] 🖐 **Flip `NEXT_PUBLIC_APP_URL`** in Vercel env to `https://www.getinshape.co.in` and redeploy — sitemap/robots/canonicals must agree with the TWA host.
-- [ ] 🖐 **Razorpay (web billing, parallel track):** once KYC approves — create plans Monthly ₹299 / Annual ₹1,999 (Payments → Subscriptions), add webhook `https://www.getinshape.co.in/api/razorpay/webhook` (events: `subscription.activated/charged/cancelled/completed`), set the 5 env vars (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_MONTHLY_PLAN_ID`, `RAZORPAY_ANNUAL_PLAN_ID`) in Vercel, redeploy.
+> **Do not work from this section as a to-do list any more.** Most of it is done; the live state was re-probed 2026-07-24. The current, ordered plan is **`docs/next-steps-2026-07-24.md`** — start there.
+
+- [x] ~~Apply pending migrations~~ — **every migration through `027` is applied live.** `015`/`024`/`025` landed 2026-07-18, `027` after that. `011` is deliberately skipped. Nothing to apply. (`015` was *half*-applied — table and SELECT policy present, INSERT policy missing — so probe policies and indexes, not just tables.)
+- [x] ~~Flip `NEXT_PUBLIC_APP_URL`~~ — set to `https://www.getinshape.co.in`; apex 308s to www, sitemap carries zero apex URLs.
+- [x] ~~Deploy the current main~~ — `/delete-account` (now documenting **partial** data deletion too) and `/manifest.webmanifest` are live.
+- [ ] 🖐 **Rotate the Supabase service-role key** (Supabase → Settings → API → regenerate `service_role`). Update `SUPABASE_SERVICE_ROLE_KEY` in Vercel + local `.env.local`, redeploy. Also delete the old Stripe **test** keys (Stripe is legacy-only). **Still pending.**
+- [ ] 🖐 **Razorpay (web billing, parallel track):** once KYC approves — create plans Monthly ₹299 / Annual ₹1,999 (Payments → Subscriptions), add webhook `https://www.getinshape.co.in/api/razorpay/webhook` (events: `subscription.activated/charged/cancelled/completed`), set the 5 env vars (`RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_MONTHLY_PLAN_ID`, `RAZORPAY_ANNUAL_PLAN_ID`) in Vercel, redeploy. **Still pending — gates web revenue only, not the Play launch.**
 - [ ] Confirm Play env vars exist in Vercel (values come from §6–7): `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (base64), `ANDROID_PACKAGE_NAME=in.co.getinshape.app`, `PLAY_RTDN_SECRET`, `NEXT_PUBLIC_PLAY_PRODUCT_MONTHLY`, `NEXT_PUBLIC_PLAY_PRODUCT_ANNUAL`.
-- [ ] Deploy the current main (new `/delete-account` page + updated `/manifest.webmanifest` must be live **before** running Bubblewrap).
+- [ ] 🖐 **Supabase → Auth → Providers → Email → Confirm email OFF.** Migration `027` is already applied, so the ordering rule is satisfied and this is safe to do now. Until it flips, the deferred-signup flow is inert.
 
 ## 2. Build the TWA (Bubblewrap) — ✅ DONE 2026-07-19
 
@@ -42,7 +40,9 @@ bubblewrap build       # prompts for the two keystore passwords
 
 🖐 **The keystore is the one irreplaceable artifact.** `android.keystore` (alias `android`) is git-ignored, so git is *not* a backup. Keep it plus both passwords in a password manager and one offline copy.
 
-## 3. Digital Asset Links (kills the browser URL bar) — ✅ upload key done, Play key pending
+## 3. Digital Asset Links (kills the browser URL bar) — ✅ **FULLY DONE** (both keys, verified 2026-07-24)
+
+> **Both fingerprints are live and accepted by Google.** `curl` against the Digital Asset Links API returns **2 statements** for `in.co.getinshape.app`. Upload key `09:5C:9C:…:87:5D`, Play App Signing key `1B:72:36:A5:…:E5:7E`. The "remaining step" below is therefore **already complete** — kept for reference only. That the Play signing key exists at all means the Play Console app is created and enrolled in App Signing.
 
 **Upload-key fingerprint is live and verified** (2026-07-19):
 
