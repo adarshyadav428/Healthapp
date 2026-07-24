@@ -7,6 +7,7 @@ import { toast } from '../components/ui/use-toast'
 import { captureEvent } from '../lib/posthog/client'
 import { isPlayBillingAvailable, getPlayPrices, purchasePlan } from '../lib/play/billing'
 import { PLAY_PRODUCTS } from '../lib/play/products'
+import { CHECKOUT_CANCELLED, isCheckoutCancellation } from '../lib/checkoutErrors'
 
 type Plan = 'monthly' | 'annual'
 
@@ -120,7 +121,7 @@ export function useCheckout({ userId, userEmail }: Params) {
                 })
                 .catch(reject)
             },
-            modal: { ondismiss: () => reject(new Error('Checkout cancelled')) },
+            modal: { ondismiss: () => reject(new Error(CHECKOUT_CANCELLED)) },
           })
           rzp.open()
         })
@@ -137,7 +138,14 @@ export function useCheckout({ userId, userEmail }: Params) {
       else await startRazorpayCheckout(plan)
     } catch (err) {
       const message = (err as Error).message
-      if (message !== 'Checkout cancelled') {
+      if (isCheckoutCancellation(message)) {
+        // Backing out of the payment sheet isn't a failure — don't count it in
+        // the funnel, and don't hand the user Chrome's internal PaymentRequest
+        // wording. A neutral line (rather than silence) still tells them the
+        // sheet closed without taking money, which is the one thing they'd
+        // otherwise have to guess at.
+        toast({ title: 'Checkout closed', description: 'No payment was taken.' })
+      } else {
         captureEvent('checkout_failed', { plan, provider, error: message })
         toast({ title: 'Checkout failed', description: message, variant: 'error' })
       }
