@@ -5,8 +5,9 @@ import Link from 'next/link'
 // Google Play Data safety form, so it must render without a sign-in redirect
 // (allowlisted in middleware.ts).
 export const metadata: Metadata = {
-  title: 'Delete your account — GetInShape',
-  description: 'How to permanently delete your GetInShape account and all associated data.',
+  title: 'Delete your data or account — GetInShape',
+  description:
+    'How to delete individual GetInShape data, or permanently delete your account and all associated data.',
 }
 
 export default function DeleteAccountPage() {
@@ -53,6 +54,37 @@ export default function DeleteAccountPage() {
               <li>Your subscription record (any active subscription should be cancelled first — via the app&apos;s Settings, or Google Play → Subscriptions if you subscribed on Android)</li>
             </ul>
             Deleted data cannot be recovered.
+          </Section>
+
+          <Section title="Delete some of your data (without deleting your account)">
+            You don&apos;t have to delete your account to remove data. Inside the app you can
+            delete individual entries at any time, and deletion is immediate and permanent:
+            <ul className="list-disc ml-4 mt-1 space-y-1">
+              <li>
+                <strong>Food logs</strong> — open <strong>Home</strong> or{' '}
+                <strong>Progress → a day</strong>, then tap the delete icon on any entry
+              </li>
+              <li>
+                <strong>Weight entries</strong> — open <strong>Profile → Weight</strong> and tap
+                the delete icon next to any reading
+              </li>
+              <li>
+                <strong>Exercise logs</strong> — open the <strong>Food</strong> tab and tap the
+                delete icon on any exercise entry
+              </li>
+              <li>
+                <strong>Saved meals, favourites, and custom foods</strong> — remove from{' '}
+                <strong>Food</strong>
+              </li>
+              <li>
+                <strong>Push notifications</strong> — turn off in{' '}
+                <strong>Profile → Settings</strong> to delete your notification subscription
+              </li>
+            </ul>
+            <p className="mt-2">
+              Your account, sign-in credentials, and profile (age, height, goals) are kept until
+              you delete the account itself using the steps above.
+            </p>
           </Section>
 
           <Section title="Can't access the app?">

@@ -156,10 +156,10 @@ Day 0 = the day Adarsh says "go". Dates in parentheses assume go = Jul 18.
 
 ### Go/no-go checklist (launch morning)
 
-- [ ] Every §2 item `done` (or explicitly accepted with a note here)
-- [ ] `npm test` + `npm run check:tokens` + `npm run build` green at the release commit
+- [ ] Every §2 item `done` (or explicitly accepted with a note here) — **all C1–C19 are done and merged to main; only A1, A3, A5, A6, A7, A8 remain**
+- [x] `npm test` + `npm run check:tokens` + `npm run build` green at the release commit — ✅ verified 2026-07-24 at `808c988` + the delete-account fix: **386 tests / 39 files**, token-clean, build green, `tsc --noEmit` clean
 - [ ] Play license-tester purchase E2E ✓; Razorpay test payment ✓ (or web CTAs hidden per contingency)
-- [ ] 11th free chat 429s live; Gemini budget alert armed
+- [ ] AI trial cap enforced live (4th call 403s — see §4 step 5, *not* the old 11th-chat test); Gemini budget alert armed
 - [ ] Sentry receiving prod events; PostHog funnel verified (A8)
 - [ ] assetlinks contains the **Play-signing** fingerprint; installed build shows no URL bar
 - [ ] Data-safety form matches reality (deletion now cancels billing — C10)
@@ -168,14 +168,17 @@ Day 0 = the day Adarsh says "go". Dates in parentheses assume go = Jul 18.
 
 ---
 
-## 4. Migration playbook (prod — Adarsh, ~15 min)
+## 4. Migration playbook (prod — Adarsh, ~15 min) — ✅ **COMPLETE, nothing to apply**
 
-> The runbook's old pending list (012/022/023) is **wrong** — those are applied. Only 015 is missing. 011 is skipped deliberately (D-F). Migration filenames have duplicate numbers — always use exact filenames.
+> **Status 2026-07-24: every migration through `027` is applied live** (REST-probed 2026-07-19: `chat_logs`, `weekly_recaps`, `profiles.start_weight_kg`, `profiles.email_verified_at` all queryable). Steps 1–4 below are kept as the verification recipe, not as pending work. 011 is skipped deliberately (D-F); `026_anonymous_users` is obsolete (anonymous auth was reverted in `17f6bda`) but was already applied and is harmless — do not rewrite it. Migration filenames have duplicate numbers — always use exact filenames.
+>
+> ⚠️ **The one ordering rule that still matters:** `027_email_verification.sql` had to be applied *before* Supabase "Confirm email" is switched off (gate A3). That order is already satisfied — 027 is live and A3 is still pending — so A3 is safe to do whenever.
 
-1. **Backup first.** Supabase Dashboard → Database → Backups → confirm a backup from today exists (or trigger one).
-2. **Apply `supabase/migrations/015_chat_logs.sql`** — paste the file's contents into the SQL editor and run.
-2b. **Apply `supabase/migrations/024_weekly_recaps.sql`** — added by C6 (the weekly-recap feature). Until applied, the recap cron's upsert no-ops and the Pro dashboard card stays empty (handled gracefully; no crash).
-2c. **Apply `supabase/migrations/025_start_weight.sql`** — added by C16 (immutable start-weight baseline; backfills existing users). Until applied, "since start" falls back to the first weigh-in (old behaviour); onboarding writes the baseline best-effort so it's set the moment 025 lands. No crash either way.
+1. ~~**Backup first.**~~ Still worth confirming a recent backup exists before launch day.
+2. ~~**Apply `015_chat_logs.sql`**~~ — ✅ applied 2026-07-18. It turned out to be *half*-applied (table + SELECT policy existed, INSERT policy did not, so RLS silently rejected every counter write); rewritten idempotent and re-run. **Lesson: "missing" and "half-applied" are different states — probe for policies and indexes, not just the table.**
+2b. ~~**Apply `024_weekly_recaps.sql`**~~ — ✅ applied 2026-07-18.
+2c. ~~**Apply `025_start_weight.sql`**~~ — ✅ applied 2026-07-18 (backfilled 10 of 13 profiles; the 3 nulls are abandoned onboardings with no `current_weight_kg`, and the code falls back gracefully).
+2d. ~~**Apply `027_email_verification.sql`**~~ — ✅ applied (added later by the deferred-signup work; `profiles.email_verified_at` is live).
 3. **Verify:**
    ```sql
    select count(*) from chat_logs;                                        -- 0, no error
@@ -199,7 +202,7 @@ Day 0 = the day Adarsh says "go". Dates in parentheses assume go = Jul 18.
    -- absent by design: water_logs, sleep_logs, fasting_sessions, measurements_logs (dropped by 019);
    --                   weekly_calorie_view (011 skipped — view is referenced nowhere in code)
    ```
-5. **Behavior check:** as `+qa2` (free), send 11 chat logs → the 11th returns **429**; `select count(*) from chat_logs` = 10.
+5. **Behavior check — ⚠️ REWRITTEN, the old one tests a rule that no longer exists.** The 10/day free-chat cap was removed on 2026-07-18: AI (camera + chat) is now **Pro-only**, with a shared **lifetime** allowance of 3 calls (`AI_TRIAL_SCANS` in `lib/aiTrial.ts`) that unlocks only once the account's email is verified. Current check: on a fresh free account with a verified email, the 4th AI call (camera and chat drawing from the same pool) returns **403**; `select count(*) from camera_photo_logs` + `count(*) from chat_logs` for that user = 3. On an *unverified* free account, the 1st AI call is already refused.
 6. **At launch:** delete `+qa2` (Dashboard → Authentication → delete user; rows cascade). Keep `+qa1` forever as the day-30 fixture.
 
 ---
@@ -293,3 +296,33 @@ Day 0 = the day Adarsh says "go". Dates in parentheses assume go = Jul 18.
 ---
 
 *Maintained by Claude sessions. Update the Status columns in §2 as items land; add dated notes below this line rather than rewriting history.*
+
+---
+
+## Note — 2026-07-24: state of play
+
+**Read this first; the tables above are historically accurate but no longer describe the critical path.**
+
+**Code is done.** All 19 Claude-owned gates (C1–C19) are merged to `main` (`808c988`), pushed. Gate verified today at that commit plus the delete-account fix below: **386 tests / 39 files green**, `tsc --noEmit` clean, `npm run check:tokens` clean, `npm run build` green.
+
+**Work that landed *after* this plan was written** (not tracked in §2, all on main):
+- **v2 Retention & Habit-Loop build** — event taxonomy + log-method attribution, onboarding 6→4 screens, saved-meal combos and time-aware "Log again", streak freezes (derived from log history, not stored), the 3/7/14/21/30/50/100 milestone ladder, protein coach, adaptive-target consent surface, Trends→**Progress** rename with a 4-week weight trend. *Not* done from that spec: the 10-badge set, the "Your Week" 5-card recap, the bottom-nav IA proposal (deliberately gated on your approval — it decides what the product is *about*), and the PostHog dashboard (must be built in PostHog's UI).
+- **Deferred email verification** — signup no longer blocks on confirming your inbox. ⚠️ **Inert until gate A3 is done.** Migration 027 is already applied, so the ordering rule is satisfied and A3 is safe to do now.
+- **Curated India-first food catalogue** + four search-quality fixes (word-by-word matching, honest failure caching, synonym coverage, complete-word ranking above mere prefix).
+- **Delete-account page** now documents partial data deletion, not just account deletion — needed before the Play **Data safety** form can honestly answer the "can users delete *some* data" question.
+
+**Android is built.** AAB + signed APK, real Play-signing assetlinks fingerprint, verified on an Android 14 emulator (no URL bar), 6 store screenshots in `health-app/store-assets/screenshots/`. Only Play Console clicks remain.
+
+**Remaining critical path — all Adarsh-owned, in priority order:**
+
+| Gate | Item | Why it's the blocker |
+|---|---|---|
+| A6 | **Play Console** — create app, listing, App access (reviewer credentials: the app is login-gated), Data safety, billing products `pro_monthly` ₹299 / `pro_annual` ₹1,999 with a **3-day trial on both**, service account + RTDN, upload the AAB | The entire launch. Without trial offers on both products, the in-app trial copy becomes a false claim |
+| A3 | **Supabase → Auth → Providers → Email → Confirm email OFF** (5 min) | The whole deferred-signup flow is inert until this flips |
+| A1 | **Razorpay KYC → live keys → 5 Vercel env vars → redeploy** | External lead time. Gates *web* revenue only (Play Billing is independent) — but the live pay button is broken today, which costs trust daily |
+| A5 | Gemini budget alert (₹2,000/mo) | Unmetered-spend history; arm it before launch, not after |
+| C14b | Create a free Sentry project → set `SENTRY_DSN` + `NEXT_PUBLIC_SENTRY_DSN` in Vercel | Sentry is wired but silent until the DSNs exist — launching blind |
+| A7 | Rotate the Supabase service-role key | Pending since the security audit |
+| A8 | Live PostHog funnel verification (joint) | Confirms the taxonomy actually fires end-to-end |
+
+**Still true and still worth heeding:** the pre-mortem in §8, the week-1 live-ops runbook in §6, and the 30-day roadmap in §7 — none of those have been overtaken by events.
