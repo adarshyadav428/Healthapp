@@ -7,6 +7,8 @@ import { Button } from '../ui/button'
 import { ConfettiBurst } from '../ui/ConfettiBurst'
 import { useMilestoneStore, clearPendingMilestone, clearWeightMilestone, clearStreakMilestone } from '../../store/milestoneStore'
 import { getLogMilestoneAction, isShareableStreakMilestone, type MilestoneAction } from '../../lib/logMilestones'
+import { paywallPriceLine } from '../../lib/pricing'
+import { isPlayBillingAvailable } from '../../lib/play/billing'
 import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { formatKg } from '../../lib/formatWeight'
 import { captureEvent } from '../../lib/posthog/client'
@@ -55,6 +57,9 @@ export function LogMilestones() {
   const [weightKg, setWeightKg] = useState<number | null>(null)
   const [streakDays, setStreakDays] = useState<number | null>(null)
   const [sharing, setSharing] = useState(false)
+  // Whether to show trial copy on the interstitial. Starts false so a slow
+  // probe can never flash a trial promise at a web user, where no trial exists.
+  const [playAvailable, setPlayAvailable] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -96,6 +101,21 @@ export function LogMilestones() {
       cancelled = true
     }
   }, [pending])
+
+  // The 3-day trial is a Play Console offer, so the interstitial may only
+  // promise it inside the installed app. Probed lazily — this component is
+  // mounted on every page (app/providers.tsx), and the answer is only ever
+  // needed on the one screen that quotes a price.
+  useEffect(() => {
+    if (active !== 'log_paywall') return
+    let cancelled = false
+    isPlayBillingAvailable().then((available) => {
+      if (!cancelled) setPlayAvailable(available)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [active])
 
   // Weight milestone comes pre-decided by the server (no seen-flags needed —
   // a threshold can only be crossed for the first time once).
@@ -250,7 +270,7 @@ export function LogMilestones() {
           <div className="flex-1" />
 
           <p className="mt-8 text-center text-[13px] text-ink-2">
-            ₹299/month or ₹1,999/year · Cancel anytime
+            {paywallPriceLine(playAvailable)}
           </p>
           <Button
             size="lg"
