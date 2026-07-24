@@ -13,6 +13,7 @@ import { projectGoalDate, formatGoalDate } from '../../lib/projection'
 import { useCheckout, PLAY_PRODUCT_FOR_PLAN } from '../../hooks/useCheckout'
 import { useSendVerificationLink } from '../../hooks/useSendVerificationLink'
 import { AI_TRIAL_SCANS } from '../../lib/aiTrial'
+import { PRICE_MONTHLY, PRICE_ANNUAL, FREE_TRIAL_DAYS } from '../../lib/pricing'
 
 const REASON_COPY: Record<string, { title: string; description: string }> = {
   history:            { title: 'Unlock your full history', description: 'Free users can view the last 7 days. Pro shows everything.' },
@@ -46,10 +47,10 @@ const plans = [
   {
     id: 'monthly' as const,
     title: 'Monthly',
-    price: '₹299',
+    price: PRICE_MONTHLY,
     per: '/month',
     note: 'Cancel anytime',
-    playNote: '3-day free trial · cancel anytime',
+    playNote: `${FREE_TRIAL_DAYS}-day free trial · cancel anytime`,
     badge: null,
     cta: 'Start Monthly',
     highlight: false,
@@ -57,10 +58,10 @@ const plans = [
   {
     id: 'annual' as const,
     title: 'Annual',
-    price: '₹1,999',
+    price: PRICE_ANNUAL,
     per: '/year',
-    note: 'Billed ₹1,999/year · Save ₹1,589',
-    playNote: '3-day free trial, then ₹1,999/year · Save ₹1,589',
+    note: `Billed ${PRICE_ANNUAL}/year · Save ₹1,589`,
+    playNote: `${FREE_TRIAL_DAYS}-day free trial, then ${PRICE_ANNUAL}/year · Save ₹1,589`,
     // Kept short on purpose: the full "Best value — Save 44%" needs ~291dp
     // beside the price block, and a 360dp phone only has ~288dp of card to
     // give it. The 44% figure is the one recomputed for the ₹1,999 reprice
