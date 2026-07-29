@@ -27,7 +27,7 @@ export default async function WrappedPage() {
   const [wrapResult, subResult] = await Promise.all([
     supabase
       .from('monthly_wraps')
-      .select('month_start, stats, message')
+      .select('month_start, stats, message, was_pro')
       .eq('user_id', user.id)
       .order('month_start', { ascending: false })
       .limit(1)
@@ -39,14 +39,19 @@ export default async function WrappedPage() {
   // enough logging in it. Nothing to show, so don't show an empty shell.
   if (!wrapResult.data) redirect('/dashboard')
 
+  // Downgrade policy: things you EARNED persist, things you HOLD expire. A
+  // wrap generated while paying stays fully readable after a cancellation —
+  // gating on *current* status would retroactively confiscate a record of the
+  // user's own month.
+  const isPro = isProStatus(subResult.data?.status)
+  const unlocked = isPro || wrapResult.data.was_pro === true
+
   const cards = buildMonthlyWrappedCards({
     stats: wrapResult.data.stats as unknown as WrappedStats,
     monthStart: wrapResult.data.month_start as string,
     message: wrapResult.data.message as string,
-    isPro: isProStatus(subResult.data?.status),
+    isPro: unlocked,
   })
-
-  const isPro = isProStatus(subResult.data?.status)
 
   return (
     <StorySurface
@@ -54,10 +59,10 @@ export default async function WrappedPage() {
       cards={cards}
       // A free user's last card is the wall, so the action is the upgrade;
       // a Pro user's is the share card.
-      ctaLabel={isPro ? 'Share my month' : 'See the whole story'}
-      ctaHref={isPro ? '/progress' : '/upgrade?reason=wrapped'}
+      ctaLabel={unlocked ? 'Share my month' : 'See the whole story'}
+      ctaHref={unlocked ? '/progress' : '/upgrade?reason=wrapped'}
       exitHref="/dashboard"
-      meta={{ month: wrapResult.data.month_start, is_pro: isPro }}
+      meta={{ month: wrapResult.data.month_start, is_pro: isPro, unlocked }}
     />
   )
 }

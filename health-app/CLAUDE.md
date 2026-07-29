@@ -134,13 +134,57 @@ The Android TWA (`in.co.getinshape.app`) must sell Pro through Google Play Billi
 - `app/upgrade/page.tsx` branches Play vs Razorpay at runtime (Digital Goods API detection).
 - `components/settings/SettingsClient.tsx` branches "Manage Subscription" by `subscription.provider`: Google Play → the Play subscriptions page, Razorpay → `/api/razorpay/cancel` (with confirm dialog), legacy Stripe → the Stripe Billing Portal.
 
+### Growth mechanics (story surfaces, seasons, suggestions)
+
+Added 2026-07-29 — full rationale in `docs/growth-mechanics-plan-2026-07-29.md`.
+
+- **Story engine** (`components/story/`) — a full-screen, tap-advanced card sequence
+  shared by four surfaces: the Pro welcome (`/welcome`), the monthly Wrapped
+  (`/wrapped`), the season wrap, and the end-of-onboarding plan (`/onboarding/plan`).
+  Three rules are load-bearing: **no auto-advance** (a stat that vanishes before it's
+  read is worse than one never shown, and there is no correct duration), **no image
+  downloads** (emoji + CSS gradients only — a celebration must not cost a user on a
+  metered connection), and motion via `.story-rise`, which `prefers-reduced-motion`
+  disables. Cards are JSX-free and serializable so they can be built in a Server
+  Component. Keyboard handling is bound to the **window**, not the container — the tap
+  zones disable at the ends and a disabled focused element drops focus to `<body>`.
+  `StorySurface` wraps it with the analytics; `story_completed` means "read to the end",
+  `story_cta_clicked` means "acted" — never collapse them.
+- **`/welcome`** fires on **entitlement granted** (`active` *or* `trialing`), not on
+  payment captured. Play's 3-day trial captures nothing until it ends, so a
+  payment-based trigger would hide it from trial users entirely.
+- **Streak Rescue** (`lib/streakRescue.ts`, migration `028`) — Pro, 1/month, *repairs* a
+  broken streak. Distinct from the free auto-**freeze**, which is earned every 7 days and
+  *prevents* a break. **Freezes are never paywalled.** `calculateStreakState` stays pure:
+  rescued dates are passed IN as a third argument, never read from a table.
+- **Seasons** (`lib/seasons.ts`, migration `031`) — 30-day runs, authored in **code** not
+  rows. Season badges are a **separate collection** from the ten in `lib/badges.ts`; that
+  cap is doctrine. Progress is recomputed from logs, never stored. Free to join.
+- **Meal suggestion deck** (`lib/mealSuggest.ts`, migration `030`) — the Pro *capability*.
+  Reuses `SOURCE_RANK` so measured IFCT rows beat `curated` estimates, and keeps the
+  📊 Estimated badge visible. 3/day free, unlimited for Pro.
+- **Meal context** (`lib/mealContext.ts`, migration `032`) — one nullable column on
+  `food_logs` (home/restaurant/travel/office). Not a new tracker; migration `019`'s
+  removal of the wellness tables stands.
+- **Push budget** (`lib/pushBudget.ts`, migration `033`) — **one push per day across all
+  sources**, priority `streak-save > season-deadline > monthly-wrapped > weekly-recap >
+  daily-reminder`, with back-off after 5 ignored. Scheduled pushes MUST go through
+  `sendBudgetedPush`, never `sendPushToUser` — the budget only works if nothing bypasses
+  it. The risk is permission revocation, which would kill the streak-save nudge.
+- **Crons are chunked and deadline-aware** (`lib/cronBatch.ts`). `vercel.json` declares
+  **two** crons and the Hobby plan caps there — Monthly Wrapped rides inside the Sunday
+  recap run on any Sunday in the first fortnight. **Do not add a third cron.**
+- **Downgrade rule:** things you *earned* persist, things you *hold* expire. Hence
+  `monthly_wraps.was_pro` — a wrap unlocks on whether the user was Pro when it was
+  written, not now.
+
 ### Database tables (Supabase Postgres)
 
-`profiles`, `food_logs`, `foods`, `weight_logs`, `subscriptions`, `exercise_logs`, `food_favourites`, `saved_meals`, `saved_meal_items`, `camera_photo_logs`, `chat_logs`, `push_subscriptions`.
+`profiles`, `food_logs`, `foods`, `weight_logs`, `subscriptions`, `exercise_logs`, `food_favourites`, `saved_meals`, `saved_meal_items`, `camera_photo_logs`, `chat_logs`, `push_subscriptions`, `weekly_recaps`, `streak_rescues`, `monthly_wraps`, `food_dismissals`, `season_participants`, `push_sends`.
 
 > The five wellness tables (`water_logs`, `sleep_logs`, `fasting_sessions`, `measurements_logs`) were **dropped** by migration `019` — only `exercise_logs` remains of the extended trackers. Do not reference the dropped tables.
 
-Migrations live in `supabase/migrations/` (numbered `001`–`023`, with some duplicate numbers — `002`/`004`/`005`/`009` each appear twice, and there is no `021`; **always reference migrations by exact filename**). Apply **all** in order before running locally. Key ones:
+Migrations live in `supabase/migrations/` (numbered `001`–`033`, with some duplicate numbers — `002`/`004`/`005`/`009` each appear twice, and there is no `021`; **always reference migrations by exact filename**). Apply **all** in order before running locally. Key ones:
 - `001_initial.sql` — core schema
 - `007_seed_indian_foods.sql` / `009_seed_indian_foods_v2.sql` / `010_seed_missing_foods.sql` — IFCT food data
 - `012_play_billing.sql` — adds `provider`, `play_purchase_token`, `play_product_id` to `subscriptions`

@@ -5,7 +5,7 @@ import { calculateStreakState } from '../../../../lib/streak'
 
 /** Below this, a streak isn't worth a "don't lose it" notification yet. */
 const STREAK_SAVE_MIN_DAYS = 3
-import { sendPushToUser } from '../../../../lib/push/send'
+import { sendBudgetedPush } from '../../../../lib/push/budgetedSend'
 import { processInBatches, CRON_TIME_BUDGET_MS } from '../../../../lib/cronBatch'
 import type { FoodLog } from '../../../../types/index'
 
@@ -99,7 +99,7 @@ export async function GET(req: Request) {
           tag: 'daily-reminder',
         }
 
-    const result = await sendPushToUser(userId, payload)
+    const result = await sendBudgetedPush(userId, streak >= STREAK_SAVE_MIN_DAYS ? 'streak-save' : 'daily-reminder', payload)
     if (result.sent > 0) sent += 1
   }, { deadline: startedAt + CRON_TIME_BUDGET_MS })
 

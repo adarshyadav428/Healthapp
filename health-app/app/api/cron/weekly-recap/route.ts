@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '../../../../lib/supabase/server'
 import { getIstDayRange, istDateStr, istDaysAgoStart } from '../../../../lib/dateUtils'
 import { computeRecapStats, recapFallbackMessage, recapWeekStart, type RecapStats } from '../../../../lib/weeklyRecap'
-import { sendPushToUser } from '../../../../lib/push/send'
+import { sendBudgetedPush } from '../../../../lib/push/budgetedSend'
 import { processInBatches, CRON_TIME_BUDGET_MS } from '../../../../lib/cronBatch'
 import { isProStatus } from '../../../../lib/subscription'
 import { computeWrappedStats } from '../../../../lib/wrappedStats'
@@ -108,7 +108,7 @@ export async function GET(req: Request) {
     )
     if (!upErr) stored += 1
 
-    const result = await sendPushToUser(uid, {
+    const result = await sendBudgetedPush(uid, 'weekly-recap', {
       title: 'Your week in review 📊',
       body: message.length > 120 ? message.slice(0, 117) + '…' : message,
       url: '/dashboard',
@@ -205,7 +205,7 @@ async function generateMonthlyWraps(
     const message = `${stats.daysLogged} days logged in ${monthLabel(monthStart)}.`
 
     const { error } = await admin.from('monthly_wraps').upsert(
-      { user_id: uid, month_start: monthStart, stats, message },
+      { user_id: uid, month_start: monthStart, stats, message, was_pro: proUsers.has(uid) },
       { onConflict: 'user_id,month_start' }
     )
     if (error) throw new Error(error.message)
@@ -213,7 +213,7 @@ async function generateMonthlyWraps(
 
     // Free users get the push too: the Wrapped is the best advert Pro has, and
     // it's an advert made entirely of the user's own month.
-    const result = await sendPushToUser(uid, {
+    const result = await sendBudgetedPush(uid, 'monthly-wrapped', {
       title: `Your ${monthLabel(monthStart)} is ready 📖`,
       body: proUsers.has(uid) ? message : `${message} See the whole story.`,
       url: '/wrapped',

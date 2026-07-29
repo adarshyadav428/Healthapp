@@ -20,6 +20,13 @@ create table if not exists monthly_wraps (
   stats jsonb not null,
   -- One warm sentence. AI-written for Pro, deterministic fallback for free.
   message text not null,
+  -- Was this user Pro when the wrap was written?
+  --
+  -- The downgrade policy is "things you EARNED persist, things you HOLD
+  -- expire". A Wrapped generated while paying was earned, so it stays fully
+  -- readable after a cancellation — gating it on *current* status would
+  -- retroactively confiscate a record of the user's own month.
+  was_pro boolean not null default false,
   created_at timestamptz not null default now(),
   unique (user_id, month_start)
 );

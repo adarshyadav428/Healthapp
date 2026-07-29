@@ -597,3 +597,58 @@ complaint:
 **≈1 day, and it captures most of the emotional value.** The story engine, the thali, and
 the personalised stats can all be layered onto that same route afterwards without rework —
 the route and the trigger are the load-bearing parts, and this version gets both right.
+
+---
+
+## 19. Build record — what actually shipped (2026-07-29)
+
+All 13 work items complete on branch `growth-mechanics-2026-07-29`.
+`594 tests` (52 files, +191), `tsc --noEmit` clean, ESLint clean, `check:tokens` clean.
+
+| # | Item | Key files |
+|---|---|---|
+| 0 | Next-badge nudge on Home; dead `?upgraded=true` removed | `lib/badges.ts`, `components/dashboard/DashboardClient.tsx` |
+| 1a | Stat vocabulary | `lib/wrappedStats.ts` |
+| 1b | Story engine | `components/story/` |
+| 1c | `/welcome` + entitlement trigger | `app/welcome/`, `lib/welcomeCards.ts`, `hooks/useCheckout.ts` |
+| 1d | Thali share card | `lib/shareCard.ts` |
+| 1e | Onboarding plan story | `app/onboarding/plan/`, `lib/planCards.ts` |
+| 2 | Streak Rescue | `lib/streak.ts`, `lib/streakRescue.ts`, migration `028` |
+| Ops | Chunked, deadline-aware crons | `lib/cronBatch.ts`, both cron routes |
+| 3 | Monthly Wrapped | `lib/monthlyWrapped.ts`, `app/wrapped/`, migration `029` |
+| 4 | Meal suggestion deck | `lib/mealSuggest.ts`, `components/log/MealSuggestDeck.tsx`, migration `030` |
+| 5 | Seasons | `lib/seasons.ts`, `lib/seasonServer.ts`, migration `031` |
+| 6 | Meal context tags | `lib/mealContext.ts`, migration `032` |
+| X | Push budget | `lib/pushBudget.ts`, `lib/push/budgetedSend.ts`, migration `033` |
+
+### Migrations to apply (028–033)
+
+Live DB was verified at `027` on 2026-07-19. **Apply 028→033 in order before deploying.**
+Nothing here is destructive: five `create table`s, one `alter table add column`.
+
+### Downgrade policy, as implemented
+
+The rule: **things you EARNED persist; things you HOLD expire.**
+
+| Thing | On cancel | Enforced by |
+|---|---|---|
+| Unspent Streak Rescue | Expires | `app/api/streak/rescue` re-checks `isProStatus` at spend time |
+| Season progress + badge | Persists | Seasons are free to join; `completed_at` is never cleared |
+| Past monthly Wrapped | **Persists, fully readable** | `monthly_wraps.was_pro` — the wrap unlocks on whether the user was Pro *when it was written*, not now |
+| Streak + freezes | Unaffected | Free by design (`lib/streak.ts`) |
+| Meal context tags | Persist | Plain log data |
+
+`was_pro` is the non-obvious one. Gating a past Wrapped on *current* status would
+retroactively confiscate a record of the user's own month — which is exactly the kind
+of thing that turns a cancellation into a grudge.
+
+### Still open
+
+- **Nothing is visually verified against a signed-in account.** Verification was
+  type-checks, 594 unit tests, and DOM/computed-style checks on `/studio` (which now
+  previews both the story engine and the thali card without an account). The
+  authenticated surfaces — `/welcome`, `/wrapped`, `/onboarding/plan`, the deck, the
+  season and rescue cards — have not been seen rendering with real data.
+- **`vercel.json` still declares two crons**, as intended. Monthly Wrapped rides inside
+  the Sunday recap run; do not add a third.
+- **Seasons run out after January 2027.** Six are authored; add more before then.
