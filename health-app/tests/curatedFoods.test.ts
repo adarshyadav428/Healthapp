@@ -86,6 +86,21 @@ describe('curated foods dataset', () => {
     expect(collisions).toEqual([])
   })
 
+  it('never duplicates an IFCT dish that only differs by a vernacular gloss', () => {
+    // IFCT writes "Boiled Egg (Anda)", "Apple (Seb)", "Butter Chicken (Murgh
+    // Makhani)"; the curated name is the same dish without the parenthetical.
+    // The estimate must defer to the measured row rather than sit beside it.
+    const ifctBaseNames = new Set(
+      INDIAN_FOODS.map((f) => normalize(f.name).match(/^(.+?) \(.*\)$/)?.[1]).filter(
+        (n): n is string => Boolean(n)
+      )
+    )
+    const collisions = CURATED_FOODS.filter((f) => ifctBaseNames.has(normalize(f.name))).map(
+      (f) => f.name
+    )
+    expect(collisions).toEqual([])
+  })
+
   it('ranks below every measured source so IFCT wins a tie', () => {
     expect(SOURCE_RANK.curated).toBeLessThan(SOURCE_RANK.ifct)
     expect(SOURCE_RANK.curated).toBeLessThan(SOURCE_RANK.off)

@@ -15,15 +15,37 @@ const normalizeName = (name: string): string => name.toLowerCase().replace(/\s+/
 
 const ifctNames = new Set(INDIAN_FOODS.map((f) => normalizeName(f.name)))
 
+// IFCT often glosses a dish with a vernacular or descriptive parenthetical —
+// "Boiled Egg (Anda)", "Apple (Seb)", "Butter Chicken (Murgh Makhani)". The
+// curated catalogue names the same dish without the gloss ("Boiled Egg",
+// "Apple"), so an exact-name check misses the collision and both rows ship:
+// the measured IFCT row and an estimate of the identical food right next to it
+// in search. Treat the text before a trailing "( … )" as the same name so the
+// estimate is dropped and the measured row stands alone. Only the IFCT side is
+// stripped — a curated "Omelette (Plain)" vs "Omelette (Masala)" are genuinely
+// different dishes and must both survive.
+const ifctBaseNames = new Set(
+  INDIAN_FOODS.map((f) => normalizeName(f.name).match(/^(.+?) \(.*\)$/)?.[1]).filter(
+    (n): n is string => Boolean(n)
+  )
+)
+
+const duplicatesIfct = (name: string): boolean => {
+  const n = normalizeName(name)
+  return ifctNames.has(n) || ifctBaseNames.has(n)
+}
+
 /**
  * Curated rows, minus any whose name duplicates a measured IFCT entry.
  *
- * ~60 names overlap (Veg Biryani, Naan, Aloo Paratha …). Both rows would
- * otherwise sit in the shared `foods` table and search would pick between them
- * on ordering alone — so a Chicken Biryani estimated at 8 g protein could
- * shadow the measured IFCT row at 10.2. Dropping them at the source is simpler
- * than defending the ordering forever.
+ * ~120 names overlap once the vernacular gloss is accounted for (Veg Biryani,
+ * Naan, Aloo Paratha, Boiled Egg, Apple …). Both rows would otherwise sit in
+ * the shared `foods` table and search would pick between them on ordering
+ * alone — so a Chicken Biryani estimated at 8 g protein could shadow the
+ * measured IFCT row at 10.2, or an estimated Boiled Egg read ~40% under the
+ * measured one. Dropping them at the source is simpler than defending the
+ * ordering forever.
  */
 export const CURATED_FOODS: FoodSeed[] = (rawCuratedFoods as FoodSeed[]).filter(
-  (f) => !ifctNames.has(normalizeName(f.name))
+  (f) => !duplicatesIfct(f.name)
 )
