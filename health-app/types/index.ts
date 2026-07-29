@@ -72,6 +72,8 @@ export type FoodLog = {
   food_id: string | null
   food: Food | null
   meal: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+  /** Where it was eaten (migration 032). Optional — null is the normal case. */
+  context?: 'home' | 'restaurant' | 'travel' | 'office' | null
   servings: number
   grams: number
   kcal: number
