@@ -60,6 +60,10 @@ export const EVENTS = {
   STORY_COMPLETED: 'story_completed',
   STORY_ABANDONED: 'story_abandoned',
   STORY_CTA_CLICKED: 'story_cta_clicked',
+  // Meal suggestion deck — the Pro capability. "What should I eat?", which the
+  // app had never answered.
+  MEAL_SUGGESTIONS_VIEWED: 'meal_suggestions_viewed',
+  MEAL_SUGGESTION_SWIPED: 'meal_suggestion_swiped',
   // Streak Rescue — the Pro object. Distinct from the free auto-freeze.
   STREAK_RESCUE_OFFERED: 'streak_rescue_offered',
   STREAK_RESCUE_USED: 'streak_rescue_used',
@@ -123,6 +127,8 @@ export type PaywallSource =
   // doesn't block an action — it withholds something about the user that they
   // can already see exists, which is a different (and better-converting) ask.
   | 'wrapped'
+  // The suggestion deck running out for a free user.
+  | 'meal_suggestions'
   // Not upgrade prompts — these ask an anonymous user to create a free account
   // before any Gemini credits are spent. Tracked here so the funnel sees them.
   | 'camera_scan_anonymous'
