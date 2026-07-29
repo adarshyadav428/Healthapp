@@ -1,18 +1,16 @@
 import type { Food } from '../../types/index'
 import { Loader2, Plus, Star } from 'lucide-react'
 
+// Only sources that change what the user would *do* get a badge. Open Food
+// Facts is the default for anything packaged, so labelling it said nothing
+// while taking ~45% of the row — which is what was clipping the food name.
 const SOURCE_BADGE: Record<string, { label: string; color: string }> = {
-  ifct:       { label: '🇮🇳 IFCT',          color: 'bg-brand-soft text-brand-ink' },
-  user:       { label: '👤 Custom',         color: 'bg-brand-soft text-brand-ink' },
-  off:        { label: '✓ Open Food Facts', color: 'bg-surface-2 text-good' },
-  off_india:  { label: '✓ Open Food Facts', color: 'bg-surface-2 text-good' },
-  off_world:  { label: '✓ Open Food Facts', color: 'bg-surface-2 text-good' },
-  // Real label data, but not from OFF — they were falling through to the OFF
-  // badge and claiming a source they don't have.
-  branded:    { label: '🏷️ Branded',        color: 'bg-surface-2 text-ink-2' },
-  restaurant: { label: '🍽️ Restaurant',     color: 'bg-surface-2 text-ink-2' },
-  curated:    { label: '📊 Estimated',      color: 'bg-energy-soft text-energy-ink' },
-  estimate:   { label: '📊 Est.',           color: 'bg-energy-soft text-energy-ink' },
+  ifct:       { label: '🇮🇳 IFCT',      color: 'bg-brand-soft text-brand-ink' },
+  user:       { label: '👤 Custom',     color: 'bg-brand-soft text-brand-ink' },
+  branded:    { label: '🏷️ Branded',    color: 'bg-surface-2 text-ink-2' },
+  restaurant: { label: '🍽️ Restaurant', color: 'bg-surface-2 text-ink-2' },
+  curated:    { label: '📊 Estimated',  color: 'bg-energy-soft text-energy-ink' },
+  estimate:   { label: '📊 Est.',       color: 'bg-energy-soft text-energy-ink' },
 }
 
 export function FoodResult({
@@ -30,19 +28,14 @@ export function FoodResult({
   isFavourite?: boolean
   onToggleFavourite?: (food: Food) => void
 }) {
-  const badge = SOURCE_BADGE[food.source] ?? SOURCE_BADGE.off
+  const badge = SOURCE_BADGE[food.source]
 
   return (
     <div className="flex w-full items-center gap-2 rounded-card border border-hairline bg-surface px-4 py-3 shadow-rest hover:border-brand-ring transition-all">
       <button type="button" className="flex-1 min-w-0 text-left" onClick={() => onSelect(food)}>
-        <div className="flex items-start gap-2">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-ink truncate leading-tight">{food.name}</p>
-            {food.brand && <p className="text-[11px] text-ink-2 truncate">{food.brand}</p>}
-          </div>
-          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.color}`}>
-            {badge.label}
-          </span>
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-ink leading-tight line-clamp-2">{food.name}</p>
+          {food.brand && <p className="text-[11px] text-ink-2 truncate">{food.brand}</p>}
         </div>
         <div className="flex items-center gap-3 mt-1.5 flex-wrap">
           <span className="text-xs font-bold text-ink tabular-nums">{Math.round(food.kcal_per_100g)} kcal</span>
@@ -53,6 +46,11 @@ export function FoodResult({
             <span className="text-xs font-medium text-good tabular-nums">Fi {Math.round(food.fiber_g_per_100g)}g</span>
           )}
           <span className="text-[10px] text-ink-2">per 100g</span>
+          {badge && (
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.color}`}>
+              {badge.label}
+            </span>
+          )}
         </div>
       </button>
 
