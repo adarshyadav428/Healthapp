@@ -3,6 +3,8 @@ import { createAdminClient } from '../../../../lib/supabase/server'
 import { getIstDayRange, istDateStr, istDaysAgoStart } from '../../../../lib/dateUtils'
 import { computeRecapStats, recapFallbackMessage, recapWeekStart, type RecapStats } from '../../../../lib/weeklyRecap'
 import { sendPushToUser } from '../../../../lib/push/send'
+import { processInBatches, CRON_TIME_BUDGET_MS } from '../../../../lib/cronBatch'
+import { isProStatus } from '../../../../lib/subscription'
 
 export const runtime = 'nodejs'
 
@@ -16,6 +18,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const startedAt = Date.now()
   const admin = createAdminClient()
   const windowStart = istDaysAgoStart(7)
   const { end: windowEnd } = getIstDayRange()
@@ -41,13 +44,23 @@ export async function GET(req: Request) {
   const userIds = [...byUser.keys()]
   if (userIds.length === 0) return NextResponse.json({ users: 0, sent: 0 })
 
-  // Names + weigh-ins for the window, batched.
-  const [{ data: profiles }, { data: weights }] = await Promise.all([
+  // Names, weigh-ins, entitlements, and who's already been done this week —
+  // all batched, so the per-user loop below makes no extra queries.
+  const [{ data: profiles }, { data: weights }, { data: subs }, { data: alreadyDone }] = await Promise.all([
     admin.from('profiles').select('id, display_name').in('id', userIds),
     admin.from('weight_logs').select('user_id, weight_kg, measured_at')
       .in('user_id', userIds).gte('measured_at', windowStart).lt('measured_at', windowEnd)
       .order('measured_at', { ascending: true }),
+    admin.from('subscriptions').select('user_id, status').in('user_id', userIds),
+    admin.from('weekly_recaps').select('user_id').eq('week_start', weekStart).in('user_id', userIds),
   ])
+  const proUsers = new Set(
+    (subs ?? []).filter((s) => isProStatus(s.status as string)).map((s) => s.user_id as string)
+  )
+  // Resumability. If a previous run timed out partway, its completed users
+  // already have a row for this week — skipping them means the next invocation
+  // continues rather than redoing work and re-pushing to the same people.
+  const done = new Set((alreadyDone ?? []).map((r) => r.user_id as string))
   const nameOf = new Map((profiles ?? []).map((p) => [p.id as string, (p.display_name as string | null) ?? null]))
   const weighByUser = new Map<string, number[]>()
   for (const w of weights ?? []) {
@@ -59,7 +72,9 @@ export async function GET(req: Request) {
   let stored = 0
   let sent = 0
 
-  for (const uid of userIds) {
+  const pending = userIds.filter((uid) => !done.has(uid))
+
+  const outcome = await processInBatches(pending, async (uid) => {
     const dayKcals = [...(byUser.get(uid)?.kcalByDay.values() ?? [])]
     const weighs = weighByUser.get(uid) ?? []
     const stats = computeRecapStats(
@@ -68,7 +83,12 @@ export async function GET(req: Request) {
       weighs.length >= 2 ? weighs[weighs.length - 1] : null
     )
     const firstName = (nameOf.get(uid) ?? '').trim().split(/\s+/)[0] || undefined
-    const message = await buildMessage(stats, firstName)
+    // AI-written copy is a Pro benefit. recapFallbackMessage is deterministic,
+    // tested and genuinely warm, so free users lose nothing readable — and the
+    // Gemini bill scales with subscribers rather than with signups.
+    const message = proUsers.has(uid)
+      ? await buildMessage(stats, firstName)
+      : recapFallbackMessage(stats, firstName)
 
     const { error: upErr } = await admin.from('weekly_recaps').upsert(
       {
@@ -90,9 +110,20 @@ export async function GET(req: Request) {
       tag: 'weekly-recap',
     })
     if (result.sent > 0) sent += 1
-  }
+  }, { deadline: startedAt + CRON_TIME_BUDGET_MS })
 
-  return NextResponse.json({ users: userIds.length, stored, sent })
+  // `remaining` is reported rather than swallowed: a cron that quietly does 60%
+  // of its job looks identical to one that did all of it, which is how the old
+  // serial loop would have failed.
+  return NextResponse.json({
+    users: userIds.length,
+    skipped: userIds.length - pending.length,
+    stored,
+    sent,
+    remaining: outcome.remaining,
+    timedOut: outcome.timedOut,
+    failed: outcome.failed,
+  })
 }
 
 /** One warm sentence from Gemini; falls back to the deterministic template on
