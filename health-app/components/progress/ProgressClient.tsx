@@ -128,6 +128,17 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
   const avgProtein = loggedDays.length > 0 ? Math.round(loggedDays.reduce((s, d) => s + d.protein, 0) / loggedDays.length) : 0
   const avgCarbs   = loggedDays.length > 0 ? Math.round(loggedDays.reduce((s, d) => s + d.carbs, 0) / loggedDays.length) : 0
   const avgFat     = loggedDays.length > 0 ? Math.round(loggedDays.reduce((s, d) => s + d.fat, 0) / loggedDays.length) : 0
+
+  // The katoris on the share card. Averages rather than window totals, because
+  // the thali is meant to read as "a typical day of mine" — which is what
+  // someone sharing it is actually claiming.
+  const shareMacros = useMemo(
+    () =>
+      avgProtein + avgCarbs + avgFat > 0
+        ? { proteinG: avgProtein, carbsG: avgCarbs, fatG: avgFat }
+        : null,
+    [avgProtein, avgCarbs, avgFat]
+  )
   // Calorie deficit/surplus vs goal (positive = deficit, negative = surplus)
   const avgDeficit = target > 0 && avgKcal > 0 ? target - avgKcal : null
 
@@ -256,6 +267,7 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
         streakDays={streak}
         startWeightKg={startWeight}
         currentWeightKg={currentWeight}
+        macros={shareMacros}
       />
 
       {/* ── Stat cards: avg calories + days logged ── */}
