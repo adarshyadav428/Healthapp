@@ -14,6 +14,8 @@ import { VerifyEmailCard } from './VerifyEmailCard'
 import { WeekStrip } from './WeekStrip'
 import { WeeklyRecapCard, type WeeklyRecap } from './WeeklyRecapCard'
 import { StreakRescueCard } from './StreakRescueCard'
+import { SeasonCard } from './SeasonCard'
+import type { SeasonState } from '../../lib/seasonServer'
 import { AdaptiveTargetCard } from './AdaptiveTargetCard'
 import { NotificationPrimeCard } from './NotificationPrimeCard'
 import { InstallPromptCard } from '../pwa/InstallPromptCard'
@@ -44,9 +46,11 @@ interface Props {
   weeklyRecap: WeeklyRecap | null
   /** A repairable streak break, Pro only. Null when there's nothing to offer. */
   rescueOffer?: { date: string; streakAfter: number } | null
+  /** The running season and this user's standing. Null between seasons. */
+  seasonState?: SeasonState | null
 }
 
-export function DashboardClient({ profile, initialLogs, streakDays, longestStreakDays = 0, freezesBanked = 0, loggedDates, isPro, aiTrialRemaining = 0, weeklyRecap, rescueOffer = null }: Props) {
+export function DashboardClient({ profile, initialLogs, streakDays, longestStreakDays = 0, freezesBanked = 0, loggedDates, isPro, aiTrialRemaining = 0, weeklyRecap, rescueOffer = null, seasonState = null }: Props) {
   const router = useRouter()
   const { user } = useUser()
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
@@ -177,6 +181,8 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
 
       {/* ── Weekly recap (Pro) ── */}
       <StreakRescueCard offer={rescueOffer} />
+
+      <SeasonCard state={seasonState} />
 
       <WeeklyRecapCard recap={weeklyRecap} isPro={isPro} dailyTarget={target} streakDays={streakDays} />
 

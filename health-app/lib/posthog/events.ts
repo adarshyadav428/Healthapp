@@ -64,6 +64,9 @@ export const EVENTS = {
   // app had never answered.
   MEAL_SUGGESTIONS_VIEWED: 'meal_suggestions_viewed',
   MEAL_SUGGESTION_SWIPED: 'meal_suggestion_swiped',
+  // Seasons — the only mechanic in the app that creates an ending.
+  SEASON_JOINED: 'season_joined',
+  SEASON_COMPLETED: 'season_completed',
   // Streak Rescue — the Pro object. Distinct from the free auto-freeze.
   STREAK_RESCUE_OFFERED: 'streak_rescue_offered',
   STREAK_RESCUE_USED: 'streak_rescue_used',

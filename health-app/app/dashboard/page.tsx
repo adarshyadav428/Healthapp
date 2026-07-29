@@ -9,6 +9,7 @@ import { DashboardClient } from '../../components/dashboard/DashboardClient'
 import { getIstDayRange, istDateStr } from '../../lib/dateUtils'
 import { calculateStreakState, findStreakRescue, longestStreak } from '../../lib/streak'
 import { rescuesRemaining } from '../../lib/streakRescue'
+import { getSeasonState } from '../../lib/seasonServer'
 import type { WeeklyRecap } from '../../components/dashboard/WeeklyRecapCard'
 
 export const metadata: Metadata = {
@@ -112,6 +113,10 @@ export default async function DashboardPage() {
       ? findStreakRescue((recentLogs ?? []) as unknown as FoodLog[], new Date(), rescuedDates)
       : null
 
+  // Seasons are free to join — retention shouldn't be paywalled — so this runs
+  // for everyone. Returns null between seasons and the card renders nothing.
+  const seasonState = await getSeasonState(supabase, user.id)
+
   const recapRow = recapResult.data
   const weeklyRecap: WeeklyRecap | null = recapRow
     ? {
@@ -143,6 +148,7 @@ export default async function DashboardPage() {
           aiTrialRemaining={aiTrialRemaining}
           weeklyRecap={weeklyRecap}
           rescueOffer={rescueOffer}
+          seasonState={seasonState}
         />
       </main>
       <BottomNav />
