@@ -13,6 +13,7 @@ import { RatePromptCard } from './RatePromptCard'
 import { VerifyEmailCard } from './VerifyEmailCard'
 import { WeekStrip } from './WeekStrip'
 import { WeeklyRecapCard, type WeeklyRecap } from './WeeklyRecapCard'
+import { StreakRescueCard } from './StreakRescueCard'
 import { AdaptiveTargetCard } from './AdaptiveTargetCard'
 import { NotificationPrimeCard } from './NotificationPrimeCard'
 import { InstallPromptCard } from '../pwa/InstallPromptCard'
@@ -41,9 +42,11 @@ interface Props {
   /** Lifetime free AI scans left (0 for Pro — they're unlimited, never gated). */
   aiTrialRemaining?: number
   weeklyRecap: WeeklyRecap | null
+  /** A repairable streak break, Pro only. Null when there's nothing to offer. */
+  rescueOffer?: { date: string; streakAfter: number } | null
 }
 
-export function DashboardClient({ profile, initialLogs, streakDays, longestStreakDays = 0, freezesBanked = 0, loggedDates, isPro, aiTrialRemaining = 0, weeklyRecap }: Props) {
+export function DashboardClient({ profile, initialLogs, streakDays, longestStreakDays = 0, freezesBanked = 0, loggedDates, isPro, aiTrialRemaining = 0, weeklyRecap, rescueOffer = null }: Props) {
   const router = useRouter()
   const { user } = useUser()
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
@@ -173,6 +176,8 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
       <AdaptiveTargetCard profile={profile} />
 
       {/* ── Weekly recap (Pro) ── */}
+      <StreakRescueCard offer={rescueOffer} />
+
       <WeeklyRecapCard recap={weeklyRecap} isPro={isPro} dailyTarget={target} streakDays={streakDays} />
 
       {/* ── Recently logged ── */}

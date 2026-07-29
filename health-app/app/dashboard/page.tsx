@@ -7,7 +7,8 @@ import type { FoodLog } from '../../types/index'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { DashboardClient } from '../../components/dashboard/DashboardClient'
 import { getIstDayRange, istDateStr } from '../../lib/dateUtils'
-import { calculateStreakState, longestStreak } from '../../lib/streak'
+import { calculateStreakState, findStreakRescue, longestStreak } from '../../lib/streak'
+import { rescuesRemaining } from '../../lib/streakRescue'
 import type { WeeklyRecap } from '../../components/dashboard/WeeklyRecapCard'
 
 export const metadata: Metadata = {
@@ -29,7 +30,7 @@ export default async function DashboardPage() {
 
   // All three queries only need user.id — run them in one parallel round trip
   // instead of three sequential ones (each is a full network hop to Supabase).
-  const [profileResult, logsResult, streakResult, subResult, recapResult] = await Promise.all([
+  const [profileResult, logsResult, streakResult, subResult, recapResult, rescuesResult] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase
       .from('food_logs')
@@ -53,6 +54,9 @@ export default async function DashboardPage() {
       .order('week_start', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    // Pro Streak Rescues. Tolerant of migration 028 not being applied yet —
+    // an error simply means no rescues exist, same as the recap query above.
+    supabase.from('streak_rescues').select('rescued_date, created_at').eq('user_id', user.id),
   ])
 
   const { data: profile, error: profileError } = profileResult
@@ -66,7 +70,16 @@ export default async function DashboardPage() {
 
   // Freeze-aware: a missed day covered by a banked freeze keeps the streak
   // alive here, so the number the user sees matches the rules we tell them.
-  const streakState = calculateStreakState((recentLogs ?? []) as unknown as FoodLog[])
+  // Rescued days bridge breaks the user paid to repair. Passed IN so
+  // calculateStreakState stays pure — see the note on it in lib/streak.ts.
+  const rescueRows = rescuesResult.data ?? []
+  const rescuedDates = rescueRows.map((r) => r.rescued_date as string)
+
+  const streakState = calculateStreakState(
+    (recentLogs ?? []) as unknown as FoodLog[],
+    new Date(),
+    rescuedDates
+  )
   const streakDays = streakState.streak
 
   // Feeds the "next badge" nudge. Free — it reuses the 60-day window already
@@ -90,6 +103,14 @@ export default async function DashboardPage() {
   // scans left. Pro skips the query entirely — it can't be gated.
   const aiTrial = isPro ? null : await checkAiTrial(supabase, user.id)
   const aiTrialRemaining = aiTrial?.allowed ? aiTrial.remaining : 0
+
+  // The rescue offer. Only computed for Pro — showing a free user a repairable
+  // break they can't act on is an advert dressed as a feature, and the streak
+  // is otherwise entirely free territory.
+  const rescueOffer =
+    isPro && rescuesRemaining(rescueRows.map((r) => r.created_at as string)) > 0
+      ? findStreakRescue((recentLogs ?? []) as unknown as FoodLog[], new Date(), rescuedDates)
+      : null
 
   const recapRow = recapResult.data
   const weeklyRecap: WeeklyRecap | null = recapRow
@@ -121,6 +142,7 @@ export default async function DashboardPage() {
           isPro={isPro}
           aiTrialRemaining={aiTrialRemaining}
           weeklyRecap={weeklyRecap}
+          rescueOffer={rescueOffer}
         />
       </main>
       <BottomNav />

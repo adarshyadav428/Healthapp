@@ -60,6 +60,9 @@ export const EVENTS = {
   STORY_COMPLETED: 'story_completed',
   STORY_ABANDONED: 'story_abandoned',
   STORY_CTA_CLICKED: 'story_cta_clicked',
+  // Streak Rescue — the Pro object. Distinct from the free auto-freeze.
+  STREAK_RESCUE_OFFERED: 'streak_rescue_offered',
+  STREAK_RESCUE_USED: 'streak_rescue_used',
   // celebration / milestone surfaces
   FIRST_LOG_CELEBRATION_SHOWN: 'first_log_celebration_shown',
   WEIGHT_MILESTONE_SHOWN: 'weight_milestone_shown',
