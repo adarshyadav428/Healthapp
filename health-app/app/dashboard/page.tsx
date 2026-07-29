@@ -7,7 +7,7 @@ import type { FoodLog } from '../../types/index'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { DashboardClient } from '../../components/dashboard/DashboardClient'
 import { getIstDayRange, istDateStr } from '../../lib/dateUtils'
-import { calculateStreakState } from '../../lib/streak'
+import { calculateStreakState, longestStreak } from '../../lib/streak'
 import type { WeeklyRecap } from '../../components/dashboard/WeeklyRecapCard'
 
 export const metadata: Metadata = {
@@ -69,6 +69,11 @@ export default async function DashboardPage() {
   const streakState = calculateStreakState((recentLogs ?? []) as unknown as FoodLog[])
   const streakDays = streakState.streak
 
+  // Feeds the "next badge" nudge. Free — it reuses the 60-day window already
+  // fetched for the streak, and is the same window the badge shelf on Trends
+  // derives from, so the two can't disagree about what's been earned.
+  const bestStreak = longestStreak((recentLogs ?? []) as unknown as FoodLog[])
+
   // IST date keys with at least one log — feeds the week strip's dots, matching
   // /log's IST ?date= semantics (a 1am-IST log belongs to that IST day).
   const loggedDates = Array.from(
@@ -110,6 +115,7 @@ export default async function DashboardPage() {
           profile={profile}
           initialLogs={foodLogs}
           streakDays={streakDays}
+          longestStreakDays={bestStreak}
           freezesBanked={streakState.freezesBanked}
           loggedDates={loggedDates}
           isPro={isPro}

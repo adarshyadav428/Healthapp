@@ -71,7 +71,7 @@ export function useCheckout({ userId, userEmail }: Params) {
     if (result.ok) {
       queryClient.invalidateQueries({ queryKey: ['subscription', userId] })
       toast({ title: 'Welcome to Pro!', duration: 2500 })
-      router.push('/dashboard?upgraded=true')
+      router.push('/dashboard')
     } else {
       throw new Error(result.error)
     }
@@ -116,7 +116,7 @@ export function useCheckout({ userId, userEmail }: Params) {
                   if (!verifyRes.ok) throw new Error(verifyData.error)
                   queryClient.invalidateQueries({ queryKey: ['subscription', userId] })
                   toast({ title: 'Welcome to Pro!', duration: 2500 })
-                  router.push('/dashboard?upgraded=true')
+                  router.push('/dashboard')
                   resolve()
                 })
                 .catch(reject)

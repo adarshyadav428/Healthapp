@@ -19,6 +19,7 @@ import { InstallPromptCard } from '../pwa/InstallPromptCard'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
 import { nextUnseenStreakMilestone } from '../../lib/logMilestones'
+import { nextStreakBadge } from '../../lib/badges'
 import { proteinCoachLine } from '../../lib/proteinCoach'
 import { cn } from '../../lib/utils'
 import { reportStreakMilestone } from '../../store/milestoneStore'
@@ -30,6 +31,9 @@ interface Props {
   profile: Profile
   initialLogs: FoodLog[]
   streakDays: number
+  /** Best streak ever reached — the badge shelf awards on this, so the "next
+   *  badge" nudge must respect it or it offers rungs already earned. */
+  longestStreakDays?: number
   /** Streak freezes available — free for everyone, never a Pro gate. */
   freezesBanked?: number
   loggedDates: string[]
@@ -39,7 +43,7 @@ interface Props {
   weeklyRecap: WeeklyRecap | null
 }
 
-export function DashboardClient({ profile, initialLogs, streakDays, freezesBanked = 0, loggedDates, isPro, aiTrialRemaining = 0, weeklyRecap }: Props) {
+export function DashboardClient({ profile, initialLogs, streakDays, longestStreakDays = 0, freezesBanked = 0, loggedDates, isPro, aiTrialRemaining = 0, weeklyRecap }: Props) {
   const router = useRouter()
   const { user } = useUser()
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
@@ -90,35 +94,47 @@ export function DashboardClient({ profile, initialLogs, streakDays, freezesBanke
   )
   const recent = logs.slice(0, 3) // logs arrive newest-first
   const todayDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+  const nextBadge = nextStreakBadge(streakDays, longestStreakDays)
 
   return (
     <>
       {/* ── Header ── */}
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex items-start justify-between pt-2">
         <div>
           <p className="text-[13px] font-medium text-ink-3">{todayDate}</p>
           <h1 className="font-display mt-[3px] text-[24px] font-bold tracking-[-0.02em] text-ink">Today</h1>
         </div>
         {streakDays > 0 && (
-          <div
-            className="flex items-center gap-1.5 rounded-full bg-surface px-[13px] py-[7px]"
-            style={{ boxShadow: 'var(--shadow-air)' }}
-            title={freezesBanked > 0
-              ? `${freezesBanked} streak freeze${freezesBanked > 1 ? 's' : ''} banked — a missed day is covered automatically`
-              : undefined}
-          >
-            <Flame className="h-[15px] w-[15px] text-brand" strokeWidth={2} />
-            <span className="text-[13.5px] font-semibold tabular-nums text-ink">{streakDays}</span>
-            {/* The in-app counterpart of the freeze-aware push. Ink, not red —
-                a banked freeze is reassurance, never a warning. */}
-            {freezesBanked > 0 && (
-              <span className="flex items-center gap-0.5 border-l border-hairline pl-1.5 text-[12px] font-semibold text-ink-3">
-                <Snowflake className="h-[13px] w-[13px]" strokeWidth={2} aria-hidden="true" />
-                <span className="tabular-nums">{freezesBanked}</span>
-                <span className="sr-only">
-                  streak freeze{freezesBanked > 1 ? 's' : ''} banked
+          <div className="flex flex-col items-end">
+            <div
+              className="flex items-center gap-1.5 rounded-full bg-surface px-[13px] py-[7px]"
+              style={{ boxShadow: 'var(--shadow-air)' }}
+              title={freezesBanked > 0
+                ? `${freezesBanked} streak freeze${freezesBanked > 1 ? 's' : ''} banked — a missed day is covered automatically`
+                : undefined}
+            >
+              <Flame className="h-[15px] w-[15px] text-brand" strokeWidth={2} />
+              <span className="text-[13.5px] font-semibold tabular-nums text-ink">{streakDays}</span>
+              {/* The in-app counterpart of the freeze-aware push. Ink, not red —
+                  a banked freeze is reassurance, never a warning. */}
+              {freezesBanked > 0 && (
+                <span className="flex items-center gap-0.5 border-l border-hairline pl-1.5 text-[12px] font-semibold text-ink-3">
+                  <Snowflake className="h-[13px] w-[13px]" strokeWidth={2} aria-hidden="true" />
+                  <span className="tabular-nums">{freezesBanked}</span>
+                  <span className="sr-only">
+                    streak freeze{freezesBanked > 1 ? 's' : ''} banked
+                  </span>
                 </span>
-              </span>
+              )}
+            </div>
+            {/* The badge shelf lives on Trends, which people rarely open — so the
+                one rung that's actually within reach gets a whisper here. Ink,
+                not ember: on Home ember is reserved for data, and this is a
+                prompt. Hidden entirely when the next rung is far away. */}
+            {nextBadge && (
+              <p className="mt-[7px] pr-1 text-[11.5px] font-medium text-ink-3">
+                {nextBadge.daysAway} {nextBadge.daysAway === 1 ? 'day' : 'days'} to {nextBadge.name} {nextBadge.emoji}
+              </p>
             )}
           </div>
         )}
