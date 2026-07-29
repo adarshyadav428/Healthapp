@@ -5,6 +5,11 @@ import { computeRecapStats, recapFallbackMessage, recapWeekStart, type RecapStat
 import { sendPushToUser } from '../../../../lib/push/send'
 import { processInBatches, CRON_TIME_BUDGET_MS } from '../../../../lib/cronBatch'
 import { isProStatus } from '../../../../lib/subscription'
+import { computeWrappedStats } from '../../../../lib/wrappedStats'
+import {
+  isMonthlyWrapWindow, previousMonthStart, istDayStartInstant, monthLabel, MIN_DAYS_FOR_WRAP,
+} from '../../../../lib/monthlyWrapped'
+import type { FoodLog } from '../../../../types/index'
 
 export const runtime = 'nodejs'
 
@@ -112,6 +117,16 @@ export async function GET(req: Request) {
     if (result.sent > 0) sent += 1
   }, { deadline: startedAt + CRON_TIME_BUDGET_MS })
 
+  // ── Monthly Wrapped ───────────────────────────────────────────────────
+  // Rides inside this cron rather than being its own schedule: vercel.json
+  // declares two crons and the Hobby plan caps there, so a third would cost a
+  // plan upgrade to run one job a month. Runs on any Sunday in the first
+  // fortnight; users already wrapped are skipped, so the second Sunday only
+  // mops up whoever the deadline cut off.
+  const monthly = isMonthlyWrapWindow(new Date())
+    ? await generateMonthlyWraps(admin, proUsers, startedAt)
+    : null
+
   // `remaining` is reported rather than swallowed: a cron that quietly does 60%
   // of its job looks identical to one that did all of it, which is how the old
   // serial loop would have failed.
@@ -123,7 +138,98 @@ export async function GET(req: Request) {
     remaining: outcome.remaining,
     timedOut: outcome.timedOut,
     failed: outcome.failed,
+    monthly,
   })
+}
+
+/**
+ * Write the previous month's Wrapped for everyone who logged enough of it.
+ *
+ * Deliberately reads its own window rather than reusing the weekly one: a
+ * Wrapped covers a calendar month that has ended, and the snapshot it stores is
+ * what the story renders forever after. Recomputing later against edited logs
+ * would let a keepsake quietly rewrite itself.
+ */
+async function generateMonthlyWraps(
+  admin: ReturnType<typeof createAdminClient>,
+  proUsers: Set<string>,
+  startedAt: number
+) {
+  const monthStart = previousMonthStart(new Date())
+  const from = istDayStartInstant(monthStart)
+  const [y, m] = monthStart.split('-').map(Number)
+  const nextMonth = `${m === 12 ? y + 1 : y}-${String(m === 12 ? 1 : m + 1).padStart(2, '0')}-01`
+  const to = istDayStartInstant(nextMonth)
+
+  const [{ data: logs }, { data: weights }, { data: done }] = await Promise.all([
+    admin.from('food_logs').select('user_id, kcal, protein_g, logged_at, food:foods(name)')
+      .gte('logged_at', from).lt('logged_at', to),
+    admin.from('weight_logs').select('user_id, weight_kg, measured_at')
+      .gte('measured_at', from).lt('measured_at', to),
+    admin.from('monthly_wraps').select('user_id').eq('month_start', monthStart),
+  ])
+
+  const alreadyWrapped = new Set((done ?? []).map((r) => r.user_id as string))
+
+  const logsByUser = new Map<string, FoodLog[]>()
+  for (const row of logs ?? []) {
+    const uid = row.user_id as string
+    const arr = logsByUser.get(uid) ?? []
+    arr.push(row as unknown as FoodLog)
+    logsByUser.set(uid, arr)
+  }
+
+  const weighsByUser = new Map<string, { weight_kg: number; measured_at: string }[]>()
+  for (const row of weights ?? []) {
+    const uid = row.user_id as string
+    const arr = weighsByUser.get(uid) ?? []
+    arr.push({ weight_kg: row.weight_kg as number, measured_at: row.measured_at as string })
+    weighsByUser.set(uid, arr)
+  }
+
+  const candidates = [...logsByUser.keys()].filter((uid) => !alreadyWrapped.has(uid))
+  let written = 0
+  let pushed = 0
+
+  const outcome = await processInBatches(candidates, async (uid) => {
+    const stats = computeWrappedStats({
+      logs: logsByUser.get(uid) ?? [],
+      weighIns: weighsByUser.get(uid) ?? [],
+      proteinTargetG: null,
+    })
+
+    // A month with almost nothing in it isn't a story, it's a reminder that you
+    // stopped using the app — and pushing that is how you lose someone for good.
+    if (stats.daysLogged < MIN_DAYS_FOR_WRAP) return
+
+    const message = `${stats.daysLogged} days logged in ${monthLabel(monthStart)}.`
+
+    const { error } = await admin.from('monthly_wraps').upsert(
+      { user_id: uid, month_start: monthStart, stats, message },
+      { onConflict: 'user_id,month_start' }
+    )
+    if (error) throw new Error(error.message)
+    written += 1
+
+    // Free users get the push too: the Wrapped is the best advert Pro has, and
+    // it's an advert made entirely of the user's own month.
+    const result = await sendPushToUser(uid, {
+      title: `Your ${monthLabel(monthStart)} is ready 📖`,
+      body: proUsers.has(uid) ? message : `${message} See the whole story.`,
+      url: '/wrapped',
+      tag: 'monthly-wrapped',
+    })
+    if (result.sent > 0) pushed += 1
+  }, { deadline: startedAt + CRON_TIME_BUDGET_MS })
+
+  return {
+    monthStart,
+    candidates: candidates.length,
+    written,
+    pushed,
+    remaining: outcome.remaining,
+    timedOut: outcome.timedOut,
+  }
 }
 
 /** One warm sentence from Gemini; falls back to the deterministic template on

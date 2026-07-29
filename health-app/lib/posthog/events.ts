@@ -119,6 +119,10 @@ export type PaywallSource =
   | 'custom_foods'
   | 'history_limit'
   | 'recap_end_card'
+  // The monthly Wrapped's locked card. Unlike every other source here it
+  // doesn't block an action — it withholds something about the user that they
+  // can already see exists, which is a different (and better-converting) ask.
+  | 'wrapped'
   // Not upgrade prompts — these ask an anonymous user to create a free account
   // before any Gemini credits are spent. Tracked here so the funnel sees them.
   | 'camera_scan_anonymous'
