@@ -76,7 +76,7 @@ const categories: Record<CategoryKey, CategorySpec> = {
   veg: { base: { protein: 2, carbs: 8, fat: 3, fiber: 2.5 }, serving: serving('1 katori', 150), variance: 0.2 },
   paneer: { base: { protein: 9, carbs: 6, fat: 10, fiber: 1 }, serving: serving('1 katori', 200), variance: 0.18 },
   chicken: { base: { protein: 15, carbs: 4, fat: 7, fiber: 0.5 }, serving: serving('1 katori', 200), variance: 0.18 },
-  egg: { base: { protein: 10, carbs: 2, fat: 8, fiber: 0 }, serving: serving('2 eggs', 100), variance: 0.18 },
+  egg: { base: { protein: 10, carbs: 2, fat: 11, fiber: 0 }, serving: serving('2 eggs', 100), variance: 0.18 },
   mutton: { base: { protein: 14, carbs: 2, fat: 12, fiber: 0.4 }, serving: serving('1 katori', 200), variance: 0.18 },
   fish: { base: { protein: 16, carbs: 2, fat: 6, fiber: 0.2 }, serving: serving('1 katori', 200), variance: 0.18 },
   street: { base: { protein: 6, carbs: 30, fat: 12, fiber: 2 }, serving: serving('1 plate', 150), variance: 0.2 },
@@ -176,7 +176,7 @@ const scaleMacrosToLimit = (macros: Macros): Macros => {
   }
 }
 
-const applyKeywordAdjustments = (name: string, macros: Macros): Macros => {
+const applyKeywordAdjustments = (name: string, category: CategoryKey, macros: Macros): Macros => {
   const lower = name.toLowerCase()
   let { protein, carbs, fat, fiber } = macros
 
@@ -191,7 +191,12 @@ const applyKeywordAdjustments = (name: string, macros: Macros): Macros => {
     fat *= 1.2
   }
 
-  if (has(/tandoori|grilled|roasted|steamed|boiled/)) {
+  // Lean-cooking discount: tandoori/grilled/steamed use less added oil than a
+  // fried or gravy version. It does NOT apply to eggs — boiling or frying an
+  // egg removes none of its own fat, so a "Boiled Egg" must not read leaner
+  // than the whole egg it is. Skipping the whole egg category keeps the estimate
+  // near the measured IFCT boiled-egg value instead of ~40% under it.
+  if (category !== 'egg' && has(/tandoori|grilled|roasted|steamed|boiled/)) {
     fat *= 0.85
   }
 
@@ -240,7 +245,7 @@ const makeFood = (item: Item): FoodSeed => {
   let fat = vary(spec.base.fat, `${name}-f`, spec.variance)
   let fiber = vary(spec.base.fiber, `${name}-fi`, spec.variance)
 
-  ;({ protein, carbs, fat, fiber } = applyKeywordAdjustments(name, { protein, carbs, fat, fiber }))
+  ;({ protein, carbs, fat, fiber } = applyKeywordAdjustments(name, item.category, { protein, carbs, fat, fiber }))
   ;({ protein, carbs, fat, fiber } = applyProteinFloor(name, item.category, { protein, carbs, fat, fiber }))
   ;({ protein, carbs, fat, fiber } = scaleMacrosToLimit({ protein, carbs, fat, fiber }))
 
