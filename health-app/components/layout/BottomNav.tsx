@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
@@ -40,6 +40,22 @@ export function BottomNav() {
   const pathname = usePathname()
   const [showCamera, setShowCamera] = useState(false)
   const [foundFood, setFoundFood]   = useState<Food | null>(null)
+
+  // `?scan=1` opens the scanner on arrival, so a surface that ends in "go scan
+  // something" (the Pro welcome, a Wrapped card, a push) can land the user in
+  // the camera instead of on a screen where they still have to find the button.
+  //
+  // Read from window rather than useSearchParams deliberately: this component
+  // renders on every authenticated page, and useSearchParams would opt all of
+  // them into client rendering for a one-shot deep link. The param is stripped
+  // immediately so a refresh — or a Back — doesn't reopen the camera.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('scan') !== '1') return
+    setShowCamera(true)
+    const url = new URL(window.location.href)
+    url.searchParams.delete('scan')
+    window.history.replaceState(null, '', url.pathname + url.search + url.hash)
+  }, [])
 
   return (
     <>

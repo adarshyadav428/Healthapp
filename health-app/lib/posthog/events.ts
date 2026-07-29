@@ -51,6 +51,15 @@ export const EVENTS = {
   // AI logging quality
   AI_SCAN_COMPLETED: 'ai_scan_completed',
   AI_ESTIMATE_CORRECTED: 'ai_estimate_corrected',
+  // story surfaces (Pro welcome, Wrapped, season wrap, onboarding plan).
+  // `*_completed` means "read to the last card", NOT "acted" — the CTA has its
+  // own event, so a story that lands but doesn't convert stays visible in the
+  // funnel instead of being scored as a failure.
+  STORY_SHOWN: 'story_shown',
+  STORY_CARD_VIEWED: 'story_card_viewed',
+  STORY_COMPLETED: 'story_completed',
+  STORY_ABANDONED: 'story_abandoned',
+  STORY_CTA_CLICKED: 'story_cta_clicked',
   // celebration / milestone surfaces
   FIRST_LOG_CELEBRATION_SHOWN: 'first_log_celebration_shown',
   WEIGHT_MILESTONE_SHOWN: 'weight_milestone_shown',
@@ -111,3 +120,12 @@ export type PaywallSource =
   // before any Gemini credits are spent. Tracked here so the funnel sees them.
   | 'camera_scan_anonymous'
   | 'chat_scan_anonymous'
+
+/**
+ * The `surface` prop on every `story_*` event — which sequence was playing.
+ * One engine renders all of them, so without this they'd be indistinguishable
+ * in the funnel.
+ */
+export const STORY_SURFACES = ['welcome', 'monthly_wrapped', 'season_wrap', 'onboarding_plan'] as const
+
+export type StorySurface = (typeof STORY_SURFACES)[number]

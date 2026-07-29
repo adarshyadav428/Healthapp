@@ -65,13 +65,27 @@ export function useCheckout({ userId, userEmail }: Params) {
     }
   }, [])
 
+  /**
+   * Where both providers land once the entitlement exists.
+   *
+   * `/welcome` gates on status being active OR trialing rather than on money
+   * having moved, which matters inside the TWA: Play grants a 3-day trial and
+   * captures nothing until it ends, so a payment-captured trigger would hide
+   * this from precisely the users who most need a reason to stay.
+   *
+   * No toast any more — a 2.5s "Welcome to Pro!" that vanishes before it's read
+   * was the entire reward for paying, and it's what this replaces.
+   */
+  const goToWelcome = () => {
+    queryClient.invalidateQueries({ queryKey: ['subscription', userId] })
+    router.replace('/welcome')
+  }
+
   // Google Play Billing path (inside the TWA) — verify happens server-side.
   const startPlayPurchase = async (plan: Plan) => {
     const result = await purchasePlan(PLAY_PRODUCT_FOR_PLAN[plan])
     if (result.ok) {
-      queryClient.invalidateQueries({ queryKey: ['subscription', userId] })
-      toast({ title: 'Welcome to Pro!', duration: 2500 })
-      router.push('/dashboard')
+      goToWelcome()
     } else {
       throw new Error(result.error)
     }
@@ -114,9 +128,7 @@ export function useCheckout({ userId, userEmail }: Params) {
                 .then(async (verifyRes) => {
                   const verifyData = await verifyRes.json()
                   if (!verifyRes.ok) throw new Error(verifyData.error)
-                  queryClient.invalidateQueries({ queryKey: ['subscription', userId] })
-                  toast({ title: 'Welcome to Pro!', duration: 2500 })
-                  router.push('/dashboard')
+                  goToWelcome()
                   resolve()
                 })
                 .catch(reject)
