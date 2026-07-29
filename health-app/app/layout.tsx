@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, Inter_Tight } from 'next/font/google'
 import './globals.css'
 import Providers from './providers'
+import { Analytics } from '@vercel/analytics/next'
 
 // Ember type system: Inter for UI, Inter Tight for display & hero numerals —
 // the doctrine's Apple-crisp pairing, promoted app-wide after the studio pick.
@@ -63,6 +64,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full text-ink">
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   )
