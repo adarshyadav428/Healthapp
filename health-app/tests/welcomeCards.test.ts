@@ -167,3 +167,16 @@ describe('buildWelcomeCards — names', () => {
     expect(buildWelcomeCards({ stats: lived, firstName: '   ' }).at(0)!.title).toBe("You're Pro.")
   })
 })
+
+describe('buildWelcomeCards — the Pro object', () => {
+  it('hands over a Streak Rescue, story or not', () => {
+    expect(ids(lived)).toContain('welcome-rescue')
+    expect(ids(blank)).toContain('welcome-rescue')
+  })
+
+  it('places it last before the CTA — everything above is history or a wall coming down', () => {
+    const cards = buildWelcomeCards({ stats: lived })
+    expect(cards.at(-2)!.id).toBe('welcome-rescue')
+    expect(cards.at(-1)!.id).toBe('welcome-go')
+  })
+})

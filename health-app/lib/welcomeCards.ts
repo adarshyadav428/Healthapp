@@ -14,6 +14,7 @@
 import type { StoryCard } from '../components/story/types'
 import type { WrappedStats } from './wrappedStats'
 import { AI_TRIAL_SCANS } from './aiTrial'
+import { RESCUES_PER_MONTH } from './streakRescue'
 
 export type WelcomeCardArgs = {
   stats: WrappedStats
@@ -59,6 +60,17 @@ export function buildWelcomeCards({ stats, firstName, aiTrialUsed = 0 }: Welcome
     ],
   }
 
+  // The only card that hands over an object rather than reporting a number.
+  // It's last before the CTA on purpose: everything above is either history or
+  // a wall coming down, and this is the one thing Pro actually *gives*.
+  const rescue: StoryCard = {
+    id: 'welcome-rescue',
+    glyph: '🛟',
+    value: String(RESCUES_PER_MONTH),
+    label: 'Streak Rescue a month',
+    body: 'Miss a day and break your streak? Repair it — yours now, every month.',
+  }
+
   const closing: StoryCard = {
     id: 'welcome-go',
     tone: 'ember',
@@ -81,6 +93,7 @@ export function buildWelcomeCards({ stats, firstName, aiTrialUsed = 0 }: Welcome
         body: 'Log a few meals and this screen fills up with your own numbers — streaks, your most-eaten dishes, the weight curve.',
       },
       unlocked,
+      rescue,
       closing,
     ]
   }
@@ -141,5 +154,5 @@ export function buildWelcomeCards({ stats, firstName, aiTrialUsed = 0 }: Welcome
     })
   }
 
-  return [opening, ...story, unlocked, closing]
+  return [opening, ...story, unlocked, rescue, closing]
 }
