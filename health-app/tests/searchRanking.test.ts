@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { relevanceScore, nameCoverage, compareFoodsForQuery } from '../lib/searchRanking'
+import { relevanceScore, nameCoverage, isPlainForm, compareFoodsForQuery } from '../lib/searchRanking'
 import { SOURCE_RANK } from '../lib/foodMatch'
 
 /**
@@ -84,6 +84,35 @@ describe('nameCoverage', () => {
 
   it('is 0 for a name sharing nothing with the query', () => {
     expect(nameCoverage('Makki ki Roti', 'biryani')).toBe(0)
+  })
+})
+
+describe('nameCoverage with a regional gloss', () => {
+  it('does not count the translation against the plain food', () => {
+    // "Cooked Rice (Chawal)" is 1-of-3 words if the gloss counts, which lost the
+    // coverage tier to the 1-of-2 dish "Jeera Rice" and buried plain rice.
+    expect(nameCoverage('Cooked Rice (Chawal)', 'rice')).toBeGreaterThanOrEqual(
+      nameCoverage('Jeera Rice', 'rice')
+    )
+  })
+
+  it('reads each slash alternative as a name of its own', () => {
+    expect(nameCoverage('Kheer / Rice Pudding', 'kheer')).toBe(1)
+  })
+})
+
+describe('isPlainForm', () => {
+  it('accepts the food itself, however it was prepared', () => {
+    expect(isPlainForm('Cooked Rice (Chawal)', 'rice')).toBe(true)
+    expect(isPlainForm('Raw Rice (Chawal)', 'rice')).toBe(true)
+    expect(isPlainForm('Steamed Rice', 'rice')).toBe(true)
+  })
+
+  it('rejects a dish made from it', () => {
+    expect(isPlainForm('Jeera Rice (Cumin Rice)', 'rice')).toBe(false)
+    expect(isPlainForm('Sambar Rice (Combo)', 'rice')).toBe(false)
+    expect(isPlainForm('Kheer (rice)', 'rice')).toBe(false)
+    expect(isPlainForm('Curd Rice (Thayir Sadam)', 'rice')).toBe(false)
   })
 })
 
@@ -210,6 +239,22 @@ describe('compareFoodsForQuery', () => {
     expect(foods.slice().sort(compareFoodsForQuery('chicken biryani', SOURCE_RANK))[0].name).toBe(
       'Chicken Biryani'
     )
+  })
+
+  it('answers a one-word food query with the food, not the dishes made from it', () => {
+    // The live report: searching "rice" returned Jeera Rice, Sambar Rice and
+    // Steamed Rice before any row that is simply rice.
+    const order = rank(
+      [
+        ['Jeera Rice', 'curated'],
+        ['Sambar Rice', 'curated'],
+        ['Kheer (rice)', 'ifct'],
+        ['Cooked Rice (Chawal)', 'ifct'],
+        ['Veg Fried Rice (Indian Chinese)', 'ifct'],
+      ],
+      'rice'
+    )
+    expect(order[0]).toBe('Cooked Rice (Chawal)')
   })
 
   it('is a stable, total ordering (no comparator contradictions)', () => {
