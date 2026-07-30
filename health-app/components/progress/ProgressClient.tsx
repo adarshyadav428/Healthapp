@@ -10,6 +10,7 @@ import { DayDiary } from './DayDiary'
 import { dateStrToUtcMidnight } from '../../lib/dateUtils'
 import { ShareProgressButton } from './ShareProgressButton'
 import { computeWeightTrend } from '../../lib/weightTrend'
+import { contextInsight, contextInsightLine } from '../../lib/mealContext'
 import { BadgeShelf } from './BadgeShelf'
 import type { BadgeStats } from '../../lib/badges'
 import { formatGoalDate } from '../../lib/projection'
@@ -24,7 +25,7 @@ const TrendBarChart = dynamic(() => import('./TrendBarChart').then(m => m.TrendB
   loading: () => <div className="h-[180px] rounded-card bg-surface-2 animate-pulse" />,
 })
 
-type LogRow = { logged_at: string; kcal: number; protein_g: number; carbs_g: number; fat_g: number; meal: string }
+type LogRow = { logged_at: string; kcal: number; protein_g: number; carbs_g: number; fat_g: number; meal: string; context?: string | null }
 type ExerciseRow = { logged_at: string; activity: string; duration_min: number; calories: number }
 type DayData = { date: string; label: string; kcal: number; protein: number; carbs: number; fat: number; logged: boolean }
 
@@ -128,6 +129,22 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
   const avgProtein = loggedDays.length > 0 ? Math.round(loggedDays.reduce((s, d) => s + d.protein, 0) / loggedDays.length) : 0
   const avgCarbs   = loggedDays.length > 0 ? Math.round(loggedDays.reduce((s, d) => s + d.carbs, 0) / loggedDays.length) : 0
   const avgFat     = loggedDays.length > 0 ? Math.round(loggedDays.reduce((s, d) => s + d.fat, 0) / loggedDays.length) : 0
+
+  // Only speaks with enough evidence on both sides and a gap worth a sentence —
+  // an app that announces a pattern from two data points teaches people to
+  // ignore its patterns.
+  const contextLine = useMemo(() => contextInsightLine(contextInsight(logs)), [logs])
+
+  // The katoris on the share card. Averages rather than window totals, because
+  // the thali is meant to read as "a typical day of mine" — which is what
+  // someone sharing it is actually claiming.
+  const shareMacros = useMemo(
+    () =>
+      avgProtein + avgCarbs + avgFat > 0
+        ? { proteinG: avgProtein, carbsG: avgCarbs, fatG: avgFat }
+        : null,
+    [avgProtein, avgCarbs, avgFat]
+  )
   // Calorie deficit/surplus vs goal (positive = deficit, negative = surplus)
   const avgDeficit = target > 0 && avgKcal > 0 ? target - avgKcal : null
 
@@ -249,6 +266,13 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
       )}
 
       {/* ── Badges: free and lifetime, never Pro-gated ── */}
+      {contextLine && (
+        <div className="mt-3 rounded-[20px] bg-surface p-4" style={AIR}>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-3">Pattern</p>
+          <p className="mt-1.5 text-[14px] text-ink">{contextLine}</p>
+        </div>
+      )}
+
       {badgeStats && <BadgeShelf stats={badgeStats} />}
 
       {/* Share progress card (WhatsApp/IG image) — hidden when nothing to show yet */}
@@ -256,6 +280,7 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
         streakDays={streak}
         startWeightKg={startWeight}
         currentWeightKg={currentWeight}
+        macros={shareMacros}
       />
 
       {/* ── Stat cards: avg calories + days logged ── */}

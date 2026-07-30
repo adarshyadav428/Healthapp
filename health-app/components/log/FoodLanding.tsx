@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Search, ScanLine, Camera, Zap, Plus, Copy, ChevronLeft, Loader2, Layers } from 'lucide-react'
+import { Search, ScanLine, Camera, Zap, Plus, Copy, ChevronLeft, Loader2, Layers, Sparkles } from 'lucide-react'
 import type { Food } from '../../types/index'
 import { toast } from '../ui/use-toast'
 import { foodEmoji, tintFor } from '../../lib/foodVisual'
@@ -19,6 +19,7 @@ const FoodSearch    = dynamic(() => import('./FoodSearch').then(m => m.FoodSearc
 const CameraModal   = dynamic(() => import('../camera/CameraModal').then(m => m.CameraModal), { ssr: false })
 const AddFoodModal  = dynamic(() => import('./AddFoodModal').then(m => m.AddFoodModal),     { ssr: false })
 const QuickAddModal = dynamic(() => import('./QuickAddModal').then(m => m.QuickAddModal),   { ssr: false })
+const MealSuggestDeck = dynamic(() => import('./MealSuggestDeck').then(m => m.MealSuggestDeck), { ssr: false })
 
 type RecentLogItem = { food: Food; grams: number; kcal: number; meal: string }
 
@@ -71,6 +72,7 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
   const [showCamera, setShowCamera] = useState(false)
   const [foundFood, setFoundFood] = useState<Food | null>(null)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
+  const [showSuggest, setShowSuggest] = useState(false)
   const [relogId, setRelogId] = useState<string | null>(null)
   const [copying, setCopying] = useState(false)
   const [loggingMealId, setLoggingMealId] = useState<string | null>(null)
@@ -221,6 +223,25 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
         </button>
       </div>
 
+      {/* "What should I eat?" — the one question the app never answered. Only on
+          today: suggesting dinner for a day that's already over is nonsense. */}
+      {isToday && (
+        <button
+          type="button"
+          onClick={() => setShowSuggest(true)}
+          className="flex w-full items-center gap-3 rounded-[20px] bg-surface p-[16px] text-left tap-scale"
+          style={AIR}
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
+            <Sparkles className="h-[18px] w-[18px]" strokeWidth={2} />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[14.5px] font-semibold text-ink">What should I eat?</span>
+            <span className="mt-0.5 block text-[11.5px] text-ink-3">Ideas that fit what&apos;s left today</span>
+          </span>
+        </button>
+      )}
+
       {/* Your combos — saved templates, the fastest path to a full meal */}
       {savedMeals.length > 0 && (
         <div className="pt-2">
@@ -313,6 +334,12 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
       )}
       {foundFood && <AddFoodModal food={foundFood} onClose={() => setFoundFood(null)} logDate={logDate} />}
       {showQuickAdd && <QuickAddModal onClose={() => setShowQuickAdd(false)} logDate={logDate} />}
+      {showSuggest && (
+        <MealSuggestDeck
+          onClose={() => setShowSuggest(false)}
+          onPick={(food) => { setShowSuggest(false); setFoundFood(food) }}
+        />
+      )}
     </div>
   )
 }

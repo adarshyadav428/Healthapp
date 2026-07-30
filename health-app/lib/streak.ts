@@ -17,6 +17,9 @@ export const FREEZE_EARNED_EVERY = 7
 /** Freezes never stockpile — at most two missed days can ever be covered. */
 export const MAX_FREEZES_BANKED = 2
 
+/** How far back a Pro user may reach to repair a break. */
+export const RESCUE_WINDOW_DAYS = 3
+
 export type StreakState = {
   /** Current streak length in days. Frozen days keep it alive but don't add to it. */
   streak: number
@@ -24,6 +27,8 @@ export type StreakState = {
   freezesBanked: number
   /** IST date keys (YYYY-MM-DD) that a freeze covered inside the current streak. */
   frozenDays: string[]
+  /** IST date keys a Pro Streak Rescue covered inside the current streak. */
+  rescuedDays: string[]
 }
 
 /**
@@ -42,11 +47,24 @@ export type StreakState = {
  *
  * Only the days present in `logs` bound the walk, so callers passing a rolling
  * window (the dashboard passes ~60 days) reconstruct any streak that fits it.
+ *
+ * `rescuedDates` (IST date keys) are Pro Streak Rescues — days the user paid to
+ * bridge after the fact. They're passed IN rather than read from a table so
+ * this function stays pure and replayable: the whole point of deriving the
+ * streak from history is that there's nothing to migrate, drift or repair, and
+ * a DB read in here would throw that away. A rescued day behaves like a frozen
+ * one (keeps the streak alive, doesn't add to it) but costs no banked freeze —
+ * the user already paid for it.
  */
-export function calculateStreakState(logs: FoodLog[], referenceDate = new Date()): StreakState {
+export function calculateStreakState(
+  logs: FoodLog[],
+  referenceDate = new Date(),
+  rescuedDates: readonly string[] = []
+): StreakState {
   const dayKeyOf = (utcMs: number) => new Date(utcMs + IST_OFFSET_MS).toISOString().slice(0, 10)
   const logged = new Set<string>(logs.map((l) => toIstDateKey(l.logged_at)))
-  if (logged.size === 0) return { streak: 0, freezesBanked: 0, frozenDays: [] }
+  const rescued = new Set<string>(rescuedDates)
+  if (logged.size === 0) return { streak: 0, freezesBanked: 0, frozenDays: [], rescuedDays: [] }
 
   const refMs = referenceDate.getTime()
   const todayKey = dayKeyOf(refMs)
@@ -58,6 +76,7 @@ export function calculateStreakState(logs: FoodLog[], referenceDate = new Date()
   let streak = 0
   let banked = 0
   let frozenDays: string[] = []
+  let rescuedDays: string[] = []
 
   while (dayKeyOf(cursor) <= todayKey) {
     const key = dayKeyOf(cursor)
@@ -67,6 +86,10 @@ export function calculateStreakState(logs: FoodLog[], referenceDate = new Date()
       if (streak % FREEZE_EARNED_EVERY === 0 && banked < MAX_FREEZES_BANKED) banked += 1
     } else if (key === todayKey) {
       // Today is still in progress — leave the streak pending, spend nothing.
+    } else if (rescued.has(key)) {
+      // Checked BEFORE the freeze: spending a banked freeze on a day the user
+      // has already paid to rescue would charge them twice for one gap.
+      rescuedDays.push(key)
     } else if (banked > 0) {
       banked -= 1
       frozenDays.push(key)
@@ -74,12 +97,51 @@ export function calculateStreakState(logs: FoodLog[], referenceDate = new Date()
       streak = 0
       banked = 0
       frozenDays = []
+      rescuedDays = []
     }
 
     cursor += DAY_MS
   }
 
-  return { streak, freezesBanked: banked, frozenDays }
+  return { streak, freezesBanked: banked, frozenDays, rescuedDays }
+}
+
+/**
+ * The break a Streak Rescue would repair, and what the streak becomes if it is.
+ *
+ * Works by replaying `calculateStreakState` with each candidate day added, so
+ * the rescue can never disagree with the rules that produce the streak itself.
+ * Returns null when no single rescue would actually help — there's no break in
+ * reach, the gap is wider than one purchase can bridge, or a freeze already
+ * covered it.
+ */
+export function findStreakRescue(
+  logs: FoodLog[],
+  referenceDate = new Date(),
+  rescuedDates: readonly string[] = []
+): { date: string; streakAfter: number } | null {
+  const dayKeyOf = (utcMs: number) => new Date(utcMs + IST_OFFSET_MS).toISOString().slice(0, 10)
+  const logged = new Set<string>(logs.map((l) => toIstDateKey(l.logged_at)))
+  if (logged.size === 0) return null
+
+  const already = new Set(rescuedDates)
+  const current = calculateStreakState(logs, referenceDate, rescuedDates).streak
+  const refMs = referenceDate.getTime()
+
+  let best: { date: string; streakAfter: number } | null = null
+
+  // Yesterday backwards. Today is never a break — the day isn't over.
+  for (let i = 1; i <= RESCUE_WINDOW_DAYS; i++) {
+    const key = dayKeyOf(refMs - i * DAY_MS)
+    if (logged.has(key) || already.has(key)) continue
+
+    const streakAfter = calculateStreakState(logs, referenceDate, [...rescuedDates, key]).streak
+    if (streakAfter > current && (!best || streakAfter > best.streakAfter)) {
+      best = { date: key, streakAfter }
+    }
+  }
+
+  return best
 }
 
 /**

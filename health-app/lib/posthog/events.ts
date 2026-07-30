@@ -51,6 +51,25 @@ export const EVENTS = {
   // AI logging quality
   AI_SCAN_COMPLETED: 'ai_scan_completed',
   AI_ESTIMATE_CORRECTED: 'ai_estimate_corrected',
+  // story surfaces (Pro welcome, Wrapped, season wrap, onboarding plan).
+  // `*_completed` means "read to the last card", NOT "acted" — the CTA has its
+  // own event, so a story that lands but doesn't convert stays visible in the
+  // funnel instead of being scored as a failure.
+  STORY_SHOWN: 'story_shown',
+  STORY_CARD_VIEWED: 'story_card_viewed',
+  STORY_COMPLETED: 'story_completed',
+  STORY_ABANDONED: 'story_abandoned',
+  STORY_CTA_CLICKED: 'story_cta_clicked',
+  // Meal suggestion deck — the Pro capability. "What should I eat?", which the
+  // app had never answered.
+  MEAL_SUGGESTIONS_VIEWED: 'meal_suggestions_viewed',
+  MEAL_SUGGESTION_SWIPED: 'meal_suggestion_swiped',
+  // Seasons — the only mechanic in the app that creates an ending.
+  SEASON_JOINED: 'season_joined',
+  SEASON_COMPLETED: 'season_completed',
+  // Streak Rescue — the Pro object. Distinct from the free auto-freeze.
+  STREAK_RESCUE_OFFERED: 'streak_rescue_offered',
+  STREAK_RESCUE_USED: 'streak_rescue_used',
   // celebration / milestone surfaces
   FIRST_LOG_CELEBRATION_SHOWN: 'first_log_celebration_shown',
   WEIGHT_MILESTONE_SHOWN: 'weight_milestone_shown',
@@ -107,7 +126,22 @@ export type PaywallSource =
   | 'custom_foods'
   | 'history_limit'
   | 'recap_end_card'
+  // The monthly Wrapped's locked card. Unlike every other source here it
+  // doesn't block an action — it withholds something about the user that they
+  // can already see exists, which is a different (and better-converting) ask.
+  | 'wrapped'
+  // The suggestion deck running out for a free user.
+  | 'meal_suggestions'
   // Not upgrade prompts — these ask an anonymous user to create a free account
   // before any Gemini credits are spent. Tracked here so the funnel sees them.
   | 'camera_scan_anonymous'
   | 'chat_scan_anonymous'
+
+/**
+ * The `surface` prop on every `story_*` event — which sequence was playing.
+ * One engine renders all of them, so without this they'd be indistinguishable
+ * in the funnel.
+ */
+export const STORY_SURFACES = ['welcome', 'monthly_wrapped', 'season_wrap', 'onboarding_plan'] as const
+
+export type StorySurface = (typeof STORY_SURFACES)[number]

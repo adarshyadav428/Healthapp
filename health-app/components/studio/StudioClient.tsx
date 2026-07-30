@@ -8,13 +8,93 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef, useState } from 'react'
+import { Story } from '../story/Story'
+import type { StoryCard } from '../story/types'
+import { buildShareCardData, buildPlateSplit, drawShareCard } from '../../lib/shareCard'
 import {
   Flame, Home, UtensilsCrossed, TrendingUp, User, Plus, X, Check,
   ChevronLeft, Camera, Sparkles,
 } from 'lucide-react'
 
 type Direction = 'onyx' | 'porcelain'
-type Screen = 'dashboard' | 'paywall' | 'quickadd'
+type Screen = 'dashboard' | 'paywall' | 'quickadd' | 'story' | 'card'
+
+/**
+ * The share card, drawn at full size and scaled down for review.
+ *
+ * It deliberately ignores the studio's light/dark switch: a share card is a
+ * brand asset that leaves the app, so lib/shareCard pins it to the Porcelain
+ * palette and it must look identical for every user. Seeing that it *doesn't*
+ * react to the toggle is part of what this preview is for.
+ */
+function ShareCardScreen() {
+  const ref = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const canvas = ref.current
+    if (!canvas) return
+    let cancelled = false
+    document.fonts.ready.then(() => {
+      if (cancelled || !ref.current) return
+      const data = buildShareCardData({ streakDays: 12, startWeightKg: 82, currentWeightKg: 79.6 })
+      if (!data) return
+      const plate = buildPlateSplit({ proteinG: 96, carbsG: 210, fatG: 58 })
+      const root = getComputedStyle(document.documentElement)
+      drawShareCard(ref.current, data, {
+        display: root.getPropertyValue('--font-display').trim() || 'Inter Tight, sans-serif',
+        sans: root.getPropertyValue('--font-sans').trim() || 'Inter, sans-serif',
+      }, plate)
+    })
+    return () => { cancelled = true }
+  }, [])
+
+  return (
+    <div className="st-page" style={{ display: 'grid', placeItems: 'center', padding: 18 }}>
+      <canvas ref={ref} style={{ width: '100%', maxWidth: 340, height: 'auto', borderRadius: 18 }} />
+    </div>
+  )
+}
+
+/**
+ * Mock cards for reviewing the story engine. Story renders `fixed inset-0`, so
+ * unlike the other screens it takes over the whole viewport rather than
+ * sitting inside the phone frame — which is exactly how it behaves in the app,
+ * and the point of reviewing it here. It reads the *real* app tokens
+ * (`--canvas`, `--ink`, `--cta-grad`), not the studio's `--s-*` mocks, so what
+ * shows up is what ships.
+ */
+const STORY_PREVIEW_CARDS: StoryCard[] = [
+  {
+    id: 'hello',
+    tone: 'ember',
+    glyph: '👑',
+    eyebrow: 'GetInShape Pro',
+    title: "You're Pro.",
+    body: 'Everything below is yours now. Here’s where you’ve got to so far.',
+  },
+  { id: 'days', glyph: '📆', value: '31', label: 'days logged', body: 'A month of showing up. That’s the whole game.' },
+  { id: 'meals', glyph: '🍛', value: '412', label: 'meals logged' },
+  { id: 'top', glyph: '🥘', value: '27', label: 'times you logged Dal Tadka', body: 'Your most-logged dish this month.' },
+  { id: 'weight', glyph: '⚖️', value: '2.4 kg', label: 'down since you started' },
+  {
+    id: 'unlocked',
+    glyph: '🔓',
+    title: 'What just unlocked',
+    swaps: [
+      { before: '3 of 3 scans used', after: 'Unlimited' },
+      { before: 'Last 7 days only', after: 'Full history' },
+      { before: 'No custom foods', after: 'Your recipes' },
+    ],
+  },
+  {
+    id: 'rescue',
+    glyph: '🧯',
+    value: '1',
+    label: 'Streak Rescue',
+    body: 'Broke a streak? Repair it once a month — yours because you’re Pro.',
+  },
+  { id: 'go', tone: 'ember', glyph: '📸', title: 'Now go use it.', body: 'Point the camera at a plate. No counter, no limit.' },
+]
 
 // ── Direction token sets ─────────────────────────────────────────────────────
 const WORLDS: Record<Direction, Record<string, string>> = {
@@ -349,8 +429,19 @@ export function StudioClient() {
           <button className={screen === 'dashboard' ? 'on' : ''} onClick={() => setScreen('dashboard')}>Home</button>
           <button className={screen === 'paywall' ? 'on' : ''} onClick={() => setScreen('paywall')}>Pro</button>
           <button className={screen === 'quickadd' ? 'on' : ''} onClick={() => setScreen('quickadd')}>Add</button>
+          <button className={screen === 'story' ? 'on' : ''} onClick={() => setScreen('story')}>Story</button>
+          <button className={screen === 'card' ? 'on' : ''} onClick={() => setScreen('card')}>Card</button>
         </div>
       </header>
+
+      {screen === 'story' && (
+        <Story
+          cards={STORY_PREVIEW_CARDS}
+          ctaLabel="Scan your first meal"
+          onCta={() => setScreen('dashboard')}
+          onClose={() => setScreen('dashboard')}
+        />
+      )}
 
       <main className="st-stage">
         <div className="st-frame" style={WORLDS[dir] as React.CSSProperties}>
@@ -358,6 +449,7 @@ export function StudioClient() {
           {screen === 'dashboard' && <DashboardScreen animKey={animKey} />}
           {screen === 'paywall' && <PaywallScreen key={animKey} />}
           {screen === 'quickadd' && <QuickAddScreen animKey={animKey} />}
+          {screen === 'card' && <ShareCardScreen />}
         </div>
         <p className="st-caption">
           {dir === 'onyx' ? 'Onyx Ember — dark luxury, luminous data' : 'Porcelain — bright precision, quiet warmth'}

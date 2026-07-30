@@ -52,7 +52,7 @@ export default async function ProgressPage() {
       .limit(30),
     supabase
       .from('food_logs')
-      .select('logged_at, kcal, protein_g, carbs_g, fat_g, meal')
+      .select('logged_at, kcal, protein_g, carbs_g, fat_g, meal, context')
       .eq('user_id', user.id)
       .gte('logged_at', cutoff.toISOString())
       .order('logged_at', { ascending: true }),

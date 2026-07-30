@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateStreak, calculateStreakState, longestStreak, MAX_FREEZES_BANKED } from '../lib/streak'
+import { calculateStreak, calculateStreakState, findStreakRescue, longestStreak, MAX_FREEZES_BANKED } from '../lib/streak'
 import type { FoodLog } from '../types/index'
 
 const log = (iso: string) => ({ logged_at: iso }) as FoodLog
@@ -157,7 +157,95 @@ describe('calculateStreakState (freezes)', () => {
 
   it('is empty for a user with no logs', () => {
     expect(calculateStreakState([], noonIst('2026-07-05'))).toEqual({
-      streak: 0, freezesBanked: 0, frozenDays: [],
+      streak: 0, freezesBanked: 0, frozenDays: [], rescuedDays: [],
     })
+  })
+})
+
+describe('streak rescue', () => {
+  it('bridges a rescued day without adding to the streak', () => {
+    // Logged Mon–Wed, missed Thu, logged Fri. Rescuing Thu joins the two runs
+    // into 4 logged days — the rescued day itself is not one of them.
+    const logs = ['2026-07-06', '2026-07-07', '2026-07-08', '2026-07-10'].map(onDay)
+    const ref = noonIst('2026-07-10')
+    expect(calculateStreakState(logs, ref).streak).toBe(1)
+    const rescued = calculateStreakState(logs, ref, ['2026-07-09'])
+    expect(rescued.streak).toBe(4)
+    expect(rescued.rescuedDays).toEqual(['2026-07-09'])
+  })
+
+  it('does not spend a banked freeze on a day already rescued', () => {
+    // 7 logged days banks one freeze; the gap is then rescued, so the freeze
+    // must survive — charging both would bill the user twice for one gap.
+    const logs = [...days('2026-07-01', 7), '2026-07-09'].map(onDay)
+    const ref = noonIst('2026-07-09')
+    const rescued = calculateStreakState(logs, ref, ['2026-07-08'])
+    expect(rescued.rescuedDays).toEqual(['2026-07-08'])
+    expect(rescued.frozenDays).toEqual([])
+    expect(rescued.freezesBanked).toBe(1)
+  })
+
+  it('ignores a rescue for a day that was logged anyway', () => {
+    const logs = days('2026-07-06', 3).map(onDay)
+    const ref = noonIst('2026-07-08')
+    expect(calculateStreakState(logs, ref, ['2026-07-07']).streak).toBe(3)
+    expect(calculateStreakState(logs, ref, ['2026-07-07']).rescuedDays).toEqual([])
+  })
+
+  it('drops rescued days when the streak breaks anyway', () => {
+    // Rescuing one day can't bridge a two-day hole with no freezes banked.
+    const logs = ['2026-07-01', '2026-07-05'].map(onDay)
+    const ref = noonIst('2026-07-05')
+    const state = calculateStreakState(logs, ref, ['2026-07-02'])
+    expect(state.streak).toBe(1)
+    expect(state.rescuedDays).toEqual([])
+  })
+
+  it('leaves the result replayable — same inputs, same answer', () => {
+    const logs = ['2026-07-06', '2026-07-08'].map(onDay)
+    const ref = noonIst('2026-07-08')
+    expect(calculateStreakState(logs, ref, ['2026-07-07']))
+      .toEqual(calculateStreakState(logs, ref, ['2026-07-07']))
+  })
+})
+
+describe('findStreakRescue', () => {
+  it('finds the break worth repairing and what the streak becomes', () => {
+    const logs = ['2026-07-06', '2026-07-07', '2026-07-08', '2026-07-10'].map(onDay)
+    expect(findStreakRescue(logs, noonIst('2026-07-10')))
+      .toEqual({ date: '2026-07-09', streakAfter: 4 })
+  })
+
+  it('offers nothing when the streak is intact', () => {
+    const logs = days('2026-07-06', 5).map(onDay)
+    expect(findStreakRescue(logs, noonIst('2026-07-10'))).toBeNull()
+  })
+
+  it('offers nothing to a user with no logs at all', () => {
+    expect(findStreakRescue([], noonIst('2026-07-10'))).toBeNull()
+  })
+
+  it('never offers today — the day is not over yet', () => {
+    const logs = days('2026-07-06', 3).map(onDay)
+    const found = findStreakRescue(logs, noonIst('2026-07-09'))
+    expect(found?.date).not.toBe('2026-07-09')
+  })
+
+  it('will not reach further back than the rescue window', () => {
+    // Gap on the 2nd, now the 10th — long past what one rescue may repair.
+    const logs = ['2026-07-01', '2026-07-03', '2026-07-10'].map(onDay)
+    expect(findStreakRescue(logs, noonIst('2026-07-10'))).toBeNull()
+  })
+
+  it('does not offer a day the user already rescued', () => {
+    const logs = ['2026-07-06', '2026-07-07', '2026-07-08', '2026-07-10'].map(onDay)
+    expect(findStreakRescue(logs, noonIst('2026-07-10'), ['2026-07-09'])).toBeNull()
+  })
+
+  it('offers nothing when a freeze already covered the gap', () => {
+    // 7 days banks a freeze, which silently absorbs the miss — there is no
+    // break left to sell a repair for.
+    const logs = [...days('2026-07-01', 7), '2026-07-09'].map(onDay)
+    expect(findStreakRescue(logs, noonIst('2026-07-09'))).toBeNull()
   })
 })

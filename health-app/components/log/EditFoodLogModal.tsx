@@ -8,6 +8,7 @@ import { Sheet, SheetContent } from '../ui/sheet'
 import { Button } from '../ui/button'
 import { X, ChevronDown } from 'lucide-react'
 import { getIstDayRange } from '../../lib/dateUtils'
+import { MEAL_CONTEXTS, MEAL_CONTEXT_LABELS, isMealContext, type MealContext } from '../../lib/mealContext'
 import { useUser } from '../../hooks/useUser'
 import { buildUnits, inferPortionSelection, GRAMS_UNIT, type Unit } from '../../lib/portion-units'
 import { UnitPicker } from './UnitPicker'
@@ -43,6 +44,11 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
   const [quantityStr, setQuantityStr] = useState(String(initial.quantity))
   const [showUnitPicker, setShowUnitPicker] = useState(false)
   const [meal, setMeal] = useState<MealValue>(log.meal as MealValue)
+  // Optional by design (migration 032): a log without a context is a perfectly
+  // good log, so this never blocks saving and tapping the active chip clears it.
+  const [context, setContext] = useState<MealContext | null>(
+    isMealContext(log.context) ? log.context : null
+  )
   const [saving, setSaving] = useState(false)
   const inFlight = useRef(false)
 
@@ -100,6 +106,7 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
           grams,
           servings: 1,
           meal,
+          context,
           kcal:      nutrition.kcal,
           protein_g: nutrition.protein,
           carbs_g:   nutrition.carbs,
@@ -212,6 +219,32 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
                 }`}
               >
                 {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Where — optional. Not a tracker, one field: it's what turns "some
+            weeks are worse" into "restaurant days cost you 480 kcal". */}
+        <div>
+          <label className="block text-xs font-semibold uppercase tracking-wide text-ink-2 mb-1.5">
+            Where <span className="font-medium normal-case tracking-normal text-ink-3">· optional</span>
+          </label>
+          <div className="grid grid-cols-4 gap-1.5">
+            {MEAL_CONTEXTS.map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setContext((c) => (c === value ? null : value))}
+                aria-pressed={context === value}
+                className={`rounded-control border py-2 text-[11px] font-semibold transition-all active:scale-95 ${
+                  context === value
+                    ? 'border-brand bg-brand-soft text-brand-ink'
+                    : 'border-hairline bg-surface-2 text-ink-2 hover:border-brand-ring'
+                }`}
+              >
+                {MEAL_CONTEXT_LABELS[value].emoji}
+                <span className="mt-0.5 block">{MEAL_CONTEXT_LABELS[value].label}</span>
               </button>
             ))}
           </div>

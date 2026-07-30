@@ -78,12 +78,14 @@ export function OnboardingForm() {
 
       clearDraft()
       queryClient.invalidateQueries({ queryKey: ['profile'] })
-      // Celebration moment instead of an abrupt redirect — the overlay below
-      // shows confetti + "You're all set" while the dashboard loads next.
+      // The overlay is a transition cover, not the celebration — that's now
+      // /onboarding/plan, which hands over the calorie target, protein target
+      // and projected goal date rather than congratulating someone for filling
+      // in a form. Short, because the payoff is on the next screen.
       setCelebrating(true)
       setTimeout(() => {
-        window.location.href = '/dashboard'
-      }, 1600)
+        window.location.href = '/onboarding/plan'
+      }, 900)
     } catch (err) {
       toast({ title: 'Onboarding failed', description: (err as Error).message, variant: 'error' })
     }
@@ -126,8 +128,8 @@ export function OnboardingForm() {
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-soft text-3xl">
               🎉
             </div>
-            <h2 className="mt-5 font-display text-[26px] font-bold text-ink">You&apos;re all set!</h2>
-            <p className="mt-2 text-sm text-ink-2">Your daily calorie plan is ready.</p>
+            <h2 className="mt-5 font-display text-[26px] font-bold text-ink">Building your plan…</h2>
+            <p className="mt-2 text-sm text-ink-2">Working out your targets.</p>
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { z } from 'zod'
+import { MEAL_CONTEXTS } from '../../../../lib/mealContext'
 
 const schema = z.object({
   id: z.string().uuid(),
@@ -11,6 +12,10 @@ const schema = z.object({
   protein_g: z.number().nonnegative(),
   carbs_g: z.number().nonnegative(),
   fat_g: z.number().nonnegative(),
+  // Optional by design (migration 032). `null` is a real value here — it's how
+  // a user clears a tag they set by mistake — so nullable rather than optional
+  // alone, and `undefined` leaves the existing tag untouched.
+  context: z.enum(MEAL_CONTEXTS).nullable().optional(),
 })
 
 export async function PATCH(req: Request) {

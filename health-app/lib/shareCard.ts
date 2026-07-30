@@ -38,7 +38,9 @@ export function buildShareCardData(args: {
   return null
 }
 
-// Porcelain palette + ember gradient (see note above).
+// Porcelain palette + ember gradient (see note above). Macro hues mirror
+// --protein/--carbs/--fat in :root; like everything else here they're pinned
+// to the light theme so the exported image never depends on the viewer's.
 const PALETTE = {
   canvas: '#F7F6F3',
   surface: '#FFFFFF',
@@ -48,6 +50,42 @@ const PALETTE = {
   good: '#3E8A5C',
   gradFrom: '#FF8A50',
   gradTo: '#EB5A20',
+  protein: '#4A7DE0',
+  carbs: '#E0961F',
+  fat: '#E05A4E',
+  // Steel rim of the thali — a warm grey so it sits in the Porcelain world
+  // rather than looking like a stray UI chrome element.
+  rimOuter: '#D8D4CC',
+  rimInner: '#EFEDE7',
+}
+
+/**
+ * The macro split of the plate, as fractions that sum to 1.
+ *
+ * Separate from ShareCardData on purpose: the streak/weight hero is what the
+ * card is *about*, while the plate is decoration that happens to be truthful.
+ * Callers without macro data still get a thali, just without the katoris.
+ */
+export type PlateSplit = { protein: number; carbs: number; fat: number }
+
+/**
+ * Normalise grams into fractions of the plate.
+ *
+ * Uses raw grams rather than calories deliberately — the katoris are read as
+ * "how much of this did I eat", and nobody pictures a spoon of oil as being
+ * bigger than a bowl of rice. Returns null when there's nothing to divide, so
+ * the caller draws the plain plate instead of three empty bowls.
+ */
+export function buildPlateSplit(
+  macros?: { proteinG: number; carbsG: number; fatG: number } | null
+): PlateSplit | null {
+  if (!macros) return null
+  const p = Math.max(0, macros.proteinG || 0)
+  const c = Math.max(0, macros.carbsG || 0)
+  const f = Math.max(0, macros.fatG || 0)
+  const total = p + c + f
+  if (total <= 0) return null
+  return { protein: p / total, carbs: c / total, fat: f / total }
 }
 
 // lucide "flame" (24×24) — same glyph as the app icon and streak pill.
@@ -80,10 +118,45 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: num
   ctx.closePath()
 }
 
+/** A katori: rim ring, then a bottom-up fill showing that macro's share. */
+function drawKatori(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  r: number,
+  fraction: number,
+  color: string
+) {
+  // Bowl
+  ctx.beginPath()
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.fillStyle = PALETTE.rimInner
+  ctx.fill()
+
+  // Contents — clipped to the bowl and filled from the bottom, so the katori
+  // reads as "this full" at a glance rather than as a pie chart.
+  const h = Math.max(0, Math.min(1, fraction)) * (r * 2)
+  ctx.save()
+  ctx.beginPath()
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.clip()
+  ctx.fillStyle = color
+  ctx.fillRect(cx - r, cy + r - h, r * 2, h)
+  ctx.restore()
+
+  // Rim
+  ctx.beginPath()
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.strokeStyle = PALETTE.rimOuter
+  ctx.lineWidth = 6
+  ctx.stroke()
+}
+
 export function drawShareCard(
   canvas: HTMLCanvasElement,
   data: ShareCardData,
-  fonts: { display: string; sans: string }
+  fonts: { display: string; sans: string },
+  plate?: PlateSplit | null
 ): void {
   const S = 1080
   canvas.width = S
@@ -110,26 +183,68 @@ export function drawShareCard(
   ctx.textAlign = 'left'
   ctx.fillText('GetInShape', 72 + tile + 32, 72 + tile / 2 + 2)
 
-  // Hero stat card
-  roundedRect(ctx, 72, 260, S - 144, 560, 48)
+  // ── The thali ───────────────────────────────────────────────────────────
+  // A round steel plate, not a rectangle with a number in it. Every tracker
+  // in the category ships the rectangle; nobody owns the thali, it reads as
+  // Indian instantly, and being a *shape* rather than a colour it survives
+  // being screenshotted onto any background.
+  const cx = S / 2
+  const cy = 540
+  const rOuter = 330
+  const rInner = 274
+
+  ctx.beginPath()
+  ctx.arc(cx, cy, rOuter, 0, Math.PI * 2)
+  ctx.fillStyle = PALETTE.rimOuter
+  ctx.fill()
+
+  ctx.beginPath()
+  ctx.arc(cx, cy, rOuter - 14, 0, Math.PI * 2)
+  ctx.fillStyle = PALETTE.rimInner
+  ctx.fill()
+
+  ctx.beginPath()
+  ctx.arc(cx, cy, rInner, 0, Math.PI * 2)
   ctx.fillStyle = PALETTE.surface
   ctx.fill()
 
-  drawFlame(ctx, S / 2 - 44, 330, 88, PALETTE.gradTo)
-
   ctx.textAlign = 'center'
-  ctx.fillStyle = PALETTE.ink
-  ctx.font = `700 260px ${fonts.display}`
-  ctx.fillText(data.hero.value, S / 2, 590)
 
-  ctx.font = `600 54px ${fonts.sans}`
+  // Without macros the flame keeps the plate from looking empty; with them the
+  // katoris are the decoration and a second glyph would just be noise.
+  if (!plate) drawFlame(ctx, cx - 38, cy - 186, 76, PALETTE.gradTo)
+
+  ctx.fillStyle = PALETTE.ink
+  ctx.font = `700 200px ${fonts.display}`
+  ctx.fillText(data.hero.value, cx, cy + (plate ? -6 : 30))
+
+  ctx.font = `600 46px ${fonts.sans}`
   ctx.fillStyle = PALETTE.ink2
-  ctx.fillText(data.hero.label, S / 2, 730)
+  ctx.fillText(data.hero.label, cx, cy + (plate ? 108 : 148))
+
+  // Katoris sit on the plate's lower arc, the way they do on a real thali.
+  if (plate) {
+    const kr = 62
+    const macros: [number, string, string][] = [
+      [plate.protein, PALETTE.protein, 'P'],
+      [plate.carbs, PALETTE.carbs, 'C'],
+      [plate.fat, PALETTE.fat, 'F'],
+    ]
+    const spread = 168
+    macros.forEach(([fraction, color, letter], i) => {
+      const kx = cx + (i - 1) * spread
+      const ky = cy + 178
+      drawKatori(ctx, kx, ky, kr, fraction, color)
+      ctx.fillStyle = PALETTE.ink2
+      ctx.font = `700 30px ${fonts.sans}`
+      ctx.fillText(`${letter} ${Math.round(fraction * 100)}%`, kx, ky + kr + 34)
+    })
+  }
 
   if (data.subline) {
     ctx.font = `600 44px ${fonts.sans}`
     ctx.fillStyle = PALETTE.good
-    ctx.fillText(`▼ ${data.subline}`, S / 2, 880)
+    ctx.fillText(`▼ ${data.subline}`, cx, 940)
   }
 
   // Footer band — ember gradient with the site URL
@@ -157,10 +272,13 @@ function resolveFonts(): { display: string; sans: string } {
  * Render + share the card. Returns how it was delivered: 'shared' via the
  * Web Share API sheet, 'downloaded' as a PNG fallback (desktop browsers).
  */
-export async function shareProgressCard(data: ShareCardData): Promise<'shared' | 'downloaded'> {
+export async function shareProgressCard(
+  data: ShareCardData,
+  plate?: PlateSplit | null
+): Promise<'shared' | 'downloaded'> {
   await document.fonts.ready
   const canvas = document.createElement('canvas')
-  drawShareCard(canvas, data, resolveFonts())
+  drawShareCard(canvas, data, resolveFonts(), plate)
 
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
   if (!blob) throw new Error('Could not render the card')

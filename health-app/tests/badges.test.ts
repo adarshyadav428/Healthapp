@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { computeBadges, earnedCount, type BadgeStats } from '../lib/badges'
+import {
+  computeBadges,
+  earnedCount,
+  nextStreakBadge,
+  NEXT_BADGE_MAX_DAYS_AWAY,
+  STREAK_BADGE_LADDER,
+  type BadgeStats,
+} from '../lib/badges'
 
 const empty: BadgeStats = {
   totalLogs: 0,
@@ -96,5 +103,59 @@ describe('computeBadges', () => {
       weighIns: 40, savedMealTemplates: 6, kgLost: 8,
     })
     expect(earnedCount(everything)).toBe(10)
+  })
+})
+
+describe('nextStreakBadge', () => {
+  it('says nothing without a live streak', () => {
+    expect(nextStreakBadge(0)).toBeNull()
+    expect(nextStreakBadge(-1)).toBeNull()
+  })
+
+  it('names the next rung and the days left', () => {
+    expect(nextStreakBadge(6)).toEqual({ name: 'Week One', emoji: '🔥', daysAway: 1 })
+    expect(nextStreakBadge(11)).toEqual({ name: 'Fortnight', emoji: '⚡', daysAway: 3 })
+    expect(nextStreakBadge(25)).toEqual({ name: 'Consistent', emoji: '💎', daysAway: 5 })
+    expect(nextStreakBadge(97)).toEqual({ name: 'Centurion', emoji: '👑', daysAway: 3 })
+  })
+
+  it('stays quiet until the rung is within reach', () => {
+    // Day 7: Week One is earned, Fortnight is exactly the max distance away —
+    // the furthest the nudge will ever speak from.
+    expect(nextStreakBadge(14 - NEXT_BADGE_MAX_DAYS_AWAY)).toEqual({
+      name: 'Fortnight', emoji: '⚡', daysAway: NEXT_BADGE_MAX_DAYS_AWAY,
+    })
+    // One day past that and it goes silent rather than nagging: at day 15 the
+    // next rung (Consistent, 30) is a fortnight away, which is not a nudge.
+    expect(nextStreakBadge(15)).toBeNull()
+    // The long gap before Centurion is the worst case — silent throughout.
+    expect(nextStreakBadge(31)).toBeNull()
+    expect(nextStreakBadge(92)).toBeNull()
+  })
+
+  it('never offers a rung the shelf has already awarded', () => {
+    // Best-ever 30 means Week One and Fortnight are earned. A current run of 5
+    // is 2 days from the *threshold* of Week One, but that badge is already on
+    // the shelf — the only rung left is Centurion, and it's far away.
+    expect(nextStreakBadge(5, 30)).toBeNull()
+    // Same user, now 95 days in: Centurion is finally in range.
+    expect(nextStreakBadge(95, 30)).toEqual({ name: 'Centurion', emoji: '👑', daysAway: 5 })
+  })
+
+  it('goes quiet once every rung is earned', () => {
+    expect(nextStreakBadge(100, 100)).toBeNull()
+    expect(nextStreakBadge(140, 140)).toBeNull()
+  })
+
+  it('offers rungs that match the shelf exactly', () => {
+    // Guards the refactor that made STREAK_BADGE_LADDER the single source of
+    // truth: a nudge naming a badge the shelf doesn't award would be a lie.
+    const shelf = computeBadges(empty)
+    for (const rung of STREAK_BADGE_LADDER) {
+      const badge = shelf.find((b) => b.id === rung.id)
+      expect(badge).toBeDefined()
+      expect(badge!.name).toBe(rung.name)
+      expect(badge!.emoji).toBe(rung.emoji)
+    }
   })
 })
