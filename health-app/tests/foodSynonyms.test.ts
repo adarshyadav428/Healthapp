@@ -92,6 +92,21 @@ describe('synonym groups', () => {
     expect(expandSearchQuery('garlic naan')).toContain('naan')
   })
 
+  it('does not pull in every group that merely mentions a common word', () => {
+    // Live report: "rice" returned a screenful of foods that are not rice.
+    // "rice pudding" (kheer), "flattened rice" (poha) and "puffed rice"
+    // (murmura) each contain the word, and every one of those groups used to
+    // expand the query.
+    const rice = expandSearchQuery('rice')
+    expect(rice).toContain('chawal')
+    expect(rice).not.toContain('kheer')
+    expect(rice).not.toContain('poha')
+    expect(rice).not.toContain('murmura')
+
+    // Searching the dish by name still reaches its group.
+    expect(expandSearchQuery('rice pudding')).toContain('kheer')
+  })
+
   it('has no empty or whitespace-padded entries', () => {
     for (const [canonical, synonyms] of Object.entries(foodSynonyms)) {
       for (const word of synonyms) {

@@ -196,14 +196,20 @@ export function expandSearchQuery(query: string): string[] {
   const queries = new Set<string>([lower])
 
   for (const [canonical, synonyms] of Object.entries(foodSynonyms)) {
-    // Whole-word match in either direction. Plain substring matching was too
-    // greedy: "nan" sits inside "ananas", so searching for pineapple pulled in
-    // the naan group and its terms ate the 6-term filter budget before
-    // "pineapple" was ever reached. Mid-word hits are always accidents here —
-    // real synonyms are whole words.
-    const matched = synonyms.some(
-      (s) => s === lower || containsWord(lower, s) || containsWord(s, lower)
-    )
+    // A group matches when the query IS one of its terms, or when the query is a
+    // phrase containing one as a whole word ("chicken biryani" → the biryani
+    // group). Whole words only: "nan" sits inside "ananas", so plain substring
+    // matching made a search for pineapple pull in the naan group and eat the
+    // 6-term filter budget before "pineapple" was ever reached.
+    //
+    // The reverse direction — the query appearing inside a longer synonym — is
+    // deliberately NOT a match. It fired for every group that merely *mentions*
+    // a common word, so "rice" dragged in kheer (via "rice pudding"), poha (via
+    // "flattened rice") and murmura (via "puffed rice"), and the results filled
+    // up with foods that are not rice. A group whose members share no substring
+    // (corn: bhutta / makki / challi) still works, because each regional name is
+    // a term in its own right.
+    const matched = synonyms.some((s) => s === lower || containsWord(lower, s))
     if (matched) {
       synonyms.forEach((s) => queries.add(s))
       queries.add(canonical)

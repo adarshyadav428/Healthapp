@@ -41,7 +41,33 @@ export function relevanceScore(name: string, query: string): number {
 }
 
 /**
- * How much of the *name* the query accounts for, 0–1.
+ * The ways a name can be read as naming one food: the whole string, and each
+ * alternative once the regional gloss and the slash-alternatives are set aside.
+ *
+ * Our own names carry their translation in parentheses ("Cooked Rice (Chawal)",
+ * "Sweet Corn (Makkai)") or after a slash ("Kheer / Rice Pudding"). Counting the
+ * gloss as part of the name made the *measured, plain* food look diluted:
+ * "rice" covered only 1 of the 3 words in "Cooked Rice (Chawal)", so it lost the
+ * coverage tier to the two-word dish "Jeera Rice" and the search for plain rice
+ * returned every rice dish we hold above the rice itself.
+ */
+function nameReadings(name: string): string[][] {
+  const n = normalize(name)
+  const readings = [nameWords(n)]
+  const head = n.replace(/\([^)]*\)|\[[^\]]*\]/g, ' ')
+  for (const segment of head.split('/')) {
+    const parts = nameWords(segment)
+    if (parts.length > 0) readings.push(parts)
+  }
+  return readings
+}
+
+const coverageOf = (parts: string[], words: string[]): number =>
+  parts.length === 0 ? 0 : parts.filter((p) => words.some((w) => p.startsWith(w))).length / parts.length
+
+/**
+ * How much of the *name* the query accounts for, 0–1 — measured against the
+ * reading of the name that the query explains best (see `nameReadings`).
  *
  * Separates "Bhutta (Roasted Corn)" from "Black bean crusted cod with roasted
  * corn & red pepper salsa" — both contain every word of "roasted corn", but one
@@ -50,11 +76,8 @@ export function relevanceScore(name: string, query: string): number {
  * user was plainly looking for.
  */
 export function nameCoverage(name: string, query: string): number {
-  const parts = nameWords(normalize(name))
-  if (parts.length === 0) return 0
   const words = normalize(query).split(' ').filter(Boolean)
-  const matched = parts.filter((p) => words.some((w) => p.startsWith(w))).length
-  return matched / parts.length
+  return Math.max(...nameReadings(name).map((parts) => coverageOf(parts, words)))
 }
 
 /** Coverage at or above this share means the name is *about* the query. */
@@ -72,6 +95,54 @@ const DOMINANT_COVERAGE = 0.5
  */
 export function isCoverageDominant(name: string, query: string): boolean {
   return nameCoverage(name, query) >= DOMINANT_COVERAGE
+}
+
+/**
+ * Words that describe how a food was prepared or kept, not which food it is.
+ * "Cooked Rice" and "Raw Rice" are both rice; "Jeera Rice" is a dish.
+ */
+const QUALIFIERS = new Set([
+  'plain',
+  'raw',
+  'uncooked',
+  'cooked',
+  'boiled',
+  'steamed',
+  'fresh',
+  'dry',
+  'dried',
+  'whole',
+  'home',
+  'homemade',
+  'unsalted',
+  'unsweetened',
+  'ki',
+  'ka',
+  'and',
+  'with',
+  'the',
+])
+
+/**
+ * Is this name the plain food the user typed, rather than a dish made from it?
+ *
+ * True when, after setting the regional gloss aside, nothing is left of the name
+ * but the query words and preparation qualifiers. This is what makes a search
+ * for "rice" answer with "Cooked Rice (Chawal)" instead of "Jeera Rice" and
+ * "Sambar Rice" — all three match the word equally and cover their names
+ * equally, so before this tier the answer came down to which row the source
+ * ranking happened to favour, and the dishes buried the food.
+ */
+export function isPlainForm(name: string, query: string): boolean {
+  const words = normalize(query).split(' ').filter(Boolean)
+  if (words.length === 0) return false
+  return nameReadings(name)
+    .slice(1) // gloss-stripped readings only; the full string still carries it
+    .some(
+      (parts) =>
+        parts.some((p) => words.includes(p)) &&
+        parts.every((p) => words.includes(p) || QUALIFIERS.has(p))
+    )
 }
 
 /**
@@ -118,6 +189,7 @@ export function compareFoodsForQuery<T extends { name: string; source: string }>
     const scored = [
       relevanceScore(name, typed),
       isCoverageDominant(name, typed) ? 1 : 0,
+      isPlainForm(name, typed) ? 1 : 0,
       synRelevance,
       synCoverage,
     ]
