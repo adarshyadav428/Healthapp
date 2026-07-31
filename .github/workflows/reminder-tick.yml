@@ -1,0 +1,73 @@
+# Hourly tick for user-chosen reminder times.
+#
+# WHY THIS ISN'T A VERCEL CRON
+# The project is on the Vercel Hobby plan, where a cron can only be triggered
+# once per day and the project is capped at two of them (both already used:
+# push-reminders and weekly-recap — see vercel.json and the note in CLAUDE.md).
+# A reminder the user schedules for 8 AM needs the endpoint hit at 8 AM, so the
+# trigger has to come from somewhere else. GitHub Actions scheduled workflows
+# are free on this repo and can run hourly.
+#
+# WHAT HAPPENS IF THIS IS DISABLED OR FAILS
+# Nothing breaks and nobody loses their reminder. The Vercel cron still runs at
+# 20:30 IST as the catch-all and serves everyone who hasn't logged today,
+# exactly as it did before reminder hours existed — the chosen time is simply
+# not honoured. That degradation is deliberate: see lib/reminderSchedule.
+#
+# DOUBLE-SENDING IS IMPOSSIBLE
+# Every send goes through sendBudgetedPush, and the budget is one push per user
+# per day (lib/pushBudget.ts). This tick and the catch-all cannot both land,
+# in either order.
+#
+# SETUP (one time)
+#   Repo → Settings → Secrets and variables → Actions → New repository secret
+#     CRON_SECRET  — the same value set as an env var on the Vercel project
+#     APP_URL      — e.g. https://getinshape.co.in  (no trailing slash)
+#   Without both, the job exits cleanly without calling anything.
+
+name: Reminder tick
+
+on:
+  schedule:
+    # Every hour, on the hour (UTC). GitHub schedules are best-effort and can
+    # run several minutes late under load — fine for a reminder, which is why
+    # the setting offers an hour rather than a minute.
+    - cron: '0 * * * *'
+  # Lets you fire one by hand to check the wiring without waiting an hour.
+  workflow_dispatch:
+
+# Never let two ticks overlap; a slow run should be skipped, not queued up.
+concurrency:
+  group: reminder-tick
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping the reminder endpoint for this hour
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${CRON_SECRET}" ] || [ -z "${APP_URL}" ]; then
+            echo "CRON_SECRET or APP_URL not set — skipping (see the setup note in this file)."
+            exit 0
+          fi
+
+          # --fail-with-body so a non-2xx fails the job AND shows the reason;
+          # a silently-failing reminder tick is the kind of thing that stays
+          # broken for weeks.
+          status=$(curl --silent --show-error --fail-with-body \
+            --max-time 60 \
+            --retry 2 --retry-delay 5 --retry-connrefused \
+            --write-out '%{http_code}' \
+            --output /tmp/tick.json \
+            --header "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/cron/push-reminders?slot=hourly")
+
+          echo "HTTP ${status}"
+          cat /tmp/tick.json

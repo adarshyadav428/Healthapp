@@ -18,6 +18,8 @@ export type Profile = {
   sex: 'male' | 'female' | 'other'
   activity_level: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
   goal: 'lose' | 'maintain' | 'gain'
+  /** IST hour (0-23) for the daily reminder. See lib/reminderSchedule. */
+  reminder_hour?: number | null
   daily_calorie_target: number
   protein_g_target: number
   carbs_g_target: number
