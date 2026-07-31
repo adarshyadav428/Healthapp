@@ -96,6 +96,42 @@ build clean at 515 pages.
 | P2-7 secret in RTDN URL | **Not fixed** | Changing it means reconfiguring the Pub/Sub push endpoint in GCP, which is yours to do. Left documented. |
 | P2-9 build dirties `sw.js` | **Not fixed** | Cosmetic; would need a build-output or gitignore decision. |
 
+## 1b. Test-coverage work, and the two bugs it found (2026-07-31, later the same day)
+
+All seven of §5's "tests I would write first" are now written, plus the remaining
+High-priority module gap (`lib/usageCounter.ts`). Suite: **606 → 811 tests / 62 files**.
+Every new file was sabotage-checked — the mutation is described in each commit — so
+these pin behaviour rather than decorate it.
+
+| §5 item | Where | Notes |
+|---|---|---|
+| 1. RLS policy tests | `lib/rlsPolicies.ts` + `tests/rlsPolicies.test.ts` | Static analysis of the migration set, not a live Postgres — see the limits below. |
+| 2. `aiTrialServer` fail-closed | `tests/aiTrialServer.test.ts` | Every read-failure path denies and reports no allowance. |
+| 3. Route-handler entitlement tests | `tests/routeEntitlements.test.ts`, `tests/routeAiGate.test.ts` | `/api/logs` clamp, custom-food 402, `/api/export`, streak rescue, camera + chat 403. |
+| 4. Webhook signature tests | `tests/webhookSignatures.test.ts` | Real HMAC-SHA256, including a valid signature on a different body. |
+| 5. `sendBudgetedPush` tests | `tests/pushSend.test.ts` | Includes the P1-3 DB-error path and the full priority ladder. |
+| 6. `sendPushToUser` call-site guard | `tests/pushSend.test.ts` | Fails if anything outside `lib/push` imports it. |
+| 7. Middleware redirect tests | `tests/middleware.test.ts` | Fail-open vs fail-closed, `returnTo`, public/protected split. |
+
+**Two live bugs found, both fixed in the same pass.**
+
+| ID | Sev | Finding | Fix |
+|---|---|---|---|
+| **P1-12** | P1 | **`food_dismissals` upsert could 500 on the second swipe.** The table has select/insert/delete and no UPDATE policy, but `app/api/foods/suggest` upserts on the *user-scoped* client. supabase-js `upsert` without `ignoreDuplicates` compiles to `ON CONFLICT DO UPDATE`, which RLS denies — so re-dismissing a dish answered 500 for what the code's own comment calls a no-op. Same shape as P1-1. | `ignoreDuplicates: true` moves it to `DO NOTHING`, which needs only INSERT. No policy granted: nothing in the row is worth rewriting. |
+| **P1-13** | P1 | **The Razorpay webhook did not 500 on a failed write**, despite its own comment and `CLAUDE.md` both saying it did. supabase-js *resolves* with `{ error }` rather than throwing, so awaiting the update inside the `try` was not enough — the `catch` never fired and the route answered 200. Razorpay treats 200 as handled and never retries, so the row keeps its old status: a cancelled subscriber silently keeps Pro, a renewed one looks expired. Money either way. Same class as P1-4, which was fixed in the RTDN route and missed here. | The three writes now go through one `applyStatus()` that raises on `error`, so the documented behaviour is the real one. |
+
+**What the RLS tests still do not prove.** They are static analysis of the migration
+SQL. They cannot prove Postgres enforces the policies as written, and they cannot
+prove the live database matches these files — a policy hand-edited in the dashboard,
+or a migration never applied, is invisible to them. **Migrations 034 and 035 remain
+unapplied as of this writing, so a green suite says nothing about production.** The
+stronger test needs Docker (`supabase start`, two real users, assert 42501 from B's
+JWT against A's rows); no Docker, Supabase CLI or psql is installed on the dev
+machine, and it would need a CI service container, which is why it must not be the
+only test.
+
+---
+
 ## 2. Gate results
 
 All five green. Real numbers from the terminal, not from the docs.
