@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import type { FoodLog, Profile } from '../../types/index'
 import { CalorieHeroCard } from '../home/CalorieHeroCard'
+import { GoalProjectionCard } from '../home/GoalProjectionCard'
+import type { GoalProjection } from '../../lib/goalProjection'
 import { RecentMealCard } from '../home/RecentMealCard'
 import { EmptyMeals } from '../home/EmptyMeals'
 import { EditFoodLogModal } from '../log/EditFoodLogModal'
@@ -48,9 +50,11 @@ interface Props {
   rescueOffer?: { date: string; streakAfter: number } | null
   /** The running season and this user's standing. Null between seasons. */
   seasonState?: SeasonState | null
+  /** Projected goal date. `kind: 'none'` renders nothing — see lib/goalProjection. */
+  projection?: GoalProjection | null
 }
 
-export function DashboardClient({ profile, initialLogs, streakDays, longestStreakDays = 0, freezesBanked = 0, loggedDates, isPro, aiTrialRemaining = 0, weeklyRecap, rescueOffer = null, seasonState = null }: Props) {
+export function DashboardClient({ profile, initialLogs, streakDays, longestStreakDays = 0, freezesBanked = 0, loggedDates, isPro, aiTrialRemaining = 0, weeklyRecap, rescueOffer = null, seasonState = null, projection = null }: Props) {
   const router = useRouter()
   const { user } = useUser()
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
@@ -174,6 +178,13 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
         >
           {proteinLine.text}
         </p>
+      )}
+
+      {/* ── Where today's number is taking them ── */}
+      {projection && (
+        <div className="mt-4">
+          <GoalProjectionCard projection={projection} targetKg={profile.target_weight_kg ?? null} />
+        </div>
       )}
 
       {/* ── Suggested target adjustment (opt-in, never auto-applied) ── */}

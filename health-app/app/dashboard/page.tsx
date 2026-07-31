@@ -10,6 +10,8 @@ import { getIstDayRange, istDateStr } from '../../lib/dateUtils'
 import { calculateStreakState, findStreakRescue, longestStreak } from '../../lib/streak'
 import { rescuesRemaining } from '../../lib/streakRescue'
 import { getSeasonState } from '../../lib/seasonServer'
+import { computeWeightTrend } from '../../lib/weightTrend'
+import { goalProjection } from '../../lib/goalProjection'
 import type { WeeklyRecap } from '../../components/dashboard/WeeklyRecapCard'
 
 export const metadata: Metadata = {
@@ -31,7 +33,7 @@ export default async function DashboardPage() {
 
   // All three queries only need user.id — run them in one parallel round trip
   // instead of three sequential ones (each is a full network hop to Supabase).
-  const [profileResult, logsResult, streakResult, subResult, recapResult, rescuesResult] = await Promise.all([
+  const [profileResult, logsResult, streakResult, subResult, recapResult, rescuesResult, weightResult] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase
       .from('food_logs')
@@ -58,6 +60,15 @@ export default async function DashboardPage() {
     // Pro Streak Rescues. Tolerant of migration 028 not being applied yet —
     // an error simply means no rescues exist, same as the recap query above.
     supabase.from('streak_rescues').select('rescued_date, created_at').eq('user_id', user.id),
+    // Weigh-ins for the projected-goal-date card. The trend needs a 28-day
+    // window and refuses to fit below 14 days, so 120 days is comfortably more
+    // than it can use while staying a bounded read.
+    supabase
+      .from('weight_logs')
+      .select('weight_kg, measured_at')
+      .eq('user_id', user.id)
+      .gte('measured_at', new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString())
+      .order('measured_at', { ascending: false }),
   ])
 
   const { data: profile, error: profileError } = profileResult
@@ -117,6 +128,20 @@ export default async function DashboardPage() {
   // for everyone. Returns null between seasons and the card renders nothing.
   const seasonState = await getSeasonState(supabase, user.id)
 
+  // Projected goal date. A weigh-in read that fails leaves `weighIns` empty,
+  // which computeWeightTrend reports as "no trend" — so the card falls back to
+  // the planned pace or hides, and never invents a measurement it doesn't have.
+  const weighIns = (weightResult.data ?? []) as { weight_kg: number; measured_at: string }[]
+  const weightTrend = computeWeightTrend(weighIns, profile.target_weight_kg ?? null)
+  const projection = goalProjection({
+    // The scale is the truth when it exists; the onboarding figure goes stale
+    // the first time someone weighs in.
+    currentKg: weighIns[0]?.weight_kg ?? profile.current_weight_kg ?? null,
+    targetKg: profile.target_weight_kg ?? null,
+    paceKgPerWeek: profile.pace_kg_per_week ?? null,
+    trend: weightTrend,
+  })
+
   const recapRow = recapResult.data
   const weeklyRecap: WeeklyRecap | null = recapRow
     ? {
@@ -149,6 +174,7 @@ export default async function DashboardPage() {
           weeklyRecap={weeklyRecap}
           rescueOffer={rescueOffer}
           seasonState={seasonState}
+          projection={projection}
         />
       </main>
       <BottomNav />
