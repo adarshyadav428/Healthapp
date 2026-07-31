@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../components/ui/use-toast'
 import { captureEvent } from '../lib/posthog/client'
-import { isPlayBillingAvailable, getPlayPrices, purchasePlan } from '../lib/play/billing'
+import { loadPlayBilling, purchasePlan } from '../lib/play/billing'
 import { PLAY_PRODUCTS } from '../lib/play/products'
 import { CHECKOUT_CANCELLED, isCheckoutCancellation } from '../lib/checkoutErrors'
 
@@ -52,18 +52,31 @@ export function useCheckout({ userId, userEmail }: Params) {
   // null = still detecting, true = inside Play TWA, false = web (use Razorpay)
   const [playAvailable, setPlayAvailable] = useState<boolean | null>(null)
   const [playPrices, setPlayPrices] = useState<Record<string, string>>({})
+  // Inside the TWA, Play can be present but refuse to sell (merchant
+  // verification pending, outage, product id mismatch). Assume it can until
+  // told otherwise, so a slow lookup never blocks a checkout that would work.
+  const [playSellable, setPlaySellable] = useState(true)
 
   useEffect(() => {
     let active = true
-    isPlayBillingAvailable().then(async (available) => {
+    loadPlayBilling().then((play) => {
       if (!active) return
-      setPlayAvailable(available)
-      if (available) setPlayPrices(await getPlayPrices())
+      setPlayAvailable(play.available)
+      setPlayPrices(play.prices)
+      setPlaySellable(!play.available || play.sellable)
     })
     return () => {
       active = false
     }
   }, [])
+
+  /**
+   * We're on Play, and Play won't take money. Play policy forbids rerouting to
+   * Razorpay from inside the TWA, so the buttons go quiet instead of opening a
+   * sheet that fails — a dead purchase is a worse first impression than an
+   * honest "not right now", and it's what a Play reviewer would see too.
+   */
+  const purchasesUnavailable = playAvailable === true && !playSellable
 
   /**
    * Where both providers land once the entitlement exists.
@@ -142,6 +155,15 @@ export function useCheckout({ userId, userEmail }: Params) {
 
   const startCheckout = async (plan: Plan) => {
     if (loading) return
+    if (purchasesUnavailable) {
+      captureEvent('checkout_failed', { plan, provider: 'google_play', error: 'play_not_sellable' })
+      toast({
+        title: 'Purchases are unavailable right now',
+        description: 'This is on our side, not yours. Please try again a little later.',
+        variant: 'error',
+      })
+      return
+    }
     setLoading(plan)
     const provider = playAvailable ? 'google_play' : 'razorpay'
     captureEvent('checkout_attempted', { plan, provider })
@@ -165,5 +187,5 @@ export function useCheckout({ userId, userEmail }: Params) {
     }
   }
 
-  return { startCheckout, loading, playAvailable, playPrices }
+  return { startCheckout, loading, playAvailable, playPrices, purchasesUnavailable }
 }

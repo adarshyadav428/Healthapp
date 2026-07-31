@@ -126,7 +126,8 @@ function ReasonBanner() {
 
 export default function UpgradePage() {
   const { user, profile } = useUser()
-  const { startCheckout, loading, playAvailable, playPrices } = useCheckout({ userId: user?.id, userEmail: user?.email })
+  const { startCheckout, loading, playAvailable, playPrices, purchasesUnavailable } =
+    useCheckout({ userId: user?.id, userEmail: user?.email })
   const { send: sendVerification, sending: sendingVerification, sent: verificationSent } =
     useSendVerificationLink(user?.email)
 
@@ -230,19 +231,37 @@ export default function UpgradePage() {
                 size="lg"
                 className="mt-4 w-full rounded-full tap-scale"
                 onClick={() => needsVerification ? sendVerification('checkout_gate') : startCheckout(plan.id)}
-                disabled={!!loading || sendingVerification}
-                title={needsVerification ? 'Confirm your email before subscribing' : undefined}
+                disabled={!!loading || sendingVerification || purchasesUnavailable}
+                title={
+                  purchasesUnavailable
+                    ? 'Purchases are temporarily unavailable'
+                    : needsVerification
+                      ? 'Confirm your email before subscribing'
+                      : undefined
+                }
               >
-                {needsVerification
-                  ? (sendingVerification ? 'Sending…' : verificationSent ? 'Resend confirmation link' : 'Confirm your email first')
-                  : (loading === plan.id ? 'Opening checkout...' : plan.cta)}
+                {purchasesUnavailable
+                  ? 'Temporarily unavailable'
+                  : needsVerification
+                    ? (sendingVerification ? 'Sending…' : verificationSent ? 'Resend confirmation link' : 'Confirm your email first')
+                    : (loading === plan.id ? 'Opening checkout...' : plan.cta)}
               </Button>
             </div>
           ))}
         </div>
 
+        {/* Google Play is the only permitted checkout inside the TWA, and it
+            isn't selling. Say so plainly rather than leaving a dead button. */}
+        {purchasesUnavailable && (
+          <p className="mt-4 text-center text-xs text-ink-2">
+            Google Play isn’t able to take payments for GetInShape right now. Nothing is wrong with
+            your account — everything on the free plan keeps working, and Pro will be available again
+            shortly.
+          </p>
+        )}
+
         {/* Why the buttons say "confirm your email" instead of a price */}
-        {needsVerification && (
+        {!purchasesUnavailable && needsVerification && (
           <p className="mt-4 text-center text-xs text-ink-2">
             {verificationSent
               ? `We sent a link to ${user?.email}. Tap it, then come back to subscribe.`

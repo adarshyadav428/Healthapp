@@ -42,19 +42,51 @@ export type PlayPrice = { productId: string; display: string }
 
 /** Localized price strings from Play, keyed by product id. */
 export async function getPlayPrices(): Promise<Record<string, string>> {
+  return (await loadPlayBilling()).prices
+}
+
+export type PlayBilling = {
+  /** We're running inside the Play TWA, so Play is the required payment path. */
+  available: boolean
+  /** Play returned real products — a purchase sheet would actually open. */
+  sellable: boolean
+  prices: Record<string, string>
+}
+
+/**
+ * Resolve Play billing in one pass: whether we're inside the TWA at all, and
+ * whether Play will actually sell to us.
+ *
+ * Those are two different questions, and conflating them is what made a blocked
+ * merchant account look like a working checkout. `getDigitalGoodsService` exists
+ * as soon as the app runs inside the Play TWA, but the products behind it can
+ * still be unsellable — merchant/payments verification pending (India's PA-CB
+ * rules route this through BillDesk), a Play outage, or a product id that
+ * doesn't match the Console. Play signals that by returning no details for the
+ * SKUs, so an empty result is our evidence that a purchase would die.
+ *
+ * There is deliberately no Razorpay fallback here. Play's payments policy
+ * requires Play Billing for digital goods inside an app distributed on Play, so
+ * quietly rerouting to another provider would risk the listing itself. Saying
+ * "not right now" is the only honest option — see `useCheckout`.
+ */
+export async function loadPlayBilling(): Promise<PlayBilling> {
   const service = await getPlayBillingService()
-  if (!service) return {}
+  if (!service) return { available: false, sellable: false, prices: {} }
+
   try {
     const details = await service.getDetails(PLAY_PRODUCT_IDS)
-    const out: Record<string, string> = {}
+    const prices: Record<string, string> = {}
     for (const d of details) {
       if (d.price) {
-        out[d.itemId] = formatPrice(d.price.currency, d.price.value)
+        prices[d.itemId] = formatPrice(d.price.currency, d.price.value)
       }
     }
-    return out
+    // A thrown error and an empty list mean the same thing to a buyer, so both
+    // land on `sellable: false` rather than only the noisy one.
+    return { available: true, sellable: details.length > 0, prices }
   } catch {
-    return {}
+    return { available: true, sellable: false, prices: {} }
   }
 }
 
