@@ -85,6 +85,8 @@ export const EVENTS = {
   REMINDERS_PRIME_DISMISSED: 'reminders_prime_dismissed',
   RATE_PROMPT_CLICKED: 'rate_prompt_clicked',
   RATE_PROMPT_DISMISSED: 'rate_prompt_dismissed',
+  /** The week-3-4 stall message. `kind` distinguishes the three explanations. */
+  PLATEAU_CARD_DISMISSED: 'plateau_card_dismissed',
 } as const
 
 export type AnalyticsEvent = (typeof EVENTS)[keyof typeof EVENTS]

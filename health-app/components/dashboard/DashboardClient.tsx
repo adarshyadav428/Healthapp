@@ -6,6 +6,10 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import type { FoodLog, Profile } from '../../types/index'
 import { CalorieHeroCard } from '../home/CalorieHeroCard'
+import { GoalProjectionCard } from '../home/GoalProjectionCard'
+import type { GoalProjection } from '../../lib/goalProjection'
+import { PlateauCard } from '../home/PlateauCard'
+import type { Plateau } from '../../lib/plateau'
 import { RecentMealCard } from '../home/RecentMealCard'
 import { EmptyMeals } from '../home/EmptyMeals'
 import { EditFoodLogModal } from '../log/EditFoodLogModal'
@@ -48,9 +52,13 @@ interface Props {
   rescueOffer?: { date: string; streakAfter: number } | null
   /** The running season and this user's standing. Null between seasons. */
   seasonState?: SeasonState | null
+  /** Projected goal date. `kind: 'none'` renders nothing — see lib/goalProjection. */
+  projection?: GoalProjection | null
+  /** A stalled scale, and whether the logs explain it. See lib/plateau. */
+  plateau?: Plateau | null
 }
 
-export function DashboardClient({ profile, initialLogs, streakDays, longestStreakDays = 0, freezesBanked = 0, loggedDates, isPro, aiTrialRemaining = 0, weeklyRecap, rescueOffer = null, seasonState = null }: Props) {
+export function DashboardClient({ profile, initialLogs, streakDays, longestStreakDays = 0, freezesBanked = 0, loggedDates, isPro, aiTrialRemaining = 0, weeklyRecap, rescueOffer = null, seasonState = null, projection = null, plateau = null }: Props) {
   const router = useRouter()
   const { user } = useUser()
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
@@ -174,6 +182,19 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
         >
           {proteinLine.text}
         </p>
+      )}
+
+      {/* ── Where today's number is taking them ── */}
+      {projection && (
+        <div className="mt-4">
+          <GoalProjectionCard projection={projection} targetKg={profile.target_weight_kg ?? null} />
+        </div>
+      )}
+
+      {/* ── The stall, named. Sits above the target suggestion on purpose: this
+           explains what is happening over weeks, that offers a lever for it. ── */}
+      {plateau && profile.id && (
+        <PlateauCard plateau={plateau} goal={profile.goal} userId={profile.id} />
       )}
 
       {/* ── Suggested target adjustment (opt-in, never auto-applied) ── */}
