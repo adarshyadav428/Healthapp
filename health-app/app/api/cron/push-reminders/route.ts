@@ -15,6 +15,13 @@ const STREAK_SAVE_MIN_DAYS = 3
  */
 const SEASON_DEADLINE_DAYS = 3
 import { sendBudgetedPush } from '../../../../lib/push/budgetedSend'
+import {
+  DEFAULT_REMINDER_HOUR,
+  isReminderDue,
+  istHour,
+  normaliseReminderHour,
+  type ReminderSlot,
+} from '../../../../lib/reminderSchedule'
 import { processInBatches, CRON_TIME_BUDGET_MS } from '../../../../lib/cronBatch'
 import type { FoodLog } from '../../../../types/index'
 
@@ -23,10 +30,20 @@ export const runtime = 'nodejs'
 // Vercel Cron sends `Authorization: Bearer $CRON_SECRET` automatically when
 // CRON_SECRET is set as an env var on the project — see vercel.json.
 //
-// Runs once daily in the evening (IST). For every user with an active push
-// subscription who hasn't logged food yet today: sends a streak-save nudge
-// if they have an active streak (higher urgency), otherwise a plain
-// reminder. One send per user per run — never both, to avoid double-nagging.
+// Two callers, distinguished by ?slot=:
+//
+//   (default) CATCH-ALL — the Vercel cron, once daily at 20:30 IST. Serves
+//     everyone who hasn't logged today, regardless of their chosen hour. This
+//     is the pre-036 behaviour and it is the floor: choosing a reminder time
+//     can improve when the nudge lands, never cost you the nudge.
+//   slot=hourly — the GitHub Actions tick. Serves only users whose chosen IST
+//     hour is the current one, which is what makes the setting real.
+//
+// Both go through sendBudgetedPush, and the budget is one push per user per
+// day — so the two callers can never double-nag, in either order.
+//
+// For every user served: a streak-save nudge if they have a streak worth
+// protecting (higher urgency), else a season deadline, else a plain reminder.
 export async function GET(req: Request) {
   const authHeader = req.headers.get('authorization')
   if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -35,11 +52,29 @@ export async function GET(req: Request) {
 
   const admin = createAdminClient()
 
+  const slot: ReminderSlot =
+    new URL(req.url).searchParams.get('slot') === 'hourly' ? 'hourly' : 'catch-all'
+  const nowIstHour = istHour()
+
   const { data: subRows, error: subError } = await admin.from('push_subscriptions').select('user_id')
   if (subError) return NextResponse.json({ error: subError.message }, { status: 500 })
 
   const userIds = [...new Set((subRows ?? []).map((r) => r.user_id as string))]
-  if (userIds.length === 0) return NextResponse.json({ checked: 0, sent: 0 })
+  if (userIds.length === 0) return NextResponse.json({ checked: 0, sent: 0, slot })
+
+  // Chosen reminder hours. Failing loudly rather than defaulting: on an hourly
+  // tick a silent fallback would push everyone whose default happens to match
+  // the current hour, which is a mass mis-timed send dressed as a no-op.
+  const { data: hourRows, error: hourError } = await admin
+    .from('profiles')
+    .select('id, reminder_hour')
+    .in('id', userIds)
+  if (hourError) return NextResponse.json({ error: hourError.message }, { status: 500 })
+
+  const hourByUser = new Map<string, number>()
+  for (const row of hourRows ?? []) {
+    hourByUser.set(row.id as string, normaliseReminderHour(row.reminder_hour))
+  }
 
   const { start, end } = getIstDayRange()
   const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
@@ -103,8 +138,17 @@ export async function GET(req: Request) {
     }
   }
 
-  // Already logged today — no nudge needed.
-  const pending = userIds.filter((uid) => !loggedTodayIds.has(uid))
+  // Already logged today — no nudge needed. Then: is this their hour? The
+  // catch-all answers yes for everyone, so this only narrows the hourly tick.
+  const pending = userIds.filter(
+    (uid) =>
+      !loggedTodayIds.has(uid) &&
+      isReminderDue({
+        reminderHour: hourByUser.get(uid) ?? DEFAULT_REMINDER_HOUR,
+        nowIstHour,
+        slot,
+      })
+  )
 
   const outcome = await processInBatches(pending, async (userId) => {
     const { streak, freezesBanked } = calculateStreakState(

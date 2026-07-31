@@ -63,7 +63,7 @@ export function PushNotificationToggle() {
         </span>
         <div className="min-w-0">
           <p className="text-sm font-semibold text-ink">Meal reminders</p>
-          <p className="text-xs text-ink-2">An evening nudge if you haven&apos;t logged yet</p>
+          <p className="text-xs text-ink-2">A daily nudge if you haven&apos;t logged yet</p>
         </div>
       </div>
       <button

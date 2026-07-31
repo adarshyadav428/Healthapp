@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useTheme } from 'next-themes'
 import type { Profile } from '../../types/index'
 import { profileUpdateSchema, type ProfileUpdateData } from '../../lib/validations'
+import { DEFAULT_REMINDER_HOUR } from '../../lib/reminderSchedule'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
@@ -24,6 +25,7 @@ import {
 } from '../ui/sheet'
 import { ThemeSegmented } from '../ui/theme-toggle'
 import { PushNotificationToggle } from './PushNotificationToggle'
+import { ReminderHourPicker } from './ReminderHourPicker'
 import { userFacingApiError } from '../../lib/apiError'
 
 function ftInToCm(ft: number, inches: number) {
@@ -419,6 +421,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
             <SheetTitle className="mb-1">Meal reminders</SheetTitle>
             <p className="mb-4 text-sm text-ink-2">A gentle nudge to log if you haven&apos;t yet today.</p>
             <PushNotificationToggle />
+            <ReminderHourPicker initialHour={profile.reminder_hour ?? DEFAULT_REMINDER_HOUR} />
           </SheetContent>
         </Sheet>
 
