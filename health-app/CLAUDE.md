@@ -177,7 +177,19 @@ Added 2026-07-29 — full rationale in `docs/growth-mechanics-plan-2026-07-29.md
   it. The risk is permission revocation, which would kill the streak-save nudge.
 - **Crons are chunked and deadline-aware** (`lib/cronBatch.ts`). `vercel.json` declares
   **two** crons and the Hobby plan caps there — Monthly Wrapped rides inside the Sunday
-  recap run on any Sunday in the first fortnight. **Do not add a third cron.**
+  recap run on any Sunday in the first fortnight. **Do not add a third Vercel cron.**
+- **Reminder hours** (`lib/reminderSchedule.ts`, migration `036`) — users pick the IST
+  hour their daily nudge arrives. Hobby also caps each cron at **one trigger per day**,
+  so a chosen hour needs a scheduler Vercel can't provide: `.github/workflows/reminder-tick.yml`
+  pings `/api/cron/push-reminders?slot=hourly` every hour (needs the `CRON_SECRET` and
+  `APP_URL` repo secrets). The Vercel cron remains the **catch-all** at 20:30 IST and
+  serves everyone who hasn't logged, so if the workflow is off nobody loses a reminder —
+  the chosen time just isn't honoured. Both paths go through `sendBudgetedPush`, so the
+  one-push-per-day budget makes double-nagging impossible in either order.
+  `REMINDER_HOURS` stops at the catch-all hour on purpose: a tick after it finds the
+  day's push already spent, so a later slot would silently never fire. The two are
+  coupled and `tests/reminderWiring.test.ts` parses `vercel.json` to prove it — **if you
+  move the reminder cron, move `CATCH_ALL_IST_HOUR` with it.**
 - **Downgrade rule:** things you *earned* persist, things you *hold* expire. Hence
   `monthly_wraps.was_pro` — a wrap unlocks on whether the user was Pro when it was
   written, not now.
@@ -188,12 +200,14 @@ Added 2026-07-29 — full rationale in `docs/growth-mechanics-plan-2026-07-29.md
 
 > The five wellness tables (`water_logs`, `sleep_logs`, `fasting_sessions`, `measurements_logs`) were **dropped** by migration `019` — only `exercise_logs` remains of the extended trackers. Do not reference the dropped tables.
 
-Migrations live in `supabase/migrations/` (numbered `001`–`033`, with some duplicate numbers — `002`/`004`/`005`/`009` each appear twice, and there is no `021`; **always reference migrations by exact filename**). Apply **all** in order before running locally. Key ones:
+Migrations live in `supabase/migrations/` (numbered `001`–`036`, with some duplicate numbers — `002`/`004`/`005`/`009` each appear twice, and there is no `021`; **always reference migrations by exact filename**). Apply **all** in order before running locally. Key ones:
 - `001_initial.sql` — core schema
 - `007_seed_indian_foods.sql` / `009_seed_indian_foods_v2.sql` / `010_seed_missing_foods.sql` — IFCT food data
 - `012_play_billing.sql` — adds `provider`, `play_purchase_token`, `play_product_id` to `subscriptions`
 - `022_razorpay_billing.sql` — adds `razorpay_customer_id`, `razorpay_subscription_id`; extends the provider check to `'razorpay'`
 - `023_billing_hardening.sql` — unique index on `play_purchase_token` (one token, one account) + `cancel_at_period_end` flag
+- `034_foods_rls_ownership.sql` — restricts `foods` INSERT/UPDATE/DELETE to a user's own `source='user'` rows via `owns_custom_food()`. Before this, RLS checked only "are you logged in", so any account could DELETE a catalogue row and cascade it out of **every** user's diary
+- `036_reminder_hour.sql` — `profiles.reminder_hour` (IST hour, default 20 = the old fixed nudge)
 
 ### Types
 
