@@ -12,6 +12,7 @@ import { rescuesRemaining } from '../../lib/streakRescue'
 import { getSeasonState } from '../../lib/seasonServer'
 import { computeWeightTrend } from '../../lib/weightTrend'
 import { goalProjection } from '../../lib/goalProjection'
+import { detectPlateau, intakeSummary } from '../../lib/plateau'
 import type { WeeklyRecap } from '../../components/dashboard/WeeklyRecapCard'
 
 export const metadata: Metadata = {
@@ -42,9 +43,11 @@ export default async function DashboardPage() {
       .gte('logged_at', start)
       .lt('logged_at', end)
       .order('logged_at', { ascending: false }),
+    // `kcal` rides along on the streak's existing 60-day read: the plateau card
+    // needs recent intake and these are exactly the rows it would have fetched.
     supabase
       .from('food_logs')
-      .select('logged_at')
+      .select('logged_at, kcal')
       .eq('user_id', user.id)
       .gte('logged_at', sixtyDaysAgo),
     supabase.from('subscriptions').select('status').eq('user_id', user.id).maybeSingle(),
@@ -142,6 +145,31 @@ export default async function DashboardPage() {
     trend: weightTrend,
   })
 
+  // The plateau response: the week-3-4 moment where people quit because the
+  // scale stopped and nothing acknowledged it. detectPlateau checks intake
+  // BEFORE offering the reassuring explanation — see the rule in lib/plateau.
+  const trendPoints = weightTrend.points
+  const trendSpanDays =
+    trendPoints.length > 1
+      ? Math.round(
+          (new Date(trendPoints[trendPoints.length - 1].date).getTime() -
+            new Date(trendPoints[0].date).getTime()) /
+            86_400_000
+        )
+      : 0
+  const intake = intakeSummary(
+    (recentLogs ?? []) as { logged_at: string; kcal: number }[],
+    (iso) => istDateStr(new Date(iso))
+  )
+  const plateau = detectPlateau({
+    trendKgPerWeek: weightTrend.kgPerWeek,
+    trendSpanDays,
+    daysLogged: intake.daysLogged,
+    avgKcal: intake.avgKcal,
+    dailyTarget: profile.daily_calorie_target,
+    goal: profile.goal,
+  })
+
   const recapRow = recapResult.data
   const weeklyRecap: WeeklyRecap | null = recapRow
     ? {
@@ -175,6 +203,7 @@ export default async function DashboardPage() {
           rescueOffer={rescueOffer}
           seasonState={seasonState}
           projection={projection}
+          plateau={plateau}
         />
       </main>
       <BottomNav />
