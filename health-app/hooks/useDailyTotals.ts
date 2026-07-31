@@ -4,8 +4,15 @@ import { useMemo } from 'react'
 import type { DailyTotals } from '../types/index'
 import { useFoodLogs } from './useFoodLogs'
 
-export function useDailyTotals(userId: string | null) {
-  const { data: logs = [], isLoading, error } = useFoodLogs(userId)
+/**
+ * Totals for one IST day's logs. `date` defaults to today.
+ *
+ * Pass it explicitly wherever the user is acting on a day that isn't today —
+ * the Food tab's day nav lets them log to a past date, and totals for the wrong
+ * day are worse than no totals, because they read as authoritative.
+ */
+export function useDailyTotals(userId: string | null, date?: Date) {
+  const { data: logs = [], isLoading, error } = useFoodLogs(userId, date)
 
   const totals = useMemo<DailyTotals>(() => {
     return logs.reduce(

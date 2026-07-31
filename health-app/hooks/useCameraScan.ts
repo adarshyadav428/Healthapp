@@ -8,7 +8,7 @@ import { captureEvent, logMetaHeaders } from '../lib/posthog/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { reportLogMilestone } from '../store/milestoneStore'
 import type { LogMilestone } from '../lib/logMilestones'
-import { coachingLine } from '../lib/coaching'
+import { coachingLine, dayContextFor } from '../lib/coaching'
 import { mealForTime } from '../lib/meal'
 import { scaleMacrosRaw } from '../lib/nutrition'
 import { portionRange } from '../lib/portion-units'
@@ -34,7 +34,10 @@ type Params = {
 export function useCameraScan({ onClose, onFoodFound }: Params) {
   const router = useRouter()
   const { user, profile } = useUser()
-  const { totals: dailyTotals } = useDailyTotals(user?.id ?? null)
+  // No date argument on purpose: the camera always logs to today (logFood posts
+  // no `date`), so today's totals are the right "before this meal" figure.
+  const { totals: dailyTotals, isLoading: totalsLoading, error: totalsError } =
+    useDailyTotals(user?.id ?? null)
   const videoRef    = useRef<HTMLVideoElement>(null)
   const canvasRef   = useRef<HTMLCanvasElement>(null)
   const streamRef   = useRef<MediaStream | null>(null)
@@ -300,11 +303,19 @@ export function useCameraScan({ onClose, onFoodFound }: Params) {
   // figure the coaching line needs. Without them the sentence talks about the
   // meal as a share of the whole day and cheerfully says "good room left" to
   // someone who is already 300 over.
+  //
+  // dayContextFor drops the context entirely while the totals are loading or if
+  // the read failed — see its comment for why zeros must not be passed through.
+  const dayContext = dayContextFor({
+    totals: dailyTotals,
+    isLoading: totalsLoading,
+    error: totalsError,
+  })
   const coaching = selected && profile
     ? coachingLine(
         { kcal, protein },
         { kcal: profile.daily_calorie_target, protein: profile.protein_g_target },
-        { kcal: dailyTotals.kcal, protein: dailyTotals.protein_g }
+        dayContext
       )
     : null
   const { min: amountMin, max: amountMax, step: amountStep } = portionRange(selected?.unit)

@@ -18,7 +18,38 @@ const WALK_30MIN_KCAL = 150
 /** Below this, "you have room left" is noise rather than information. */
 const MEANINGFUL_REMAINDER = 150
 
+/**
+ * Below this, don't quote the remainder at all. `round10` turns anything under 5
+ * into "roughly 0 kcal left", which reads like a rounding bug rather than a
+ * budget — and a number that small is not one the user can act on.
+ */
+const NEGLIGIBLE_REMAINDER = 20
+
 const round10 = (n: number) => Math.round(n / 10) * 10
+
+/**
+ * Turn a `useDailyTotals` result into the `consumed` argument, or `undefined`.
+ *
+ * The hook returns zeroed totals both while the read is in flight AND when it
+ * failed — a shape indistinguishable from a genuinely untouched day. Feeding
+ * those zeros to `coachingLine` promises a full day's budget to someone who has
+ * none left, and does it in the confident voice of a number that was measured.
+ *
+ * Returning `undefined` instead drops the line back to the meal-share sentence:
+ * vaguer, but never false. Same fail-closed instinct as the entitlement
+ * counters — do not state a figure you could not compute.
+ *
+ * Pure and shared so both AI-logging hooks make the same call, and so the rule
+ * is testable without rendering a component.
+ */
+export function dayContextFor(day: {
+  totals: { kcal: number; protein_g: number }
+  isLoading: boolean
+  error: unknown
+}): ConsumedSoFar | undefined {
+  if (day.isLoading || day.error) return undefined
+  return { kcal: day.totals.kcal, protein: day.totals.protein_g }
+}
 
 /**
  * Returns a single encouraging sentence, or null when there isn't enough to say
@@ -72,6 +103,8 @@ export function coachingLine(
       over <= WALK_30MIN_KCAL
         ? `That puts you about ${over} kcal over for today — a 30-minute walk would square it.`
         : `That puts you about ${over} kcal over for today. Worth knowing, not worth worrying about — tomorrow starts clean.`
+  } else if (remaining < NEGLIGIBLE_REMAINDER) {
+    tip = `That's your day's budget spent, almost exactly.`
   } else if (remaining < MEANINGFUL_REMAINDER) {
     tip = `That's your day's budget just about spent — roughly ${round10(remaining)} kcal left.`
   } else {
