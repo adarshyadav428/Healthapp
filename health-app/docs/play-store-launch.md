@@ -165,13 +165,49 @@ Two gotchas: in Git Bash prefix with `MSYS_NO_PATHCONV=1` or `/sdcard/…` gets 
 - [ ] Product IDs must equal the env vars `NEXT_PUBLIC_PLAY_PRODUCT_MONTHLY` / `NEXT_PUBLIC_PLAY_PRODUCT_ANNUAL` (`lib/play/products.ts` reads them).
 - [ ] 🖐 Payments profile: uses the **Adarsh Medicals** sole-proprietorship details (same as Razorpay KYC).
 
-## 7. Service account + Real-time Developer Notifications
+## 7. Service account + Real-time Developer Notifications — mostly ✅ (2026-07-31)
 
-1. 🖐 Google Cloud Console → create/select a project → enable **Google Play Android Developer API** → create a **service account** → create a JSON key.
-2. 🖐 Play Console → Users and permissions → invite the service account email → grant **View financial data** + **Manage orders and subscriptions**.
-3. Base64 the JSON key → Vercel env `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`; set `ANDROID_PACKAGE_NAME=in.co.getinshape.app`; pick a random `PLAY_RTDN_SECRET`.
-4. 🖐 Cloud Pub/Sub: create topic `play-rtdn` → add a **push subscription** to `https://www.getinshape.co.in/api/play/rtdn?secret=<PLAY_RTDN_SECRET>` → grant `google-play-developer-notifications@system.gserviceaccount.com` the **Pub/Sub Publisher** role on the topic.
-5. 🖐 Play Console → Monetize → Monetization setup → enter the topic name → **Send test notification** → confirm a 200 in Vercel logs for `/api/play/rtdn`.
+Without RTDN a Play subscriber who cancels, lapses, or is refunded stays Pro forever:
+`/api/play/verify` grants the entitlement at purchase and nothing ever revokes it.
+This is the same gap the Razorpay webhook had before 2026-07-30 — don't ship one
+provider's lifecycle handling without the other's.
+
+**Live values** (created 2026-07-31 — don't recreate these):
+
+| | |
+|---|---|
+| GCP project | `getinshape2408` (project number 103565470929) |
+| APIs enabled | Google Play Android Developer, Cloud Pub/Sub |
+| Service account | `play-rtdn@getinshape2408.iam.gserviceaccount.com` |
+| Topic | `projects/getinshape2408/topics/play-rtdn` |
+| Push subscription | `play-rtdn-push` → `https://www.getinshape.co.in/api/play/rtdn?secret=<PLAY_RTDN_SECRET>` |
+
+- [x] GCP project + both APIs enabled.
+- [x] Service account created (**no key yet** — see below).
+- [x] Topic created, with `google-play-developer-notifications@system.gserviceaccount.com`
+      granted **Pub/Sub Publisher** on it. Without this grant Play Console rejects the
+      topic name outright, so a successful save in Monetization setup is proof it worked.
+- [x] Push subscription created with **Never expire**. The console default expires a
+      subscription after 31 days of inactivity — with no Play purchases yet (merchant
+      verification pending) the default would silently delete it before first use.
+- [x] `ANDROID_PACKAGE_NAME=in.co.getinshape.app` set in Vercel (Production + Preview),
+      deliberately **not** marked Sensitive: it isn't a secret, and an unreadable value is
+      exactly what hid the trailing space in `RAZORPAY_MONTHLY_PLAN_ID`.
+- [x] Play Console → Monetize → Monetization setup → real-time notifications enabled,
+      topic name saved, "Subscriptions and voided purchases only".
+- [ ] 🖐 Create a **JSON key** for the service account, base64 it, and set
+      `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` in Vercel (Sensitive).
+      `node -e "console.log(Buffer.from(require('fs').readFileSync(process.argv[1])).toString('base64'))" key.json`
+- [ ] 🖐 Set `PLAY_RTDN_SECRET` in Vercel — must byte-match the `?secret=` in the push URL.
+- [ ] 🖐 Redeploy with the **build cache off**, then Play Console → **Send test notification**.
+- [ ] 🖐 Play Console → Users and permissions → invite the service account email → grant
+      **View financial data** + **Manage orders and subscriptions**.
+
+**Reading the test result:** a **200** is success. The test payload carries no
+`purchaseToken`, so the route short-circuits at the `if (!purchaseToken)` guard and never
+touches the database — a 200 with no DB write is the correct outcome, not a silent failure.
+A **403** means `PLAY_RTDN_SECRET` and the push URL disagree, or the redeploy reused the
+build cache and the new env vars were never inlined.
 
 ## 8. Rollout
 
