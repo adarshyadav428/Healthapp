@@ -5,24 +5,35 @@ import { BottomNav } from '../../components/layout/BottomNav'
 import { WeightClient } from '../../components/weight/WeightClient'
 import type { WeightLog } from '../../types/index'
 import { formatKg } from '../../lib/formatWeight'
+import { isProStatus } from '../../lib/subscription'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { robots: { index: false } }
+
+// Keep in step with FREE_WEIGHT_ROWS in app/api/weight/logs/route.ts.
+const FREE_WEIGHT_ROWS = 30
 
 export default async function WeightPage() {
   const supabase = createServerClient()
   const user = await getAuthedUser(supabase)
 
-  // Both queries only need user.id — one parallel round trip, not two sequential
-  const [profileResult, logsResult] = await Promise.all([
+  // Pro is sold "full weight history" on /upgrade, so the cap is free-tier only
+  // — this used to be a flat .limit(60) for everyone. Free still gets enough
+  // points to render a real trend line.
+  const [profileResult, subResult] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
-    supabase
-      .from('weight_logs')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('measured_at', { ascending: false })
-      .limit(60),
+    supabase.from('subscriptions').select('status').eq('user_id', user.id).maybeSingle(),
   ])
+
+  let logsQuery = supabase
+    .from('weight_logs')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('measured_at', { ascending: false })
+
+  if (!isProStatus(subResult.data?.status)) logsQuery = logsQuery.limit(FREE_WEIGHT_ROWS)
+
+  const logsResult = await logsQuery
 
   const { data: profile, error: profileError } = profileResult
   if (profileError) throw new Error(profileError.message)

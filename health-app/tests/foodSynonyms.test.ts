@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { expandSearchQuery, foodSynonyms } from '../lib/food-synonyms'
 import { buildNameIlikeOrFilter } from '../lib/searchFilter'
+import { compareFoodsForQuery } from '../lib/searchRanking'
+import { SOURCE_RANK } from '../lib/foodMatch'
 
 /**
  * Reported bug: roasted corn was unfindable. The row ("Bhutta (Roasted Corn)")
@@ -105,6 +107,26 @@ describe('synonym groups', () => {
 
     // Searching the dish by name still reaches its group.
     expect(expandSearchQuery('rice pudding')).toContain('kheer')
+  })
+
+  it('ranks the measured row above the estimate for plain one-word queries', () => {
+    // The end-to-end shape of P0-4, pinned against the real synonym data.
+    const cases: [string, string, string][] = [
+      ['rice', 'Cooked Rice (Chawal)', 'Steamed Rice'],
+      ['dal', 'Masoor Dal (Red Lentil)', 'Dal Fry'],
+      ['chai', 'Black Tea / Kadha Chai', 'Masala Chai'],
+    ]
+    for (const [query, measuredName, estimateName] of cases) {
+      const rows = [
+        { name: estimateName, source: 'curated' },
+        { name: measuredName, source: 'ifct' },
+      ]
+      const winner = rows
+        .slice()
+        .sort(compareFoodsForQuery(expandSearchQuery(query), SOURCE_RANK))[0]
+      expect(winner.source, `"${query}" must answer with the measured row`).toBe('ifct')
+      expect(winner.name).toBe(measuredName)
+    }
   })
 
   it('has no empty or whitespace-padded entries', () => {

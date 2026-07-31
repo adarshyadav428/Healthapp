@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
 import { isProStatus } from '../../../../lib/subscription'
 import { pickBestFoodMatch } from '../../../../lib/foodMatch'
@@ -8,6 +9,16 @@ import { AI_TRIAL_SCANS } from '../../../../lib/aiTrial'
 import { checkAiTrial } from '../../../../lib/aiTrialServer'
 import { INDIAN_PORTION_REFERENCE } from '../../../../lib/indian-portions'
 import { resolveNutrition, piecesInServing, type GeminiFood } from '../../../../lib/camera-nutrition'
+
+// Generous for flash-lite on a single image, and far inside the platform's
+// function ceiling — the point is that the USER gets an answer, not that the
+// request survives.
+const GEMINI_TIMEOUT_MS = 20_000
+
+// User-facing copy for AI failures. Provider error text (model ids, quota and
+// key detail) is reported to Sentry instead of being rendered in a toast.
+const AI_TIMEOUT = 'The scan took too long. Check your connection and try again — this one is on us, it hasn’t used a scan.'
+const AI_UNAVAILABLE = 'Photo scanning is unavailable right now. Try again in a minute, or add the food by search — that always works.'
 
 const PROMPT = `You are a nutrition expert specializing in Indian food. Analyze this food image.
 Use IFCT 2017 values for traditional Indian foods and standard global values for packaged/international foods.
@@ -140,12 +151,23 @@ export async function POST(req: Request) {
           // non-determinism is the plausibility validation in resolveNutrition.
           generationConfig: { maxOutputTokens: 1024, temperature: 0, seed: 42 },
         }),
+        // Without a timeout a stalled Gemini holds the request until the
+        // platform kills the whole function, so the user watches a spinner die
+        // with no message and no way to retry cheaply. 20s is generous for
+        // flash-lite on one image and still well inside the function budget.
+        // Open Food Facts has had an explicit timeout for this reason since the
+        // failure-handling work; the AI path is the one users actually wait on.
+        signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
       }
     )
     const apiJson = await apiRes.json()
     if (!apiRes.ok) {
+      // The provider's own error text is for us, not for the user — it leaks
+      // model names and key/quota detail and reads as a crash. Report it, show
+      // something a person can act on.
       const errMsg = apiJson?.error?.message ?? JSON.stringify(apiJson)
-      return NextResponse.json({ error: `Gemini error: ${errMsg}` }, { status: 500 })
+      Sentry.captureException(new Error(`Gemini error: ${errMsg}`), { tags: { route: 'camera/analyze' } })
+      return NextResponse.json({ error: AI_UNAVAILABLE }, { status: 503 })
     }
     const raw = stripMarkdown(apiJson.candidates?.[0]?.content?.parts?.[0]?.text ?? '')
     try {
@@ -158,8 +180,12 @@ export async function POST(req: Request) {
       )
     }
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Unknown error'
-    return NextResponse.json({ error: `AI analysis failed: ${msg}` }, { status: 500 })
+    const timedOut = e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError')
+    Sentry.captureException(e, { tags: { route: 'camera/analyze', timedOut: String(timedOut) } })
+    return NextResponse.json(
+      { error: timedOut ? AI_TIMEOUT : AI_UNAVAILABLE },
+      { status: 503 }
+    )
   }
 
   if (!geminiResult.foods?.length) {
@@ -185,12 +211,23 @@ export async function POST(req: Request) {
     // or freeform estimate is just Gemini's own guess, so it still gets a
     // chance at the accurate seeded IFCT/restaurant data.
     if (!n.fromLabel) {
-      const { data: candidates } = await supabase
+      // A discarded error here degrades silently in a way that costs accuracy
+      // AND money: `candidates` becomes null, pickBestFoodMatch gets an empty
+      // list, no measured IFCT row is ever matched, and we write a fresh
+      // per-user `estimate` row instead — permanently, for a transient blip. The
+      // scan still succeeds, so nobody finds out. Report it and carry on.
+      const { data: candidates, error: candidatesError } = await supabase
         .from('foods')
         .select(FOOD_SELECT)
         .ilike('name', `%${item.name}%`)
         .neq('source', 'estimate')
         .limit(10)
+
+      if (candidatesError) {
+        Sentry.captureException(new Error(`food match lookup failed: ${candidatesError.message}`), {
+          tags: { route: 'camera/analyze' },
+        })
+      }
       const existing = pickBestFoodMatch(candidates ?? [], item.name)
 
       if (existing) {

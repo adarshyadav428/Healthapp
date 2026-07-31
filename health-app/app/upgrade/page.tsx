@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/button'
 import Link from 'next/link'
 import { Check, Crown, Zap, ArrowLeft, Lock } from 'lucide-react'
 import { useUser } from '../../hooks/useUser'
+import { useSubscription } from '../../hooks/useSubscription'
 import { captureEvent } from '../../lib/posthog/client'
 import type { PaywallSource } from '../../lib/posthog/events'
 import { projectGoalDate, formatGoalDate } from '../../lib/projection'
@@ -19,7 +20,11 @@ const REASON_COPY: Record<string, { title: string; description: string }> = {
   history:            { title: 'Unlock your full history', description: 'Free users can view the last 7 days. Pro shows everything.' },
   custom_foods:       { title: 'Create custom foods',      description: 'Log your home-cooked dishes and family recipes with Pro.' },
   ai_insights:        { title: 'Get your weekly AI recap', description: 'A summary of your week — calories, days logged, weight change — every Sunday.' },
-  exports:            { title: 'Export your data',         description: 'Download your full log as CSV with Pro.' },
+  // CSV export is free and complete for everyone — it's data portability, not a
+  // Pro feature (see app/api/export/route.ts). Nothing links here with
+  // `?reason=exports`; the key is kept only so an old bookmark doesn't render a
+  // blank banner, and the copy no longer claims export costs money.
+  exports:            { title: 'Export your data',         description: 'CSV export is free for everyone. Pro unlocks unlimited AI logging, your full in-app history and custom foods.' },
   camera_scan_pro:    { title: "You've used your free AI scans", description: 'Point your camera at your plate and let Gemini do the logging. Unlimited with Pro.' },
   chat_scan_pro:      { title: "You've used your free AI scans", description: 'Describe your meal in plain English and let Gemini log it. Unlimited with Pro.' },
   // Not a paywall — the user hasn't spent their trial yet, they just haven't
@@ -126,6 +131,10 @@ function ReasonBanner() {
 
 export default function UpgradePage() {
   const { user, profile } = useUser()
+  // This page had no notion of the current entitlement at all, so an active
+  // subscriber who tapped any "Pro" affordance got the full sales pitch and
+  // could open a second checkout for a plan they already pay for.
+  const { data: sub, isPending: subPending } = useSubscription(user?.id ?? null)
   const { startCheckout, loading, playAvailable, playPrices, purchasesUnavailable } =
     useCheckout({ userId: user?.id, userEmail: user?.email })
   const { send: sendVerification, sending: sendingVerification, sent: verificationSent } =
@@ -145,6 +154,51 @@ export default function UpgradePage() {
     profile && profile.goal !== 'maintain' && profile.current_weight_kg && profile.target_weight_kg
       ? projectGoalDate(profile.current_weight_kg, profile.target_weight_kg, profile.pace_kg_per_week ?? 0.5)
       : null
+
+  // Don't pitch before we know the entitlement. Without this the plan buttons
+  // paint for a beat on every load, so an existing subscriber can tap "Start
+  // Monthly" during the flash and open a checkout for what they already pay for.
+  if (user && subPending) {
+    return (
+      <div className="min-h-screen">
+        <div className="mx-auto w-full max-w-lg px-4 py-8" aria-busy="true" />
+      </div>
+    )
+  }
+
+  // Already paying: never show the pitch or the plan buttons again. Settings
+  // owns subscription management (it branches per provider), so send them there
+  // rather than duplicating that logic here.
+  if (sub?.isPro) {
+    return (
+      <div className="min-h-screen">
+        <div className="mx-auto w-full max-w-lg px-4 py-8">
+          <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-ink-2 hover:text-ink mb-6">
+            <ArrowLeft className="h-4 w-4" />
+            Back to dashboard
+          </Link>
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 rounded-full bg-brand-soft border border-hairline px-3 py-1 text-xs font-semibold text-brand-ink mb-3">
+              <Crown className="h-3.5 w-3.5" />
+              GetInShape Pro
+            </div>
+            <h1 className="font-display text-3xl font-bold text-ink">You&apos;re already on Pro</h1>
+            <p className="mt-2 text-sm text-ink-2">
+              Everything is unlocked — unlimited AI logging, your full history, custom foods and the weekly recap.
+            </p>
+            <div className="mt-6 flex flex-col gap-2">
+              <Link href="/dashboard">
+                <Button className="w-full">Back to logging</Button>
+              </Link>
+              <Link href="/settings" className="text-sm text-ink-2 hover:text-ink py-2">
+                Manage subscription
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen">

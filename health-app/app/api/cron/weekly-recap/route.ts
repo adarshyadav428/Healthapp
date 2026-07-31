@@ -51,7 +51,7 @@ export async function GET(req: Request) {
 
   // Names, weigh-ins, entitlements, and who's already been done this week —
   // all batched, so the per-user loop below makes no extra queries.
-  const [{ data: profiles }, { data: weights }, { data: subs }, { data: alreadyDone }] = await Promise.all([
+  const [profilesRes, weightsRes, subsRes, alreadyDoneRes] = await Promise.all([
     admin.from('profiles').select('id, display_name').in('id', userIds),
     admin.from('weight_logs').select('user_id, weight_kg, measured_at')
       .in('user_id', userIds).gte('measured_at', windowStart).lt('measured_at', windowEnd)
@@ -59,6 +59,26 @@ export async function GET(req: Request) {
     admin.from('subscriptions').select('user_id, status').in('user_id', userIds),
     admin.from('weekly_recaps').select('user_id').eq('week_start', weekStart).in('user_id', userIds),
   ])
+
+  // These four reads used to discard their `error`, which turned any failure
+  // into an empty result and changed the run's behaviour silently and wrongly:
+  //   - subscriptions failing => proUsers empty => EVERY user is treated as free
+  //     and gets the deterministic fallback line instead of the AI recap they pay for
+  //   - weekly_recaps failing => `done` empty => resumability is lost and users
+  //     who already got this week's recap are pushed a second time
+  // Failing the whole run is the right call: the cron is retried, and a run that
+  // would mis-serve every user is worse than no run at all.
+  for (const [label, res] of [
+    ['profiles', profilesRes], ['weight_logs', weightsRes],
+    ['subscriptions', subsRes], ['weekly_recaps', alreadyDoneRes],
+  ] as const) {
+    if (res.error) throw new Error(`weekly-recap: ${label} read failed: ${res.error.message}`)
+  }
+
+  const profiles = profilesRes.data
+  const weights = weightsRes.data
+  const subs = subsRes.data
+  const alreadyDone = alreadyDoneRes.data
   const proUsers = new Set(
     (subs ?? []).filter((s) => isProStatus(s.status as string)).map((s) => s.user_id as string)
   )

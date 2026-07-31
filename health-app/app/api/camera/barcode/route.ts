@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createServerClient } from '../../../../lib/supabase/server'
+import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
 import { normalizeBarcode } from '../../../../lib/barcode'
 
 export async function GET(req: Request) {
@@ -72,7 +72,14 @@ export async function GET(req: Request) {
     common_portions: null,
   }
 
-  const { data: inserted } = await supabase
+  // Writes into the SHARED `foods` catalogue, so it goes through the service
+  // role like every other catalogue write (camera, chat, search persistence,
+  // seeding). The user-scoped client must not be able to write rows it doesn't
+  // own — migration 034 restricts foods INSERT/UPDATE/DELETE to a user's own
+  // `source = 'user'` rows, which would otherwise fail this upsert the moment
+  // it resolved to an UPDATE of an existing OFF row.
+  const admin = createAdminClient()
+  const { data: inserted } = await admin
     .from('foods')
     .upsert(row, { onConflict: 'source,source_id' })
     .select('*')

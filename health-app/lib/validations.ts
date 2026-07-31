@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { MEAL_CONTEXTS } from './mealContext'
 
 export const signInSchema = z.object({
   email: z.string().email(),
@@ -28,6 +29,12 @@ export const addFoodSchema = z.object({
   grams: z.number().positive().max(10000, { message: 'Grams cannot exceed 10,000' }),
   // Optional backfill target — an IST calendar date (YYYY-MM-DD). Absent = today.
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  // Where the meal was eaten. Optional and nullable — a wrong value is worse
+  // than none, because the insight in lib/mealContext.ts compares days that
+  // have a context against days that don't. Only the edit route accepted this
+  // until 2026-07-31, which meant every log was born NULL and the insight had
+  // nothing to work with.
+  context: z.enum(MEAL_CONTEXTS).nullable().optional(),
 })
 
 export const weightLogSchema = z.object({

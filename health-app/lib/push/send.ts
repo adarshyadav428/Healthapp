@@ -31,11 +31,18 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
   ensureConfigured()
   const admin = createAdminClient()
 
-  const { data: subs } = await admin
+  // Distinguish "this user has no devices" from "we could not find out".
+  // Discarding `error` made a failed read return { sent: 0 } — identical to the
+  // legitimate no-subscription case — so a DB blip looked like a quiet no-op to
+  // sendBudgetedPush and to the cron summaries built on it. That is exactly how
+  // a silently-broken limit went unnoticed for weeks before; a read failure must
+  // be loud.
+  const { data: subs, error } = await admin
     .from('push_subscriptions')
     .select('id, endpoint, p256dh, auth')
     .eq('user_id', userId)
 
+  if (error) throw new Error(`push_subscriptions read failed: ${error.message}`)
   if (!subs || subs.length === 0) return { sent: 0, removed: 0 }
 
   let sent = 0

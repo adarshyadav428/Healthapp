@@ -13,7 +13,8 @@
 
 export const foodSynonyms: Record<string, string[]> = {
   // ── GENERIC DAL (catches "daal", "dhal", "dhall" spelling variants) ────────
-  'dal': ['dal', 'daal', 'dhal', 'dhall', 'lentil', 'lentils', 'dal fry', 'dal soup'],
+  // No dish-shaped terms here ("dal fry", "dal soup") — see the note on 'chawal'.
+  'dal': ['dal', 'daal', 'dhal', 'dhall', 'lentil', 'lentils'],
 
   // ── SOYA ──────────────────────────────────────────────────────────────────
   'soya chunks': ['soya chunks', 'soy chunks', 'meal maker', 'textured soy protein', 'nutrela', 'soyabean chunks', 'tsp chunks'],
@@ -45,7 +46,20 @@ export const foodSynonyms: Record<string, string[]> = {
   'atta': ['atta', 'aata', 'aatta', 'wheat flour', 'whole wheat flour', 'gehun atta'],
 
   // ── RICE & RICE DISHES ────────────────────────────────────────────────────
-  'chawal': ['chawal', 'rice', 'boiled rice', 'steamed rice', 'cooked rice', 'plain rice'],
+  // A term that already CONTAINS a shorter term of the same group ("steamed
+  // rice" vs "rice") never widens retrieval — the filter is `name ILIKE
+  // '%term%'`, and every name containing "steamed rice" contains "rice". What it
+  // does do is wreck ranking: compareFoodsForQuery ranks synonym-match quality
+  // above SOURCE_RANK (deliberately — without that tier, a row reached only via a
+  // synonym ties at zero and "anjeer" returns an Open Food Facts protein bar
+  // above "Figs (Dry)"). So a `curated` estimate NAMED "Steamed Rice" scored a
+  // perfect synonym match and beat the measured "Cooked Rice (Chawal)" before
+  // source trust was consulted — violating the rule that a measured row always
+  // wins a name collision. Same for "Dal Fry" and "Masala Chai".
+  // Users who type the dish name still reach the group: "steamed rice" contains
+  // the whole word "rice", which is what expandSearchQuery matches on.
+  // Keep this list free of qualifier+food phrases.
+  'chawal': ['chawal', 'rice'],
   'biryani': ['biryani', 'biriyani', 'birayni', 'biriani'],
   'pulao': ['pulao', 'pilaf', 'pilau', 'pulav'],
   'khichdi': ['khichdi', 'khichri', 'khichari', 'kichadi'],
@@ -86,7 +100,9 @@ export const foodSynonyms: Record<string, string[]> = {
   'anda': ['anda', 'egg', 'eggs', 'anday', 'baida', 'ande', 'boiled egg', 'egg boiled'],
 
   // ── SOUTH INDIAN ──────────────────────────────────────────────────────────
-  'sambar': ['sambar', 'sambhar', 'sambaru', 'sambar curry', 'sambar rice', 'sambhar curry', 'south indian dal'],
+  // "sambar curry"/"sambar rice"/"sambhar curry" dropped — same redundancy as
+  // 'chawal' above ("sambar" already matches every name they would).
+  'sambar': ['sambar', 'sambhar', 'sambaru', 'south indian dal'],
   'idli sambar': ['idli sambar', 'idly sambhar', 'idli sambhar'],
   'rasam': ['rasam', 'rasam soup', 'tomato rasam', 'pepper rasam'],
 
@@ -153,7 +169,10 @@ export const foodSynonyms: Record<string, string[]> = {
   'barfi': ['barfi', 'burfi', 'burfee', 'barfee'],
 
   // ── DRINKS ────────────────────────────────────────────────────────────────
-  'chai': ['chai', 'tea', 'milk tea', 'cutting chai', 'masala chai', 'chiya'],
+  // "cutting chai"/"masala chai" dropped (redundant against "chai", and they are
+  // the names of curated estimate rows — see 'chawal'). "milk tea" stays: it
+  // shares no substring with "chai", so it genuinely widens retrieval.
+  'chai': ['chai', 'tea', 'milk tea', 'chiya'],
   'nimbu pani': ['nimbu pani', 'lemonade', 'shikanjvi', 'nimbu paani', 'lemon water'],
   'coconut water': ['coconut water', 'nariyal pani', 'tender coconut water'],
 

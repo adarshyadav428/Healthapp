@@ -40,6 +40,8 @@ Copy `.env.local.example` → `.env.local`. Required keys:
 - `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` — legacy only, keeps pre-Razorpay subscribers' webhook + portal working
 - `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` (base64 JSON) / `ANDROID_PACKAGE_NAME` / `PLAY_RTDN_SECRET`
 - `NEXT_PUBLIC_PLAY_PRODUCT_MONTHLY` / `NEXT_PUBLIC_PLAY_PRODUCT_ANNUAL`
+- `CRON_SECRET` — bearer token Vercel Cron sends to `/api/cron/*`
+- `SEED_SECRET` — guards `/api/admin/seed-indian-foods` and `/api/admin/run-migrations`. Both fail **closed**: unset means the routes 403 and the endpoints are unavailable, which is the right default anywhere that isn't actively seeding.
 
 `USDA_API_KEY` is intentionally absent — USDA integration is permanently removed.
 

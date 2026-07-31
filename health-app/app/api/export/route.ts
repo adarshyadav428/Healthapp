@@ -15,16 +15,21 @@ export async function GET() {
 
     const userId = user.id
 
-    // Fetch last 90 days of food logs
-    const ninetyDaysAgo = new Date()
-    ninetyDaysAgo.setUTCDate(ninetyDaysAgo.getUTCDate() - 90)
-
+    // Deliberately NOT tier-gated and deliberately NOT windowed.
+    //
+    // This is data portability, not a feature: it returns the user their own
+    // data, all of it. The free tier's "7 days of history" limits what the app
+    // will *show* you in-app; it was never meant to mean we withhold your own
+    // records from you, and Play's Data-safety commitments read badly if it did.
+    //
+    // It previously returned a silent 90-day slice, which was wrong in both
+    // directions at once: more than the 7 days the free tier advertises, and
+    // less than the complete export the CSV header claimed to be.
     const [foodResult, weightResult] = await Promise.all([
       supabase
         .from('food_logs')
         .select('logged_at, meal, kcal, protein_g, carbs_g, fat_g, grams, food:foods(name, brand)')
         .eq('user_id', userId)
-        .gte('logged_at', ninetyDaysAgo.toISOString())
         .order('logged_at', { ascending: true }),
       supabase
         .from('weight_logs')
@@ -48,7 +53,7 @@ export async function GET() {
 
     // Build CSV
     const rows: string[] = [
-      '# GetInShape Food Log Export (last 90 days)',
+      '# GetInShape Food Log Export (complete history)',
       '# Generated: ' + new Date().toISOString() + ' — all times below are IST',
       '',
       'Date (IST),Time (IST),Meal,Food,Brand,Grams,Calories,Protein(g),Carbs(g),Fat(g)',

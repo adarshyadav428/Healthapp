@@ -7,8 +7,9 @@ anything where the automated check passes but the experience is still wrong.
 Run the automated gates first — if any fail, stop:
 
 ```bash
-npm test            # 239 tests
+npm test            # 606 tests
 npx tsc --noEmit    # zero type errors
+npm run lint
 npm run check:tokens
 npm run build
 ```
@@ -103,17 +104,26 @@ Easiest on the `+qa1` fixture account (30 days of history).
 
 ## 6. Entitlements — free tier must never cap logging
 
-On a **free** account:
+On a **free** account. The AI allowance changed on 2026-07-18: it is **3 lifetime
+calls shared across camera and chat**, unlocked only once the email is verified —
+not the old per-day quotas.
 
 - [ ] Log 20+ foods manually/via search in one day. Never blocked.
-- [ ] 6th camera scan in a day → blocked with an upgrade prompt.
-- [ ] 11th chat log in a day → blocked with an upgrade prompt.
-- [ ] The counters actually increment — do 5 camera scans, reload, and confirm
-      the 6th is still blocked. *(This is the exact failure that hid the
-      unenforced chat limit; a silent counter looks identical to a working one
-      until you cross the boundary.)*
+- [ ] On an **unverified** account, camera and chat are both locked, and the copy
+      asks the user to confirm their email — not to pay.
+- [ ] Verify the email, then spend all 3 AI calls. Mix the two surfaces: 2 camera
+      scans + 1 chat log must exhaust the pool, because they share it.
+- [ ] The 4th call is blocked with an upgrade prompt, on **both** surfaces.
+- [ ] The counters actually increment — spend 2, reload, sign out and back in, and
+      confirm the 3rd is still the last one. *(This is the exact failure that hid
+      the unenforced chat limit; a silent counter looks identical to a working one
+      until you cross the boundary. The pool is lifetime, so signing out, clearing
+      storage or using a second device must not reset it.)*
+- [ ] A **failed** scan (kill the network mid-scan) does not burn a call.
 - [ ] History older than 7 days is gated; the last 7 days are not.
 - [ ] Custom foods are gated.
+- [ ] CSV export is **not** gated — it returns the user's complete history on any
+      tier. It's data portability, not a Pro feature.
 
 ## 7. Offline / PWA
 
