@@ -52,7 +52,7 @@ then no behavior listed below can change without a failing check.
 ## Verification gates (run all before shipping)
 
 ```bash
-npm test           # 62 files / 811 tests
+npm test           # 67 files / 917 tests
 npx tsc --noEmit
 npm run lint
 npm run check:tokens
@@ -60,6 +60,13 @@ npm run build
 ```
 
 ## Known residual gaps (accepted for launch, revisit later)
+
+- **Reminder hours are inert until two setup steps happen** (as of 2026-07-31): migration
+  `036_reminder_hour.sql` must be applied, and `.github/workflows/reminder-tick.yml` needs the
+  `CRON_SECRET` and `APP_URL` repo secrets. Until then the picker stores a value nobody acts on
+  and every reminder arrives from the 20:30 IST catch-all, exactly as before the feature. No
+  user loses a reminder in that state — see `lib/reminderSchedule.ts` for why the catch-all is
+  the floor.
 
 - **RLS is tested statically, not against a live Postgres.** `tests/rlsPolicies.test.ts`
   replays the migrations and asserts the policies are shaped correctly (no write gated on
