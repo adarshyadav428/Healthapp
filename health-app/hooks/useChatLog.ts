@@ -8,6 +8,7 @@ import { captureEvent, logMetaHeaders } from '../lib/posthog/client'
 import { reportLogMilestone } from '../store/milestoneStore'
 import { coachingLine } from '../lib/coaching'
 import { useUser } from './useUser'
+import { useDailyTotals } from './useDailyTotals'
 
 export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
@@ -54,7 +55,8 @@ type Params = { onClose: () => void; logDate?: string }
  */
 export function useChatLog({ onClose, logDate }: Params) {
   const router = useRouter()
-  const { profile } = useUser()
+  const { user, profile } = useUser()
+  const { totals: dailyTotals } = useDailyTotals(user?.id ?? null)
   const queryClient = useQueryClient()
   const [state, setState] = useState<State>({ type: 'idle' })
   const [input, setInput] = useState('')
@@ -161,11 +163,15 @@ export function useChatLog({ onClose, logDate }: Params) {
   const totalProtein = state.type === 'confirm'
     ? Math.round(state.items.reduce((sum, i) => sum + (i.food.protein_g_per_100g * i.grams / 100), 0))
     : 0
-  // One warm coaching sentence, computed locally from totals + targets (no AI call).
+  // One warm coaching sentence, computed locally from totals + targets (no AI
+  // call). Today's logged totals go in as the "before this meal" figure so the
+  // line talks about the budget actually left, instead of describing a snack as
+  // "a light 12% of your day" to someone already over.
   const coaching = state.type === 'confirm' && profile
     ? coachingLine(
         { kcal: totalKcal, protein: totalProtein },
-        { kcal: profile.daily_calorie_target, protein: profile.protein_g_target }
+        { kcal: profile.daily_calorie_target, protein: profile.protein_g_target },
+        { kcal: dailyTotals.kcal, protein: dailyTotals.protein_g }
       )
     : null
 

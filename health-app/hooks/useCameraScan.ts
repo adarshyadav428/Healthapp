@@ -13,6 +13,7 @@ import { mealForTime } from '../lib/meal'
 import { scaleMacrosRaw } from '../lib/nutrition'
 import { portionRange } from '../lib/portion-units'
 import { useUser } from './useUser'
+import { useDailyTotals } from './useDailyTotals'
 
 export type Mode = 'barcode' | 'photo' | 'manual'
 export type PhotoResult = { food: Food; estimated_grams: number; unit: string }
@@ -32,7 +33,8 @@ type Params = {
  */
 export function useCameraScan({ onClose, onFoodFound }: Params) {
   const router = useRouter()
-  const { profile } = useUser()
+  const { user, profile } = useUser()
+  const { totals: dailyTotals } = useDailyTotals(user?.id ?? null)
   const videoRef    = useRef<HTMLVideoElement>(null)
   const canvasRef   = useRef<HTMLCanvasElement>(null)
   const streamRef   = useRef<MediaStream | null>(null)
@@ -294,8 +296,16 @@ export function useCameraScan({ onClose, onFoodFound }: Params) {
   const protein = macros ? Math.round(macros.protein_g) : 0
   const carbs   = macros ? Math.round(macros.carbs_g) : 0
   const fat     = macros ? Math.round(macros.fat_g) : 0
+  // Today's totals are what's already logged, so they're the "before this meal"
+  // figure the coaching line needs. Without them the sentence talks about the
+  // meal as a share of the whole day and cheerfully says "good room left" to
+  // someone who is already 300 over.
   const coaching = selected && profile
-    ? coachingLine({ kcal, protein }, { kcal: profile.daily_calorie_target, protein: profile.protein_g_target })
+    ? coachingLine(
+        { kcal, protein },
+        { kcal: profile.daily_calorie_target, protein: profile.protein_g_target },
+        { kcal: dailyTotals.kcal, protein: dailyTotals.protein_g }
+      )
     : null
   const { min: amountMin, max: amountMax, step: amountStep } = portionRange(selected?.unit)
 
