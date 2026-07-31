@@ -42,9 +42,25 @@ function useCountUp(target: number, duration = 800) {
       const eased = 1 - Math.pow(1 - t, 4)
       setVal(Math.round(target * eased))
       if (t < 1) raf.current = requestAnimationFrame(tick)
+      else clearTimeout(safety)
     }
+
+    // requestAnimationFrame does not always run. Battery saver, a backgrounded
+    // tab, and some embedded webviews suppress it entirely — and because this
+    // hook starts at 0, the hero then renders a permanent "0 kcal eaten" while
+    // the line right below it says "50 kcal over". Observed exactly that during
+    // the 2026-07-31 audit in a tab where rAF never fired. The animation is
+    // decoration; the number is not, so guarantee the number.
+    const safety = setTimeout(() => {
+      if (raf.current) cancelAnimationFrame(raf.current)
+      setVal(target)
+    }, duration + 300)
+
     raf.current = requestAnimationFrame(tick)
-    return () => { if (raf.current) cancelAnimationFrame(raf.current) }
+    return () => {
+      if (raf.current) cancelAnimationFrame(raf.current)
+      clearTimeout(safety)
+    }
   }, [target, duration])
   return val
 }

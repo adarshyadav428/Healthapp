@@ -214,8 +214,19 @@ export function drawShareCard(
   // katoris are the decoration and a second glyph would just be noise.
   if (!plate) drawFlame(ctx, cx - 38, cy - 186, 76, PALETTE.gradTo)
 
+  // Shrink the hero to fit rather than letting it run over the plate's rim.
+  // At 200px three digits are ~360px inside a ~548px well, so it only bites on
+  // a 4-digit streak (~2.7 years) or a long formatted weight — rare, but the
+  // failure mode is a permanently broken share card and there is no way to
+  // notice it before a user posts one.
   ctx.fillStyle = PALETTE.ink
-  ctx.font = `700 200px ${fonts.display}`
+  const heroMaxWidth = rInner * 1.6
+  let heroSize = 200
+  ctx.font = `700 ${heroSize}px ${fonts.display}`
+  while (ctx.measureText(data.hero.value).width > heroMaxWidth && heroSize > 90) {
+    heroSize -= 8
+    ctx.font = `700 ${heroSize}px ${fonts.display}`
+  }
   ctx.fillText(data.hero.value, cx, cy + (plate ? -6 : 30))
 
   ctx.font = `600 46px ${fonts.sans}`

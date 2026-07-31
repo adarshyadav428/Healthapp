@@ -7,6 +7,12 @@ import type { Subscription } from '../../types/index'
 
 const API_BASE = 'https://androidpublisher.googleapis.com/androidpublisher/v3/applications'
 
+// The RTDN handler always answers 200 to avoid Pub/Sub retry storms, so a hung
+// Play API there would consume the whole invocation and drop the notification
+// with nothing to show for it. On the /api/play/verify path it's the user
+// waiting on their purchase to unlock. Both want a bound.
+const PLAY_API_TIMEOUT_MS = 10_000
+
 function packageName(): string {
   const pkg = process.env.ANDROID_PACKAGE_NAME
   if (!pkg) throw new Error('Missing ANDROID_PACKAGE_NAME')
@@ -71,7 +77,10 @@ export async function getPlaySubscription(purchaseToken: string): Promise<PlaySu
   const token = await getPlayAccessToken()
   const url = `${API_BASE}/${packageName()}/purchases/subscriptionsv2/tokens/${encodeURIComponent(purchaseToken)}`
 
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(PLAY_API_TIMEOUT_MS),
+  })
   if (!res.ok) {
     const body = await res.text().catch(() => '')
     throw new Error(`Play API ${res.status}: ${body.slice(0, 300)}`)
@@ -109,6 +118,7 @@ export async function acknowledgePlaySubscription(productId: string, purchaseTok
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
+    signal: AbortSignal.timeout(PLAY_API_TIMEOUT_MS),
   })
   // 200 = acknowledged; ignore "already acknowledged" style failures.
   if (!res.ok && res.status !== 400) {

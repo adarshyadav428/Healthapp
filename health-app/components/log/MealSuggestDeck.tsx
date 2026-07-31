@@ -6,6 +6,7 @@ import { X, Check, Crown, Loader2, Sparkles } from 'lucide-react'
 import { Button } from '../ui/button'
 import { captureEvent } from '../../lib/posthog/client'
 import { EVENTS } from '../../lib/posthog/events'
+import { userFacingApiError } from '../../lib/apiError'
 import type { Food } from '../../types/index'
 
 type Suggestion = {
@@ -56,8 +57,9 @@ export function MealSuggestDeck({ onClose, onPick }: Props) {
     let cancelled = false
     fetch('/api/foods/suggest')
       .then(async (res) => {
-        const body = await res.json()
-        if (!res.ok) throw new Error(body.error ?? 'Could not load suggestions')
+        const body = await res.json().catch(() => null)
+        // Relay a 4xx (e.g. the free daily cap) but never a 5xx DB string.
+        if (!res.ok) throw new Error(userFacingApiError(res.status, body?.error, 'Could not load suggestions.'))
         if (!cancelled) setData(body)
       })
       .catch((err) => { if (!cancelled) setError((err as Error).message) })
@@ -67,6 +69,10 @@ export function MealSuggestDeck({ onClose, onPick }: Props) {
   const current = data?.suggestions[index]
   const exhausted = !!data && index >= data.suggestions.length
 
+  // The card this session has already accepted or dismissed. Keyed by food id
+  // rather than a boolean so it resets naturally as the deck advances.
+  const actedOn = useRef<string | null>(null)
+
   const advance = useCallback(() => {
     setDrag(0)
     dragStart.current = null
@@ -75,6 +81,8 @@ export function MealSuggestDeck({ onClose, onPick }: Props) {
 
   const dismiss = useCallback(() => {
     if (!current) return
+    if (actedOn.current === current.food.id) return
+    actedOn.current = current.food.id
     captureEvent(EVENTS.MEAL_SUGGESTION_SWIPED, {
       direction: 'left', source: current.food.source, kcal: current.kcal,
     })
@@ -90,6 +98,12 @@ export function MealSuggestDeck({ onClose, onPick }: Props) {
 
   const accept = useCallback(() => {
     if (!current) return
+    // One decision per card. `index` advances via setState, which is async, so a
+    // double-tap or a held ArrowRight fires accept() several times against the
+    // same `current` before it changes — logging the food two or three times.
+    // Every other mutating surface in the app guards this; the deck didn't.
+    if (actedOn.current === current.food.id) return
+    actedOn.current = current.food.id
     captureEvent(EVENTS.MEAL_SUGGESTION_SWIPED, {
       direction: 'right', source: current.food.source, kcal: current.kcal,
     })
@@ -100,6 +114,7 @@ export function MealSuggestDeck({ onClose, onPick }: Props) {
   // landing anywhere — same reasoning as the story engine.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.repeat) return // a held arrow key is one decision, not many
       if (e.key === 'ArrowRight') { e.preventDefault(); accept() }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); dismiss() }
       else if (e.key === 'Escape') { e.preventDefault(); onClose() }

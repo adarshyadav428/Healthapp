@@ -11,6 +11,7 @@ import { reportLogMilestone } from '../../store/milestoneStore'
 import type { LogMilestone } from '../../lib/logMilestones'
 import { buildUnits, pickDefaultUnit, type Unit } from '../../lib/portion-units'
 import { mealForTime } from '../../lib/meal'
+import { MEAL_CONTEXTS, MEAL_CONTEXT_LABELS, type MealContext } from '../../lib/mealContext'
 import { logMetaHeaders } from '../../lib/posthog/client'
 import { UnitPicker } from './UnitPicker'
 
@@ -67,6 +68,7 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
   const [unit, setUnit] = useState<Unit>(() => pickDefaultUnit(units, food))
   const [quantityStr, setQuantityStr] = useState('1')
   const [meal, setMeal] = useState<MealValue>(mealForTime())
+  const [context, setContext] = useState<MealContext | null>(null)
   const [showUnitPicker, setShowUnitPicker] = useState(false)
 
   const quantityNum = Math.max(0, parseFloat(quantityStr) || 0)
@@ -103,6 +105,7 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
           servings: 1,
           grams,
           date: logDate,
+          context,
         }),
       })
 
@@ -235,6 +238,36 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
               <span className="text-[11px] font-bold">{m.label}</span>
             </button>
           ))}
+        </div>
+
+        {/* Where — optional. Left null unless tapped: the Trends insight compares
+            days that have a context against days that don't, so a guessed value
+            is worse than no value. Tapping the selected chip clears it again. */}
+        <p className="font-display text-base font-bold text-ink mb-1 px-1">
+          Where? <span className="text-xs font-normal text-ink-2">Optional</span>
+        </p>
+        <p className="text-xs text-ink-2 mb-3 px-1">Helps spot why some weeks run heavier.</p>
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {MEAL_CONTEXTS.map((c) => {
+            const meta = MEAL_CONTEXT_LABELS[c]
+            const selected = context === c
+            return (
+              <button
+                key={c}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setContext(selected ? null : c)}
+                className={`rounded-control py-2.5 flex flex-col items-center gap-1 transition-all border ${
+                  selected
+                    ? 'bg-brand-soft border-brand text-brand-ink'
+                    : 'bg-surface border-hairline text-ink-2 hover:border-brand-ring'
+                }`}
+              >
+                <span className="text-lg leading-none">{meta.emoji}</span>
+                <span className="text-[11px] font-bold">{meta.label}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
 

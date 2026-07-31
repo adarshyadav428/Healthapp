@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
 import { isProStatus } from '../../../../lib/subscription'
 import { CHAT_LOG_PROMPT, stripMarkdown } from '../../../../lib/chat-prompt'
@@ -7,6 +8,13 @@ import { captureServerEvent } from '../../../../lib/posthog/server'
 import { recordAiUsage } from '../../../../lib/usageCounter'
 import { AI_TRIAL_SCANS } from '../../../../lib/aiTrial'
 import { checkAiTrial } from '../../../../lib/aiTrialServer'
+
+const GEMINI_TIMEOUT_MS = 20_000
+
+// Usage is only recorded on success (recordAiUsage runs after every failure
+// return below), so "it hasn't used a scan" is literally true.
+const AI_TIMEOUT = 'That took too long to read. Check your connection and try again — it hasn’t used a scan.'
+const AI_UNAVAILABLE = 'AI logging is unavailable right now. Try again in a minute, or add the food by search — that always works.'
 
 type GeminiItem = {
   name: string
@@ -74,18 +82,27 @@ export async function POST(req: Request) {
           contents: [{ parts: [{ text: userContent }] }],
           generationConfig: { maxOutputTokens: 800, temperature: 0.1 },
         }),
+        // See app/api/camera/analyze/route.ts — an untimed Gemini call holds the
+        // request until the platform kills it, and the user just watches it die.
+        signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
       }
     )
     const apiJson = await apiRes.json()
     if (!apiRes.ok) {
+      // Provider text goes to Sentry, not to the user's screen.
       const errMsg = apiJson?.error?.message ?? JSON.stringify(apiJson)
-      return NextResponse.json({ error: `AI error: ${errMsg}` }, { status: 500 })
+      Sentry.captureException(new Error(`Gemini error: ${errMsg}`), { tags: { route: 'chat/analyze' } })
+      return NextResponse.json({ error: AI_UNAVAILABLE }, { status: 503 })
     }
     const raw = stripMarkdown(apiJson.candidates?.[0]?.content?.parts?.[0]?.text ?? '')
     parsed = JSON.parse(raw)
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Unknown error'
-    return NextResponse.json({ error: `AI analysis failed: ${msg}` }, { status: 500 })
+    const timedOut = e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError')
+    Sentry.captureException(e, { tags: { route: 'chat/analyze', timedOut: String(timedOut) } })
+    return NextResponse.json(
+      { error: timedOut ? AI_TIMEOUT : AI_UNAVAILABLE },
+      { status: 503 }
+    )
   }
 
   if (parsed.error === 'not_food') {

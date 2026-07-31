@@ -24,6 +24,7 @@ import {
 } from '../ui/sheet'
 import { ThemeSegmented } from '../ui/theme-toggle'
 import { PushNotificationToggle } from './PushNotificationToggle'
+import { userFacingApiError } from '../../lib/apiError'
 
 function ftInToCm(ft: number, inches: number) {
   return Math.round((ft * 12 + inches) * 2.54)
@@ -102,7 +103,9 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
       })
       if (!res.ok) {
         const body = await res.json().catch(() => null)
-        throw new Error(body?.error || 'Failed to update profile')
+        // 4xx is a validation message meant for the user; 5xx is a DB string
+        // meant for us. See lib/apiError.ts.
+        throw new Error(userFacingApiError(res.status, body?.error, 'Could not update your profile.'))
       }
       const desc = useCustomTargets ? 'Custom targets saved.' : 'Calorie targets recalculated.'
       toast({ title: 'Profile updated ✓', description: desc, duration: 3000 })
@@ -118,7 +121,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
       const res = await fetch('/api/auth/signout', { method: 'POST' })
       if (!res.ok) {
         const body = await res.json().catch(() => null)
-        throw new Error(body?.error ?? 'Sign out failed')
+        throw new Error(userFacingApiError(res.status, body?.error, 'Could not sign you out.'))
       }
       window.location.href = '/'
     } catch (err) {
@@ -135,8 +138,12 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
     try {
       setDeleteLoading(true)
       const res = await fetch('/api/account/delete', { method: 'POST' })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        throw new Error(
+          userFacingApiError(res.status, data?.error, 'Could not delete your account. Please try again, or email us.')
+        )
+      }
       router.push('/')
     } catch (err) {
       toast({ title: 'Delete failed', description: (err as Error).message, variant: 'error', duration: 4000 })

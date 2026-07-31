@@ -104,9 +104,22 @@ export async function POST(req: Request) {
   }
 
   // Idempotent by the unique constraint — swiping twice is a no-op, not an error.
+  //
+  // ignoreDuplicates is load-bearing, not a tidiness flag. Without it supabase-js
+  // sends Prefer: resolution=merge-duplicates, which is INSERT ... ON CONFLICT DO
+  // UPDATE — and migration 030 gave food_dismissals select/insert/delete policies
+  // but no UPDATE policy. Under RLS "no policy" means denied, so the second swipe
+  // of the same dish would fail 42501 and this route would answer 500 for what the
+  // line above calls a no-op. That is exactly the shape of the 2026-07-31 audit's
+  // P1-1 (push_subscriptions). Resolving to DO NOTHING needs only INSERT, and
+  // there is nothing in the row worth rewriting anyway.
+  // Pinned by tests/rlsPolicies.test.ts.
   const { error } = await supabase
     .from('food_dismissals')
-    .upsert({ user_id: user.id, food_id: foodId }, { onConflict: 'user_id,food_id' })
+    .upsert(
+      { user_id: user.id, food_id: foodId },
+      { onConflict: 'user_id,food_id', ignoreDuplicates: true }
+    )
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })

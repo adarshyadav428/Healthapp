@@ -1,16 +1,12 @@
-/**
- * Returns the UTC start and end ISO timestamps for a given calendar date.
- * Defaults to today if no date is provided.
- */
-export function getUtcDayRange(date: Date = new Date()): { start: string; end: string } {
-  const start = new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
-  ).toISOString()
-  const end = new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + 1)
-  ).toISOString()
-  return { start, end }
-}
+// `getUtcDayRange` used to live here and was deleted on 2026-07-31.
+//
+// It was the second, competing definition of "a day": the UI grouped by UTC day
+// while the business logic used IST, which shipped a wrong-data bug (the Trends
+// day-diary showed the previous day's meals) and misfiled every log made between
+// midnight and 05:30 IST. The call sites were migrated to the IST helpers below,
+// after which it sat exported and unused — a loaded gun for the next person who
+// wanted "the start of today". There is exactly one definition of a day now, and
+// it is IST. Use getIstDayRange / istDateStr / istDaysAgoStart.
 
 // Indian Standard Time = UTC + 5:30
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000

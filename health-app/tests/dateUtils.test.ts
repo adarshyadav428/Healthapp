@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getIstDayRange, getUtcDayRange, istDaysAgoStart, istDateStr, dateStrToUtcMidnight } from '../lib/dateUtils'
+import { getIstDayRange, istDaysAgoStart, istDateStr, dateStrToUtcMidnight } from '../lib/dateUtils'
 
 describe('getIstDayRange', () => {
   it('brackets the IST calendar day (IST midnight = 18:30 UTC previous day)', () => {
@@ -34,14 +34,6 @@ describe('istDaysAgoStart', () => {
   it('anchors to the IST day, not the UTC day, just after IST midnight', () => {
     // 2026-07-16 19:00 UTC = 00:30 IST Jul 17 → window covers IST Jul 11–17
     expect(istDaysAgoStart(7, new Date('2026-07-16T19:00:00Z'))).toBe('2026-07-10T18:30:00.000Z')
-  })
-})
-
-describe('getUtcDayRange', () => {
-  it('brackets the UTC calendar day', () => {
-    const { start, end } = getUtcDayRange(new Date('2026-07-16T10:00:00Z'))
-    expect(start).toBe('2026-07-16T00:00:00.000Z')
-    expect(end).toBe('2026-07-17T00:00:00.000Z')
   })
 })
 

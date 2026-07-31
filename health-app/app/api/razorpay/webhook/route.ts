@@ -35,34 +35,51 @@ export async function POST(req: Request) {
   const admin = createAdminClient()
   const sub = event.payload?.subscription?.entity
 
+  /**
+   * Apply one status write, raising if it did not land.
+   *
+   * supabase-js RESOLVES with `{ error }` on a failed write — it does not
+   * throw — so `await`ing it inside the try below is not enough on its own: the
+   * catch never fires and the route answers 200. That is the swallowed-error
+   * class the 2026-07-31 audit fixed in the RTDN route (P1-4) and missed here,
+   * and here it is worse: 200 tells Razorpay the event was handled, so it never
+   * retries, and the row keeps its old status. A cancelled subscriber silently
+   * keeps Pro; a renewed one is left looking expired. Money either way.
+   *
+   * Pinned by tests/webhookSignatures.test.ts.
+   */
+  async function applyStatus(fields: Record<string, unknown>) {
+    if (!sub) return
+    const { error } = await admin
+      .from('subscriptions')
+      .update(fields)
+      .eq('razorpay_subscription_id', sub.id)
+    if (error) {
+      throw new Error(`subscription update failed for ${sub.id}: ${error.message}`)
+    }
+  }
+
   try {
     switch (event.event) {
       case 'subscription.activated':
       case 'subscription.charged': {
-        if (sub) {
-          await admin
-            .from('subscriptions')
-            .update({
-              status: 'active',
-              current_period_end: sub.current_end ? new Date(sub.current_end * 1000).toISOString() : null,
-              // A charge/activation means no cancellation is pending anymore.
-              cancel_at_period_end: false,
-            })
-            .eq('razorpay_subscription_id', sub.id)
-        }
+        await applyStatus({
+          status: 'active',
+          current_period_end: sub?.current_end
+            ? new Date(sub.current_end * 1000).toISOString()
+            : null,
+          // A charge/activation means no cancellation is pending anymore.
+          cancel_at_period_end: false,
+        })
         break
       }
       case 'subscription.halted': {
-        if (sub) {
-          await admin.from('subscriptions').update({ status: 'past_due' }).eq('razorpay_subscription_id', sub.id)
-        }
+        await applyStatus({ status: 'past_due' })
         break
       }
       case 'subscription.cancelled':
       case 'subscription.completed': {
-        if (sub) {
-          await admin.from('subscriptions').update({ status: 'canceled' }).eq('razorpay_subscription_id', sub.id)
-        }
+        await applyStatus({ status: 'canceled' })
         break
       }
       default:

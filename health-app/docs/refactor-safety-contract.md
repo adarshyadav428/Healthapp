@@ -36,8 +36,13 @@ then no behavior listed below can change without a failing check.
 
 ## Server-enforced invariants (immune to UI changes by construction)
 
-- **Free tier**: 7-day history (`/api/logs`, `/api/exercise/logs`), 5 camera scans/day
-  (`/api/camera/analyze`), 10 chat logs/day (`/api/chat/analyze`) — all checked server-side per request.
+- **Free tier**: 7-day history (`/api/logs`, `/api/exercise/logs`) and a **3-call lifetime**
+  AI trial shared across `/api/camera/analyze` and `/api/chat/analyze`, unlocked only once the
+  email is verified (`lib/aiTrial.ts` + `lib/aiTrialServer.ts`) — all checked server-side per
+  request, and the trial counter **fails closed** on a read error. *(Superseded the old
+  5 scans/day + 10 chat logs/day quotas on 2026-07-18.)*
+- **CSV export is deliberately ungated and unwindowed** (`/api/export`) — returning a user
+  their own complete data is portability, not a feature.
 - **TDEE recalc**: onboarding and profile updates recompute targets server-side from validated
   inputs; the client's preview is display-only. Weight logging ≥0.5 kg shift triggers an awaited recalc.
 - **Billing**: Razorpay webhook is signature-verified; `/api/razorpay/verify` validates the
@@ -47,7 +52,7 @@ then no behavior listed below can change without a failing check.
 ## Verification gates (run all before shipping)
 
 ```bash
-npm test           # 34 files / 299 tests
+npm test           # 53 files / 606 tests
 npx tsc --noEmit
 npm run lint
 npm run check:tokens
@@ -59,9 +64,12 @@ npm run build
 - **RLS does not enforce the 7-day rule at the data plane.** A user with their own JWT could query
   PostgREST directly and read their older rows. Every in-app path now goes through the clamped
   APIs; closing the raw-PostgREST path needs an RLS policy migration (subscription-aware
-  `USING` clause on `food_logs`/`exercise_logs` SELECT).
-- `/api/export` returns 90 days to free users — decide whether export is a Pro feature or a
-  data-portability right.
+  `USING` clause on `food_logs`/`exercise_logs` SELECT). *(Note: the harsher version of this gap —
+  `foods` UPDATE/DELETE being open to any authenticated user, with four cascading FKs behind it —
+  was closed by `034_foods_rls_ownership.sql` on 2026-07-31. That one was a data-loss hole, not a
+  tier bypass.)*
+- ~~`/api/export` returns 90 days to free users~~ — **settled 2026-07-31**: export is a
+  data-portability right, so it is ungated and returns the user's complete history.
 - `/api/logs/copy-yesterday` is not idempotent — a double-tap duplicates yesterday's logs
   (client disables the button in-flight; server-side guard would be nicer).
 - Migrations `012`/`022`/`023` (billing columns incl. `cancel_at_period_end`) are **applied in

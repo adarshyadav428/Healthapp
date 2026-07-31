@@ -29,7 +29,7 @@ export default function Home() {
         {/* Hero */}
         <section className="py-10 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-hairline bg-surface px-3 py-1 text-xs font-semibold text-ink-2 mb-6">
-            🇮🇳 Built for Indian diets &middot; 500+ desi foods included
+            🇮🇳 Built for Indian diets &middot; 850+ desi foods included
           </div>
           <h1 className="font-display text-4xl font-bold leading-tight text-ink sm:text-5xl">
             Track calories the<br />
@@ -119,7 +119,7 @@ export default function Home() {
         {/* Features */}
         <section className="mt-16 grid gap-4 sm:grid-cols-2">
           {[
-            { emoji: '🍛', title: '500+ Indian foods', desc: 'Dal makhani, biryani, idli, paratha — all with authentic IFCT 2017 nutrition data. Searched in Hindi and English.' },
+            { emoji: '🍛', title: '850+ Indian foods', desc: 'Dal makhani, biryani, idli, paratha — with 225 staples measured from IFCT 2017 and the long tail estimated and clearly labelled. Searched in Hindi and English.' },
             { emoji: '⚡', title: 'Log in 5 seconds', desc: "Recent foods + quick-add button. Copy yesterday's meals with one tap. Never type the same food twice." },
             { emoji: '🏋️', title: 'Exercise tracking', desc: 'Log workouts, walks and yoga with MET-based calorie estimates.' },
             { emoji: '📸', title: 'AI photo scan', desc: 'Point your camera at your plate. Gemini identifies the dish and estimates portions, tuned for Indian home cooking.' },
@@ -147,8 +147,8 @@ export default function Home() {
               <p className="text-sm text-ink-2 leading-relaxed mb-4">
                 I&apos;m Adarsh — engineering student, running a medical store in UP, and on a personal mission to
                 lose weight the right way. HealthifyMe didn&apos;t have accurate data for the food I actually eat.
-                MyFitnessPal is built for the West. So I built GetInShape: 500+ Indian foods from IFCT 2017,
-                the same database nutrition researchers use.
+                MyFitnessPal is built for the West. So I built GetInShape: 850+ Indian foods, with the 225
+                everyday staples measured from IFCT 2017 — the same database nutrition researchers use.
               </p>
               <p className="text-sm text-ink-2 leading-relaxed mb-5">
                 I&apos;m using this app every single day. Every bug I fix, every food I add — it&apos;s because
@@ -184,7 +184,7 @@ export default function Home() {
                   'Barcode scanning',
                   '3 free AI scans when you confirm your email',
                   'Calorie + macro goals',
-                  '500+ Indian foods database',
+                  '850+ Indian foods database',
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2 text-sm text-ink-2">
                     <CheckCircle className="h-4 w-4 text-good flex-shrink-0" />
@@ -237,7 +237,7 @@ export default function Home() {
             {[
               {
                 q: 'Does it have Indian food data?',
-                a: 'Yes — 500+ Indian dishes from IFCT 2017 (Indian Food Composition Tables) including regional foods like idli, dhokla, pav bhaji, chhole, rajma, biryani and much more, plus packaged brands via Open Food Facts.',
+                a: 'Yes — 850+ Indian dishes. The 225 everyday staples are measured values from IFCT 2017 (Indian Food Composition Tables); the long tail of regional and restaurant dishes — idli, dhokla, pav bhaji, chhole, rajma, biryani — are category-based estimates, and we label those "📊 Estimated" in search so you always know which is which. Packaged brands come from Open Food Facts.',
               },
               {
                 q: 'How is my calorie goal calculated?',

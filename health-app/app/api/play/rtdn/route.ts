@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '../../../../lib/supabase/server'
 import { getPlaySubscription } from '../../../../lib/play/verify'
 
@@ -40,24 +41,37 @@ export async function POST(req: Request) {
     const admin = createAdminClient()
 
     // The token identifies an existing entitlement row (created at /api/play/verify).
-    const { data: existing } = await admin
+    // Both the lookup and the write below check `error` on purpose. This route
+    // always answers 200 (see the catch) so Pub/Sub doesn't redeliver forever —
+    // which means a discarded error here is invisible AND unretried: the row
+    // keeps its old status, so a cancelled subscriber silently keeps Pro, or a
+    // renewed one is left looking expired. Money either way. Raising sends it to
+    // the catch, which reports it and still returns 200.
+    const { data: existing, error: lookupError } = await admin
       .from('subscriptions')
       .select('user_id')
       .eq('play_purchase_token', purchaseToken)
       .maybeSingle()
 
+    if (lookupError) throw new Error(`subscription lookup failed: ${lookupError.message}`)
     if (!existing) return NextResponse.json({ received: true })
 
     const sub = await getPlaySubscription(purchaseToken)
-    await admin
+    const { error: updateError } = await admin
       .from('subscriptions')
       .update({ status: sub.status, current_period_end: sub.expiryTime })
       .eq('play_purchase_token', purchaseToken)
 
+    if (updateError) throw new Error(`subscription update failed: ${updateError.message}`)
+
     return NextResponse.json({ received: true })
   } catch (err) {
-    // Log but still 200 so Pub/Sub doesn't redeliver indefinitely.
+    // Still 200 so Pub/Sub doesn't redeliver indefinitely — but because we
+    // swallow the retry, this is the ONLY signal that a billing state failed to
+    // apply. console.error alone is easy to miss in serverless logs, so it also
+    // goes to Sentry: a dropped RTDN is a subscriber on the wrong entitlement.
     console.error('[play/rtdn] failed:', (err as Error).message)
+    Sentry.captureException(err, { tags: { route: 'play/rtdn' } })
     return NextResponse.json({ received: true })
   }
 }

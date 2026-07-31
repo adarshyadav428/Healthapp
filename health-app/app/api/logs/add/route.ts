@@ -55,6 +55,10 @@ export async function POST(req: Request) {
         carbs_g: carbs,
         fat_g: fat,
         logged_at,
+        // Null unless the user picked one — see the schema note. Previously only
+        // the edit route could set this, so no log ever carried a context and
+        // the Trends insight built on it had no data to speak from.
+        context: parsed.data.context ?? null,
       })
       .select(`id, meal, grams, servings, kcal, protein_g, carbs_g, fat_g, logged_at, food:foods(${FOOD_SELECT})`)
       .single()
