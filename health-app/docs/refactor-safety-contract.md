@@ -52,7 +52,7 @@ then no behavior listed below can change without a failing check.
 ## Verification gates (run all before shipping)
 
 ```bash
-npm test           # 53 files / 606 tests
+npm test           # 62 files / 811 tests
 npx tsc --noEmit
 npm run lint
 npm run check:tokens
@@ -60,6 +60,16 @@ npm run build
 ```
 
 ## Known residual gaps (accepted for launch, revisit later)
+
+- **RLS is tested statically, not against a live Postgres.** `tests/rlsPolicies.test.ts`
+  replays the migrations and asserts the policies are shaped correctly (no write gated on
+  authentication alone, every expression tied to the caller, an UPDATE policy wherever a
+  user-scoped writer needs one). It cannot prove Postgres *enforces* them as written, and it
+  cannot prove the live database matches the files — a policy hand-edited in the Supabase
+  dashboard, or a migration never applied, is invisible to it. The stronger test needs
+  `supabase start` (Docker) plus two real users asserting 42501 across the boundary; that is
+  worth building when CI can run a service container, but it must not be the only test, since
+  it cannot run on a dev machine without Docker.
 
 - **RLS does not enforce the 7-day rule at the data plane.** A user with their own JWT could query
   PostgREST directly and read their older rows. Every in-app path now goes through the clamped

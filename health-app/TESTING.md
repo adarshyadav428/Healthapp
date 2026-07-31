@@ -7,7 +7,7 @@ anything where the automated check passes but the experience is still wrong.
 Run the automated gates first — if any fail, stop:
 
 ```bash
-npm test            # 606 tests
+npm test            # 811 tests
 npx tsc --noEmit    # zero type errors
 npm run lint
 npm run check:tokens

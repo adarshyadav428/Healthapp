@@ -31,10 +31,19 @@ export interface TableResult {
 /**
  * Per-table results. Either one result for every operation on that table, or a
  * map keyed by operation when a route both reads and writes the same table.
+ *
+ * An ARRAY supplies successive results for repeated calls of the same
+ * operation, in the order the code issues them; the last entry repeats once the
+ * list runs out. Needed wherever one function reads the same table twice for
+ * different things — sendBudgetedPush reads push_sends both for "what went out
+ * today" and for "the last few sends' opened_at", and a single shared result
+ * cannot express one being empty while the other is not.
  */
+export type OperationResult = TableResult | TableResult[]
+
 export type TableConfig =
   | TableResult
-  | Partial<Record<'select' | 'insert' | 'update' | 'upsert' | 'delete', TableResult>>
+  | Partial<Record<'select' | 'insert' | 'update' | 'upsert' | 'delete', OperationResult>>
 
 export interface RecordedCall {
   table: string
@@ -48,6 +57,8 @@ export interface RecordedCall {
   filters: [string, string, unknown][]
   /** True when .select() asked for a head-only count. */
   head: boolean
+  /** This query's index among same-table, same-operation calls, in build order. */
+  nth?: number
 }
 
 export interface MockOptions {
@@ -56,24 +67,41 @@ export interface MockOptions {
   tables?: Record<string, TableConfig>
 }
 
-function resultFor(config: TableConfig | undefined, operation: string): TableResult {
-  if (!config) return { data: null, count: null, error: null }
-  if (
+const EMPTY: TableResult = { data: null, count: null, error: null }
+
+/**
+ * The result for the `nth` call of `operation` against a table.
+ *
+ * `nth` is fixed when the query is BUILT, not when it is awaited: two queries
+ * created inside one Promise.all are constructed in source order but may settle
+ * in either, and a sequence keyed on settle order would be a coin flip.
+ */
+function resultFor(config: TableConfig | undefined, operation: string, nth: number): TableResult {
+  if (!config) return EMPTY
+
+  const isByOperation =
     'select' in config ||
     'insert' in config ||
     'update' in config ||
     'upsert' in config ||
     'delete' in config
-  ) {
-    const byOp = config as Record<string, TableResult | undefined>
-    return byOp[operation] ?? { data: null, count: null, error: null }
+
+  const value = isByOperation
+    ? (config as Record<string, OperationResult | undefined>)[operation]
+    : (config as TableResult)
+
+  if (!value) return EMPTY
+  if (Array.isArray(value)) {
+    return value.length === 0 ? EMPTY : value[Math.min(nth, value.length - 1)]
   }
-  return config as TableResult
+  return value
 }
 
 export function createSupabaseMock(options: MockOptions = {}) {
   const user = options.user === undefined ? { id: 'user-1', email: 'a@b.com' } : options.user
   const calls: RecordedCall[] = []
+  /** How many times each table+operation pair has been built so far. */
+  const sequence = new Map<string, number>()
 
   function builder(table: string, operation: string, payload: unknown) {
     const record: RecordedCall = {
@@ -86,8 +114,15 @@ export function createSupabaseMock(options: MockOptions = {}) {
     }
     calls.push(record)
 
+    // Claim this query's position now, while construction order is still the
+    // order the calling code wrote. Settle order is not guaranteed.
+    const key = `${table}:${operation}`
+    const nth = sequence.get(key) ?? 0
+    sequence.set(key, nth + 1)
+    record.nth = nth
+
     const settle = () => {
-      const result = resultFor(options.tables?.[table], record.operation)
+      const result = resultFor(options.tables?.[table], record.operation, nth)
       return {
         data: result.data ?? null,
         count: result.count ?? null,
