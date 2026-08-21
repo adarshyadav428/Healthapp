@@ -20,23 +20,34 @@ Ordering lives in `lib/searchRanking.ts` (`compareFoodsForQuery`), which is pass
 
 **The typed tier folds romanisation variants, on both sides** (`lib/spelling-variants.ts`, applied in `normalize`). Scoring the typed word literally meant two spellings of one word were two different words: searching "daal" made Haldiram's "Moong Daal" — a fried namkeen, and the only row in the table spelled that way — the sole perfect typed-word match, while "Moong Dal (Yellow)" `[ifct]` scored **0**, fell to the synonym tier and lost before `SOURCE_RANK` (ifct 6 > off_india 3) was ever consulted. Searching "dal" was fine. The map holds **spellings only** — `daal → dal`, `chapatti → chapati`, `gobhi → gobi`. Translations and different regional words (`lentil`, `corn`, `curd`) must **never** go in it: folding one into the typed tier is exactly the "bhutta returns Cornflakes" bug that tier exists to prevent, and they already work through the synonym tier. `tests/spellingVariants.test.ts` pins the invariants — single lowercase words, idempotent, no `QUALIFIERS` key (folding "cooked" would break `isPlainForm`), and no two distinct synonym groups folding onto the same token. A variant that means something else elsewhere is excluded by hand (`nan`, because Nestlé NAN is infant formula). `lib/foodMatch.ts` (`nameScore`, the AI chat/camera matcher) folds the same way, for the same reason.
 
-**A branded row is ranked by its whole identity, not the name on the label** (`foodIdentity` in
+**A packet may not claim the exact-name tier unless the query names its brand** (`termScore` in
 `lib/searchRanking.ts`). Folding the spelling fixed the word "daal" and exposed the tier above it: once
-`daal → dal`, Haldiram's `Moong Daal` `[off_india]` reads *exactly* like the query "moong daal", so it
-took the **exact-name score of 4** while the measured `Moong Dal (Yellow)` `[ifct]` — which merely
-contains every word — could only reach 3. Tier 0 decided and `SOURCE_RANK` was never reached, the same
-scar one tier further up, and it fired for the correct spelling "moong dal" too. The hole underneath was
-that the comparator saw only `{ name, source }`: a packet whose label reads "Moong Daal" arrived looking
-exactly like a plain cooked food of that name. `brand` is what tells them apart, so a row carrying one is
-scored as `"<brand> <name>"`. It then loses the **plain-form** tier, because a brand token is neither a
-query word nor a `QUALIFIER` — and if the user *does* type the brand ("haldiram moong daal") the token
-becomes a query word and the packet wins again, which is correct. The brand is **not** repeated when the
-name already contains it (`Tata Sampann Moong Dal`), since doubled tokens would halve that row's
-coverage. Like `foldSpelling` and `nameReadings`, this adds no tier and reorders none — it only fixes
-*which string* the existing tiers are applied to. `lib/foodMatch.ts` (`pickBestFoodMatch`) scores the
-same identity: Gemini reports a food by name alone, so "Moong Daal" from a photo or chat resolved to the
-namkeen at ~517 kcal/100 g instead of the dal at ~104, and name quality is weighted ×10 over
-`SOURCE_RANK` there, so source trust could not rescue it.
+`daal → dal`, Haldiram's `Moong Daal` `[off_india]` reads *exactly* like the query "moong daal", so it took
+the **exact-name score of 4** while the measured `Moong Dal (Yellow)` `[ifct]` — which merely contains every
+word — could only reach 3. Tier 0 decided and `SOURCE_RANK` was never reached, the same scar one tier
+further up, and it fired for the correct spelling "moong dal" too. The hole underneath was that the
+comparator saw only `{ name, source }`: a packet whose label reads "Moong Daal" arrived looking exactly like
+a plain cooked food of that name. So a row carrying a `brand` is read two ways — **the query names the
+brand** ("amul paneer", "haldiram moong daal"), and it is scored on its whole identity `"<brand> <name>"`
+(`foodIdentity`) so it can win outright; **the query doesn't**, and it is scored on the bare name with the
+exact-name tier capped to 3. Capped, the packet and the measured row tie and `SOURCE_RANK` breaks it, which
+is the tier built for that job.
+
+**Cap one tier, not three.** The first version of this fix scored the brand-prefixed identity for *every*
+query. That also destroyed the coverage tier (an n-token brand divides coverage by n more tokens) and made
+`isPlainForm` unconditionally false, collapsing a plain packaged food onto `[3,1,0]` — the identical tuple to
+every dish made from that food — after which `SOURCE_RANK` promoted the dish. Measured against the live
+catalogue: "paneer" answered with `Kadai Paneer` and `Matar Paneer` and pushed every paneer packet past #10;
+"dahi" put `Dahi Puri` and `Dahi Vada` above `Dahi [Amul]`; `Plain roti` fell from #2 to #19 (`plain` is a
+`QUALIFIER`, so it *was* the plain form); and in `lib/foodMatch.ts` — whose `nameScore` has no "every query
+word present" tier at all, so a brand prefix drops a row past 4, 3 *and* 2 — `Butter [Amul]` scored 23
+against `Butter Chicken` at 31, meaning a photo of a butter pack logged a curry. **A packet of plain paneer
+is plain paneer.** Only the exact-name tier ever needed the packet rule; coverage and plain-form still read
+the bare name. `queryNamesBrand` compares folded alphanumeric *tokens*, not substrings, because a plain
+`includes` misses every possessive brand we hold (`Haldiram's` vs `Haldirams`) and would prepend the brand
+to a row that already carries it. Known and accepted: naming a brand lifts every product of that brand to a
+complete-word match, so "amul butter" ranks `Butter Nankhatai` (a cookie) among the butters — below the
+plain product, which is what the query means.
 
 **Synonyms are load-bearing, and their order matters.** `buildNameIlikeOrFilter` keeps only the first 6 terms, so put the widely-typed spellings first in each group in `lib/food-synonyms.ts`. A group expands the query only when the query **is** one of its terms, or is a phrase **containing** one as a whole word ("chicken biryani" → the biryani group). The reverse — the query sitting inside a longer synonym — is deliberately not a match: it fired for every group that merely *mentions* a common word, so "rice" dragged in kheer ("rice pudding"), poha ("flattened rice") and murmura ("puffed rice") and the results filled with foods that are not rice. A food whose regional names share no substring (corn: bhutta / makki / makkai / challi / maize) is unreachable without a group — `tests/foodSynonyms.test.ts` guards this.
 2. **Open Food Facts India** — `lib/open-food-facts.ts` → `world.openfoodfacts.org` filtered to `countries_tags:en:india`. Best for packaged/branded Indian products (Amul, Britannia, MTR).
@@ -64,4 +75,5 @@ Results are deduplicated by name and returned with a `source` label (`ifct` / `c
 
 `tests/searchRanking.test.ts`, `tests/searchFilter.test.ts` (including the injection guard),
 `tests/foodSynonyms.test.ts`, `tests/mergeSearchResults.test.ts`, `tests/searchCache.test.ts`,
-`tests/openFoodFacts.test.ts`, `tests/curatedFoods.test.ts`, `tests/foodMatch.test.ts`.
+`tests/openFoodFacts.test.ts`, `tests/curatedFoods.test.ts`, `tests/foodMatch.test.ts`,
+`tests/typoCorrection.test.ts`.

@@ -160,26 +160,77 @@ export function isPlainForm(name: string, query: string): boolean {
 }
 
 /**
- * The whole name a row goes by. A row carrying a `brand` is a packet, and the
- * name on it is the part the label prints big — not the food's whole name.
- *
- * Haldiram's "Moong Daal" is a fried namkeen. Once `daal` folds to `dal` its
- * name reads *exactly* like the query "moong daal", so it took the exact-match
- * score of 4 while the measured "Moong Dal (Yellow)" could only reach 3 —
- * deciding at tier 0, before `SOURCE_RANK` (ifct 6 > off_india 3) was ever
- * consulted. Scored as "Haldiram's Moong Daal" it drops to 3 and loses the
- * plain-form tier, because a brand token is neither a query word nor a
- * QUALIFIER. Type the brand and it wins again, which is correct.
- *
- * This adds no tier and reorders none — like `foldSpelling` and `nameReadings`,
- * it only fixes *which string* the existing tiers are applied to.
+ * Alphanumeric, folded tokens. Punctuation-proof, so "Haldiram's" gives
+ * ["haldiram", "s"] rather than one unmatchable blob — a plain `includes`
+ * comparison misses every possessive brand in the catalogue.
  */
+const tokensOf = (s: string): string[] => normalize(s).split(/[^a-z0-9]+/).filter(Boolean)
+
+/** Brand tokens worth matching on. One- and two-letter fragments are noise. */
+const brandTokens = (brand: string | null | undefined): string[] =>
+  tokensOf(brand ?? '').filter((t) => t.length > 2)
+
+/**
+ * Is the user actually asking about this row's brand?
+ *
+ * This is the switch between the two readings of a packet below: "amul paneer"
+ * is a question about Amul, "paneer" is a question about paneer.
+ */
+export function queryNamesBrand(brand: string | null | undefined, query: string): boolean {
+  const tokens = brandTokens(brand)
+  if (tokens.length === 0) return false
+  const words = tokensOf(query)
+  return tokens.some((t) => words.includes(t))
+}
+
+/** "<brand> <name>", unless the name already carries the brand. */
 export function foodIdentity(row: { name: string; brand?: string | null }): string {
   const brand = row.brand?.trim()
   if (!brand) return row.name
-  // Don't say it twice: "Tata Sampann Moong Dal" already carries its brand, and
-  // doubling the tokens would halve the coverage of a row that reads correctly.
-  return normalize(row.name).includes(normalize(brand)) ? row.name : `${brand} ${row.name}`
+  // Don't say it twice: "Tata Sampann Moong Dal" already carries its brand.
+  // Compared token-wise and prefix-tolerant on purpose — "Haldiram's" must
+  // count as already present in "Haldirams Moong Dal Namkeen", which a plain
+  // substring test gets wrong for every possessive brand we hold.
+  const nameTokens = tokensOf(row.name)
+  const tokens = brandTokens(brand)
+  const alreadyNamed =
+    tokens.length > 0 &&
+    tokens.every((t) => nameTokens.some((n) => n.startsWith(t) || t.startsWith(n)))
+  return alreadyNamed ? row.name : `${brand} ${row.name}`
+}
+
+/**
+ * How a row's name scores against one term — the packet rule.
+ *
+ * A packet gets read two ways depending on what was asked:
+ *
+ * - **The query names the brand** ("amul paneer", "haldiram moong daal") — score
+ *   the whole identity, so the packet can win outright.
+ * - **It doesn't** ("paneer", "moong daal") — score the bare name, but the row
+ *   **may not claim the exact-name tier**. That single cap is the whole fix:
+ *   Haldiram's "Moong Daal" folds to exactly "moong dal", so it took the
+ *   exact-name 4 while the measured "Moong Dal (Yellow)" could only reach 3,
+ *   deciding at tier 0 before `SOURCE_RANK` (ifct 6 > off 3) was consulted.
+ *   Capped to 3 the two tie, and source trust breaks it — which is the tier
+ *   built for exactly that job.
+ *
+ * The first version of this fix scored the identity *always*. That also killed
+ * the coverage and plain-form tiers for every packet, collapsing a plain
+ * packaged food onto the same tuple as the dishes made from it — so "paneer"
+ * answered with Kadai Paneer and Matar Paneer, and "dahi" put Dahi Puri above
+ * curd. Capping one tier fixes the namkeen without touching the other signals.
+ */
+function termScore(
+  row: { name: string; brand?: string | null },
+  term: string
+): [relevance: number, coverage: number] {
+  if (!row.brand?.trim()) return [relevanceScore(row.name, term), isCoverageDominant(row.name, term) ? 1 : 0]
+  if (queryNamesBrand(row.brand, term)) {
+    const identity = foodIdentity(row)
+    return [relevanceScore(identity, term), isCoverageDominant(identity, term) ? 1 : 0]
+  }
+  const relevance = relevanceScore(row.name, term)
+  return [relevance === 4 ? 3 : relevance, isCoverageDominant(row.name, term) ? 1 : 0]
 }
 
 /**
@@ -212,33 +263,38 @@ export function compareFoodsForQuery<
   const synonyms = terms.slice(1)
   const cache = new Map<string, number[]>()
 
-  const score = (name: string): number[] => {
-    const cached = cache.get(name)
+  const score = (row: T): number[] => {
+    // Keyed on name *and* brand: the same name under two brands is two rows,
+    // and `termScore` reads both.
+    const key = `${row.name} ${row.brand ?? ''}`
+    const cached = cache.get(key)
     if (cached) return cached
     let synRelevance = 0
     let synCoverage = 0
     for (const term of synonyms) {
-      const relevance = relevanceScore(name, term)
-      const coverage = isCoverageDominant(name, term) ? 1 : 0
+      const [relevance, coverage] = termScore(row, term)
       if (relevance > synRelevance || (relevance === synRelevance && coverage > synCoverage)) {
         synRelevance = relevance
         synCoverage = coverage
       }
     }
+    const [typedRelevance, typedCoverage] = termScore(row, typed)
     const scored = [
-      relevanceScore(name, typed),
-      isCoverageDominant(name, typed) ? 1 : 0,
-      isPlainForm(name, typed) ? 1 : 0,
+      typedRelevance,
+      typedCoverage,
+      // Plain-form always reads the bare name. A packet of plain paneer IS the
+      // plain food; only the exact-name tier above needed the packet rule.
+      isPlainForm(row.name, typed) ? 1 : 0,
       synRelevance,
       synCoverage,
     ]
-    cache.set(name, scored)
+    cache.set(key, scored)
     return scored
   }
 
   return (a, b) => {
-    const sa = score(foodIdentity(a))
-    const sb = score(foodIdentity(b))
+    const sa = score(a)
+    const sb = score(b)
     for (let i = 0; i < sa.length; i++) {
       if (Math.abs(sa[i] - sb[i]) > 1e-9) return sb[i] > sa[i] ? 1 : -1
     }
