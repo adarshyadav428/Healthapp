@@ -17,7 +17,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **67 files / 917 tests**. There is no `vitest.config.ts`; defaults apply.
+- **Tests:** Vitest 4.1 — **68 files / 936 tests**. There is no `vitest.config.ts`; defaults apply.
 - **Deploy:** Vercel **Hobby** plan, region `bom1`. The Hobby limits are load-bearing (see Hard rules).
 
 ## Architecture / directory map
@@ -46,7 +46,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   `logMilestones.ts`, `badges.ts`, `seasons.ts`, `streakRescue.ts`, `mealSuggest.ts`, `shareCard.ts`.
 - **`components/`** — `ui/` holds primitives; everything else is domain-scoped (`dashboard/`, `log/`,
   `story/`, `milestones/`, `camera/`, `chat/`, …). **`hooks/`** are fetch/TanStack wrappers only — no writes.
-- **`supabase/migrations/`** — `001`–`036`. Numbers are **not unique** (`002`, `004`, `005`, `009` each
+- **`supabase/migrations/`** — `001`–`037`. Numbers are **not unique** (`002`, `004`, `005`, `009` each
   appear twice) and there is **no `021`**. Always reference a migration by its exact filename.
 - **`middleware.ts`** — self-contained (there is no `lib/supabase/middleware.ts`). Refreshes the
   session cookie on every request, redirects unauthenticated users to `/auth/sign-in?returnTo=…`, and
@@ -68,7 +68,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (67 files / 917 tests)
+npm test                 # vitest run — the whole suite (68 files / 936 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
 npm run check:tokens     # design-token guard: no raw hex, no broken opacity modifiers
@@ -150,7 +150,9 @@ actively seeding.
 - **Touching `lib/` means touching `tests/` in the same pass.** Those pure functions are the safety
   contract; an unpinned change to one is a silent behavior change.
 - **Prefer changing data over changing ranking.** In search especially, the tier order is load-bearing
-  in both directions — fix the synonym group or the row, not the comparator.
+  in both directions — fix the synonym group or the row first. When the comparator genuinely must
+  change, change **what string the tiers are applied to** (`normalize`/`foldSpelling`, `nameReadings`,
+  `foodIdentity`), never the tier order itself. Both dal scars were fixed that way.
 
 ## Coding conventions linters miss
 
@@ -219,4 +221,6 @@ Migrations worth knowing: `001_initial.sql` (core schema) · `007_seed_indian_fo
 `019_drop_deprecated_tables.sql` (removed the four wellness tables) · `034_foods_rls_ownership.sql`
 (restricts `foods` writes to a user's own `source='user'` rows — before this, RLS checked only "are you
 logged in", so any account could delete a catalogue row and cascade it out of **every** user's diary) ·
-`036_reminder_hour.sql` (`profiles.reminder_hour`, IST, default 20).
+`036_reminder_hour.sql` (`profiles.reminder_hour`, IST, default 20) · `037_name_packaged_moong_dal.sql`
+(renamed ten OFF-persisted namkeen packets keyed by barcode — the precedent for correcting a name Open
+Food Facts gave us, and for how to audit such an `UPDATE` in the file header).
