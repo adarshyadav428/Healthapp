@@ -64,6 +64,25 @@ describe('pickBestFoodMatch with a branded row', () => {
     expect(pickBestFoodMatch([namkeen, measured], "Haldiram's Moong Daal")?.name).toBe('Moong Daal')
   })
 
+  /**
+   * The reverse of the moong-dal bug, and the reason this scores the bare name
+   * rather than the brand-prefixed identity. `nameScore` has no "every query
+   * word present" tier, so prefixing a brand drops a packet past 4, 3 and (for
+   * a multi-word query) 2 as well — "Butter" by Amul scored 23 against "Butter
+   * Chicken" at 31, and a photo of a butter pack logged a curry.
+   */
+  it('does not resolve a packaged staple to a dish made from it', () => {
+    const cases: [string, { name: string; source: string; brand?: string | null }[], string][] = [
+      ['butter', [{ name: 'Butter', source: 'off_india', brand: 'Amul' }, { name: 'Butter Chicken', source: 'curated' }], 'Butter'],
+      ['curd', [{ name: 'Curd', source: 'off_india', brand: 'Mother Dairy' }, { name: 'Curd Rice', source: 'curated' }], 'Curd'],
+      ['cheese', [{ name: 'Cheese', source: 'off_india', brand: 'Amul' }, { name: 'Cheese Sandwich', source: 'curated' }], 'Cheese'],
+      ['peanut butter', [{ name: 'Peanut Butter', source: 'off_india', brand: 'Pintola All Natural' }, { name: 'Peanut Butter Biscuits', source: 'curated' }], 'Peanut Butter'],
+    ]
+    for (const [query, rows, expected] of cases) {
+      expect(pickBestFoodMatch(rows, query)?.name, query).toBe(expected)
+    }
+  })
+
   it('leaves a brandless row scoring exactly as before', () => {
     const rows = [
       { name: 'Gits Dal Tadka (Ready to Eat)', source: 'branded' },

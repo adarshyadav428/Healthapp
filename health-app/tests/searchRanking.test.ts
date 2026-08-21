@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { relevanceScore, nameCoverage, isPlainForm, compareFoodsForQuery } from '../lib/searchRanking'
+import {
+  relevanceScore,
+  nameCoverage,
+  isPlainForm,
+  compareFoodsForQuery,
+  foodIdentity,
+} from '../lib/searchRanking'
 import { expandSearchQuery } from '../lib/food-synonyms'
 import { SOURCE_RANK } from '../lib/foodMatch'
 
@@ -380,6 +386,65 @@ describe('compareFoodsForQuery with a branded row', () => {
 
   it('gives the packet back when the user actually names the brand', () => {
     expect(rank([NAMKEEN, MEASURED], 'haldiram moong daal')[0]).toBe('Moong Daal')
+  })
+
+  /**
+   * The first version of this fix scored the brand-prefixed identity for every
+   * term. That also destroyed the coverage and plain-form tiers for a packet,
+   * collapsing a plain packaged food onto the same tuple as the dishes made
+   * from it — so "paneer" answered with Kadai Paneer and "dahi" put Dahi Puri
+   * above curd. A packet of plain paneer IS plain paneer.
+   */
+  it('keeps a plain packaged food above the dishes made from it', () => {
+    const rows: Row[] = [
+      { name: 'Kadai Paneer', source: 'ifct', brand: null },
+      { name: 'Matar Paneer', source: 'ifct', brand: null },
+      { name: 'Paneer', source: 'off_india', brand: 'Amul' },
+      { name: 'Paneer (Cottage Cheese)', source: 'ifct', brand: null },
+    ]
+    const order = rank(rows, 'paneer')
+    expect(order[0]).toBe('Paneer (Cottage Cheese)') // measured wins the tie
+    expect(order[1]).toBe('Paneer') // the packet, still above every dish
+    expect(order.indexOf('Paneer')).toBeLessThan(order.indexOf('Kadai Paneer'))
+  })
+
+  it('keeps a plain packaged curd above a chaat made from curd', () => {
+    const rows: Row[] = [
+      { name: 'Dahi Puri', source: 'ifct', brand: null },
+      { name: 'Dahi Vada / Dahi Bhalla', source: 'ifct', brand: null },
+      { name: 'Dahi', source: 'off_india', brand: 'Amul' },
+      { name: 'Dahi / Curd (Full Fat)', source: 'ifct', brand: null },
+    ]
+    const order = rank(rows, 'dahi')
+    expect(order[0]).toBe('Dahi / Curd (Full Fat)')
+    expect(order.indexOf('Dahi')).toBeLessThan(order.indexOf('Dahi Puri'))
+  })
+
+  it('answers a brand query with that brand plain product', () => {
+    const rows: Row[] = [
+      { name: 'Butter Nankhatai', source: 'off_india', brand: 'Amul' }, // a cookie
+      { name: 'Amul Pasteurised Butter', source: 'off_india', brand: 'Amul' },
+      { name: 'Butter', source: 'off_india', brand: 'Amul' },
+    ]
+    const order = rank(rows, 'amul butter')
+    expect(order[0]).toBe('Butter')
+    // Known and accepted: naming the brand lifts every product of that brand to
+    // a complete-word match, so "Butter Nankhatai" ties the verbose
+    // "Amul Pasteurised Butter" and takes it on the shortest-name last resort.
+    // Both sit below the plain product, which is what the query means. Fixing
+    // the tie would mean ranking on name length earlier, and shortest-name is
+    // deliberately the last resort.
+    expect(order.indexOf('Butter')).toBeLessThan(order.indexOf('Butter Nankhatai'))
+  })
+
+  it('treats a possessive brand as already present in the name', () => {
+    // `Haldiram's` vs `Haldirams` — a plain substring test misses this, and the
+    // row gets its own brand prepended twice, halving its coverage.
+    expect(foodIdentity({ name: 'Haldirams Bhujia Sev', brand: "Haldiram's" })).toBe(
+      'Haldirams Bhujia Sev'
+    )
+    expect(foodIdentity({ name: 'Moong Daal', brand: "Haldiram's" })).toBe("Haldiram's Moong Daal")
+    expect(foodIdentity({ name: 'Paneer', brand: null })).toBe('Paneer')
   })
 
   it('does not repeat a brand the name already carries', () => {
