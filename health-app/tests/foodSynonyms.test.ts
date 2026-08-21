@@ -114,6 +114,8 @@ describe('synonym groups', () => {
     const cases: [string, string, string][] = [
       ['rice', 'Cooked Rice (Chawal)', 'Steamed Rice'],
       ['dal', 'Masoor Dal (Red Lentil)', 'Dal Fry'],
+      // The spelling must not change the answer — see lib/spelling-variants.ts.
+      ['daal', 'Masoor Dal (Red Lentil)', 'Dal Fry'],
       ['chai', 'Black Tea / Kadha Chai', 'Masala Chai'],
     ]
     for (const [query, measuredName, estimateName] of cases) {

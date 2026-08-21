@@ -1,3 +1,5 @@
+import { foldSpelling } from './spelling-variants'
+
 // Source trust for tie-breaking. IFCT (measured Indian data) is most
 // trustworthy for home food; branded/OFF are next. `curated` sits below every
 // measured source — it's the shared India-first catalogue whose values are
@@ -17,8 +19,11 @@ export const SOURCE_RANK: Record<string, number> = {
 
 /** Name-match quality: exact (4) > whole-string prefix (3) > word prefix (2) > substring (1). */
 function nameScore(name: string, query: string): number {
-  const n = name.toLowerCase().trim()
-  const q = query.toLowerCase().trim()
+  // Folded on both sides for the same reason search ranking folds: an AI that
+  // reports "Moong Daal" must still reach "Moong Dal (Yellow)", which scores 0
+  // against that spelling and leaves the pick to source rank alone.
+  const n = foldSpelling(name.toLowerCase().trim())
+  const q = foldSpelling(query.toLowerCase().trim())
   if (!q) return 0
   if (n === q) return 4
   if (n.startsWith(q)) return 3

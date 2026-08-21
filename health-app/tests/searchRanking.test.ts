@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { relevanceScore, nameCoverage, isPlainForm, compareFoodsForQuery } from '../lib/searchRanking'
+import { expandSearchQuery } from '../lib/food-synonyms'
 import { SOURCE_RANK } from '../lib/foodMatch'
 
 /**
@@ -268,5 +269,61 @@ describe('compareFoodsForQuery', () => {
     const once = rank(foods, 'corn')
     const twice = rank(foods.slice().reverse(), 'corn')
     expect(once).toEqual(twice)
+  })
+})
+
+/**
+ * Live report: searching "daal" answered with Haldiram's "Moong Daal" — a fried
+ * namkeen — above every cooked lentil in the catalogue. Searching "dal" was
+ * fine. The packaged row was the only one in the table spelled the way the user
+ * typed, so it took the typed-word tier outright and SOURCE_RANK (ifct 6 >
+ * off_india 3) never got to run.
+ */
+describe('compareFoodsForQuery across romanisation variants', () => {
+  const rank = (names: [string, string][], query: string) =>
+    names
+      .map(([name, source]) => ({ name, source }))
+      .sort(compareFoodsForQuery(expandSearchQuery(query), SOURCE_RANK))
+      .map((f) => f.name)
+
+  it('scores a name the user spelled differently as a real match', () => {
+    expect(relevanceScore('Moong Dal (Yellow)', 'daal')).toBe(3)
+    expect(relevanceScore('Moong Daal', 'dal')).toBe(3)
+    expect(isPlainForm('Cooked Dal', 'daal')).toBe(true)
+  })
+
+  it('does not let the typed spelling outrank the measured row', () => {
+    const order = rank(
+      [
+        ['Moong Daal', 'off_india'], // Haldiram namkeen, spelled the user's way
+        ['Moong Dal (Yellow)', 'ifct'],
+      ],
+      'daal'
+    )
+    expect(order[0]).toBe('Moong Dal (Yellow)')
+    // Still findable — a packaged namkeen is a real food someone may be logging.
+    expect(order).toContain('Moong Daal')
+  })
+
+  it('answers "daal", "dhal" and "dal" with the same ordering', () => {
+    const foods: [string, string][] = [
+      ['Moong Daal', 'off_india'],
+      ['Moong Dal (Yellow)', 'ifct'],
+      ['Toor Dal (Arhar Dal)', 'ifct'],
+      ['Chana Dal', 'ifct'],
+      ['Dal Fry', 'curated'],
+    ]
+    const canonical = rank(foods, 'dal')
+    expect(rank(foods, 'daal')).toEqual(canonical)
+    expect(rank(foods, 'dhal')).toEqual(canonical)
+    expect(canonical[0]).not.toBe('Moong Daal')
+  })
+
+  it('reaches the food the user named however they spelled it', () => {
+    expect(rank([['Toor Dal (Arhar Dal)', 'ifct'], ['Chana Dal', 'ifct']], 'arahar daal')[0]).toBe(
+      'Toor Dal (Arhar Dal)'
+    )
+    expect(rank([['Puri', 'ifct'], ['Aloo Puri', 'curated']], 'poori')[0]).toBe('Puri')
+    expect(rank([['Chapati', 'ifct'], ['Chapati Roll', 'curated']], 'chapatti')[0]).toBe('Chapati')
   })
 })
