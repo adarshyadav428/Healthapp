@@ -1,8 +1,22 @@
+import { foldSpelling } from './spelling-variants'
+
 /** Split a food name into words. Mirrors the punctuation that shows up in our
  *  own data: "Bhutta (Roasted Corn)", "Masala Corn / Corn Chaat", "Dal, Toor". */
 const nameWords = (name: string): string[] => name.split(/[\s/,()[\]-]+/).filter(Boolean)
 
-const normalize = (s: string): string => s.toLowerCase().replace(/\s+/g, ' ').trim()
+/**
+ * Lowercase, collapse whitespace, and fold romanisation variants to one
+ * spelling. Every signal below routes through here, so the query and the name
+ * are always folded the same way.
+ *
+ * The fold is what stops the user's *spelling* deciding the ranking. Scoring
+ * "daal" literally made Haldiram's "Moong Daal" (a namkeen) the only perfect
+ * typed-word match in the table, beating every measured lentil row — which
+ * scored 0 and fell to the synonym tier — before SOURCE_RANK could break the
+ * tie. See `lib/spelling-variants.ts` for why it folds spellings only and never
+ * translations.
+ */
+const normalize = (s: string): string => foldSpelling(s.toLowerCase().replace(/\s+/g, ' ').trim())
 
 /**
  * Score a food name against the query. Higher is better; 0 means no real match.

@@ -7,7 +7,10 @@ then no behavior listed below can change without a failing check.
 ## Why this holds
 
 1. **All writes go through API routes.** Every `insert`/`update`/`upsert`/`delete` in the app
-   lives in `app/api/**` (46 call sites, zero in `components/` or `hooks/`). Components can only
+   lives in `app/api/**` (48 call sites as of 2026-08-21, zero in `components/` or `hooks/` — the
+   zero is the load-bearing half; re-derive both with
+   `grep -rEc "\.(insert|update|upsert|delete)\(" app/api components hooks --include=*.ts --include=*.tsx`).
+   Components can only
    `fetch()` those routes; the routes validate input with Zod (`lib/validations.ts`) and recompute
    derived values (TDEE, macros) server-side, so a UI change cannot alter what gets stored.
 2. **All reads of gated data go through API routes.** `/api/logs` and `/api/exercise/logs` clamp

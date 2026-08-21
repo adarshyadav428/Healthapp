@@ -1,4 +1,10 @@
-.claude/
+.claude/*
+!.claude/skills/
+
+# The two rules above are anchored to the repo root. These are not - they keep local
+# secrets and worktree checkouts ignored inside ANY .claude/ in the tree.
+**/.claude/settings.local.json
+**/.claude/worktrees/
 .vercel
 
 # Personal planning artifacts kept at repo root (not source)
