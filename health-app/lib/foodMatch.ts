@@ -1,4 +1,5 @@
 import { foldSpelling } from './spelling-variants'
+import { foodIdentity } from './searchRanking'
 
 // Source trust for tie-breaking. IFCT (measured Indian data) is most
 // trustworthy for home food; branded/OFF are next. `curated` sits below every
@@ -37,15 +38,22 @@ function nameScore(name: string, query: string): number {
  * source trust (ifct > restaurant > branded > off) breaks ties. Replaces the old
  * `.order('source')` which sorted *alphabetically* — putting `branded` ahead of
  * `ifct` — so "2 roti and dal" matched "Bajra Roti" + "Gits Dal Tadka".
+ *
+ * A branded row is scored against its whole identity (`foodIdentity`), not the
+ * name alone. Gemini reports a food by name only, so "Moong Daal" matched
+ * Haldiram's namkeen character for character (4) while the measured "Moong Dal
+ * (Yellow)" merely contained it (2) — and name quality is weighted x10 over
+ * SOURCE_RANK here, so source trust could not rescue it. The scan logged
+ * ~517 kcal/100 g for a katori of dal that is ~104.
  */
-export function pickBestFoodMatch<T extends { name: string; source: string }>(
+export function pickBestFoodMatch<T extends { name: string; source: string; brand?: string | null }>(
   rows: T[],
   query: string
 ): T | null {
   let best: T | null = null
   let bestScore = -1
   for (const row of rows) {
-    const score = nameScore(row.name, query) * 10 + (SOURCE_RANK[row.source] ?? 0)
+    const score = nameScore(foodIdentity(row), query) * 10 + (SOURCE_RANK[row.source] ?? 0)
     if (score > bestScore) {
       bestScore = score
       best = row

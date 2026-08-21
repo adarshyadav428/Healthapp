@@ -160,6 +160,29 @@ export function isPlainForm(name: string, query: string): boolean {
 }
 
 /**
+ * The whole name a row goes by. A row carrying a `brand` is a packet, and the
+ * name on it is the part the label prints big — not the food's whole name.
+ *
+ * Haldiram's "Moong Daal" is a fried namkeen. Once `daal` folds to `dal` its
+ * name reads *exactly* like the query "moong daal", so it took the exact-match
+ * score of 4 while the measured "Moong Dal (Yellow)" could only reach 3 —
+ * deciding at tier 0, before `SOURCE_RANK` (ifct 6 > off_india 3) was ever
+ * consulted. Scored as "Haldiram's Moong Daal" it drops to 3 and loses the
+ * plain-form tier, because a brand token is neither a query word nor a
+ * QUALIFIER. Type the brand and it wins again, which is correct.
+ *
+ * This adds no tier and reorders none — like `foldSpelling` and `nameReadings`,
+ * it only fixes *which string* the existing tiers are applied to.
+ */
+export function foodIdentity(row: { name: string; brand?: string | null }): string {
+  const brand = row.brand?.trim()
+  if (!brand) return row.name
+  // Don't say it twice: "Tata Sampann Moong Dal" already carries its brand, and
+  // doubling the tokens would halve the coverage of a row that reads correctly.
+  return normalize(row.name).includes(normalize(brand)) ? row.name : `${brand} ${row.name}`
+}
+
+/**
  * The search result ordering: how well the name matches, then how much of the
  * name the query explains, then how much we trust the source, then name.
  *
@@ -167,7 +190,9 @@ export function isPlainForm(name: string, query: string): boolean {
  * a genuine tie between comparable matches (measured IFCT over an estimate), not
  * to promote a poorly-matching row from a trusted source above a good one.
  */
-export function compareFoodsForQuery<T extends { name: string; source: string }>(
+export function compareFoodsForQuery<
+  T extends { name: string; source: string; brand?: string | null },
+>(
   query: string | string[],
   sourceRank: Record<string, number>
 ): (a: T, b: T) => number {
@@ -212,8 +237,8 @@ export function compareFoodsForQuery<T extends { name: string; source: string }>
   }
 
   return (a, b) => {
-    const sa = score(a.name)
-    const sb = score(b.name)
+    const sa = score(foodIdentity(a))
+    const sb = score(foodIdentity(b))
     for (let i = 0; i < sa.length; i++) {
       if (Math.abs(sa[i] - sb[i]) > 1e-9) return sb[i] > sa[i] ? 1 : -1
     }
