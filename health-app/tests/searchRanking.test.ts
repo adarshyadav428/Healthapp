@@ -327,3 +327,88 @@ describe('compareFoodsForQuery across romanisation variants', () => {
     expect(rank([['Chapati', 'ifct'], ['Chapati Roll', 'curated']], 'chapatti')[0]).toBe('Chapati')
   })
 })
+
+/**
+ * Live report: searching the *phrase* "moong daal" still answered with
+ * Haldiram's "Moong Daal" namkeen (~517 kcal/100 g) above the measured
+ * "Moong Dal (Yellow)" (104 kcal/100 g) — a 5x error on a katori of dal.
+ *
+ * Folding the spelling was not enough, and in fact was what exposed this: once
+ * `daal` folds to `dal`, the packet's name folds to *exactly* the query, so it
+ * takes the exact-match score of 4 while the measured row — which merely
+ * contains every word — can only reach 3. Tier 0 decides and SOURCE_RANK is
+ * never reached, same as the original scar, one tier further up.
+ *
+ * The hole underneath: the comparator could only see `{ name, source }`. A
+ * packet whose label reads "Moong Daal" arrived looking exactly like a plain
+ * cooked food of that name. `brand` is what tells them apart, so the comparator
+ * now scores a branded row against its whole identity — "Haldiram's Moong Daal"
+ * — not the part the label prints big.
+ */
+describe('compareFoodsForQuery with a branded row', () => {
+  type Row = { name: string; source: string; brand?: string | null }
+
+  const rank = (rows: Row[], query: string) =>
+    rows
+      .slice()
+      .sort(compareFoodsForQuery(expandSearchQuery(query), SOURCE_RANK))
+      .map((f) => f.name)
+
+  const NAMKEEN: Row = { name: 'Moong Daal', source: 'off_india', brand: "Haldiram's" }
+  const MEASURED: Row = { name: 'Moong Dal (Yellow)', source: 'ifct', brand: null }
+
+  it('does not let a packet take the exact-match tier from the measured dish', () => {
+    const order = rank([NAMKEEN, MEASURED], 'moong daal')
+    expect(order[0]).toBe('Moong Dal (Yellow)')
+    // Still findable — a packet of namkeen is a real thing to log.
+    expect(order).toContain('Moong Daal')
+  })
+
+  it('answers "moong dal", "moong daal" and "moong dhal" identically', () => {
+    const rows: Row[] = [
+      NAMKEEN,
+      MEASURED,
+      { name: 'Moong Dal Chilla', source: 'ifct', brand: null },
+      { name: 'Moong Sprouts', source: 'ifct', brand: null },
+      { name: 'Moong Dal Halwa', source: 'curated', brand: null },
+    ]
+    const canonical = rank(rows, 'moong dal')
+    expect(rank(rows, 'moong daal')).toEqual(canonical)
+    expect(rank(rows, 'moong dhal')).toEqual(canonical)
+    expect(canonical[0]).toBe('Moong Dal (Yellow)')
+  })
+
+  it('gives the packet back when the user actually names the brand', () => {
+    expect(rank([NAMKEEN, MEASURED], 'haldiram moong daal')[0]).toBe('Moong Daal')
+  })
+
+  it('does not repeat a brand the name already carries', () => {
+    // "Tata Sampann Moong Dal" must not be scored as "Tata Sampann Tata
+    // Sampann Moong Dal" — the doubled tokens would halve its coverage.
+    const raw: Row = {
+      name: 'Tata Sampann Moong Dal (Washed, Raw)',
+      source: 'branded',
+      brand: 'Tata Sampann',
+    }
+    expect(nameCoverage(raw.name, 'moong dal')).toBeGreaterThanOrEqual(0.5)
+    // The cooked, measured row still wins: a raw packet is not what "moong dal" means.
+    expect(rank([raw, MEASURED], 'moong dal')[0]).toBe('Moong Dal (Yellow)')
+  })
+
+  it('ranks a row without a brand exactly as it did before', () => {
+    const withNull: Row[] = [
+      { name: 'Moong Daal', source: 'off_india', brand: null },
+      MEASURED,
+    ]
+    const withUndefined: Row[] = [
+      { name: 'Moong Daal', source: 'off_india' },
+      { name: 'Moong Dal (Yellow)', source: 'ifct' },
+    ]
+    expect(rank(withNull, 'daal')).toEqual(['Moong Dal (Yellow)', 'Moong Daal'])
+    expect(rank(withUndefined, 'daal')).toEqual(['Moong Dal (Yellow)', 'Moong Daal'])
+    // An empty-string brand is a brand nobody typed — treat it as absent.
+    expect(rank([{ name: 'Moong Daal', source: 'off_india', brand: '  ' }, MEASURED], 'daal')).toEqual(
+      ['Moong Dal (Yellow)', 'Moong Daal']
+    )
+  })
+})

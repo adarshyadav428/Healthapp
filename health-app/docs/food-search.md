@@ -20,6 +20,24 @@ Ordering lives in `lib/searchRanking.ts` (`compareFoodsForQuery`), which is pass
 
 **The typed tier folds romanisation variants, on both sides** (`lib/spelling-variants.ts`, applied in `normalize`). Scoring the typed word literally meant two spellings of one word were two different words: searching "daal" made Haldiram's "Moong Daal" — a fried namkeen, and the only row in the table spelled that way — the sole perfect typed-word match, while "Moong Dal (Yellow)" `[ifct]` scored **0**, fell to the synonym tier and lost before `SOURCE_RANK` (ifct 6 > off_india 3) was ever consulted. Searching "dal" was fine. The map holds **spellings only** — `daal → dal`, `chapatti → chapati`, `gobhi → gobi`. Translations and different regional words (`lentil`, `corn`, `curd`) must **never** go in it: folding one into the typed tier is exactly the "bhutta returns Cornflakes" bug that tier exists to prevent, and they already work through the synonym tier. `tests/spellingVariants.test.ts` pins the invariants — single lowercase words, idempotent, no `QUALIFIERS` key (folding "cooked" would break `isPlainForm`), and no two distinct synonym groups folding onto the same token. A variant that means something else elsewhere is excluded by hand (`nan`, because Nestlé NAN is infant formula). `lib/foodMatch.ts` (`nameScore`, the AI chat/camera matcher) folds the same way, for the same reason.
 
+**A branded row is ranked by its whole identity, not the name on the label** (`foodIdentity` in
+`lib/searchRanking.ts`). Folding the spelling fixed the word "daal" and exposed the tier above it: once
+`daal → dal`, Haldiram's `Moong Daal` `[off_india]` reads *exactly* like the query "moong daal", so it
+took the **exact-name score of 4** while the measured `Moong Dal (Yellow)` `[ifct]` — which merely
+contains every word — could only reach 3. Tier 0 decided and `SOURCE_RANK` was never reached, the same
+scar one tier further up, and it fired for the correct spelling "moong dal" too. The hole underneath was
+that the comparator saw only `{ name, source }`: a packet whose label reads "Moong Daal" arrived looking
+exactly like a plain cooked food of that name. `brand` is what tells them apart, so a row carrying one is
+scored as `"<brand> <name>"`. It then loses the **plain-form** tier, because a brand token is neither a
+query word nor a `QUALIFIER` — and if the user *does* type the brand ("haldiram moong daal") the token
+becomes a query word and the packet wins again, which is correct. The brand is **not** repeated when the
+name already contains it (`Tata Sampann Moong Dal`), since doubled tokens would halve that row's
+coverage. Like `foldSpelling` and `nameReadings`, this adds no tier and reorders none — it only fixes
+*which string* the existing tiers are applied to. `lib/foodMatch.ts` (`pickBestFoodMatch`) scores the
+same identity: Gemini reports a food by name alone, so "Moong Daal" from a photo or chat resolved to the
+namkeen at ~517 kcal/100 g instead of the dal at ~104, and name quality is weighted ×10 over
+`SOURCE_RANK` there, so source trust could not rescue it.
+
 **Synonyms are load-bearing, and their order matters.** `buildNameIlikeOrFilter` keeps only the first 6 terms, so put the widely-typed spellings first in each group in `lib/food-synonyms.ts`. A group expands the query only when the query **is** one of its terms, or is a phrase **containing** one as a whole word ("chicken biryani" → the biryani group). The reverse — the query sitting inside a longer synonym — is deliberately not a match: it fired for every group that merely *mentions* a common word, so "rice" dragged in kheer ("rice pudding"), poha ("flattened rice") and murmura ("puffed rice") and the results filled with foods that are not rice. A food whose regional names share no substring (corn: bhutta / makki / makkai / challi / maize) is unreachable without a group — `tests/foodSynonyms.test.ts` guards this.
 2. **Open Food Facts India** — `lib/open-food-facts.ts` → `world.openfoodfacts.org` filtered to `countries_tags:en:india`. Best for packaged/branded Indian products (Amul, Britannia, MTR).
 3. **Open Food Facts World** — international packaged goods fallback.
