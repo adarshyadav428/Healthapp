@@ -9,6 +9,7 @@ import {
 import { TtlCache } from '../../../../lib/searchCache'
 import { compareFoodsForQuery } from '../../../../lib/searchRanking'
 import { expandSearchQuery } from '../../../../lib/food-synonyms'
+import { correctFoodQuery } from '../../../../lib/typo-correction'
 import { buildNameIlikeOrFilter } from '../../../../lib/searchFilter'
 import { isPlausibleFood, SOURCE_RANK } from '../../../../lib/foodMatch'
 import { dedupeFoodsByNameBrand, capOpenFoodFactsDominance } from '../../../../lib/mergeSearchResults'
@@ -138,6 +139,91 @@ async function persistExternalFoods(externals: ExternalFood[]): Promise<Food[]> 
     .filter((f): f is Food => f !== undefined)
 }
 
+/**
+ * The shared, user-independent half of a search: the local catalogue plus both
+ * Open Food Facts endpoints, ranked and merged. Everything in here depends on
+ * nothing but the query string, which is what lets the route run it a second
+ * time with a corrected spelling when the first attempt comes back empty.
+ */
+async function searchGlobal(
+  supabase: ReturnType<typeof createServerClient>,
+  query: string
+): Promise<{ foods: Food[]; degraded: boolean }> {
+  // Expand with Indian food synonyms (e.g. "arhar" → also searches "toor dal"),
+  // then build the Supabase OR filter across the variants (capped at 6 to keep
+  // the query fast). Terms are sanitized — PostgREST's or= syntax is
+  // comma/paren-delimited, so raw ",()" in a query would corrupt the filter.
+  const synonymQueries = expandSearchQuery(query)
+  const orFilter = buildNameIlikeOrFilter(synonymQueries, 6)
+  if (!orFilter) return { foods: [], degraded: false }
+
+  const shouldFetchExternal = query.length >= 3
+
+  // Search order: local IFCT DB (synonym-expanded, most accurate for Indian foods)
+  // → OFF India (Indian packaged/branded products: Amul, Britannia, MTR, etc.)
+  // → OFF World (international products)
+  // USDA intentionally removed — US-centric data is inaccurate for Indian foods
+  const [localResult, offIndia, offWorld] = await Promise.all([
+    // Exclude `estimate` rows — those are per-user AI guesses written during
+    // chat/camera logging into the shared table; they must not surface in the
+    // shared results (the user's own ones are merged back in per-request below).
+    // Fetch generously (200, not 20): Postgres applies LIMIT *before* our
+    // sort below, so a tight limit hands back an arbitrary slice. Measured
+    // at 60 against the live table, "rice" and "dal" returned a different
+    // top result than at 200 purely because of where the slice fell.
+    // Synonym expansion widens these queries further. The client still gets
+    // 20 — `dedupeFoodsByNameBrand` caps the response regardless.
+    supabase.from('foods').select(FOOD_SELECT).or(orFilter).neq('source', 'estimate').limit(200),
+    shouldFetchExternal
+      ? searchOpenFoodFactsIndia(synonymQueries[0])
+      : Promise.resolve(OFF_NOT_FETCHED),
+    shouldFetchExternal
+      ? searchOpenFoodFacts(synonymQueries[0])
+      : Promise.resolve(OFF_NOT_FETCHED),
+  ])
+
+  if (localResult.error) throw new Error(localResult.error.message)
+  const rawLocal = (localResult.data ?? []) as Food[]
+
+  // Name match first, then how much of the name the query explains, then
+  // source trust. The source tie-break matters because the table holds both
+  // measured IFCT rows and estimated `curated` ones — without it, two rows
+  // scoring the same on name would be ordered by name alone, and
+  // `dedupeFoodsByNameBrand` (which keeps the first occurrence) could drop
+  // the measured row. See lib/searchRanking.ts for why it ranks last.
+  // Ranked against every synonym variant, not just the typed word — a row
+  // matched only via a synonym would otherwise score zero and be ordered by
+  // source alone.
+  const localResults = rawLocal.slice().sort(compareFoodsForQuery(synonymQueries, SOURCE_RANK))
+
+  // Deduplicate externals against local results
+  const localSourceIdSet = new Set(localResults.map((f) => f.source_id))
+
+  // OFF India first, then world — map to ExternalFood shape and deduplicate
+  const seenExternalIds = new Set<string>()
+  const externalRaw: ExternalFood[] = []
+  for (const f of [...offIndia.foods.map(offToExternal), ...offWorld.foods.map(offToExternal)]) {
+    if (!localSourceIdSet.has(f.source_id) && !seenExternalIds.has(f.source_id)) {
+      seenExternalIds.add(f.source_id)
+      externalRaw.push(f)
+    }
+  }
+
+  const externalWithIds = await persistExternalFoods(externalRaw)
+
+  // Merge: local IFCT → OFF India → OFF World. Drop physically-impossible
+  // rows (bad OFF data: 0-kcal solids, >100 g macros/100 g) before dedupe.
+  const foods = dedupeFoodsByNameBrand(
+    capOpenFoodFactsDominance([...localResults, ...externalWithIds].filter(isPlausibleFood))
+  )
+
+  // Only a result built from healthy upstreams earns the full TTL. If OFF
+  // timed out, this list is missing every packaged food we don't already
+  // hold locally — the caller caches it briefly so the next search retries
+  // rather than serving the gap to every user for two minutes.
+  return { foods, degraded: !offIndia.ok || !offWorld.ok }
+}
+
 export async function GET(request: Request) {
   // Fire-and-forget: populate IFCT foods on first ever search (idempotent)
   autoSeedIfNeeded().catch(() => {})
@@ -156,13 +242,10 @@ export async function GET(request: Request) {
     const user = await getApiUser(supabase)
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Expand query with Indian food synonyms (e.g. "arhar" → also searches "toor dal")
-    const synonymQueries = expandSearchQuery(query)
-
-    // Build Supabase OR filter across all synonym variants (cap at 6 to keep
-    // query fast). Terms are sanitized — PostgREST's or= syntax is
-    // comma/paren-delimited, so raw ",()" in a query would corrupt the filter.
-    const orFilter = buildNameIlikeOrFilter(synonymQueries, 6)
+    // The filter for the per-user estimate lookup below. `searchGlobal` builds
+    // its own from whatever query it is given — this one always follows what the
+    // user actually typed, since your own scans are yours to find by name.
+    const orFilter = buildNameIlikeOrFilter(expandSearchQuery(query), 6)
     if (!orFilter) return NextResponse.json([])
 
     // The current user's own AI-estimate foods they've logged before. Estimate
@@ -192,75 +275,27 @@ export async function GET(request: Request) {
     // Global (user-independent) results — cached and shared across all users.
     let globalResults = searchCache.get(normalizedQuery)
     if (!globalResults) {
-      const shouldFetchExternal = query.length >= 3
+      let result = await searchGlobal(supabase, query)
 
-      // Search order: local IFCT DB (synonym-expanded, most accurate for Indian foods)
-      // → OFF India (Indian packaged/branded products: Amul, Britannia, MTR, etc.)
-      // → OFF World (international products)
-      // USDA intentionally removed — US-centric data is inaccurate for Indian foods
-      const [localResult, offIndia, offWorld] = await Promise.all([
-        // Exclude `estimate` rows — those are per-user AI guesses written during
-        // chat/camera logging into the shared table; they must not surface in the
-        // shared results (the user's own ones are merged back in per-request below).
-        // Fetch generously (200, not 20): Postgres applies LIMIT *before* our
-        // sort below, so a tight limit hands back an arbitrary slice. Measured
-        // at 60 against the live table, "rice" and "dal" returned a different
-        // top result than at 200 purely because of where the slice fell.
-        // Synonym expansion widens these queries further. The client still gets
-        // 20 — `dedupeFoodsByNameBrand` caps the response regardless.
-        supabase.from('foods').select(FOOD_SELECT).or(orFilter).neq('source', 'estimate').limit(200),
-        shouldFetchExternal
-          ? searchOpenFoodFactsIndia(synonymQueries[0])
-          : Promise.resolve(OFF_NOT_FETCHED),
-        shouldFetchExternal
-          ? searchOpenFoodFacts(synonymQueries[0])
-          : Promise.resolve(OFF_NOT_FETCHED),
-      ])
-
-      if (localResult.error) throw new Error(localResult.error.message)
-      const rawLocal = (localResult.data ?? []) as Food[]
-
-      // Name match first, then how much of the name the query explains, then
-      // source trust. The source tie-break matters because the table holds both
-      // measured IFCT rows and estimated `curated` ones — without it, two rows
-      // scoring the same on name would be ordered by name alone, and
-      // `dedupeFoodsByNameBrand` (which keeps the first occurrence) could drop
-      // the measured row. See lib/searchRanking.ts for why it ranks last.
-      // Ranked against every synonym variant, not just the typed word — a row
-      // matched only via a synonym would otherwise score zero and be ordered by
-      // source alone.
-      const localResults = rawLocal.slice().sort(compareFoodsForQuery(synonymQueries, SOURCE_RANK))
-
-      // Deduplicate externals against local results
-      const localSourceIdSet = new Set(localResults.map((f) => f.source_id))
-
-      // OFF India first, then world — map to ExternalFood shape and deduplicate
-      const seenExternalIds = new Set<string>()
-      const externalRaw: ExternalFood[] = []
-      for (const f of [...offIndia.foods.map(offToExternal), ...offWorld.foods.map(offToExternal)]) {
-        if (!localSourceIdSet.has(f.source_id) && !seenExternalIds.has(f.source_id)) {
-          seenExternalIds.add(f.source_id)
-          externalRaw.push(f)
-        }
+      // Nothing at all — not a thin result, an empty screen. A typo dies at
+      // retrieval (`name ILIKE '%sbzi%'` matches no row), so ranking never gets
+      // to be clever about it. This is the only place we are allowed to change
+      // what the user typed, and emptiness is what makes it safe: our
+      // vocabulary is built from our own catalogue and cannot know every
+      // product Open Food Facts holds, so a query that already found rows must
+      // keep its spelling. See lib/typo-correction.ts.
+      if (result.foods.length === 0) {
+        const corrected = correctFoodQuery(query)
+        if (corrected) result = await searchGlobal(supabase, corrected)
       }
 
-      const externalWithIds = await persistExternalFoods(externalRaw)
-
-      // Merge: local IFCT → OFF India → OFF World. Drop physically-impossible
-      // rows (bad OFF data: 0-kcal solids, >100 g macros/100 g) before dedupe.
-      globalResults = dedupeFoodsByNameBrand(
-        capOpenFoodFactsDominance([...localResults, ...externalWithIds].filter(isPlausibleFood))
-      )
-
-      // Only a result built from healthy upstreams earns the full TTL. If OFF
-      // timed out, this list is missing every packaged food we don't already
-      // hold locally — cache it briefly so the next search retries rather than
-      // serving the gap to every user for two minutes.
-      const degraded = !offIndia.ok || !offWorld.ok
+      globalResults = result.foods
+      // Cached under what the user typed, so the next identical search skips
+      // both round trips — including the correction.
       searchCache.set(
         normalizedQuery,
         globalResults,
-        degraded ? DEGRADED_CACHE_TTL_MS : CACHE_TTL_MS
+        result.degraded ? DEGRADED_CACHE_TTL_MS : CACHE_TTL_MS
       )
     }
 
