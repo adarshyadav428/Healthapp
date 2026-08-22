@@ -14,25 +14,36 @@
  */
 
 /**
- * Legal name of the entity that receives settlements. This must match the
- * bank account's beneficiary name and the name on the PAN exactly — a
- * mismatch here is the single most common cause of a rejected application.
+ * Legal name of the entity that receives settlements: the sole
+ * proprietorship registered on Udyam as UDYAM-UP-07-0114396. A
+ * proprietorship has no PAN of its own — it operates under the proprietor's
+ * personal PAN by law — so "Adarsh Yadav" correctly appears as the PAN and
+ * bank names while this is the registered business name. What must match
+ * across every source is the *bank account*: BillDesk requires a current
+ * account in this business name, not the proprietor's personal savings
+ * account, once a business entity is the applicant.
  */
-export const LEGAL_NAME = "Adarsh Yadav";
+export const LEGAL_NAME = "Adarsh Medicals";
 
 /** Consumer-facing brand. May differ from LEGAL_NAME; both are disclosed. */
 export const TRADE_NAME = "GetInShape";
 
 /**
- * Operating address, shown on /contact. An aggregator's reviewer checks this
- * against the address proof submitted with the application, so it must be the
- * full postal address including state and PIN code — not a city alone.
+ * Operating address, shown on /contact. Sourced verbatim from the Udyam
+ * registration certificate (UDYAM-UP-07-0114396) and confirmed against the
+ * D-U-N-S record Google holds — the two agree, so this is the address an
+ * aggregator's reviewer will find on both documents.
  *
  * Leave any line empty and the address block is omitted rather than rendered
  * half-filled: a partial address is worse than none, because it reads as
  * "incomplete/missing details" on the reviewer's checklist.
  */
-export const ADDRESS: readonly string[] = [];
+export const ADDRESS: readonly string[] = [
+  "Khasra No. 157 Kha, First Floor",
+  "Near Thekma Bus Stop, Village Thekma, PS Barda",
+  "Martinganj, Azamgarh, Uttar Pradesh 276303",
+  "India",
+];
 
 export const SUPPORT_EMAIL = "adarshyadavazm123@gmail.com";
 
