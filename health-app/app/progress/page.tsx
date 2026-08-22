@@ -5,6 +5,12 @@ import { isProStatus } from '../../lib/subscription'
 import type { FoodLog, WeightLog } from '../../types/index'
 import { calculateStreakState, longestStreak } from '../../lib/streak'
 import { istDateStr } from '../../lib/dateUtils'
+import { calculateMaintenance } from '../../lib/tdee'
+import {
+  groupKcalByIstDay,
+  buildWeekWindow,
+  calculateWeeklyDeficit,
+} from '../../lib/deficit-calculator'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { ProgressClient } from '../../components/progress/ProgressClient'
 
@@ -110,6 +116,27 @@ export default async function ProgressPage() {
   const badgeStartWeight = profile.start_weight_kg ?? weightLogs[weightLogs.length - 1]?.weight_kg ?? null
   const badgeCurrentWeight = weightLogs[0]?.weight_kg ?? profile.current_weight_kg ?? null
 
+  // ── This week's deficit ─────────────────────────────────────────────────────
+  // Derived here rather than in the client so `/progress` and `/deficit` cannot
+  // drift: both read `calculateWeeklyDeficit`, which is the only definition of
+  // the word in the app. The current week is always inside the free 7-day
+  // window, so this reads the untrimmed rows — trimming could clip Monday on a
+  // Sunday and silently shorten the week.
+  const maintenance = calculateMaintenance({
+    weightKg: profile.current_weight_kg,
+    heightCm: profile.height_cm,
+    age: profile.age,
+    sex: profile.sex,
+    activity_level: profile.activity_level,
+  })
+  const week = buildWeekWindow(groupKcalByIstDay(allRecentLogs), istDateStr())
+  const weeklyDeficit = calculateWeeklyDeficit(
+    week.completed,
+    maintenance.tdee,
+    profile.pace_kg_per_week ?? 0.5,
+    { daysElapsed: week.daysElapsed, goal: profile.goal, weekStart: week.weekStart }
+  )
+
   const badgeStats = {
     totalLogs: logCountResult.count ?? 0,
     currentStreak: streak,
@@ -140,6 +167,9 @@ export default async function ProgressPage() {
           profile={profile}
           isPro={isPro}
           badgeStats={badgeStats}
+          weeklyDeficit={weeklyDeficit}
+          maintenanceKcal={maintenance.tdee}
+          todayKcal={week.todayKcal}
         />
       </main>
       <BottomNav />

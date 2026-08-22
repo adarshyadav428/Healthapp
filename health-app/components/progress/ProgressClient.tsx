@@ -15,6 +15,8 @@ import { BadgeShelf } from './BadgeShelf'
 import type { BadgeStats } from '../../lib/badges'
 import { formatGoalDate } from '../../lib/projection'
 import { formatKg } from '../../lib/formatWeight'
+import type { WeeklyDeficitSummary } from '../../lib/deficit-calculator'
+import { WeeklyDeficitCard } from './WeeklyDeficitCard'
 import {
   Flame, Scale, ChevronLeft, ChevronRight, Utensils, CalendarDays, X, Dumbbell, Lock, Crown,
 } from 'lucide-react'
@@ -39,6 +41,11 @@ type Props = {
   isPro:       boolean
   /** Lifetime counters for the badge shelf. Badges are free — never Pro-gated. */
   badgeStats?: BadgeStats
+  /** This week's energy balance, computed server-side from the shared calculator. */
+  weeklyDeficit: WeeklyDeficitSummary
+  maintenanceKcal: number
+  /** Today's running total. Displayed as in-progress, never counted. */
+  todayKcal: number | null
 }
 
 // IST calendar date (YYYY-MM-DD) for a timestamp — matches what the user sees.
@@ -62,7 +69,10 @@ const METRIC_CONFIG = {
   fat:     { color: 'var(--fat)', label: 'Fat', unit: 'g' },
 } as const
 
-export function ProgressClient({ streak, weightLogs, loggedDates, logs, exerciseLogs, profile, isPro, badgeStats }: Props) {
+export function ProgressClient({
+  streak, weightLogs, loggedDates, logs, exerciseLogs, profile, isPro, badgeStats,
+  weeklyDeficit, maintenanceKcal, todayKcal,
+}: Props) {
   const { user } = useUser()
   // weightLogs arrives newest-first and capped at 30, so its last element is
   // "oldest of the last 30 weigh-ins" — not the start weight. Prefer the
@@ -124,11 +134,17 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
     })
   }, [logs, range])
 
-  const loggedDays = chartData.filter((d) => d.kcal > 0)
-  const avgKcal    = loggedDays.length > 0 ? Math.round(loggedDays.reduce((s, d) => s + d.kcal, 0) / loggedDays.length) : 0
-  const avgProtein = loggedDays.length > 0 ? Math.round(loggedDays.reduce((s, d) => s + d.protein, 0) / loggedDays.length) : 0
-  const avgCarbs   = loggedDays.length > 0 ? Math.round(loggedDays.reduce((s, d) => s + d.carbs, 0) / loggedDays.length) : 0
-  const avgFat     = loggedDays.length > 0 ? Math.round(loggedDays.reduce((s, d) => s + d.fat, 0) / loggedDays.length) : 0
+  // Averages describe a *typical day*, so today — which has only breakfast in it
+  // — must stay out, or every average drops the moment someone logs honestly.
+  // `chartData.logged` already means "has data and isn't today".
+  const completeDays = chartData.filter((d) => d.logged)
+  const avgKcal    = completeDays.length > 0 ? Math.round(completeDays.reduce((s, d) => s + d.kcal, 0) / completeDays.length) : 0
+  const avgProtein = completeDays.length > 0 ? Math.round(completeDays.reduce((s, d) => s + d.protein, 0) / completeDays.length) : 0
+  const avgCarbs   = completeDays.length > 0 ? Math.round(completeDays.reduce((s, d) => s + d.carbs, 0) / completeDays.length) : 0
+  const avgFat     = completeDays.length > 0 ? Math.round(completeDays.reduce((s, d) => s + d.fat, 0) / completeDays.length) : 0
+
+  // The counter, unlike the averages, credits today: the user did log it.
+  const daysLoggedCount = chartData.filter((d) => d.kcal > 0).length
 
   // Only speaks with enough evidence on both sides and a gap worth a sentence —
   // an app that announces a pattern from two data points teaches people to
@@ -145,9 +161,6 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
         : null,
     [avgProtein, avgCarbs, avgFat]
   )
-  // Calorie deficit/surplus vs goal (positive = deficit, negative = surplus)
-  const avgDeficit = target > 0 && avgKcal > 0 ? target - avgKcal : null
-
   const cfg = METRIC_CONFIG[metric]
 
   // ── Month calendar ──────────────────────────────────────────────────────────
@@ -235,6 +248,15 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
         </div>
       </div>
 
+      {/* ── This week's deficit: the leading indicator, above the lagging one.
+             The scale confirms in a fortnight what this already knows today. ── */}
+      <WeeklyDeficitCard
+        summary={weeklyDeficit}
+        maintenance={maintenanceKcal}
+        goal={profile.goal}
+        todayKcal={todayKcal}
+      />
+
       {/* ── Weight trend: the smoothed answer to "am I actually moving?" ── */}
       {trend.kgPerWeek !== null && (
         <div className="mt-3 rounded-[24px] bg-surface p-5" style={AIR}>
@@ -299,34 +321,11 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
             <CalendarDays className="h-[18px] w-[18px]" strokeWidth={2} style={{ color: 'var(--good)' }} />
           </div>
           <p className="font-display mt-3.5 text-[34px] font-bold leading-none tabular-nums text-ink" style={{ letterSpacing: '-0.03em' }}>
-            {loggedDays.length}
+            {daysLoggedCount}
           </p>
           <p className="mt-[5px] text-[12px] text-ink-3">of {range} days logged</p>
         </div>
       </div>
-
-      {/* ── Avg deficit/surplus → links to the (previously orphaned) tracker ── */}
-      {avgDeficit !== null && (
-        <Link href="/deficit" className="mt-3 block rounded-[24px] bg-surface px-5 py-[18px] tap-scale" style={AIR}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[12px] text-ink-3">Avg daily {avgDeficit >= 0 ? 'deficit' : 'surplus'}</p>
-              <p className="font-display mt-1 text-[22px] font-bold tabular-nums" style={{ letterSpacing: '-0.02em', color: avgDeficit >= 0 ? 'var(--good)' : 'var(--bad)' }}>
-                {avgDeficit >= 0 ? '-' : '+'}{Math.abs(avgDeficit).toLocaleString('en-IN')} kcal
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-[12px] text-ink-3">Est. weight {avgDeficit >= 0 ? 'loss' : 'gain'}</p>
-              <p className="mt-1 text-[14px] font-bold tabular-nums" style={{ color: avgDeficit >= 0 ? 'var(--good)' : 'var(--bad)' }}>
-                {Math.abs(avgDeficit * loggedDays.length / 7700).toFixed(2)} kg / {range}d
-              </p>
-            </div>
-          </div>
-          <p className="mt-2.5 flex items-center gap-1 text-[12px] font-semibold text-brand-ink">
-            Weekly deficit tracker <ChevronRight className="h-3.5 w-3.5" />
-          </p>
-        </Link>
-      )}
 
       {/* ── Avg macros ── */}
       <div className="mt-3 grid grid-cols-3 gap-2.5">
@@ -415,7 +414,7 @@ export function ProgressClient({ streak, weightLogs, loggedDates, logs, exercise
       )}
 
       {/* ── Calorie breakdown by day ── */}
-      {loggedDays.length > 0 && (
+      {daysLoggedCount > 0 && (
         <div className="mt-3 rounded-[24px] bg-surface p-5" style={AIR}>
           <p className="mb-3.5 text-[13px] font-semibold text-ink">Calorie breakdown by day</p>
           <div className="space-y-2">

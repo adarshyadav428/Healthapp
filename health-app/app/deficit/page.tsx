@@ -2,23 +2,26 @@ import { redirect } from 'next/navigation'
 import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import { PageHeader } from '../../components/layout/PageHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
-import { DeficitPageClient } from '../../components/progress/DeficitPageClient'
-import { calculateBMR, activityMultiplier } from '../../lib/tdee'
+import { DeficitPageClient, type WeekView } from '../../components/progress/DeficitPageClient'
+import { calculateMaintenance } from '../../lib/tdee'
+import { istDateStr } from '../../lib/dateUtils'
+import {
+  groupKcalByIstDay,
+  buildWeekWindow,
+  calculateWeeklyDeficit,
+} from '../../lib/deficit-calculator'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Deficit Tracker — GetInShape', robots: { index: false } }
 
-const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000
-
-function toIstDateKey(iso: string) {
-  return new Date(new Date(iso).getTime() + IST_OFFSET_MS).toISOString().slice(0, 10)
-}
+/** How many weeks of history the page shows, current week included. */
+const WEEKS_SHOWN = 4
 
 export default async function DeficitPage() {
   const supabase = createServerClient()
   const user = await getAuthedUser(supabase)
 
-  // All three queries only need user.id — one parallel round trip, not three sequential
+  // Both queries only need user.id — one parallel round trip, not two sequential
   const since = new Date(Date.now() - 28 * 86_400_000).toISOString()
   const [{ data: profile }, { data: logs }, { data: allLogs }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
@@ -28,52 +31,62 @@ export default async function DeficitPage() {
       .eq('user_id', user.id)
       .gte('logged_at', since)
       .order('logged_at', { ascending: true }),
-    supabase
-      .from('food_logs')
-      .select('kcal, logged_at')
-      .eq('user_id', user.id),
+    supabase.from('food_logs').select('kcal, logged_at').eq('user_id', user.id),
   ])
 
   if (!profile || !profile.height_cm) redirect('/onboarding')
 
-  // Maintenance TDEE (what the body burns — same formula as everywhere)
-  const bmr = calculateBMR({
+  // One source of maintenance, shared with /progress and every other surface.
+  const maintenance = calculateMaintenance({
     weightKg: profile.current_weight_kg,
     heightCm: profile.height_cm,
-    age:      profile.age,
-    sex:      profile.sex,
+    age: profile.age,
+    sex: profile.sex,
+    activity_level: profile.activity_level,
   })
-  const tdee = Math.round(bmr * activityMultiplier(profile.activity_level))
 
-  // Single source of truth: the stored daily_calorie_target (same as dashboard ring)
-  const eatTarget          = profile.daily_calorie_target
-  const actualDailyDeficit = Math.max(0, tdee - eatTarget)
-  const actualWeeklyTarget = actualDailyDeficit * 7
-  const impliedPaceKg      = actualWeeklyTarget > 0
-    ? Math.round(actualWeeklyTarget / 7700 * 100) / 100
-    : 0
+  const todayStr = istDateStr()
+  const paceKg = profile.pace_kg_per_week ?? 0.5
+  const byDate = groupKcalByIstDay(logs ?? [])
 
-  // Group last 28 days by IST date
-  const byDate = new Map<string, number>()
-  for (const log of logs ?? []) {
-    const date = toIstDateKey(log.logged_at)
-    byDate.set(date, (byDate.get(date) ?? 0) + log.kcal)
+  // Current week first in the data, rendered oldest-first in the chart.
+  const weeks: WeekView[] = Array.from({ length: WEEKS_SHOWN }, (_, i) => {
+    const w = buildWeekWindow(byDate, todayStr, i)
+    const summary = calculateWeeklyDeficit(w.completed, maintenance.tdee, paceKg, {
+      daysElapsed: w.daysElapsed,
+      goal: profile.goal,
+      weekStart: w.weekStart,
+    })
+    return {
+      weekStart: w.weekStart,
+      label: new Date(w.weekStart + 'T00:00:00Z').toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        timeZone: 'UTC',
+      }),
+      summary,
+      days: w.dates.map((date) => ({
+        date,
+        kcal: byDate.has(date) ? Math.round(byDate.get(date) ?? 0) : null,
+        state:
+          date > todayStr ? ('future' as const)
+          : date === todayStr ? ('today' as const)
+          : byDate.has(date) ? ('done' as const)
+          : ('missed' as const),
+      })),
+    }
+  }).reverse()
+
+  // All-time: completed days only. Today is half-eaten, and counting it here is
+  // what used to make "total fat burned" fall as the user logged lunch.
+  const allByDate = groupKcalByIstDay(allLogs ?? [])
+  let totalDeficit = 0
+  let completedDays = 0
+  for (const [date, kcal] of allByDate) {
+    if (date >= todayStr) continue
+    totalDeficit += maintenance.tdee - kcal
+    completedDays++
   }
-  const days = Array.from(byDate.entries())
-    .map(([date, calories]) => ({ date, calories: Math.round(calories) }))
-    .sort((a, b) => a.date.localeCompare(b.date))
-
-  const todayKey = toIstDateKey(new Date().toISOString())
-
-  // All-time fat burned
-  const allByDate = new Map<string, number>()
-  for (const log of allLogs ?? []) {
-    const date = toIstDateKey(log.logged_at)
-    allByDate.set(date, (allByDate.get(date) ?? 0) + log.kcal)
-  }
-  const allDayCount  = allByDate.size
-  const totalDeficit = Array.from(allByDate.values()).reduce((sum, cal) => sum + (tdee - cal), 0)
-  const totalFatKg   = Math.max(0, totalDeficit / 7700)
 
   return (
     <div className="min-h-screen">
@@ -83,18 +96,18 @@ export default async function DeficitPage() {
       >
         <PageHeader label="1 kg fat = 7,700 kcal deficit" title="Deficit" back />
         <div className="mt-5">
-        <DeficitPageClient
-          days={days}
-          tdee={tdee}
-          eatTarget={eatTarget}
-          actualDailyDeficit={actualDailyDeficit}
-          actualWeeklyTarget={actualWeeklyTarget}
-          impliedPaceKg={impliedPaceKg}
-          today={todayKey}
-          totalFatKg={Math.round(totalFatKg * 100) / 100}
-          totalDaysLogged={allDayCount}
-          targetWeightKg={profile.target_weight_kg ?? null}
-        />
+          <DeficitPageClient
+            weeks={weeks}
+            maintenance={maintenance}
+            activityLevel={profile.activity_level}
+            eatTarget={profile.daily_calorie_target}
+            goal={profile.goal}
+            today={todayStr}
+            todayKcal={byDate.has(todayStr) ? Math.round(byDate.get(todayStr) ?? 0) : null}
+            totalFatKg={Math.round(Math.max(0, totalDeficit / 7700) * 100) / 100}
+            totalDaysLogged={completedDays}
+            targetWeightKg={profile.target_weight_kg ?? null}
+          />
         </div>
       </main>
       <BottomNav />

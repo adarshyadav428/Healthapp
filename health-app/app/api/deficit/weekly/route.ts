@@ -3,21 +3,9 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
-import { calculateBMR, activityMultiplier } from '../../../../lib/tdee'
-
-// Indian Standard Time = UTC + 5:30
-const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000
-
-function toIstDateKey(isoString: string): string {
-  return new Date(new Date(isoString).getTime() + IST_OFFSET_MS).toISOString().slice(0, 10)
-}
-
-function getMondayOfWeek(dateKey: string): string {
-  const d = new Date(dateKey + 'T00:00:00Z')
-  const day = d.getUTCDay()
-  const daysFromMon = day === 0 ? 6 : day - 1
-  return new Date(d.getTime() - daysFromMon * 86_400_000).toISOString().slice(0, 10)
-}
+import { calculateMaintenance } from '../../../../lib/tdee'
+import { groupKcalByIstDay, weekStartOf } from '../../../../lib/deficit-calculator'
+import { istDateStr } from '../../../../lib/dateUtils'
 
 export async function GET() {
   try {
@@ -33,14 +21,15 @@ export async function GET() {
 
     if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
 
-    // Maintenance TDEE — what the body burns at rest + activity, before any deficit
-    const bmr = calculateBMR({
-      weightKg: profile.current_weight_kg,
-      heightCm: profile.height_cm,
-      age:      profile.age,
-      sex:      profile.sex,
+    // Maintenance — from the shared helper, so this route can never drift from
+    // what /progress and /deficit show.
+    const { tdee } = calculateMaintenance({
+      weightKg:       profile.current_weight_kg,
+      heightCm:       profile.height_cm,
+      age:            profile.age,
+      sex:            profile.sex,
+      activity_level: profile.activity_level,
     })
-    const tdee = Math.round(bmr * activityMultiplier(profile.activity_level))
 
     // Use the stored daily_calorie_target — same number the dashboard ring shows.
     // This is the ONLY truth. Never recompute from pace here.
@@ -62,18 +51,13 @@ export async function GET() {
       .eq('user_id', user.id)
       .gte('logged_at', since)
 
-    // Group by IST date
-    const byDate = new Map<string, number>()
-    for (const log of logs ?? []) {
-      const date = toIstDateKey(log.logged_at)
-      byDate.set(date, (byDate.get(date) ?? 0) + log.kcal)
-    }
+    const byDate = groupKcalByIstDay(logs ?? [])
 
     const days = Array.from(byDate.entries())
       .map(([date, calories]) => ({ date, calories: Math.round(calories) }))
       .sort((a, b) => a.date.localeCompare(b.date))
 
-    const todayKey = toIstDateKey(new Date().toISOString())
+    const todayKey = istDateStr()
 
     return NextResponse.json({
       tdee,
@@ -83,7 +67,7 @@ export async function GET() {
       implied_pace_kg:      impliedPaceKg,
       target_weight_kg:     profile.target_weight_kg ?? null,
       today:                todayKey,
-      week_start:           getMondayOfWeek(todayKey),
+      week_start:           weekStartOf(todayKey),
       days,
     })
   } catch (err) {
