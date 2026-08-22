@@ -40,7 +40,9 @@ export default function TermsPage() {
             period. New subscribers can request a full refund of their first payment within 30 days by
             contacting us — no questions asked. Renewal charges are non-refundable, but you can cancel any
             time before a renewal date to avoid the next charge. Purchases made through Google Play follow
-            Google Play&apos;s refund policy.
+            Google Play&apos;s refund policy. Full details, including refund timelines, are in our{' '}
+            <Link href="/refunds" className="text-brand-ink hover:underline">Refund &amp; Cancellation
+            Policy</Link>.
           </Section>
 
           <Section title="5. Data and Privacy">
@@ -70,6 +72,8 @@ export default function TermsPage() {
             <a href="mailto:adarshyadavazm123@gmail.com" className="text-brand-ink hover:underline">
               adarshyadavazm123@gmail.com
             </a>
+            . Our phone number, operating address and support hours are on the{' '}
+            <Link href="/contact" className="text-brand-ink hover:underline">Contact Us</Link> page.
           </Section>
         </div>
       </div>
