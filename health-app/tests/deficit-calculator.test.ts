@@ -1,9 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import {
   calculateWeeklyDeficit,
+  calculatePeriodDeficit,
   buildWeekWindow,
+  buildPeriodWindow,
+  cumulativeSeries,
   weekStartOf,
   addDayKey,
+  monthStartOf,
+  addMonthKey,
+  daysInMonth,
   groupKcalByIstDay,
 } from '../lib/deficit-calculator'
 
@@ -261,5 +267,134 @@ describe('buildWeekWindow', () => {
     expect(w.weekStart).toBe('2026-07-06')
     expect(w.daysElapsed).toBe(7)
     expect(w.todayKcal).toBeNull()
+  })
+})
+
+// ── Month periods: the same maths, a longer window ──────────────────────────
+describe('month date helpers', () => {
+  it('monthStartOf anchors any day to the 1st', () => {
+    expect(monthStartOf('2026-08-22')).toBe('2026-08-01')
+    expect(monthStartOf('2026-08-01')).toBe('2026-08-01')
+  })
+
+  it('addMonthKey crosses the year boundary in both directions', () => {
+    expect(addMonthKey('2026-12-15', 1)).toBe('2027-01-01')
+    expect(addMonthKey('2026-01-09', -1)).toBe('2025-12-01')
+    expect(addMonthKey('2026-08-22', 0)).toBe('2026-08-01')
+  })
+
+  it('daysInMonth knows short months and non-leap Februaries', () => {
+    expect(daysInMonth('2026-08-01')).toBe(31)
+    expect(daysInMonth('2026-04-01')).toBe(30)
+    expect(daysInMonth('2026-02-01')).toBe(28) // 2026 is not a leap year
+    expect(daysInMonth('2028-02-01')).toBe(29)
+  })
+})
+
+describe('buildPeriodWindow — month', () => {
+  const today = '2026-08-22'
+  const byDate = new Map([
+    ['2026-07-31', 1900], // last month: must not leak in
+    ['2026-08-01', 2000],
+    ['2026-08-05', 1800],
+    ['2026-08-22', 500],  // today, half-eaten
+    ['2026-08-25', 1700], // future: impossible, but must not count if present
+  ])
+
+  it('spans the calendar month and stops at today', () => {
+    const w = buildPeriodWindow(byDate, today, 'month')
+    expect(w.periodStart).toBe('2026-08-01')
+    expect(w.periodDays).toBe(31)
+    expect(w.dates).toHaveLength(31)
+    expect(w.daysElapsed).toBe(21) // Aug 1–21
+    expect(w.completed.map((d) => d.date)).toEqual(['2026-08-01', '2026-08-05'])
+    expect(w.todayKcal).toBe(500)
+  })
+
+  it('back = 1 walks to the previous, fully finished month', () => {
+    const w = buildPeriodWindow(byDate, today, 'month', 1)
+    expect(w.periodStart).toBe('2026-07-01')
+    expect(w.periodDays).toBe(31)
+    expect(w.daysElapsed).toBe(31)
+    expect(w.completed.map((d) => d.date)).toEqual(['2026-07-31'])
+    expect(w.todayKcal).toBeNull()
+  })
+})
+
+describe('calculatePeriodDeficit — month', () => {
+  const tdee = 2500
+
+  it('stretches the weekly pace across the month, so the target scales', () => {
+    const s = calculatePeriodDeficit([day('2026-08-01', 2000)], tdee, 0.5, { periodDays: 31 })
+    // 0.5 kg/week × 7,700 × (31/7)
+    expect(s.target_deficit).toBe(17050)
+    expect(s.fat_loss_target_kg).toBe(2.21)
+    expect(s.period_days).toBe(31)
+  })
+
+  it('keeps the daily pace identical to the weekly window', () => {
+    const week  = calculatePeriodDeficit([day('2026-08-01', 2000)], tdee, 0.5, { periodDays: 7 })
+    const month = calculatePeriodDeficit([day('2026-08-01', 2000)], tdee, 0.5, { periodDays: 31 })
+    // A month is not a harder standard per day — only a longer one.
+    expect(month.prorated_target_deficit).toBe(week.prorated_target_deficit)
+    expect(month.progress_percent).toBe(week.progress_percent)
+  })
+
+  it('a month of on-pace days reads on track, not behind', () => {
+    const days = Array.from({ length: 21 }, (_, i) =>
+      day(`2026-08-${String(i + 1).padStart(2, '0')}`, 1950) // 550/day, exactly on pace
+    )
+    const s = calculatePeriodDeficit(days, tdee, 0.5, { periodDays: 31, daysElapsed: 21 })
+    expect(s.total_deficit).toBe(11550)
+    expect(s.progress_percent).toBe(100)
+    expect(s.status).toBe('on_track')
+    expect(s.days_unlogged).toBe(0)
+  })
+
+  it('defaults to a seven-day period when none is given', () => {
+    expect(calculatePeriodDeficit([], tdee, 0.5).period_days).toBe(7)
+  })
+
+  it('says "month", not "week", when the period is a month', () => {
+    // Eating well over maintenance, so the surplus sentence fires.
+    const days = Array.from({ length: 5 }, (_, i) => day(`2026-08-0${i + 1}`, 3200))
+    const s = calculatePeriodDeficit(days, tdee, 0.5, { periodDays: 31, daysElapsed: 5 })
+    expect(s.insight).toContain('this month')
+    expect(s.insight).not.toContain('this week')
+  })
+
+  it('groups digits in the insight, so it matches the headline beside it', () => {
+    const s = calculatePeriodDeficit([day('2026-08-01', 2400)], tdee, 1, { periodDays: 31, daysElapsed: 21 })
+    expect(s.status).toBe('behind')
+    // "11230 kcal" next to a headline reading "8,570" looks like a bug.
+    expect(s.insight).toMatch(/\d,\d{3}/)
+    expect(s.insight).not.toMatch(/\b\d{4,}\b/)
+  })
+})
+
+describe('cumulativeSeries', () => {
+  const tdee = 2500
+
+  it('is a running sum of maintenance − eaten', () => {
+    const s = cumulativeSeries(
+      [day('2026-08-01', 2000), day('2026-08-02', 2200), day('2026-08-03', 1500)],
+      tdee
+    )
+    expect(s.map((d) => d.deficit)).toEqual([500, 300, 1000])
+    expect(s.map((d) => d.cumulative)).toEqual([500, 800, 1800])
+  })
+
+  it('a heavy day bends the line down without erasing what came before', () => {
+    const s = cumulativeSeries(
+      [day('2026-08-01', 2000), day('2026-08-02', 3500), day('2026-08-03', 2000)],
+      tdee
+    )
+    expect(s.map((d) => d.cumulative)).toEqual([500, -500, 0])
+    // The dip is visible, but Monday's work is still in the total.
+    expect(s[1].deficit).toBe(-1000)
+  })
+
+  it('handles an empty period', () => {
+    expect(cumulativeSeries([], tdee)).toEqual([])
   })
 })

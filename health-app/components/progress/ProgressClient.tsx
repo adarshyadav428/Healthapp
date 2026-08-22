@@ -15,10 +15,9 @@ import { BadgeShelf } from './BadgeShelf'
 import type { BadgeStats } from '../../lib/badges'
 import { formatGoalDate } from '../../lib/projection'
 import { formatKg } from '../../lib/formatWeight'
-import type { WeeklyDeficitSummary } from '../../lib/deficit-calculator'
-import { WeeklyDeficitCard } from './WeeklyDeficitCard'
+import { DeficitTrendCard, type DeficitPeriodView } from './DeficitTrendCard'
 import {
-  Flame, Scale, ChevronLeft, ChevronRight, Utensils, CalendarDays, X, Dumbbell, Lock, Crown,
+  Flame, Scale, ChevronLeft, ChevronRight, CalendarDays, X, Dumbbell, Lock, Crown,
 } from 'lucide-react'
 
 // Defer recharts — saves ~95KB on initial /progress load.
@@ -42,10 +41,11 @@ type Props = {
   /** Lifetime counters for the badge shelf. Badges are free — never Pro-gated. */
   badgeStats?: BadgeStats
   /** This week's energy balance, computed server-side from the shared calculator. */
-  weeklyDeficit: WeeklyDeficitSummary
+  weekView: DeficitPeriodView
+  /** Null for free accounts — the month is Pro, and the gate is server-side. */
+  monthView: DeficitPeriodView | null
+  /** Maintenance (TDEE). The one benchmark the deficit surfaces measure against. */
   maintenanceKcal: number
-  /** Today's running total. Displayed as in-progress, never counted. */
-  todayKcal: number | null
 }
 
 // IST calendar date (YYYY-MM-DD) for a timestamp — matches what the user sees.
@@ -71,7 +71,7 @@ const METRIC_CONFIG = {
 
 export function ProgressClient({
   streak, weightLogs, loggedDates, logs, exerciseLogs, profile, isPro, badgeStats,
-  weeklyDeficit, maintenanceKcal, todayKcal,
+  weekView, monthView, maintenanceKcal,
 }: Props) {
   const { user } = useUser()
   // weightLogs arrives newest-first and capped at 30, so its last element is
@@ -88,8 +88,6 @@ export function ProgressClient({
     () => computeWeightTrend(weightLogs, profile.target_weight_kg ?? null),
     [weightLogs, profile.target_weight_kg]
   )
-  const target = profile.daily_calorie_target
-
   const [range, setRange] = useState(7)
   const [metric, setMetric] = useState<keyof typeof METRIC_CONFIG>('kcal')
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -138,7 +136,6 @@ export function ProgressClient({
   // — must stay out, or every average drops the moment someone logs honestly.
   // `chartData.logged` already means "has data and isn't today".
   const completeDays = chartData.filter((d) => d.logged)
-  const avgKcal    = completeDays.length > 0 ? Math.round(completeDays.reduce((s, d) => s + d.kcal, 0) / completeDays.length) : 0
   const avgProtein = completeDays.length > 0 ? Math.round(completeDays.reduce((s, d) => s + d.protein, 0) / completeDays.length) : 0
   const avgCarbs   = completeDays.length > 0 ? Math.round(completeDays.reduce((s, d) => s + d.carbs, 0) / completeDays.length) : 0
   const avgFat     = completeDays.length > 0 ? Math.round(completeDays.reduce((s, d) => s + d.fat, 0) / completeDays.length) : 0
@@ -250,11 +247,11 @@ export function ProgressClient({
 
       {/* ── This week's deficit: the leading indicator, above the lagging one.
              The scale confirms in a fortnight what this already knows today. ── */}
-      <WeeklyDeficitCard
-        summary={weeklyDeficit}
-        maintenance={maintenanceKcal}
+      <DeficitTrendCard
+        week={weekView}
+        month={monthView}
         goal={profile.goal}
-        todayKcal={todayKcal}
+        isPro={isPro}
       />
 
       {/* ── Weight trend: the smoothed answer to "am I actually moving?" ── */}
@@ -305,27 +302,12 @@ export function ProgressClient({
         macros={shareMacros}
       />
 
-      {/* ── Stat cards: avg calories + days logged ── */}
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <div className="rounded-[24px] bg-surface p-5" style={AIR}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-[12px]" style={{ backgroundColor: 'var(--energy-soft)' }}>
-            <Utensils className="h-[18px] w-[18px]" strokeWidth={2} style={{ color: 'var(--energy)' }} />
-          </div>
-          <p className="font-display mt-3.5 text-[34px] font-bold leading-none tabular-nums text-ink" style={{ letterSpacing: '-0.03em' }}>
-            {avgKcal > 0 ? avgKcal.toLocaleString('en-IN') : '—'}
-          </p>
-          <p className="mt-[5px] text-[12px] text-ink-3">avg kcal{target > 0 ? ` · goal ${target.toLocaleString('en-IN')}` : ''}</p>
-        </div>
-        <div className="rounded-[24px] bg-surface p-5" style={AIR}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-[12px]" style={{ backgroundColor: 'color-mix(in srgb, var(--good) 15%, transparent)' }}>
-            <CalendarDays className="h-[18px] w-[18px]" strokeWidth={2} style={{ color: 'var(--good)' }} />
-          </div>
-          <p className="font-display mt-3.5 text-[34px] font-bold leading-none tabular-nums text-ink" style={{ letterSpacing: '-0.03em' }}>
-            {daysLoggedCount}
-          </p>
-          <p className="mt-[5px] text-[12px] text-ink-3">of {range} days logged</p>
-        </div>
-      </div>
+      {/* The "avg kcal · goal" and "N of 7 days logged" tiles used to sit here.
+          They measured a trailing window against the eat-goal while the deficit
+          card above measures a calendar week against maintenance, so the screen
+          answered "how many days?" and "what is a typical day?" twice, with
+          different numbers. Removed rather than reconciled: the deficit card
+          already answers both, and two answers is the confusion. */}
 
       {/* ── Avg macros ── */}
       <div className="mt-3 grid grid-cols-3 gap-2.5">
@@ -417,10 +399,13 @@ export function ProgressClient({
       {daysLoggedCount > 0 && (
         <div className="mt-3 rounded-[24px] bg-surface p-5" style={AIR}>
           <p className="mb-3.5 text-[13px] font-semibold text-ink">Calorie breakdown by day</p>
+          {/* Measured against maintenance, not the eat-goal. Against the goal, the
+              best day of a week — the one furthest under — rendered as a warning,
+              which inverted the story the deficit card above tells. */}
           <div className="space-y-2">
             {[...chartData].reverse().slice(0, 7).map((day) => {
-              const pct = target > 0 ? Math.min((day.kcal / target) * 100, 100) : 0
-              const barColor = day.kcal === 0 ? 'var(--surface-2)' : day.kcal > target * 1.1 ? 'var(--bad)' : day.kcal >= target * 0.9 ? 'var(--good)' : 'var(--brand)'
+              const pct = maintenanceKcal > 0 ? Math.min((day.kcal / maintenanceKcal) * 100, 100) : 0
+              const barColor = day.kcal === 0 ? 'var(--surface-2)' : day.kcal > maintenanceKcal ? 'var(--bad)' : 'var(--good)'
               const isSelected = selectedDate === day.date
               return (
                 <button
@@ -443,11 +428,11 @@ export function ProgressClient({
               )
             })}
           </div>
-          {target > 0 && (
+          {maintenanceKcal > 0 && (
             <div className="mt-3.5 flex items-center gap-3 text-[10px] text-ink-3">
-              <div className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full" style={{ background: 'var(--good)' }} /> On target</div>
-              <div className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-brand" /> Under target</div>
-              <div className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full" style={{ background: 'var(--bad)' }} /> Over target</div>
+              <div className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full" style={{ background: 'var(--good)' }} /> Under maintenance</div>
+              <div className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full" style={{ background: 'var(--bad)' }} /> Over maintenance</div>
+              <span className="ml-auto tabular-nums">{maintenanceKcal.toLocaleString('en-IN')} kcal</span>
             </div>
           )}
         </div>

@@ -7,7 +7,13 @@
  * Science:
  *   1 kg of fat = 7,700 kcal
  *   Daily deficit = maintenance (TDEE) - calories eaten
- *   Weekly target deficit = pace_kg_per_week × 7,700
+ *   Period target deficit = pace_kg_per_week × 7,700 × (periodDays / 7)
+ *
+ * Periods are always *calendar* windows — Mon–Sun, or the 1st to the end of the
+ * month — never a rolling trailing window. A calendar total only ever grows and
+ * then resets, so it cannot fall for a reason the user did not cause. A rolling
+ * total drops whenever a good day ages out of the back of the window, which reads
+ * as punishment for nothing.
  *
  * Two rules the callers must honour, both learned from bugs:
  *
@@ -50,40 +56,106 @@ export function addDayKey(dateKey: string, n: number): string {
   return new Date(new Date(dateKey + 'T00:00:00Z').getTime() + n * DAY_MS).toISOString().slice(0, 10)
 }
 
-export type WeekWindow = {
-  weekStart: string
-  /** All seven dates of the week, Monday first — including days still to come. */
+/** The 1st of the month containing `dateKey`. */
+export function monthStartOf(dateKey: string): string {
+  return dateKey.slice(0, 8) + '01'
+}
+
+/** The 1st of the month `n` months from the one containing `dateKey`. */
+export function addMonthKey(dateKey: string, n: number): string {
+  const [y, m] = dateKey.split('-').map(Number)
+  const total = y * 12 + (m - 1) + n
+  return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, '0')}-01`
+}
+
+/** Day 0 of the following month is the last day of this one — 28, 29, 30 or 31. */
+export function daysInMonth(dateKey: string): number {
+  const [y, m] = dateKey.split('-').map(Number)
+  return new Date(Date.UTC(y, m, 0)).getUTCDate()
+}
+
+/** Calendar periods, never rolling: a total that only grows, then resets. */
+export type PeriodKind = 'week' | 'month'
+
+export type PeriodWindow = {
+  periodStart: string
+  periodDays: number
+  /** Every date in the period, in order — including days still to come. */
   dates: string[]
-  /** Logged days that have finished. This is what `calculateWeeklyDeficit` takes. */
+  /** Logged days that have finished. This is what `calculatePeriodDeficit` takes. */
   completed: { date: string; calories: number }[]
-  /** Finished days in the week, logged or not — the denominator for the gap. */
+  /** Finished days in the period, logged or not — the denominator for the gap. */
   daysElapsed: number
   /** Today's running total, or null if nothing is logged yet. Never a "deficit". */
   todayKcal: number | null
+  /** Alias of `periodStart`, kept so week-shaped callers read naturally. */
+  weekStart: string
 }
 
+/** @deprecated Use `PeriodWindow`. */
+export type WeekWindow = PeriodWindow
+
 /**
- * Split a week into "finished" and "in progress".
+ * Split a calendar period into "finished" and "in progress".
  *
  * This is the guard rail for the contract above: today is peeled off here, once,
- * so no screen has to remember to do it. Every deficit surface builds its week
+ * so no screen has to remember to do it. Every deficit surface builds its window
  * through this function.
+ *
+ * `back` walks whole periods into the past — `1` is last week / last month. That
+ * is what the card falls back to on a Monday, when nothing has finished yet.
  */
-export function buildWeekWindow(byDate: Map<string, number>, todayStr: string, weeksAgo = 0): WeekWindow {
-  const weekStart = addDayKey(weekStartOf(todayStr), -weeksAgo * 7)
-  const dates = Array.from({ length: 7 }, (_, i) => addDayKey(weekStart, i))
+export function buildPeriodWindow(
+  byDate: Map<string, number>,
+  todayStr: string,
+  kind: PeriodKind = 'week',
+  back = 0
+): PeriodWindow {
+  const periodStart = kind === 'month'
+    ? addMonthKey(monthStartOf(todayStr), -back)
+    : addDayKey(weekStartOf(todayStr), -back * 7)
+  const periodDays = kind === 'month' ? daysInMonth(periodStart) : 7
+
+  const dates = Array.from({ length: periodDays }, (_, i) => addDayKey(periodStart, i))
   const finished = dates.filter((d) => d < todayStr)
   const completed = finished
     .filter((d) => byDate.has(d))
     .map((d) => ({ date: d, calories: Math.round(byDate.get(d) ?? 0) }))
   const todayRaw = byDate.get(todayStr)
+
   return {
-    weekStart,
+    periodStart,
+    weekStart: periodStart,
+    periodDays,
     dates,
     completed,
     daysElapsed: finished.length,
     todayKcal: dates.includes(todayStr) && todayRaw != null ? Math.round(todayRaw) : null,
   }
+}
+
+/** The seven-day case. Kept because most callers only ever want a week. */
+export function buildWeekWindow(byDate: Map<string, number>, todayStr: string, weeksAgo = 0): PeriodWindow {
+  return buildPeriodWindow(byDate, todayStr, 'week', weeksAgo)
+}
+
+/**
+ * The running total, day by day — the shape the cumulative chart draws.
+ *
+ * This is the user's own formula made literal: each day adds `maintenance − eaten`
+ * to a total that climbs, and a heavy day bends it back down without erasing what
+ * came before.
+ */
+export function cumulativeSeries(
+  completedDays: { date: string; calories: number }[],
+  tdee: number
+): { date: string; deficit: number; cumulative: number }[] {
+  let running = 0
+  return completedDays.map((d) => {
+    const deficit = tdee - d.calories
+    running += deficit
+    return { date: d.date, deficit: Math.round(deficit), cumulative: Math.round(running) }
+  })
 }
 
 export interface DailyDeficit {
@@ -95,6 +167,10 @@ export interface DailyDeficit {
 }
 
 export interface WeeklyDeficitSummary {
+  period_start: string
+  /** 7 for a week, 28–31 for a month. Everything below scales off this. */
+  period_days: number
+  /** Alias of `period_start`, kept so week-shaped callers read naturally. */
   week_start: string
   total_deficit: number
   /** The full seven-day target. Context, not the yardstick — see below. */
@@ -117,35 +193,48 @@ export interface WeeklyDeficitSummary {
 type Goal = 'lose' | 'maintain' | 'gain'
 
 export interface WeeklyDeficitOptions {
+  /** Length of the window: 7 for a week, 28–31 for a month. Defaults to 7. */
+  periodDays?: number
   /** Completed days in the window, logged or not. Defaults to the logged count. */
   daysElapsed?: number
   /** Defaults to 'lose'. Flips the vocabulary — a surplus is the point when gaining. */
   goal?: Goal
   /** The window's first date, when the caller knows it (e.g. the real Monday). */
+  periodStart?: string
+  /** @deprecated Alias of `periodStart`. */
   weekStart?: string
 }
 
-export function calculateWeeklyDeficit(
+/**
+ * One period's worth of deficit. `periodDays` is the only thing that separates a
+ * week from a month — the target, the daily pace and the countdown all scale off
+ * it, so neither period can drift from the other.
+ */
+export function calculatePeriodDeficit(
   completedDays: { date: string; calories: number }[],
   tdee: number,
   weeklyGoalKg: number,
   opts: WeeklyDeficitOptions = {}
 ): WeeklyDeficitSummary {
   const goal: Goal = opts.goal ?? 'lose'
+  const periodDays = opts.periodDays ?? 7
   const daysLogged = completedDays.length
   const daysElapsed = Math.max(opts.daysElapsed ?? daysLogged, daysLogged)
   const daysUnlogged = Math.max(0, daysElapsed - daysLogged)
-  // Days left in the week — "hasn't happened yet", not "wasn't logged". The old
+  // Days left in the period — "hasn't happened yet", not "wasn't logged". The old
   // code conflated the two and told people to catch up on days they had already
   // lived through.
-  const daysRemaining = Math.max(0, 7 - daysElapsed)
+  const daysRemaining = Math.max(0, periodDays - daysElapsed)
 
   // Gaining aims *below* maintenance-neutral: the target deficit is negative, so
   // the same ratio maths reads "on track" for a surplus without a special case.
   const signedGoalKg = goal === 'gain' ? -Math.abs(weeklyGoalKg) : Math.abs(weeklyGoalKg)
-  const targetDeficit = goal === 'maintain' ? 0 : signedGoalKg * KCAL_PER_KG_FAT
-  const targetDailyDeficit = targetDeficit / 7
+  // The pace is quoted per week, so a month's target is that pace stretched over
+  // however many days the month actually has.
+  const targetDeficit = goal === 'maintain' ? 0 : signedGoalKg * KCAL_PER_KG_FAT * (periodDays / 7)
+  const targetDailyDeficit = targetDeficit / periodDays
   const proratedTarget = targetDailyDeficit * daysLogged
+  const periodGoalKg = Math.round(weeklyGoalKg * (periodDays / 7) * 100) / 100
 
   let totalDeficit = 0
   const dailyDeficits: DailyDeficit[] = []
@@ -196,6 +285,11 @@ export function calculateWeeklyDeficit(
   const neededPerDay = Math.round(calBehind / Math.max(1, daysRemaining))
   const kcalPerDay = Math.round(Math.abs(avgDailyDeficit))
   const dayWord = daysLogged === 1 ? 'day' : 'days'
+  // The card renders every other number with Indian digit grouping; an insight
+  // reading "11230 kcal" beside a headline reading "8,570" looks like a defect.
+  const n = (v: number) => Math.round(v).toLocaleString('en-IN')
+  // The same sentences serve a month, so they cannot say "this week".
+  const periodWord = periodDays > 7 ? 'month' : 'week'
 
   let insight: string
   if (goal === 'maintain') {
@@ -204,25 +298,30 @@ export function calculateWeeklyDeficit(
       : `You held within ${MAINTAIN_TOLERANCE_KCAL} kcal of maintenance on ${daysHeld} of ${daysLogged} logged ${dayWord}.`
   } else if (goal === 'gain') {
     insight =
-      status === 'surplus'  ? `You are eating below maintenance this week. Add ${kcalPerDay} kcal/day to gain as planned.`
-      : status === 'ahead'    ? `Ahead of your gain pace — ${Math.abs(projectedWeeklyLoss).toFixed(2)} kg projected this week.`
-      : status === 'on_track' ? `On track! Hold your ${Math.abs(Math.round(targetDailyDeficit))} kcal/day surplus to hit your ${weeklyGoalKg} kg goal.`
-      : `${Math.round(calBehind)} kcal behind target. Add ${neededPerDay} kcal each remaining day to hit your goal.`
+      status === 'surplus'  ? `You are eating below maintenance this ${periodWord}. Add ${n(kcalPerDay)} kcal/day to gain as planned.`
+      : status === 'ahead'    ? `Ahead of your gain pace — ${Math.abs(projectedWeeklyLoss).toFixed(2)} kg/week at this rate.`
+      : status === 'on_track' ? `On track! Hold your ${n(Math.abs(targetDailyDeficit))} kcal/day surplus to hit your ${periodGoalKg} kg goal.`
+      : `${n(calBehind)} kcal behind target. Add ${n(neededPerDay)} kcal each remaining day to hit your goal.`
   } else {
     insight =
-      status === 'surplus'  ? `You are in a calorie surplus this week. Cut ${kcalPerDay} kcal/day to get back on track.`
-      : status === 'ahead'    ? `You are ahead of schedule — ${projectedWeeklyLoss.toFixed(2)} kg of fat loss projected this week. Keep it up!`
-      : status === 'on_track' ? `On track! Maintain your ${Math.round(targetDailyDeficit)} kcal/day deficit to hit your ${weeklyGoalKg} kg goal.`
-      : `${Math.round(calBehind)} kcal behind target. Need a ${neededPerDay} kcal deficit each remaining day to hit your goal.`
+      status === 'surplus'  ? `You are in a calorie surplus this ${periodWord}. Cut ${n(kcalPerDay)} kcal/day to get back on track.`
+      : status === 'ahead'    ? `You are ahead of schedule — ${projectedWeeklyLoss.toFixed(2)} kg of fat loss per week at this pace. Keep it up!`
+      : status === 'on_track' ? `On track! Maintain your ${n(targetDailyDeficit)} kcal/day deficit to hit your ${periodGoalKg} kg goal.`
+      : `${n(calBehind)} kcal behind target. Need a ${n(neededPerDay)} kcal deficit each remaining day to hit your goal.`
   }
 
+  const periodStart =
+    opts.periodStart ?? opts.weekStart ?? completedDays[0]?.date ?? new Date().toISOString().slice(0, 10)
+
   return {
-    week_start: opts.weekStart ?? completedDays[0]?.date ?? new Date().toISOString().slice(0, 10),
+    period_start: periodStart,
+    period_days: periodDays,
+    week_start: periodStart,
     total_deficit: Math.round(totalDeficit),
     target_deficit: Math.round(targetDeficit),
     prorated_target_deficit: Math.round(proratedTarget),
     fat_loss_achieved_kg: Math.round(fatLossAchieved * 1000) / 1000,
-    fat_loss_target_kg: weeklyGoalKg,
+    fat_loss_target_kg: periodGoalKg,
     progress_percent: Math.round(Math.max(0, progressPercent)),
     days_logged: daysLogged,
     days_unlogged: daysUnlogged,
@@ -231,4 +330,14 @@ export function calculateWeeklyDeficit(
     status,
     insight,
   }
+}
+
+/** The seven-day case, which is what most callers mean. */
+export function calculateWeeklyDeficit(
+  completedDays: { date: string; calories: number }[],
+  tdee: number,
+  weeklyGoalKg: number,
+  opts: WeeklyDeficitOptions = {}
+): WeeklyDeficitSummary {
+  return calculatePeriodDeficit(completedDays, tdee, weeklyGoalKg, { ...opts, periodDays: 7 })
 }
