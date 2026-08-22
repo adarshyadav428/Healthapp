@@ -286,8 +286,11 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-hairline bg-surface px-5 py-8 text-center text-xs text-ink-2">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3">
-          <span>© 2026 GetInShape · Made with ❤️ for India</span>
-          <div className="flex gap-4">
+          <span>© 2026 GetInShape · Operated by Adarsh Yadav · Made with ❤️ for India</span>
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link href="/pricing" className="hover:text-ink transition-colors">Pricing</Link>
+            <Link href="/refunds" className="hover:text-ink transition-colors">Refunds</Link>
+            <Link href="/contact" className="hover:text-ink transition-colors">Contact Us</Link>
             <Link href="/privacy" className="hover:text-ink transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-ink transition-colors">Terms of Service</Link>
           </div>

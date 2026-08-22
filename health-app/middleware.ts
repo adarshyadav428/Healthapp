@@ -56,7 +56,10 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = pathname.startsWith('/auth/')
   // /studio is the design-review route: static mock data only, noindex, no user data.
   // /foods/* is the public, indexable programmatic-SEO food pages (curated IFCT data only).
-  const isPublic = pathname === '/' || pathname === '/privacy' || pathname === '/terms' || pathname === '/delete-account' || pathname === '/upgrade' || pathname === '/studio' || pathname.startsWith('/foods/')
+  // /contact, /refunds and /pricing must be reachable without a session: a
+  // payment aggregator's reviewer verifies the merchant from the public site,
+  // and a policy page behind a sign-in wall reads to them as "missing".
+  const isPublic = pathname === '/' || pathname === '/privacy' || pathname === '/terms' || pathname === '/refunds' || pathname === '/contact' || pathname === '/pricing' || pathname === '/delete-account' || pathname === '/upgrade' || pathname === '/studio' || pathname.startsWith('/foods/')
 
   // getUser() re-validates the session against the Supabase Auth server over
   // the network — unlike getSession(), it can't be spoofed by a tampered
