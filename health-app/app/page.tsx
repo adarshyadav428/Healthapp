@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { CheckCircle, Flame } from 'lucide-react'
+import { LEGAL_NAME } from '@/lib/merchant'
 
 export default function Home() {
   return (
@@ -286,7 +287,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-hairline bg-surface px-5 py-8 text-center text-xs text-ink-2">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3">
-          <span>© 2026 GetInShape · Operated by Adarsh Yadav · Made with ❤️ for India</span>
+          <span>© 2026 GetInShape · Operated by {LEGAL_NAME} · Made with ❤️ for India</span>
           <div className="flex flex-wrap justify-center gap-4">
             <Link href="/pricing" className="hover:text-ink transition-colors">Pricing</Link>
             <Link href="/refunds" className="hover:text-ink transition-colors">Refunds</Link>
