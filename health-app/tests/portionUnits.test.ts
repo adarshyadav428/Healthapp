@@ -182,6 +182,40 @@ describe('SMART_PORTIONS table sanity', () => {
     }
   })
 
+  /**
+   * A packet of fried moong dal namkeen is not a katori of dal. `SMART_PORTIONS`
+   * is scanned with `.find`, so the first pattern in declaration order wins —
+   * and the dal rule used to sit above the snack rule, which meant
+   * "Moong Dal Namkeen" pre-selected a 200 g katori. At 476 kcal/100 g that is
+   * ~952 kcal on tap-through, where the pack is 30 g (~143). The rename in
+   * migration 037 did not reach this: it fires *after* the user has already
+   * picked the right food.
+   */
+  it('a namkeen packet is measured in packs, not katoris', () => {
+    const firstMatch = (name: string) => SMART_PORTIONS.find((e) => e.pattern.test(name))!
+    for (const name of ['Moong Dal Namkeen', 'Balaji Wafers Chana Dal', 'Dal Bhujia']) {
+      const entry = firstMatch(name)
+      const def = entry.portions.find((p) => p.key === entry.defaultKey)!
+      expect(def.grams, name).toBeLessThanOrEqual(40)
+    }
+  })
+
+  it('a cooked dal still gets its katori', () => {
+    const firstMatch = (name: string) => SMART_PORTIONS.find((e) => e.pattern.test(name))!
+    for (const name of ['Moong Dal (Yellow)', 'Dal Tadka', 'Sambar (South Indian Dal)', 'Masoor Dal']) {
+      const entry = firstMatch(name)
+      const def = entry.portions.find((p) => p.key === entry.defaultKey)!
+      expect(def.grams, name).toBe(200)
+    }
+  })
+
+  it('picks the pack default end-to-end for a renamed namkeen row', () => {
+    const namkeen = makeFood({ name: 'Moong Dal Namkeen', source: 'off', brand: "Haldiram's" })
+    expect(pickDefaultUnit(buildUnits(namkeen), namkeen).toGrams(1)).toBe(30)
+    const dal = makeFood({ name: 'Moong Dal (Yellow)' })
+    expect(pickDefaultUnit(buildUnits(dal), dal).toGrams(1)).toBe(200)
+  })
+
   it('specific dishes win over generic ingredients (ordering guard)', () => {
     const firstMatch = (name: string) => SMART_PORTIONS.find((e) => e.pattern.test(name))!
     expect(firstMatch('Pav Bhaji').portions[0].grams).toBe(280) // not 40g pav

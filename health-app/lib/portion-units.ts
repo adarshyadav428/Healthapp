@@ -225,6 +225,25 @@ export const SMART_PORTIONS: SmartEntry[] = [
     ],
     defaultKey: '6',
   },
+  // ── PACKAGED SNACKS ───────────────────────────────────────────────────────
+  // Sits above DAL / CURRY on purpose. This table is scanned with `.find`, so
+  // the first matching pattern wins, and a name can carry both a dish word and
+  // a snack word: "Moong Dal Namkeen", "Balaji Wafers Chana Dal". Those are
+  // packets, not katoris. Below the dal rule a 476 kcal/100 g namkeen
+  // pre-selected a 200 g katori and offered ~952 kcal on tap-through, where
+  // the pack is 30 g. Renaming the rows (migration 037) did not reach this —
+  // it fires *after* the user has already picked the right food. A name
+  // matching only one of the two patterns is unaffected, so cooked dal keeps
+  // its katori.
+  {
+    pattern: /chips|wafers|namkeen|bhujia|mixture|\bsev\b/i,
+    portions: [
+      { key: 'handful', label: '1 handful (20g)',     grams: 20 },
+      { key: 'pack',    label: 'Small pack (30g)',    grams: 30 },
+      { key: 'katori',  label: '1 katori (40g)',      grams: 40 },
+    ],
+    defaultKey: 'pack',
+  },
   // ── DAL / CURRY ───────────────────────────────────────────────────────────
   {
     pattern: /dal|daal|lentil|sambh?ar|rasam/i,
@@ -349,15 +368,6 @@ export const SMART_PORTIONS: SmartEntry[] = [
       { key: '4', label: '4 biscuits (40g)',grams: 40 },
     ],
     defaultKey: '2',
-  },
-  {
-    pattern: /chips|wafers|namkeen|bhujia|mixture|\bsev\b/i,
-    portions: [
-      { key: 'handful', label: '1 handful (20g)',     grams: 20 },
-      { key: 'pack',    label: 'Small pack (30g)',    grams: 30 },
-      { key: 'katori',  label: '1 katori (40g)',      grams: 40 },
-    ],
-    defaultKey: 'pack',
   },
   {
     pattern: /pizza/i,

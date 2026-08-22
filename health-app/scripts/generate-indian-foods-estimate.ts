@@ -933,9 +933,17 @@ addItems([
   { name: 'Amul Taaza Milk', brand: 'Amul', category: 'packaged_dairy' },
   { name: 'Amul Gold Milk', brand: 'Amul', category: 'packaged_dairy' },
   { name: 'Amul Masti Dahi', brand: 'Amul', category: 'packaged_dairy' },
-  { name: 'Amul Butter', brand: 'Amul', category: 'packaged_dairy' },
   { name: 'Amul Cheese Slice', brand: 'Amul', category: 'packaged_dairy' },
-  { name: 'Amul Paneer', brand: 'Amul', category: 'packaged_dairy' },
+  // Amul Butter and Amul Paneer are deliberately absent. `packaged_dairy` is a
+  // milk baseline (P4 C10 F6 in a 200 g cup), which is right for milk, dahi and
+  // lassi and badly wrong for a pure fat or for pressed curd: it estimated
+  // butter at 126 kcal against a measured 720, and paneer at 161 against 265.
+  // The protein floor below rescued paneer's protein; nothing rescued its fat,
+  // which came out at 6.6 against a real 20.8, so the calories stayed wrong.
+  // There is no category here that fits either, and there does not need to be —
+  // IFCT holds both, measured: `ifct-butter` / `ifct-amul-butter-unsalted` and
+  // `ifct-paneer-raw`. This file is the long tail IFCT *doesn't* cover.
+  // Migration 038 corrects the two rows already seeded from the old values.
   { name: 'Mother Dairy Classic Curd', brand: 'Mother Dairy', category: 'packaged_dairy' },
   { name: 'Mother Dairy Full Cream Milk', brand: 'Mother Dairy', category: 'packaged_dairy' },
   { name: 'Nestle Munch Chocolate', brand: 'Nestle', category: 'packaged_snack' },
