@@ -152,7 +152,9 @@ actively seeding.
 - **Prefer changing data over changing ranking.** In search especially, the tier order is load-bearing
   in both directions — fix the synonym group or the row first. When the comparator genuinely must
   change, change **what string the tiers are applied to** (`normalize`/`foldSpelling`, `nameReadings`,
-  `foodIdentity`), never the tier order itself. Both dal scars were fixed that way.
+  `termScore`/`foodIdentity`), never the tier order itself. Both dal scars were fixed that way — and
+  keep that change as narrow as the bug: capping one tier fixed the namkeen, while rescoring every tier
+  broke "paneer", "dahi" and "roti".
 
 ## Coding conventions linters miss
 

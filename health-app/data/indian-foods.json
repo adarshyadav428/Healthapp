@@ -8087,19 +8087,6 @@
   },
   {
     "source": "curated",
-    "source_id": "est-amul-amul-butter",
-    "name": "Amul Butter",
-    "brand": "Amul",
-    "serving_size_g": 200,
-    "serving_description": "1 cup (200g)",
-    "kcal_per_100g": 125.7,
-    "protein_g_per_100g": 3.8,
-    "carbs_g_per_100g": 10.3,
-    "fat_g_per_100g": 7.7,
-    "fiber_g_per_100g": 0
-  },
-  {
-    "source": "curated",
     "source_id": "est-amul-amul-cheese-slice",
     "name": "Amul Cheese Slice",
     "brand": "Amul",
@@ -8109,19 +8096,6 @@
     "protein_g_per_100g": 3.6,
     "carbs_g_per_100g": 8.8,
     "fat_g_per_100g": 8.2,
-    "fiber_g_per_100g": 0
-  },
-  {
-    "source": "curated",
-    "source_id": "est-amul-amul-paneer",
-    "name": "Amul Paneer",
-    "brand": "Amul",
-    "serving_size_g": 200,
-    "serving_description": "1 cup (200g)",
-    "kcal_per_100g": 160.6,
-    "protein_g_per_100g": 14,
-    "carbs_g_per_100g": 11.3,
-    "fat_g_per_100g": 6.6,
     "fiber_g_per_100g": 0
   },
   {
