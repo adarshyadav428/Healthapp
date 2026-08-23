@@ -15,6 +15,26 @@ type MacroTargets = {
   protein_g_target: number
   carbs_g_target: number
   fat_g_target: number
+  /** What the body burns in a day, before any deficit. See `calculateMaintenance`. */
+  maintenance_kcal: number
+}
+
+/**
+ * Maintenance calories, broken into the parts it was built from.
+ *
+ * Returned as parts rather than one number so the UI can *show its working* —
+ * "BMR 1,649 + activity (moderate ×1.55) = 2,556" answers "where did this come
+ * from?", which a bare 2,556 never does.
+ */
+export type Maintenance = {
+  /** Basal metabolic rate, rounded for display. */
+  bmr: number
+  /** The activity multiplier applied to BMR (1.2–1.9). */
+  multiplier: number
+  /** kcal attributable to activity — the difference maintenance adds over BMR. */
+  activityKcal: number
+  /** Maintenance / TDEE: what the body burns in a day, all in. */
+  tdee: number
 }
 
 export function calculateBMR({ weightKg, heightCm, age, sex }: { weightKg: number; heightCm: number; age: number; sex: 'male' | 'female' | 'other' }): number {
@@ -45,10 +65,32 @@ export function activityMultiplier(level: Profile['activity_level']): number {
   }
 }
 
+/**
+ * The single source of maintenance calories. Every screen that shows a deficit
+ * derives it from here — four separate hand-rolled copies of this arithmetic
+ * are what let `/progress` and `/deficit` disagree about the same word.
+ *
+ * `tdee` is rounded from the *unrounded* BMR, so the number matches what
+ * `calculateTDEE` has always produced; `bmr` is rounded only for display.
+ */
+export function calculateMaintenance(profile: {
+  weightKg: number
+  heightCm: number
+  age: number
+  sex: Profile['sex']
+  activity_level: Profile['activity_level']
+}): Maintenance {
+  const { weightKg, heightCm, age, sex, activity_level } = profile
+  const rawBmr = calculateBMR({ weightKg, heightCm, age, sex })
+  const multiplier = activityMultiplier(activity_level)
+  const tdee = Math.round(rawBmr * multiplier)
+  const bmr = Math.round(rawBmr)
+  return { bmr, multiplier, activityKcal: tdee - bmr, tdee }
+}
+
 export function calculateTDEE(profile: { weightKg: number; heightCm: number; age: number; sex: Profile['sex']; activity_level: Profile['activity_level']; goal: Profile['goal']; paceKgPerWeek?: number }): MacroTargets {
   const { weightKg, heightCm, age, sex, activity_level, goal, paceKgPerWeek = 0.5 } = profile
-  const bmr = calculateBMR({ weightKg, heightCm, age, sex })
-  const tdee = Math.round(bmr * activityMultiplier(activity_level))
+  const { tdee } = calculateMaintenance({ weightKg, heightCm, age, sex, activity_level })
 
   // 1 kg fat = 7,700 kcal → daily deficit = pace × 7700 ÷ 7
   let delta = 0
@@ -69,5 +111,5 @@ export function calculateTDEE(profile: { weightKg: number; heightCm: number; age
   const caloriesForCarbs = Math.max(0, daily_calorie_target - caloriesFromProtein - caloriesFromFat)
   const carbs_g_target = Math.round(caloriesForCarbs / 4)
 
-  return { daily_calorie_target, protein_g_target, carbs_g_target, fat_g_target }
+  return { daily_calorie_target, protein_g_target, carbs_g_target, fat_g_target, maintenance_kcal: tdee }
 }

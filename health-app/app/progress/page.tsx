@@ -5,8 +5,76 @@ import { isProStatus } from '../../lib/subscription'
 import type { FoodLog, WeightLog } from '../../types/index'
 import { calculateStreakState, longestStreak } from '../../lib/streak'
 import { istDateStr } from '../../lib/dateUtils'
+import { calculateMaintenance } from '../../lib/tdee'
+import {
+  groupKcalByIstDay,
+  buildPeriodWindow,
+  calculatePeriodDeficit,
+  cumulativeSeries,
+  type PeriodKind,
+} from '../../lib/deficit-calculator'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { ProgressClient } from '../../components/progress/ProgressClient'
+import type { DeficitPeriodView } from '../../components/progress/DeficitTrendCard'
+
+const WEEKDAY_INITIAL = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+
+/**
+ * Assemble one period the deficit card can render.
+ *
+ * When the current period has nothing finished in it — every Monday, and the 1st
+ * of every month — fall back to the period just gone rather than showing a dead
+ * card. A finished week is a better thing to open the app to than an empty one.
+ */
+function buildDeficitView(
+  byDate: Map<string, number>,
+  todayStr: string,
+  kind: PeriodKind,
+  tdee: number,
+  paceKgPerWeek: number,
+  goal: 'lose' | 'maintain' | 'gain'
+): DeficitPeriodView {
+  let win = buildPeriodWindow(byDate, todayStr, kind, 0)
+  let isFallback = false
+  if (win.completed.length === 0) {
+    const previous = buildPeriodWindow(byDate, todayStr, kind, 1)
+    if (previous.completed.length > 0) {
+      win = previous
+      isFallback = true
+    }
+  }
+
+  const summary = calculatePeriodDeficit(win.completed, tdee, paceKgPerWeek, {
+    periodDays: win.periodDays,
+    daysElapsed: win.daysElapsed,
+    goal,
+    periodStart: win.periodStart,
+  })
+
+  // The dashed pace line advances one day's target per *logged* day, so its
+  // endpoint is exactly `prorated_target_deficit` — the same yardstick the
+  // percentage uses. Above the line means ahead, with no second definition.
+  const targetPerDay = summary.target_deficit / win.periodDays
+  const points = cumulativeSeries(win.completed, tdee).map((p, i) => ({
+    label: kind === 'month'
+      ? String(Number(p.date.slice(8)))
+      : WEEKDAY_INITIAL[new Date(p.date + 'T00:00:00Z').getUTCDay()],
+    cumulative: p.cumulative,
+    target: Math.round(targetPerDay * (i + 1)),
+  }))
+
+  const monthName = new Date(win.periodStart + 'T00:00:00Z')
+    .toLocaleDateString('en-IN', { month: 'long', timeZone: 'UTC' })
+
+  return {
+    kind,
+    label: kind === 'month' ? monthName : isFallback ? 'Last week' : 'This week',
+    summary,
+    points,
+    todayKcal: win.todayKcal,
+    isFallback,
+  }
+}
 
 export const metadata: Metadata = {
   title: 'Trends — GetInShape',
@@ -110,6 +178,29 @@ export default async function ProgressPage() {
   const badgeStartWeight = profile.start_weight_kg ?? weightLogs[weightLogs.length - 1]?.weight_kg ?? null
   const badgeCurrentWeight = weightLogs[0]?.weight_kg ?? profile.current_weight_kg ?? null
 
+  // ── Deficit periods ─────────────────────────────────────────────────────────
+  // Derived here rather than in the client so `/progress` and `/deficit` cannot
+  // drift: both read `calculatePeriodDeficit`, which is the only definition of
+  // the word in the app. This reads the untrimmed rows — trimming to the free
+  // 7-day window could clip Monday on a Sunday and silently shorten the week.
+  const maintenance = calculateMaintenance({
+    weightKg: profile.current_weight_kg,
+    heightCm: profile.height_cm,
+    age: profile.age,
+    sex: profile.sex,
+    activity_level: profile.activity_level,
+  })
+  const byDate = groupKcalByIstDay(allRecentLogs)
+  const todayStr = istDateStr()
+  const pace = profile.pace_kg_per_week ?? 0.5
+
+  const weekView = buildDeficitView(byDate, todayStr, 'week', maintenance.tdee, pace, profile.goal)
+  // The month is Pro. Withholding it here rather than hiding it in the client is
+  // the difference between a gate and a CSS overlay over real numbers.
+  const monthView = isPro
+    ? buildDeficitView(byDate, todayStr, 'month', maintenance.tdee, pace, profile.goal)
+    : null
+
   const badgeStats = {
     totalLogs: logCountResult.count ?? 0,
     currentStreak: streak,
@@ -140,6 +231,9 @@ export default async function ProgressPage() {
           profile={profile}
           isPro={isPro}
           badgeStats={badgeStats}
+          weekView={weekView}
+          monthView={monthView}
+          maintenanceKcal={maintenance.tdee}
         />
       </main>
       <BottomNav />

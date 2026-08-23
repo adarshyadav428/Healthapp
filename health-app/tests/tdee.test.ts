@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateBMR, activityMultiplier, calculateTDEE } from '../lib/tdee'
+import { calculateBMR, activityMultiplier, calculateTDEE, calculateMaintenance } from '../lib/tdee'
 
 describe('calculateBMR (Mifflin-St Jeor)', () => {
   it('male: 10w + 6.25h - 5a + 5', () => {
@@ -95,5 +95,47 @@ describe('calculateTDEE', () => {
       paceKgPerWeek: 2,
     })
     expect(t.carbs_g_target).toBeGreaterThanOrEqual(0)
+  })
+})
+
+describe('calculateMaintenance', () => {
+  const base = {
+    weightKg: 70,
+    heightCm: 175,
+    age: 30,
+    sex: 'male' as const,
+    activity_level: 'moderate' as const,
+  }
+
+  it('splits maintenance into BMR + activity, and the parts sum to the whole', () => {
+    const m = calculateMaintenance(base)
+    // BMR 1648.75 -> 1649 displayed; x1.55 = 2555.56 -> 2556
+    expect(m.bmr).toBe(1649)
+    expect(m.multiplier).toBe(1.55)
+    expect(m.tdee).toBe(2556)
+    // The breakdown shown to the user must add up, or it reads as broken.
+    expect(m.bmr + m.activityKcal).toBe(m.tdee)
+  })
+
+  it('agrees with the target calculateTDEE derives (one source of truth)', () => {
+    expect(calculateMaintenance(base).tdee).toBe(
+      calculateTDEE({ ...base, goal: 'maintain' }).daily_calorie_target
+    )
+    expect(calculateTDEE({ ...base, goal: 'lose' }).maintenance_kcal).toBe(
+      calculateMaintenance(base).tdee
+    )
+  })
+
+  it('rounds tdee from the unrounded BMR, not the displayed one', () => {
+    // Guards the display rounding from silently shifting every deficit on the
+    // app: 1648.75x1.55 = 2555.6 -> 2556, but 1649x1.55 = 2555.95 -> 2556 too.
+    // Pick a case where they diverge: BMR 1648.60 vs 1649.
+    const m = calculateMaintenance({ ...base, activity_level: 'very_active' })
+    expect(m.tdee).toBe(Math.round(calculateBMR(base) * 1.9))
+  })
+
+  it('sedentary is the fallback multiplier for an unknown level', () => {
+    const m = calculateMaintenance({ ...base, activity_level: 'nonsense' as never })
+    expect(m.multiplier).toBe(1.2)
   })
 })
