@@ -3,6 +3,7 @@ import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { getIstDayRange } from '../../../../lib/dateUtils'
 import { captureFoodLogged } from '../../../../lib/posthog/server'
 import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
+import { streakEventsForLog } from '../../../../lib/streakEvents'
 
 export const runtime = 'nodejs'
 
@@ -63,6 +64,7 @@ export async function POST(req: Request) {
       items: newLogs.length,
       isFirstLog: activation.is_first_log,
       daysSinceSignup: activation.days_since_signup,
+      streakEvents: streakEventsForLog(activation.logs_before, now, activation.rescued_dates),
     })
 
     return NextResponse.json({

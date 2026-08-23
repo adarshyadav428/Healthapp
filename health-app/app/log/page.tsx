@@ -61,7 +61,7 @@ export default async function LogPage({
   // Every query below only needs user.id — one parallel round trip instead of
   // three sequential stages (profile → subscription → data). The profile /
   // onboarding and Pro-history checks run on the results afterwards.
-  const [profileResult, subResult, logSnapshotResult, yesterdayResult, dayResult, dayLogsResult] = await Promise.all([
+  const [profileResult, subResult, logSnapshotResult, yesterdayResult, dayLogsResult] = await Promise.all([
     supabase
       .from('profiles')
       .select('height_cm, daily_calorie_target, protein_g_target, carbs_g_target, fat_g_target, current_weight_kg, water_target_ml, display_name')
@@ -81,12 +81,10 @@ export default async function LogPage({
       .eq('user_id', user.id)
       .gte('logged_at', yStart)
       .lt('logged_at', yEnd),
-    supabase
-      .from('food_logs')
-      .select('kcal, protein_g, carbs_g, fat_g')
-      .eq('user_id', user.id)
-      .gte('logged_at', start)
-      .lt('logged_at', end),
+    // One read of the viewed day, not two. There used to be a second query
+    // selecting just the macro columns for the same range, feeding a `totals`
+    // reduce that nothing rendered — LogProgressClient recomputes totals from
+    // initialLogs itself.
     supabase
       .from('food_logs')
       .select(`id, meal, grams, servings, kcal, protein_g, carbs_g, fat_g, logged_at, food:foods(${FOOD_SELECT})`)
@@ -116,12 +114,11 @@ export default async function LogPage({
 
   if (logSnapshotResult.error) throw new Error(logSnapshotResult.error.message)
   if (yesterdayResult.error) throw new Error(yesterdayResult.error.message)
-  if (dayResult.error) throw new Error(dayResult.error.message)
+  if (dayLogsResult.error) throw new Error(dayLogsResult.error.message)
 
   const dayFoodLogs = (dayLogsResult.data ?? []) as unknown as FoodLog[]
   const logSnapshot = logSnapshotResult.data ?? []
   const yesterdayCount = yesterdayResult.count ?? 0
-  const dayLogs = dayResult.data ?? []
 
   // Build recent + frequent foods from all-time history
   type SnapshotRow = { food_id: string | null; grams: number; kcal: number; meal: string; food: Food | null }
@@ -155,17 +152,6 @@ export default async function LogPage({
     .map((entry) => entry.food)
 
   const hasYesterdayLogs = yesterdayCount > 0
-
-  const totals = dayLogs.reduce(
-    (acc, log) => {
-      acc.kcal += log.kcal
-      acc.protein_g += log.protein_g
-      acc.carbs_g += log.carbs_g
-      acc.fat_g += log.fat_g
-      return acc
-    },
-    { kcal: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }
-  )
 
   return (
     <div className="min-h-screen">

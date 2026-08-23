@@ -12,7 +12,7 @@ import { expandSearchQuery } from '../../../../lib/food-synonyms'
 import { correctFoodQuery } from '../../../../lib/typo-correction'
 import { buildNameIlikeOrFilter } from '../../../../lib/searchFilter'
 import { isPlausibleFood, SOURCE_RANK } from '../../../../lib/foodMatch'
-import { dedupeFoodsByNameBrand, capOpenFoodFactsDominance } from '../../../../lib/mergeSearchResults'
+import { dedupeFoodsByNameBrand, capOpenFoodFactsDominance, MAX_SEARCH_RESULTS } from '../../../../lib/mergeSearchResults'
 import { INDIAN_FOODS } from '../../../../lib/indian-foods-data'
 import { CURATED_FOODS } from '../../../../lib/curated-foods-data'
 import type { Food } from '../../../../types/index'
@@ -20,6 +20,9 @@ import type { Food } from '../../../../types/index'
 export const runtime = 'nodejs'
 
 const rateMap = new Map<string, { count: number; reset: number }>()
+/** Slots held back for a user's own camera/chat foods so a full page of shared
+ *  results can't squeeze them out entirely. */
+const RESERVED_OWN_FOOD_SLOTS = 3
 const searchCache = new TtlCache<Food[]>(200)
 const CACHE_TTL_MS = 120_000
 /**
@@ -236,7 +239,14 @@ export async function GET(request: Request) {
     const normalizedQuery = query.toLowerCase()
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-    if (rateLimit(ip)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    // 4xx copy is relayed to the user verbatim (lib/apiError.ts), so it has to
+    // read like a sentence a person wrote, not a status line.
+    if (rateLimit(ip)) {
+      return NextResponse.json(
+        { error: 'Searching a bit fast — give it a few seconds and try again.' },
+        { status: 429 }
+      )
+    }
 
     const supabase = createServerClient()
     const user = await getApiUser(supabase)
@@ -302,7 +312,19 @@ export async function GET(request: Request) {
     // Append the user's own estimate foods after the shared results. Global rows
     // win a name+brand collision (an accurate IFCT/OFF row beats a rough
     // estimate), so this only surfaces scans/chat foods the shared DB lacks.
-    const finalResult = dedupeFoodsByNameBrand([...globalResults, ...myEstimateFoods].filter(isPlausibleFood))
+    //
+    // The slice matters: searchGlobal already caps at MAX_SEARCH_RESULTS and
+    // this dedupe caps again, so on any query that filled the page the user's
+    // own rows were appended past the limit and sliced straight back off —
+    // making the whole per-user read above dead work. Give them a few reserved
+    // slots inside the same budget instead.
+    const ownSlots = Math.min(myEstimateFoods.length, RESERVED_OWN_FOOD_SLOTS)
+    const finalResult = dedupeFoodsByNameBrand(
+      [
+        ...globalResults.slice(0, MAX_SEARCH_RESULTS - ownSlots),
+        ...myEstimateFoods,
+      ].filter(isPlausibleFood)
+    )
     return NextResponse.json(finalResult)
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })

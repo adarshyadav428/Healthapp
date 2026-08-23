@@ -740,6 +740,35 @@ export function pickDefaultUnit(units: Unit[], food: Food): Unit {
 }
 
 /**
+ * What a nutrition database stores as a serving size when it doesn't actually
+ * know one. Logging that as the amount is wrong, but logging 0 g is worse.
+ */
+export const FALLBACK_SERVING_G = 100
+
+/**
+ * The single answer to "how much of this food is one serving?" — used both by
+ * the quick-add "+" on a search row and by the amount AddFoodModal opens on,
+ * so two adjacent buttons can never log different amounts of the same food.
+ *
+ * One of the default household measure where the food has one. Where it has
+ * none, `buildUnits` returns grams alone, and the quantity is then the food's
+ * own serving size rather than the literal 1 — which is what used to open the
+ * modal on "1 gram" for any Open Food Facts row with an unparseable serving.
+ *
+ * Pass `units` when the caller already built them, so the returned unit is the
+ * same object the picker is rendering.
+ */
+export function defaultPortionFor(
+  food: Food,
+  units: Unit[] = buildUnits(food)
+): { unit: Unit; quantity: number; grams: number } {
+  const unit = pickDefaultUnit(units, food)
+  const quantity =
+    unit.key === 'g' ? (food.serving_size_g > 0 ? food.serving_size_g : FALLBACK_SERVING_G) : 1
+  return { unit, quantity, grams: unit.toGrams(quantity) }
+}
+
+/**
  * Given a stored gram total (e.g. an existing log entry being edited), find
  * the household unit + quantity that expresses it most naturally:
  * "150g cooked rice" → 1 katori, "80g idli" → 2 idlis.

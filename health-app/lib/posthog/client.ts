@@ -89,6 +89,29 @@ export function secondsSinceOpen(): number | null {
   return Math.round((Date.now() - appOpenedAt) / 1000)
 }
 
+let logStartedAt: number | null = null
+
+/**
+ * Stamp the moment a logging surface opened — search, camera, chat, quick add,
+ * or the tap on a one-tap shortcut.
+ *
+ * Unlike `markAppOpened` this deliberately RESETS on every call. That is the
+ * whole point: `seconds_since_open` is measured from a single app load and
+ * never resets, so the 2nd, 5th and 20th log of a session each report a larger
+ * number than the last regardless of how fast they were. It cannot answer "how
+ * long does a log take", which is the metric that actually predicts whether
+ * someone is still tracking in a month.
+ */
+export function markLogStart(): void {
+  logStartedAt = Date.now()
+}
+
+/** Seconds since the current logging surface opened, or null if none did. */
+export function secondsSinceLogStart(): number | null {
+  if (logStartedAt === null) return null
+  return Math.round((Date.now() - logStartedAt) / 1000)
+}
+
 /* ------------------------------------------------------------------ *
  * Log metadata headers.
  *
@@ -102,8 +125,10 @@ export function secondsSinceOpen(): number | null {
 
 export function logMetaHeaders(method: FoodLogMethod): Record<string, string> {
   const seconds = secondsSinceOpen()
+  const toLog = secondsSinceLogStart()
   return {
     'x-log-method': method,
     ...(seconds === null ? {} : { 'x-seconds-since-open': String(seconds) }),
+    ...(toLog === null ? {} : { 'x-seconds-to-log': String(toLog) }),
   }
 }

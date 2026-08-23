@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Food } from '../types/index'
 import { toast } from '../components/ui/use-toast'
@@ -9,8 +9,10 @@ import { useFoodFavourites } from './useFoodFavourites'
 import { reportLogMilestone } from '../store/milestoneStore'
 import type { LogMilestone } from '../lib/logMilestones'
 import { mealForTime } from '../lib/meal'
-import { logMetaHeaders } from '../lib/posthog/client'
-import type { FoodLogMethod } from '../lib/posthog/events'
+import { defaultPortionFor } from '../lib/portion-units'
+import { userFacingApiError } from '../lib/apiError'
+import { captureEvent, logMetaHeaders } from '../lib/posthog/client'
+import { EVENTS, type FoodLogMethod } from '../lib/posthog/events'
 
 export type SavedMeal = {
   id: string
@@ -114,10 +116,31 @@ export function useFoodSearch({ recentFoods, recentLogItems, frequentFoods, logD
     queryFn: async () => {
       const res = await fetch(`/api/foods/search?q=${encodeURIComponent(debounced)}`)
       const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error((json as { error?: string }).error ?? 'Search failed')
+      // A 429 is a considered rejection with copy written for the user; a 500
+      // is a Postgres string written for us. userFacingApiError keeps that
+      // distinction so the UI can just render the message.
+      if (!res.ok) {
+        throw new Error(
+          userFacingApiError(res.status, (json as { error?: string }).error, 'Search failed. Check your connection and try again.')
+        )
+      }
       return (Array.isArray(json) ? json : []) as Food[]
     },
   })
+
+  // A settled search that found nothing is the one search signal worth
+  // recording: it names a food the catalogue is missing, in the user's own
+  // words. Guarded by a ref so it fires once per distinct query rather than on
+  // every re-render, and only after the request resolved — a query mid-flight
+  // has no results yet and isn't a miss.
+  const reportedMisses = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    const q = debounced.trim()
+    if (q.length < 2 || isLoading || error || data === undefined) return
+    if (data.length > 0 || reportedMisses.current.has(q)) return
+    reportedMisses.current.add(q)
+    captureEvent(EVENTS.FOOD_SEARCH_NO_RESULTS, { query: q, query_length: q.length })
+  }, [debounced, data, isLoading, error])
 
   const isSearching = debounced.trim().length > 1
   const showRecent = !isSearching && recentFoods.length > 0
@@ -156,7 +179,10 @@ export function useFoodSearch({ recentFoods, recentLogItems, frequentFoods, logD
     setQuickAddingId(food.id)
     try {
       if (!user) throw new Error('You must be signed in to log food.')
-      const grams = food.serving_size_g
+      // Not food.serving_size_g: that disagreed with the amount AddFoodModal
+      // opens on for the same food (180 g vs a 150 g katori of cooked rice),
+      // and it logged 0 g for any row whose serving size was missing.
+      const { grams } = defaultPortionFor(food)
       const res = await fetch('/api/logs/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...logMetaHeaders(method) },

@@ -6,7 +6,7 @@ import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
-import { getIstDayRange } from '../../lib/dateUtils'
+import { getIstDayRange, istDateStr } from '../../lib/dateUtils'
 import { Trash2, ChevronDown, Pencil, BookmarkPlus, Check, X } from 'lucide-react'
 import { EditFoodLogModal } from './EditFoodLogModal'
 
@@ -187,8 +187,50 @@ export function TodayFoodLog({ initialLogs, date = new Date() }: { initialLogs: 
     fat: logs.reduce((s, l) => s + l.fat_g, 0),
   }), [logs])
 
+  // Delete is one tap with no confirmation, so undo is the safety net. It
+  // re-inserts rather than resurrecting the original row — a new id for the
+  // same meal is indistinguishable to the user — and passes `restore` so the
+  // re-insert doesn't count as a new log in analytics or fire a milestone.
+  const restoreLog = async (log: FoodLog) => {
+    try {
+      const loggedDate = istDateStr(new Date(log.logged_at))
+      const res = log.food_id
+        ? await fetch('/api/logs/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              food_id: log.food_id,
+              meal: log.meal,
+              servings: log.servings,
+              grams: log.grams,
+              date: loggedDate,
+              restore: true,
+            }),
+          })
+        : await fetch('/api/logs/quick-add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              kcal: Math.round(log.kcal),
+              protein: log.protein_g,
+              carbs: log.carbs_g,
+              fat: log.fat_g,
+              meal: log.meal,
+              date: loggedDate,
+              restore: true,
+            }),
+          })
+      const body = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) throw new Error(body.error ?? 'Could not restore')
+      queryClient.invalidateQueries({ queryKey: ['food-logs'] })
+    } catch (err) {
+      toast({ title: 'Could not undo', description: (err as Error).message, variant: 'error' })
+    }
+  }
+
   const deleteLog = async (id: string) => {
     if (deletingId) return
+    const deleted = logs.find((l) => l.id === id)
     setDeletingId(id)
     try {
       const res = await fetch('/api/logs/delete', {
@@ -200,7 +242,13 @@ export function TodayFoodLog({ initialLogs, date = new Date() }: { initialLogs: 
       if (!res.ok) throw new Error(data.error ?? 'Delete failed')
       const { start } = getIstDayRange(date)
       queryClient.setQueryData<FoodLog[]>(['food-logs', user?.id, start], (old = []) => old.filter(f => f.id !== id))
-      toast({ title: 'Entry deleted', duration: 2000 })
+      toast({
+        title: 'Entry deleted',
+        duration: 5000,
+        ...(deleted
+          ? { action: { label: 'Undo', altText: 'Undo deleting this entry', onClick: () => { void restoreLog(deleted) } } }
+          : {}),
+      })
     } catch (err) {
       toast({ title: 'Delete failed', description: (err as Error).message, variant: 'error' })
     } finally {

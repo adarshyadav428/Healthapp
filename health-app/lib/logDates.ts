@@ -1,16 +1,17 @@
 /**
  * Diary date navigation helpers — shared by FoodHeader (chips + Today pill)
- * and SwipeDayNav (swipe gestures). The diary is keyed by UTC date strings
- * (YYYY-MM-DD), matching /log's ?date= parsing.
+ * and SwipeDayNav (swipe gestures). The diary is keyed by `YYYY-MM-DD` in
+ * **IST**, matching /log's ?date= parsing (app/log/page.tsx resolves the day
+ * with istDateStr).
+ *
+ * This file used to define its own `todayUtcStr`, which made it the last
+ * surviving second definition of "a day" — the exact thing dateUtils' header
+ * warns about. Between 00:00 and 05:30 IST it disagreed with the page by one
+ * day, so the Today pill rendered on the day that already was today and the
+ * next-day chevron unlocked into a date the server then silently clamped
+ * back. That window is the late-dinner logging slot. Use istDateStr.
  */
-
-export function todayUtcStr(now: Date = new Date()): string {
-  return [
-    now.getUTCFullYear(),
-    String(now.getUTCMonth() + 1).padStart(2, '0'),
-    String(now.getUTCDate()).padStart(2, '0'),
-  ].join('-')
-}
+import { istDateStr } from './dateUtils'
 
 export function shiftDateStr(dateStr: string, days: number): string {
   const [year, month, day] = dateStr.split('-').map(Number)
@@ -23,7 +24,7 @@ export function shiftDateStr(dateStr: string, days: number): string {
 }
 
 /** The /log href for a date — today gets the canonical bare URL. */
-export function logHref(dateStr: string, todayStr: string = todayUtcStr()): string {
+export function logHref(dateStr: string, todayStr: string = istDateStr()): string {
   return dateStr === todayStr ? '/log' : `/log?date=${dateStr}`
 }
 

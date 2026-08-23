@@ -4,6 +4,8 @@ import {
   buildUnits,
   pickDefaultUnit,
   inferPortionSelection,
+  defaultPortionFor,
+  FALLBACK_SERVING_G,
   SMART_PORTIONS,
 } from '../lib/portion-units'
 
@@ -221,5 +223,54 @@ describe('SMART_PORTIONS table sanity', () => {
     expect(firstMatch('Pav Bhaji').portions[0].grams).toBe(280) // not 40g pav
     expect(firstMatch('Pani Puri').portions[0].grams).toBe(90)  // not 25g puri
     expect(firstMatch('Chicken Biryani').portions.some((p) => p.label.includes('plate'))).toBe(true) // biryani, not chicken curry
+  })
+})
+
+describe('defaultPortionFor — the one answer both log buttons use', () => {
+  // The "+" pill on a search row and the amount AddFoodModal opens on used to
+  // be computed independently: quickAdd read food.serving_size_g while the
+  // modal used SMART_PORTIONS. Two adjacent buttons therefore logged different
+  // amounts of the same food, with no way for the user to tell.
+  it('agrees with the modal rather than with serving_size_g', () => {
+    const rice = makeFood({ name: 'Cooked Rice (Chawal)', serving_size_g: 180 })
+    const units = buildUnits(rice)
+    const portion = defaultPortionFor(rice, units)
+
+    // What the modal opens on…
+    expect(portion.unit.key).toBe(pickDefaultUnit(units, rice).key)
+    expect(portion.grams).toBe(portion.unit.toGrams(portion.quantity))
+    // …which is a katori, not the row's 180 g serving size.
+    expect(portion.grams).toBe(150)
+    expect(portion.grams).not.toBe(rice.serving_size_g)
+  })
+
+  it('opens on one of a household measure where the food has one', () => {
+    const roti = makeFood({ name: 'Chapati / Roti' })
+    expect(defaultPortionFor(roti).quantity).toBe(1)
+  })
+
+  it('never opens a grams-only food on 1 gram', () => {
+    // An Open Food Facts row whose serving string did not parse: the route
+    // stores serving_size_g = 100, buildUnits then offers grams alone, and the
+    // modal used to seed quantity from the literal '1'.
+    const packaged = makeFood({ name: 'Zzz obscure packaged thing', serving_size_g: 100 })
+    const portion = defaultPortionFor(packaged)
+    expect(portion.unit.key).toBe('g')
+    expect(portion.quantity).toBe(100)
+    expect(portion.grams).toBe(100)
+  })
+
+  it('falls back to a real amount rather than logging zero grams', () => {
+    const noServing = makeFood({ name: 'Zzz obscure packaged thing', serving_size_g: 0 })
+    const portion = defaultPortionFor(noServing)
+    expect(portion.grams).toBe(FALLBACK_SERVING_G)
+    expect(portion.grams).toBeGreaterThan(0)
+  })
+
+  it('uses a real single serving when the row carries one', () => {
+    const pack = makeFood({ name: 'Zzz obscure packaged thing', serving_size_g: 30 })
+    const portion = defaultPortionFor(pack)
+    expect(portion.grams).toBe(30)
+    expect(portion.quantity).toBe(1)
   })
 })

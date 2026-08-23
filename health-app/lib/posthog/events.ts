@@ -7,9 +7,10 @@
  * ./server) rather than passing a bare string. Anything not listed here is not
  * a sanctioned event.
  *
- * Events whose feature doesn't exist yet (freezes, day-complete) are declared
- * here but fired by the phase that builds the feature — see the block at the
- * bottom.
+ * Every name in here has a live emit site. If you add one, wire it in the same
+ * pass — a declared-but-never-fired event reads as "we measure this" in code
+ * review and silently answers nothing. The four streak events sat unfired from
+ * the day they were written until 2026-08-23.
  */
 
 export const EVENTS = {
@@ -31,10 +32,14 @@ export const EVENTS = {
   FOOD_LOGGED: 'food_logged',
   MEAL_TEMPLATE_SAVED: 'meal_template_saved',
   MEAL_TEMPLATE_LOGGED: 'meal_template_logged',
-  // streak (fired by Phase 4 when the mechanic is built)
+  // Streak lifecycle. Emitted server-side from the log routes via
+  // lib/streakEvents.ts — a streak is recomputed pure from logs, so the only
+  // moment anything can be *notified* that it changed is when a log lands.
   STREAK_INCREMENTED: 'streak_incremented',
   STREAK_FROZEN: 'streak_frozen',
-  STREAK_BROKEN: 'streak_broken',
+  // Not `streak_broken`: a break is an absence, observable only on the return
+  // (or never, for the churned users who matter most). See lib/streakEvents.ts.
+  STREAK_RESTARTED: 'streak_restarted',
   DAY_COMPLETED: 'day_completed',
   // recap
   WEEKLY_RECAP_VIEWED: 'weekly_recap_viewed',
@@ -51,7 +56,7 @@ export const EVENTS = {
   // AI logging quality
   AI_SCAN_COMPLETED: 'ai_scan_completed',
   AI_ESTIMATE_CORRECTED: 'ai_estimate_corrected',
-  // story surfaces (Pro welcome, Wrapped, season wrap, onboarding plan).
+  // story surfaces (Pro welcome, Wrapped, onboarding plan).
   // `*_completed` means "read to the last card", NOT "acted" — the CTA has its
   // own event, so a story that lands but doesn't convert stays visible in the
   // funnel instead of being scored as a failure.
@@ -60,13 +65,15 @@ export const EVENTS = {
   STORY_COMPLETED: 'story_completed',
   STORY_ABANDONED: 'story_abandoned',
   STORY_CTA_CLICKED: 'story_cta_clicked',
-  // Meal suggestion deck — the Pro capability. "What should I eat?", which the
-  // app had never answered.
+  // Meal suggestions — "What should I eat?", which the app had never answered.
   MEAL_SUGGESTIONS_VIEWED: 'meal_suggestions_viewed',
   MEAL_SUGGESTION_SWIPED: 'meal_suggestion_swiped',
-  // Seasons — the only mechanic in the app that creates an ending.
-  SEASON_JOINED: 'season_joined',
-  SEASON_COMPLETED: 'season_completed',
+  // Search had NO telemetry at all, which made the catalogue's biggest weakness
+  // invisible: a user typing a dish we don't carry looks identical to a user
+  // who never searched. Deliberately only the failures — a per-keystroke event
+  // would be mostly noise, and the actionable question is "which foods are
+  // people asking for that we don't have".
+  FOOD_SEARCH_NO_RESULTS: 'food_search_no_results',
   // Streak Rescue — the Pro object. Distinct from the free auto-freeze.
   STREAK_RESCUE_OFFERED: 'streak_rescue_offered',
   STREAK_RESCUE_USED: 'streak_rescue_used',
@@ -144,6 +151,6 @@ export type PaywallSource =
  * One engine renders all of them, so without this they'd be indistinguishable
  * in the funnel.
  */
-export const STORY_SURFACES = ['welcome', 'monthly_wrapped', 'season_wrap', 'onboarding_plan'] as const
+export const STORY_SURFACES = ['welcome', 'monthly_wrapped', 'onboarding_plan'] as const
 
 export type StorySurface = (typeof STORY_SURFACES)[number]

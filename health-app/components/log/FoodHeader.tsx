@@ -2,21 +2,22 @@
 
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { logHref, shiftDateStr, todayUtcStr } from '../../lib/logDates'
+import { logHref, shiftDateStr } from '../../lib/logDates'
+import { istDateStr } from '../../lib/dateUtils'
 
-type Props = { dateStr: string /* YYYY-MM-DD in UTC */ }
+type Props = { dateStr: string /* YYYY-MM-DD in IST */ }
 
 function formatDisplay(dateStr: string): string {
   const [year, month, day] = dateStr.split('-').map(Number)
   const d = new Date(Date.UTC(year, month - 1, day))
-  const yStr = shiftDateStr(todayUtcStr(), -1)
+  const yStr = shiftDateStr(istDateStr(), -1)
   if (dateStr === yStr) return 'Yesterday'
   return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
 export function FoodHeader({ dateStr }: Props) {
   const router = useRouter()
-  const todayStr = todayUtcStr()
+  const todayStr = istDateStr()
   const isToday = dateStr === todayStr
 
   const go = (target: string) => router.push(logHref(target, todayStr))

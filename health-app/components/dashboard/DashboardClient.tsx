@@ -9,6 +9,9 @@ import { CalorieHeroCard } from '../home/CalorieHeroCard'
 import { GoalProjectionCard } from '../home/GoalProjectionCard'
 import type { GoalProjection } from '../../lib/goalProjection'
 import { PlateauCard } from '../home/PlateauCard'
+import { StreakRestartCard } from '../home/StreakRestartCard'
+import { pickDashboardMoment, type DashboardMoment } from '../../lib/dashboardMoments'
+import { streakRestart } from '../../lib/streakRestart'
 import type { Plateau } from '../../lib/plateau'
 import { RecentMealCard } from '../home/RecentMealCard'
 import { EmptyMeals } from '../home/EmptyMeals'
@@ -18,8 +21,6 @@ import { VerifyEmailCard } from './VerifyEmailCard'
 import { WeekStrip } from './WeekStrip'
 import { WeeklyRecapCard, type WeeklyRecap } from './WeeklyRecapCard'
 import { StreakRescueCard } from './StreakRescueCard'
-import { SeasonCard } from './SeasonCard'
-import type { SeasonState } from '../../lib/seasonServer'
 import { AdaptiveTargetCard } from './AdaptiveTargetCard'
 import { NotificationPrimeCard } from './NotificationPrimeCard'
 import { InstallPromptCard } from '../pwa/InstallPromptCard'
@@ -50,15 +51,13 @@ interface Props {
   weeklyRecap: WeeklyRecap | null
   /** A repairable streak break, Pro only. Null when there's nothing to offer. */
   rescueOffer?: { date: string; streakAfter: number } | null
-  /** The running season and this user's standing. Null between seasons. */
-  seasonState?: SeasonState | null
   /** Projected goal date. `kind: 'none'` renders nothing — see lib/goalProjection. */
   projection?: GoalProjection | null
   /** A stalled scale, and whether the logs explain it. See lib/plateau. */
   plateau?: Plateau | null
 }
 
-export function DashboardClient({ profile, initialLogs, streakDays, longestStreakDays = 0, freezesBanked = 0, loggedDates, isPro, aiTrialRemaining = 0, weeklyRecap, rescueOffer = null, seasonState = null, projection = null, plateau = null }: Props) {
+export function DashboardClient({ profile, initialLogs, streakDays, longestStreakDays = 0, freezesBanked = 0, loggedDates, isPro, aiTrialRemaining = 0, weeklyRecap, rescueOffer = null, projection = null, plateau = null }: Props) {
   const router = useRouter()
   const { user } = useUser()
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
@@ -110,6 +109,17 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
   const recent = logs.slice(0, 3) // logs arrive newest-first
   const todayDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
   const nextBadge = nextStreakBadge(streakDays, longestStreakDays)
+
+  // Home gets one moment. Each card still owns whether it *could* speak; this
+  // decides which one actually does. Without it, a Pro user at a streak of zero
+  // saw the rescue offer and the start-over card arguing with each other.
+  const moment = useMemo<DashboardMoment | null>(() => {
+    const eligible: DashboardMoment[] = []
+    if (rescueOffer) eligible.push('streak-rescue')
+    if (streakRestart(streakDays, longestStreakDays)) eligible.push('streak-restart')
+    if (plateau && profile.id) eligible.push('plateau')
+    return pickDashboardMoment(eligible)
+  }, [rescueOffer, streakDays, longestStreakDays, plateau, profile.id])
 
   return (
     <>
@@ -184,6 +194,13 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
         </p>
       )}
 
+      {/* ── One moment, not three. See lib/dashboardMoments for the order and
+           for the contradiction it exists to prevent. ── */}
+      {moment === 'streak-rescue' && <StreakRescueCard offer={rescueOffer} />}
+      {moment === 'streak-restart' && (
+        <StreakRestartCard streakDays={streakDays} longestStreakDays={longestStreakDays} />
+      )}
+
       {/* ── Where today's number is taking them ── */}
       {projection && (
         <div className="mt-4">
@@ -193,7 +210,7 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
 
       {/* ── The stall, named. Sits above the target suggestion on purpose: this
            explains what is happening over weeks, that offers a lever for it. ── */}
-      {plateau && profile.id && (
+      {moment === 'plateau' && plateau && profile.id && (
         <PlateauCard plateau={plateau} goal={profile.goal} userId={profile.id} />
       )}
 
@@ -201,9 +218,7 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
       <AdaptiveTargetCard profile={profile} />
 
       {/* ── Weekly recap (Pro) ── */}
-      <StreakRescueCard offer={rescueOffer} />
 
-      <SeasonCard state={seasonState} />
 
       <WeeklyRecapCard recap={weeklyRecap} isPro={isPro} dailyTarget={target} streakDays={streakDays} />
 
