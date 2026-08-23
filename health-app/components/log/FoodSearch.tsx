@@ -1,10 +1,15 @@
 'use client'
 
+import { useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import type { Food } from '../../types/index'
 import { FoodResult } from './FoodResult'
-import { Clock, Copy, Star, Zap, PlusCircle, Search, X, BookOpen, Trash2, ScanLine, MessageSquarePlus, RotateCcw, Plus, Loader2 } from 'lucide-react'
+import { Clock, Star, Zap, PlusCircle, Search, X, ScanLine, MessageSquarePlus } from 'lucide-react'
 import { useFoodSearch, type RecentLogItem } from '../../hooks/useFoodSearch'
+import { markLogStart } from '../../lib/posthog/client'
+import {
+  ComboTile, CopyYesterdayButton, EmojiTile, ShortcutHeading, ShortcutRow,
+} from './shortcuts'
 
 // Modals are only opened on user action — defer their JS until then.
 const AddFoodModal    = dynamic(() => import('./AddFoodModal').then(m => m.AddFoodModal),       { ssr: false })
@@ -24,6 +29,9 @@ type Props = {
 }
 
 export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, hasYesterdayLogs, logDate, isToday = true }: Props) {
+  // Start the clock for `seconds_to_log`: this surface opening is the moment
+  // the user set out to log something. See markLogStart in lib/posthog/client.
+  useEffect(() => { markLogStart() }, [])
   const {
     query, setQuery, debounced, isSearching, data, isLoading, error,
     showRecent, showFrequent, defaultMeal,
@@ -79,104 +87,57 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
         </div>
       </div>
 
-      {/* Re-log chips */}
+      {/* Re-log — same rows as the Food tab, not a second chip language */}
       {!isSearching && recentLogItems.length > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--ink-3)' }}>
-            <RotateCcw className="h-3.5 w-3.5" />
-            <span>Re-log · same portion as last time</span>
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {recentLogItems.map((item) => {
-              const isAdding = quickAddingId === item.food.id
-              return (
-                <button
-                  key={item.food.id}
-                  type="button"
-                  onClick={() => reLogItem(item)}
-                  disabled={isAdding}
-                  className="flex-shrink-0 flex items-center gap-2 rounded-2xl px-3 py-2.5 text-left tap-scale disabled:opacity-50 transition-all"
-                  style={{ background: 'var(--surface)', border: '1px solid var(--hairline)' }}
-                >
-                  <div>
-                    <p className="text-xs font-bold max-w-[120px] truncate leading-tight" style={{ color: 'var(--ink)' }}>{item.food.name}</p>
-                    <p className="text-[10px] leading-tight" style={{ color: 'var(--ink-3)' }}>{Math.round(item.grams)}g · {Math.round(item.kcal)} kcal</p>
-                  </div>
-                  {isAdding
-                    ? <Loader2 className="h-3.5 w-3.5 animate-spin flex-shrink-0" style={{ color: 'var(--brand)' }} />
-                    : <Plus className="h-3.5 w-3.5 flex-shrink-0" style={{ color: 'var(--brand)' }} />
-                  }
-                </button>
-              )
-            })}
+          <ShortcutHeading title="Log again" hint="same portion as last time" />
+          <div className="flex flex-col gap-2.5">
+            {recentLogItems.map((item) => (
+              <ShortcutRow
+                key={item.food.id}
+                name={item.food.name}
+                detail={`${Math.round(item.grams)}g · ${Math.round(item.kcal)} kcal`}
+                tile={<EmojiTile name={item.food.name} />}
+                busy={quickAddingId === item.food.id}
+                disabled={!!quickAddingId}
+                actionLabel={`Log ${item.food.name} again`}
+                onAdd={() => reLogItem(item)}
+              />
+            ))}
           </div>
         </div>
       )}
 
-      {/* Copy yesterday banner — only on today's view (copies into today) */}
+      {/* Copy yesterday — only on today's view (it copies into today) */}
       {isToday && hasYesterdayLogs && !isSearching && (
-        <button
-          type="button"
-          onClick={copyYesterday}
-          disabled={copying}
-          className="flex w-full items-center gap-3 rounded-card border border-hairline bg-surface-2 px-4 py-3 text-left tap-scale disabled:opacity-50 transition-colors"
-        >
-          <Copy className="h-4 w-4 flex-shrink-0 text-brand" strokeWidth={1.75} />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-ink">
-              {copying ? 'Copying...' : "Copy yesterday's meals"}
-            </p>
-            <p className="text-xs text-ink-3">Add all of yesterday&apos;s food to today</p>
-          </div>
-        </button>
+        <CopyYesterdayButton copying={copying} onClick={copyYesterday} />
       )}
 
-      {/* Saved meal templates — logging targets today, so hide on past-day views */}
+      {/* Saved meal templates — logging targets today, so hide on past-day views.
+          The meal-type <select> that used to live here is gone: it logged on
+          change, so brushing it filed a meal you never asked for. Combos land in
+          the current slot, matching the Food tab. */}
       {isToday && !isSearching && savedMeals.length > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--ink-3)' }}>
-            <BookOpen className="h-3.5 w-3.5" />
-            <span>Saved meals</span>
-          </div>
-          <div className="space-y-2">
+          <ShortcutHeading title="Your combos" hint={`one tap → ${defaultMeal}`} />
+          <div className="flex flex-col gap-2.5">
             {savedMeals.map((meal) => {
               const totalKcal = meal.saved_meal_items.reduce((sum, item) => {
-                const kcal = item.food ? (item.food.kcal_per_100g * item.grams) / 100 : 0
-                return sum + kcal
+                return sum + (item.food ? (item.food.kcal_per_100g * item.grams) / 100 : 0)
               }, 0)
               return (
-                <div
+                <ShortcutRow
                   key={meal.id}
-                  className="flex items-center gap-2 rounded-2xl px-4 py-3"
-                  style={{ background: 'var(--surface)', border: '1px solid var(--hairline)' }}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold truncate" style={{ color: 'var(--ink)' }}>{meal.name}</p>
-                    <p className="text-[11px]" style={{ color: 'var(--ink-3)' }}>{meal.saved_meal_items.length} items · {Math.round(totalKcal)} kcal</p>
-                  </div>
-                  <select
-                    defaultValue={defaultMeal}
-                    onChange={(e) => logSavedMeal(meal.id, e.target.value)}
-                    disabled={loggingMealId === meal.id}
-                    className="text-xs rounded-xl px-2 py-1.5 outline-none transition-all disabled:opacity-50"
-                    style={{ background: 'var(--surface-2)', border: '1px solid var(--hairline)', color: 'var(--ink)' }}
-                  >
-                    <option value="breakfast">Breakfast</option>
-                    <option value="lunch">Lunch</option>
-                    <option value="dinner">Dinner</option>
-                    <option value="snack">Snack</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => deleteSavedMeal(meal.id)}
-                    disabled={deletingSavedMealId === meal.id}
-                    className="rounded-full p-1 disabled:opacity-40 transition-colors"
-                    style={{ color: 'var(--ink-3)' }}
-                    aria-label="Delete saved meal"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+                  name={meal.name}
+                  detail={`${meal.saved_meal_items.length} items · ${Math.round(totalKcal)} kcal`}
+                  tile={<ComboTile />}
+                  busy={loggingMealId === meal.id}
+                  disabled={!!loggingMealId}
+                  actionLabel={`Log ${meal.name}`}
+                  onAdd={() => logSavedMeal(meal.id, defaultMeal)}
+                  onDelete={deletingSavedMealId === meal.id ? undefined : () => deleteSavedMeal(meal.id)}
+                  deleteLabel={`Delete saved meal ${meal.name}`}
+                />
               )
             })}
           </div>
@@ -262,7 +223,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
               ))}
             </div>
           ) : error ? (
-            <p className="text-sm px-1" style={{ color: 'var(--fat)' }}>Search failed. Check your connection and try again.</p>
+            <p className="text-sm px-1" style={{ color: 'var(--fat)' }}>{(error as Error).message}</p>
           ) : (data ?? []).length === 0 ? (
             <div className="text-center py-8">
               <p className="text-3xl mb-2">🔍</p>
@@ -316,6 +277,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
       {selected ? <AddFoodModal food={selected} onClose={() => setSelected(null)} logDate={logDate} /> : null}
       {showCamera ? (
         <CameraModal
+          logDate={logDate}
           onClose={() => setShowCamera(false)}
           onFoodFound={(food) => { setShowCamera(false); setSelected(food) }}
         />

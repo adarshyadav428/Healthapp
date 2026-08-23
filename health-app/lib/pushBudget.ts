@@ -18,8 +18,6 @@
 export const PUSH_KINDS = [
   /** "Your 12-day streak ends tonight." The one that actually works. */
   'streak-save',
-  /** "3 days left to finish the season." Time-bound and unrepeatable. */
-  'season-deadline',
   /** "Your July is ready." Monthly, and the best advert Pro has. */
   'monthly-wrapped',
   /** Sunday recap. Useful, but it can wait a day. */

@@ -40,7 +40,11 @@ export function capOpenFoodFactsDominance<T extends { source: string }>(
   return [...kept, ...surplus]
 }
 
-export function dedupeFoodsByNameBrand(foods: Food[], limit = 20): Food[] {
+/** How many rows a search response carries. Exported so callers that need to
+ *  reserve slots inside that budget don't hard-code the number separately. */
+export const MAX_SEARCH_RESULTS = 20
+
+export function dedupeFoodsByNameBrand(foods: Food[], limit = MAX_SEARCH_RESULTS): Food[] {
   const deduped = new Map<string, Food>()
   for (const food of foods) {
     const key = `${food.name.toLowerCase().replace(/\s+/g, ' ')}-${(food.brand ?? '').toLowerCase()}`

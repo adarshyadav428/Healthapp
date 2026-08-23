@@ -17,7 +17,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **69 files / 1,026 tests**. There is no `vitest.config.ts`; defaults apply.
+- **Tests:** Vitest 4.1 — **71 files / 1,026 tests**. There is no `vitest.config.ts`; defaults apply.
 - **Deploy:** Vercel **Hobby** plan, region `bom1`. The Hobby limits are load-bearing (see Hard rules).
 
 ## Architecture / directory map
@@ -34,7 +34,9 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   precisely so the logic stays testable. Key modules: `tdee.ts` (Mifflin-St Jeor → macro targets, plus
   `calculateMaintenance` — the one source of TDEE), `deficit-calculator.ts` (the one definition of
   "deficit"; see Hard rules), `streak.ts`, `dateUtils.ts` (**IST** day windows — the whole app's day
-  boundary), `validations.ts` (Zod schemas shared by forms and routes), `nutrition.ts`,
+  boundary), `logDates.ts` (the diary's date strings and hrefs — IST, delegating to `dateUtils`),
+  `portion-units.ts` (`defaultPortionFor` — the one source of a food's serving amount; see Hard rules),
+  `validations.ts` (Zod schemas shared by forms and routes), `nutrition.ts`,
   `subscription.ts` (the Pro gate).
 - **`lib/supabase/`** — three factories, never interchangeable: `createServerClient()` (cookie-bound,
   acts as the current user), `createAdminClient()` (service-role; trusted server-only routes),
@@ -45,9 +47,14 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   emitters. **`lib/push/`** — `budgetedSend.ts` is the only sanctioned scheduled-push path.
 - **Retention/coaching logic** (all pure, all in `lib/`): `adaptiveTarget.ts`, `coaching.ts`,
   `proteinCoach.ts`, `plateau.ts`, `projection.ts`, `goalProjection.ts`, `weightTrend.ts`,
-  `logMilestones.ts`, `badges.ts`, `seasons.ts`, `streakRescue.ts`, `mealSuggest.ts`, `shareCard.ts`.
+  `logMilestones.ts`, `badges.ts`, `streakRescue.ts`, `streakRestart.ts` (the comeback card's copy),
+  `streakEvents.ts` (what a new log did to the streak, for analytics), `dashboardMoments.ts` (which
+  single attention card Home leads with), `mealSuggest.ts`, `shareCard.ts`.
 - **`components/`** — `ui/` holds primitives; everything else is domain-scoped (`dashboard/`, `log/`,
   `story/`, `milestones/`, `camera/`, `chat/`, …). **`hooks/`** are fetch/TanStack wrappers only — no writes.
+  `components/log/shortcuts.tsx` holds the one set of re-log / combo / copy-yesterday tiles that both
+  `FoodLanding` and `FoodSearch` render — they used to be implemented twice, with different ordering
+  and different meal-selection behaviour, which is how the same shortcut came to mean two things.
 - **`supabase/migrations/`** — `001`–`038`. Numbers are **not unique** (`002`, `004`, `005`, `009` each
   appear twice) and there is **no `021`**. Always reference a migration by its exact filename.
 - **`middleware.ts`** — self-contained (there is no `lib/supabase/middleware.ts`). Refreshes the
@@ -70,7 +77,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (69 files / 1,026 tests)
+npm test                 # vitest run — the whole suite (71 files / 1,026 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
 npm run check:tokens     # design-token guard: no raw hex, no broken opacity modifiers
@@ -135,6 +142,30 @@ actively seeding.
   **~952 kcal** for a 30 g packet. Adding a pattern near the top, or a broad one anywhere, silently
   re-homes every food that also matches something below it — `tests/portionUnits.test.ts` pins both
   directions, and a fix in search ranking is only half a fix until the portion default agrees with it.
+- **One function decides how much of a food a tap logs: `defaultPortionFor`** (`lib/portion-units.ts`).
+  Every surface that adds a food without asking — the "+" quick-add pill and `AddFoodModal`'s opening
+  state — must call it. They used to disagree: the pill used `food.serving_size_g` while the modal used
+  `SMART_PORTIONS`, so two controls on the same row logged 180 g and 150 g of the same cooked rice, and
+  a food whose serving string didn't parse opened the modal on **"1 gram"**. Neither is a rounding
+  difference a user forgives. A smart match also **suppresses** the DB `common_portions` from migration
+  `008` — that is deliberate and pinned (a bogus `999 g` label must stay out of the picker); if measured
+  IFCT portions need to surface, fix the rows, not the precedence.
+- **Every logging surface threads the date it is looking at.** `useChatLog`, search and quick-add all
+  send `date` in the payload *and* scope `useDailyTotals` to the same day. The camera did neither, so
+  scanning while viewing a past day filed the meal on today, silently.
+  `tests/coachingWiring.test.ts` holds all of them to it: the payload date and the totals context must
+  be the same day, or the coaching line describes a day the meal didn't land on.
+- **The diary's day boundary is IST, everywhere, including the header.** `lib/logDates.ts` delegates to
+  `istDateStr`; there is no UTC day helper left and none may come back. When the page resolved the day
+  in IST and the header in UTC, everything between 00:00 and 05:30 IST — the late-dinner window — was
+  off by one: the "Today" pill sat on the wrong day and the next-day chevron unlocked.
+- **Home leads with one attention card, never two.** `pickDashboardMoment` (`lib/dashboardMoments.ts`)
+  holds the frozen order `streak-rescue > streak-restart > plateau`, the same shape as `lib/pushBudget.ts`
+  one screen further in. At a streak of zero a Pro user inside the rescue window qualifies for two cards
+  that argue: "repair it and it goes back to 12" above "your best run was 12 days, start again". Both are
+  true; only one can be the next action. Cards that probe the browser for themselves (install, rate,
+  notification priming, email verification) still self-gate — folding them in needs their checks lifted
+  out first.
 - **"Deficit" has exactly one definition: `maintenance − eaten`**, and it comes from
   `lib/deficit-calculator.ts`. Never re-derive it, and never compute `daily_calorie_target − eaten` —
   that is "did you hit your eat-goal", a different question with a different answer. Trends and
@@ -201,7 +232,24 @@ actively seeding.
   is the precedent: rescued dates are passed **in** as a third argument, never fetched inside.
 - **Analytics event names come from `EVENTS`** (`lib/posthog/events.ts`) — never a bare string. That
   file is the frozen catalog; anything not listed is not a sanctioned event. `story_completed` ("read
-  to the end") and `story_cta_clicked` ("acted") must never be collapsed.
+  to the end") and `story_cta_clicked` ("acted") must never be collapsed. **Frozen means the names
+  don't drift, not that the catalog can't grow** — adding a constant there is the sanctioned way to add
+  an event. What is *not* sanctioned is a declared event with no emit site: four streak events sat in
+  the catalog for months firing nothing, which is worse than absence because the dashboard looks
+  instrumented.
+- **`seconds_since_open` and `seconds_to_log` measure different things and reset differently.**
+  `markAppOpened()` stamps once per app load — deliberately, it answers "how deep into the session".
+  `markLogStart()` resets on **every** call and is stamped when a logging surface opens (search, camera,
+  chat, the add modal), so `seconds_to_log` answers "how long did *this* log take". Before it existed,
+  the 2nd–Nth log of a session each reported a bigger number than the last purely because time passed —
+  the one metric the adherence research ties to retention was the one that couldn't be read. Both
+  arrive as headers from `logMetaHeaders` and are re-read as **untrusted input** in `readLogMeta`.
+- **Streak analytics describe what the log did, not what the streak is.** `streakEventsForLog`
+  (`lib/streakEvents.ts`) takes the prior logs in and emits from the route, like every other pure module.
+  Note `streak_frozen` fires on a freeze **bridged** by this log, not on a freeze being spent: a freeze
+  is spent when a day *passes* unlogged, so comparing frozen-day counts before and after a log can never
+  observe one. The fourth declared event, "streak broken", was renamed rather than faked — a break is the
+  absence of a log, and nothing runs at the moment nothing happens.
 - **User-facing failure copy goes through `userFacingApiError`** (`lib/apiError.ts`): show a 4xx
   message (it was written for a person), swallow a 5xx (it's a Postgres or provider string written for
   us). `lib/checkoutErrors.ts` does the same job on the checkout path.
@@ -218,7 +266,7 @@ These are deep dives, kept out of this file on purpose. Read the relevant one **
 | `docs/food-search.md` | `app/api/foods/search/`, `lib/searchRanking.ts`, `lib/searchFilter.ts`, `lib/food-synonyms.ts`, `lib/spelling-variants.ts`, `lib/typo-correction.ts`, `lib/mergeSearchResults.ts`, `lib/searchCache.ts` |
 | `docs/billing.md` | `app/api/razorpay/`, `app/api/play/`, `app/api/stripe/`, `lib/razorpay/`, `lib/play/`, `lib/stripe/`, `lib/subscription.ts`, `app/upgrade/` |
 | `docs/design-system.md` | `app/globals.css`, `tailwind.config.ts`, `components/ui/`, `components/layout/`, any screen styling |
-| `docs/growth-mechanics-plan-2026-07-29.md` | `components/story/`, `lib/seasons.ts`, `lib/streakRescue.ts`, `lib/mealSuggest.ts`, `lib/pushBudget.ts`, `lib/reminderSchedule.ts`, `lib/cronBatch.ts` |
+| `docs/growth-mechanics-plan-2026-07-29.md` | `components/story/`, `lib/streakRescue.ts`, `lib/mealSuggest.ts`, `lib/pushBudget.ts`, `lib/reminderSchedule.ts`, `lib/cronBatch.ts` — note Seasons was cut, see below |
 | `docs/refactor-safety-contract.md` | Any refactor — it maps each covered behavior to the test that pins it, and lists the accepted residual gaps |
 | `TESTING.md` | Shipping. The manual script for everything tests can't reach (auth, real phones, the day boundary) |
 | `docs/deep-dive-audit-2026-07-31.md` | Investigating a suspected systemic issue — the last full audit |
@@ -233,10 +281,30 @@ Full rationale in `docs/growth-mechanics-plan-2026-07-29.md`.
   behind `prefers-reduced-motion`. Cards are JSX-free and serializable so a Server Component can build them.
 - **`/welcome` fires on entitlement granted** (`active` *or* `trialing`), not on payment captured —
   Play's trial captures nothing for 3 days, so a payment-based trigger would hide it from trial users.
-- **Seasons** are authored in **code**, not rows; progress is recomputed from logs, never stored. Season
-  badges are a **separate collection** from the ten in `lib/badges.ts` — that cap is doctrine. Free to join.
+- **Seasons were cut** (2026-08-23). The 30-day competitive frame duplicated the streak's psychological
+  job with a migration, three lib modules, a route, a card and a push rung to maintain — the
+  2026-07-31 audit's Table 3 called it the clearest growth mechanic that hadn't earned its keep.
+  `season_participants` (migration `031`) is **deliberately left applied and unread**, the same
+  treatment `026_anonymous_users` gets: dropping a table to tidy up is not worth the risk. Do not
+  reintroduce Seasons without re-arguing the case — the ten-badge cap in `lib/badges.ts` is still doctrine.
+- **The meal-suggestion deck was cut to a row** (2026-08-23). `/api/foods/suggest` and its Pro cap are
+  unchanged and `meal_suggestion_swiped` still fires; what went was the full-screen deck standing
+  between the user and the log screen. A suggestion is worth one row on `FoodLanding`, not a surface.
 - **Push budget:** one push per user per day across all sources, priority
-  `streak-save > season-deadline > monthly-wrapped > weekly-recap > daily-reminder`, backing off after 5 ignored.
+  `streak-save > monthly-wrapped > weekly-recap > daily-reminder`, backing off after 5 ignored.
+  The back-off only loosens because taps are recorded: `worker/index.js`'s `notificationclick` POSTs to
+  `/api/push/opened`, which stamps `push_sends.opened_at`. Keep that write in the handler's
+  `event.waitUntil` alongside the focus, never instead of it — and note the route uses
+  `createAdminClient()` on purpose, because `push_sends` has no UPDATE policy and shouldn't get one.
+  **`worker/index.js` is the source; `public/sw.js` and `public/worker-<hash>.js` are generated** — a
+  worker change is only shipped once the rebuilt files are committed with it, and the hash changes.
+- **The streak that ends gets a sentence.** Only ~0.9% of broken streaks restart unprompted, and the
+  flame pill simply stops rendering — a twelve-day run vanishing without comment. `StreakRestartCard`
+  fills that silence and has **no dismiss button** on purpose: it isn't a message to acknowledge, it
+  removes itself when the user logs, because that is the action it asks for.
+- **Manifest shortcuts** (`app/manifest.ts`) point at existing deep links — `/log?search=1`,
+  `/dashboard?scan=1`, `/weight`. They are the closest a TWA gets to a home-screen quick-log widget.
+  Adding one means adding the deep link first, not a new route.
 - **Reminder hours** need `.github/workflows/reminder-tick.yml` plus the `CRON_SECRET` and `APP_URL`
   repo secrets. Without them nobody loses a reminder — the 20:30 IST Vercel catch-all still fires; the
   chosen hour just isn't honoured.
@@ -247,7 +315,11 @@ Full rationale in `docs/growth-mechanics-plan-2026-07-29.md`.
 
 `profiles`, `food_logs`, `foods`, `weight_logs`, `subscriptions`, `exercise_logs`, `food_favourites`,
 `saved_meals`, `saved_meal_items`, `camera_photo_logs`, `chat_logs`, `push_subscriptions`,
-`weekly_recaps`, `streak_rescues`, `monthly_wraps`, `food_dismissals`, `season_participants`, `push_sends`.
+`weekly_recaps`, `streak_rescues`, `monthly_wraps`, `food_dismissals`, `push_sends`.
+
+`season_participants` still exists in the database but nothing reads it — see the Seasons note above.
+`push_sends.opened_at` (migration `033`) is written by `/api/push/opened`; it sat NULL until 2026-08-23,
+which is why the send back-off could only ever tighten.
 
 Migrations worth knowing: `001_initial.sql` (core schema) · `007_seed_indian_foods.sql`,
 `009_seed_indian_foods_v2.sql`, `010_seed_missing_foods.sql` (IFCT data) ·

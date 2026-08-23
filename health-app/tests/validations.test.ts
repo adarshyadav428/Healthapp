@@ -90,6 +90,20 @@ describe('addFoodSchema', () => {
     expect(addFoodSchema.safeParse({ ...valid, servings: 0 }).success).toBe(false)
   })
 
+  // `restore` marks an undo of a just-deleted entry. The routes branch on it
+  // being exactly `true` to skip the food_logged event and the milestone, so
+  // an ordinary log must never arrive carrying it by accident.
+  it('leaves restore undefined unless the client sends it', () => {
+    const parsed = addFoodSchema.safeParse(valid)
+    expect(parsed.success).toBe(true)
+    expect(parsed.success && parsed.data.restore).toBeUndefined()
+  })
+
+  it('accepts restore as a boolean and rejects anything else', () => {
+    expect(addFoodSchema.safeParse({ ...valid, restore: true }).success).toBe(true)
+    expect(addFoodSchema.safeParse({ ...valid, restore: 'yes' }).success).toBe(false)
+  })
+
   it('rejects unknown meal names', () => {
     expect(addFoodSchema.safeParse({ ...valid, meal: 'brunch' }).success).toBe(false)
   })

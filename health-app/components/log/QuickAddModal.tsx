@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
 import { Sheet, SheetContent, SheetTitle } from '../ui/sheet'
@@ -10,7 +10,7 @@ import { cn } from '../../lib/utils'
 import { reportLogMilestone } from '../../store/milestoneStore'
 import type { LogMilestone } from '../../lib/logMilestones'
 import { mealForTime } from '../../lib/meal'
-import { logMetaHeaders } from '../../lib/posthog/client'
+import { logMetaHeaders, markLogStart } from '../../lib/posthog/client'
 
 const MEALS = [
   { value: 'breakfast', label: '🥣 Breakfast' },
@@ -22,6 +22,9 @@ const MEALS = [
 type Meal = (typeof MEALS)[number]['value']
 
 export function QuickAddModal({ onClose, logDate }: { onClose: () => void; logDate?: string }) {
+  // Start the clock for `seconds_to_log`: this surface opening is the moment
+  // the user set out to log something. See markLogStart in lib/posthog/client.
+  useEffect(() => { markLogStart() }, [])
   const [kcal,    setKcal]    = useState('')
   const [meal,    setMeal]    = useState<Meal>(mealForTime())
   const [showMacros, setShowMacros] = useState(false)

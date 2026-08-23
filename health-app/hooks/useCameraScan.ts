@@ -4,11 +4,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Food } from '../types/index'
 import { toast } from '../components/ui/use-toast'
-import { captureEvent, logMetaHeaders } from '../lib/posthog/client'
+import { captureEvent, logMetaHeaders, markLogStart } from '../lib/posthog/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { reportLogMilestone } from '../store/milestoneStore'
 import type { LogMilestone } from '../lib/logMilestones'
 import { coachingLine, dayContextFor } from '../lib/coaching'
+import { dateStrToUtcMidnight } from '../lib/dateUtils'
 import { mealForTime } from '../lib/meal'
 import { scaleMacrosRaw } from '../lib/nutrition'
 import { portionRange } from '../lib/portion-units'
@@ -21,6 +22,12 @@ export type PhotoResult = { food: Food; estimated_grams: number; unit: string }
 type Params = {
   onClose: () => void
   onFoodFound: (food: Food) => void
+  /**
+   * The IST day being viewed (YYYY-MM-DD). Omitted by the global camera FAB,
+   * which has no day context and therefore means today; passed by the Food
+   * tab, where the user may be filling in an earlier day.
+   */
+  logDate?: string
 }
 
 /**
@@ -31,13 +38,14 @@ type Params = {
  * reusable across UI rewrites. Behaviour is intentionally identical to the
  * previous in-component implementation.
  */
-export function useCameraScan({ onClose, onFoodFound }: Params) {
+export function useCameraScan({ onClose, onFoodFound, logDate }: Params) {
   const router = useRouter()
   const { user, profile } = useUser()
-  // No date argument on purpose: the camera always logs to today (logFood posts
-  // no `date`), so today's totals are the right "before this meal" figure.
+  // Totals for the day being logged to, not always today: the coaching line
+  // reads as authoritative, so it has to describe the same day the meal lands
+  // on. Undefined logDate means today, which is what the global FAB wants.
   const { totals: dailyTotals, isLoading: totalsLoading, error: totalsError } =
-    useDailyTotals(user?.id ?? null)
+    useDailyTotals(user?.id ?? null, logDate ? dateStrToUtcMidnight(logDate) : undefined)
   const videoRef    = useRef<HTMLVideoElement>(null)
   const canvasRef   = useRef<HTMLCanvasElement>(null)
   const streamRef   = useRef<MediaStream | null>(null)
@@ -64,6 +72,10 @@ export function useCameraScan({ onClose, onFoodFound }: Params) {
   const [customName, setCustomName]         = useState('')
   const [editingName, setEditingName]       = useState(false)
   const queryClient = useQueryClient()
+
+  // Start the clock for `seconds_to_log`: this surface opening is the moment
+  // the user set out to log something. See markLogStart in lib/posthog/client.
+  useEffect(() => { markLogStart() }, [])
 
   // ── Camera stream ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -262,7 +274,7 @@ export function useCameraScan({ onClose, onFoodFound }: Params) {
       const res = await fetch('/api/logs/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...logMetaHeaders('photo_scan') },
-        body: JSON.stringify({ food_id: selected.food.id, meal, servings: 1, grams }),
+        body: JSON.stringify({ food_id: selected.food.id, meal, servings: 1, grams, date: logDate }),
       })
       const j = (await res.json().catch(() => ({}))) as { error?: string; milestone?: LogMilestone }
       if (!res.ok) throw new Error(j.error ?? 'Log failed')
@@ -291,7 +303,7 @@ export function useCameraScan({ onClose, onFoodFound }: Params) {
     } finally {
       setLogging(false)
     }
-  }, [selected, logging, meal, grams, customName, confidence, queryClient, onClose])
+  }, [selected, logging, meal, grams, customName, confidence, queryClient, onClose, logDate])
 
   // ── Derived nutrition values ──────────────────────────────────────────────────
   const macros  = selected ? scaleMacrosRaw(selected.food, grams) : null
@@ -299,8 +311,8 @@ export function useCameraScan({ onClose, onFoodFound }: Params) {
   const protein = macros ? Math.round(macros.protein_g) : 0
   const carbs   = macros ? Math.round(macros.carbs_g) : 0
   const fat     = macros ? Math.round(macros.fat_g) : 0
-  // Today's totals are what's already logged, so they're the "before this meal"
-  // figure the coaching line needs. Without them the sentence talks about the
+  // The day's existing totals are the "before this meal" figure the coaching
+  // line needs. Without them the sentence talks about the
   // meal as a share of the whole day and cheerfully says "good room left" to
   // someone who is already 300 over.
   //

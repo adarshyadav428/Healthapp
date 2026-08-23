@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../components/ui/use-toast'
-import { captureEvent, logMetaHeaders } from '../lib/posthog/client'
+import { captureEvent, logMetaHeaders, markLogStart } from '../lib/posthog/client'
 import { reportLogMilestone } from '../store/milestoneStore'
 import { coachingLine, dayContextFor } from '../lib/coaching'
 import { dateStrToUtcMidnight } from '../lib/dateUtils'
@@ -55,6 +55,9 @@ type Params = { onClose: () => void; logDate?: string }
  * so the component is pure presentation. Behaviour is intentionally identical.
  */
 export function useChatLog({ onClose, logDate }: Params) {
+  // Start the clock for `seconds_to_log`: this surface opening is the moment
+  // the user set out to log something. See markLogStart in lib/posthog/client.
+  useEffect(() => { markLogStart() }, [])
   const router = useRouter()
   const { user, profile } = useUser()
   // The day being logged TO, not the day it happens to be. The Food tab's day

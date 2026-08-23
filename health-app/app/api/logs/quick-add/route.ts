@@ -4,6 +4,7 @@ import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { captureFoodLogged } from '../../../../lib/posthog/server'
 import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
 import { resolveLoggedAtForRequest } from '../../../../lib/backfill'
+import { streakEventsForLog } from '../../../../lib/streakEvents'
 
 export const runtime = 'nodejs'
 
@@ -14,6 +15,8 @@ const schema = z.object({
   fat:     z.number().min(0).max(500).optional().default(0),
   meal:    z.enum(['breakfast', 'lunch', 'dinner', 'snack']).optional().default('snack'),
   date:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  // Undo of a just-deleted entry — see the note on addFoodSchema.restore.
+  restore: z.boolean().optional(),
 })
 
 export async function POST(req: Request) {
@@ -33,7 +36,10 @@ export async function POST(req: Request) {
     const when = await resolveLoggedAtForRequest(supabase, userId, parsed.data.date)
     if (!when.ok) return NextResponse.json({ error: when.error, upgrade: when.upgrade }, { status: when.status })
 
-    const activation = await getLogActivationContext(supabase, user.id)
+    // An undo is not a new log — see the note on addFoodSchema.restore.
+    const activation = parsed.data.restore === true
+      ? null
+      : await getLogActivationContext(supabase, user.id)
 
     const { error: logError } = await supabase.from('food_logs').insert({
       user_id:   userId,
@@ -50,14 +56,20 @@ export async function POST(req: Request) {
 
     if (logError) throw new Error(logError.message)
 
-    captureFoodLogged(userId, req, 'quick_add', {
-      meal,
-      kcal,
-      isFirstLog: activation.is_first_log,
-      daysSinceSignup: activation.days_since_signup,
-    })
+    if (activation) {
+      captureFoodLogged(userId, req, 'quick_add', {
+        meal,
+        kcal,
+        isFirstLog: activation.is_first_log,
+        daysSinceSignup: activation.days_since_signup,
+        streakEvents: streakEventsForLog(activation.logs_before, when.logged_at, activation.rescued_dates),
+      })
+    }
 
-    return NextResponse.json({ ok: true, milestone: toLogMilestone(activation, 1) })
+    return NextResponse.json({
+      ok: true,
+      milestone: activation ? toLogMilestone(activation, 1) : null,
+    })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }

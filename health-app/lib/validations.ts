@@ -36,6 +36,11 @@ export const addFoodSchema = z.object({
   // until 2026-07-31, which meant every log was born NULL and the insight had
   // nothing to work with.
   context: z.enum(MEAL_CONTEXTS).nullable().optional(),
+  // Set only by the undo action on a just-deleted entry. It re-inserts a row
+  // the user already logged once, so it must not count as a new log: no
+  // `food_logged` event and no milestone, or an undo would inflate the log
+  // count and could fire the first-log celebration a second time.
+  restore: z.boolean().optional(),
 })
 
 /**

@@ -740,6 +740,35 @@ export function pickDefaultUnit(units: Unit[], food: Food): Unit {
 }
 
 /**
+ * What a nutrition database stores as a serving size when it doesn't actually
+ * know one. Logging that as the amount is wrong, but logging 0 g is worse.
+ */
+export const FALLBACK_SERVING_G = 100
+
+/**
+ * The single answer to "how much of this food is one serving?" — used both by
+ * the quick-add "+" on a search row and by the amount AddFoodModal opens on,
+ * so two adjacent buttons can never log different amounts of the same food.
+ *
+ * One of the default household measure where the food has one. Where it has
+ * none, `buildUnits` returns grams alone, and the quantity is then the food's
+ * own serving size rather than the literal 1 — which is what used to open the
+ * modal on "1 gram" for any Open Food Facts row with an unparseable serving.
+ *
+ * Pass `units` when the caller already built them, so the returned unit is the
+ * same object the picker is rendering.
+ */
+export function defaultPortionFor(
+  food: Food,
+  units: Unit[] = buildUnits(food)
+): { unit: Unit; quantity: number; grams: number } {
+  const unit = pickDefaultUnit(units, food)
+  const quantity =
+    unit.key === 'g' ? (food.serving_size_g > 0 ? food.serving_size_g : FALLBACK_SERVING_G) : 1
+  return { unit, quantity, grams: unit.toGrams(quantity) }
+}
+
+/**
  * Given a stored gram total (e.g. an existing log entry being edited), find
  * the household unit + quantity that expresses it most naturally:
  * "150g cooked rice" → 1 katori, "80g idli" → 2 idlis.
@@ -780,52 +809,45 @@ export function inferPortionSelection(units: Unit[], grams: number): { unit: Uni
  */
 export const MAX_LOG_GRAMS = 10000
 
-const EPSILON = 1e-9
 const round2q = (n: number) => Math.round(n * 100) / 100
 
 /**
  * Bounds for the − / + quantity stepper shared by AddFoodModal and
- * EditFoodLogModal. Whole units per tap: 25g in gram mode, 1 whole portion
- * (or ounce) otherwise — a katori goes 1 → 2 → 3, never 1.5.
+ * EditFoodLogModal: 10g in gram mode, an ounce in ounce mode, half a portion
+ * otherwise. Both sheets read them from here so they cannot drift apart.
  *
- * `max` is derived from MAX_LOG_GRAMS via the unit's own weight, so the
- * stepper physically cannot build a payload the server would reject.
+ * `max` is derived from MAX_LOG_GRAMS via the unit's own weight, so the stepper
+ * physically cannot build a payload the server would reject — an oversized
+ * portion used to reach the API and come back as a serialized Zod error.
  */
 export function quantityBounds(unit: Unit): { step: number; min: number; max: number } {
-  const step = unit.key === 'g' ? 25 : 1
+  const step = unit.key === 'g' ? 10 : unit.key === 'oz' ? 1 : 0.5
+  const min = unit.key === 'g' ? 5 : 0.25
   const perUnit = unit.toGrams(1)
-  const max = perUnit > 0 ? Math.max(step, Math.floor(MAX_LOG_GRAMS / perUnit)) : step
-  return { step, min: step, max }
+  const max = perUnit > 0 ? Math.max(min, round2q(MAX_LOG_GRAMS / perUnit)) : min
+  return { step, min, max }
 }
 
 /**
- * One tap of − / +. Snaps onto the step grid so amounts stay round
- * (107g → 125g going up, → 100g going down).
+ * One tap of − / +.
  *
- * A tap of − must never *raise* the value: a hand-typed 10g sits below the 25g
- * minimum, and a naive `Math.max(min, q - step)` would bump it up to 25. Below
+ * A tap of − must never *raise* the value: a hand-typed 3g sits below the 5g
+ * minimum, and a plain `Math.max(min, q - step)` would bump it up to 5. Below
  * the minimum, − simply holds.
  */
 export function stepQuantity(quantity: number, dir: 1 | -1, unit: Unit): number {
   const { step, min, max } = quantityBounds(unit)
   const q = Number.isFinite(quantity) ? quantity : min
-  const ratio = q / step
-
-  if (dir === 1) {
-    const next = (Math.floor(ratio + EPSILON) + 1) * step
-    return round2q(Math.min(max, Math.max(min, next)))
-  }
-
-  if (q <= min + EPSILON) return round2q(q)
-  const prev = (Math.ceil(ratio - EPSILON) - 1) * step
-  return round2q(Math.max(min, prev))
+  if (dir === -1) return q <= min ? round2q(q) : round2q(Math.max(min, q - step))
+  return round2q(Math.min(max, q + step))
 }
 
 /**
  * Blur-time repair for the free-text quantity field. Empty, zero, negative and
- * unparseable input all become the minimum — the field is never left in a state
- * that disables the Add button. A deliberately small typed amount (5g of ghee)
- * is left alone; only the invalid cases snap.
+ * unparseable input all become the minimum — the field is never left in a
+ * state that disables the Add button, which is what an emptied field used to
+ * do. A deliberately small typed amount (5g of ghee) is left alone; only the
+ * invalid cases snap.
  */
 export function normalizeQuantity(raw: string, unit: Unit): number {
   const { min, max } = quantityBounds(unit)

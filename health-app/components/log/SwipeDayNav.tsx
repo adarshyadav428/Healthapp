@@ -2,7 +2,8 @@
 
 import { useRef, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { decideSwipe, logHref, shiftDateStr, todayUtcStr } from '../../lib/logDates'
+import { decideSwipe, logHref, shiftDateStr } from '../../lib/logDates'
+import { istDateStr } from '../../lib/dateUtils'
 
 /**
  * Swipe horizontally anywhere on the diary to move between days (left =
@@ -44,7 +45,7 @@ export function SwipeDayNav({ dateStr, children }: { dateStr: string; children: 
         const t = e.changedTouches[0]
         const dir = decideSwipe(t.clientX - s.x, t.clientY - s.y)
         if (!dir) return
-        const todayStr = todayUtcStr()
+        const todayStr = istDateStr()
         if (dir === 'next' && dateStr >= todayStr) return // no future days
         router.push(logHref(shiftDateStr(dateStr, dir === 'next' ? 1 : -1), todayStr))
       }}

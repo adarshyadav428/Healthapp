@@ -4,6 +4,8 @@ import {
   buildUnits,
   pickDefaultUnit,
   inferPortionSelection,
+  defaultPortionFor,
+  FALLBACK_SERVING_G,
   quantityBounds,
   stepQuantity,
   normalizeQuantity,
@@ -230,20 +232,64 @@ describe('SMART_PORTIONS table sanity', () => {
   })
 })
 
+describe('defaultPortionFor — the one answer both log buttons use', () => {
+  // The "+" pill on a search row and the amount AddFoodModal opens on used to
+  // be computed independently: quickAdd read food.serving_size_g while the
+  // modal used SMART_PORTIONS. Two adjacent buttons therefore logged different
+  // amounts of the same food, with no way for the user to tell.
+  it('agrees with the modal rather than with serving_size_g', () => {
+    const rice = makeFood({ name: 'Cooked Rice (Chawal)', serving_size_g: 180 })
+    const units = buildUnits(rice)
+    const portion = defaultPortionFor(rice, units)
+
+    // What the modal opens on…
+    expect(portion.unit.key).toBe(pickDefaultUnit(units, rice).key)
+    expect(portion.grams).toBe(portion.unit.toGrams(portion.quantity))
+    // …which is a katori, not the row's 180 g serving size.
+    expect(portion.grams).toBe(150)
+    expect(portion.grams).not.toBe(rice.serving_size_g)
+  })
+
+  it('opens on one of a household measure where the food has one', () => {
+    const roti = makeFood({ name: 'Chapati / Roti' })
+    expect(defaultPortionFor(roti).quantity).toBe(1)
+  })
+
+  it('never opens a grams-only food on 1 gram', () => {
+    // An Open Food Facts row whose serving string did not parse: the route
+    // stores serving_size_g = 100, buildUnits then offers grams alone, and the
+    // modal used to seed quantity from the literal '1'.
+    const packaged = makeFood({ name: 'Zzz obscure packaged thing', serving_size_g: 100 })
+    const portion = defaultPortionFor(packaged)
+    expect(portion.unit.key).toBe('g')
+    expect(portion.quantity).toBe(100)
+    expect(portion.grams).toBe(100)
+  })
+
+  it('falls back to a real amount rather than logging zero grams', () => {
+    const noServing = makeFood({ name: 'Zzz obscure packaged thing', serving_size_g: 0 })
+    const portion = defaultPortionFor(noServing)
+    expect(portion.grams).toBe(FALLBACK_SERVING_G)
+    expect(portion.grams).toBeGreaterThan(0)
+  })
+
+  it('uses a real single serving when the row carries one', () => {
+    const pack = makeFood({ name: 'Zzz obscure packaged thing', serving_size_g: 30 })
+    const portion = defaultPortionFor(pack)
+    expect(portion.grams).toBe(30)
+    expect(portion.quantity).toBe(1)
+  })
+})
+
 describe('quantity stepper', () => {
   const katori: Unit = { key: 'katori', label: 'Katori (200g)', toGrams: (q) => q * 200 }
   const ounce: Unit  = { key: 'oz',     label: 'Ounces',        toGrams: (q) => q * 28.35 }
 
   describe('quantityBounds', () => {
-    it('steps whole units: 25g in gram mode, 1 portion otherwise', () => {
-      expect(quantityBounds(GRAMS_UNIT).step).toBe(25)
-      expect(quantityBounds(katori).step).toBe(1)
-      expect(quantityBounds(ounce).step).toBe(1)
-    })
-
-    it('uses the step as the minimum', () => {
-      expect(quantityBounds(GRAMS_UNIT).min).toBe(25)
-      expect(quantityBounds(katori).min).toBe(1)
+    it('keeps the granularity both amount editors already shipped with', () => {
+      expect(quantityBounds(GRAMS_UNIT)).toMatchObject({ step: 10, min: 5 })
+      expect(quantityBounds(katori)).toMatchObject({ step: 0.5, min: 0.25 })
+      expect(quantityBounds(ounce)).toMatchObject({ step: 1, min: 0.25 })
     })
 
     it('derives the maximum from the server grams cap', () => {
@@ -251,34 +297,27 @@ describe('quantity stepper', () => {
       expect(quantityBounds(katori).max).toBe(50) // 10,000g / 200g
     })
 
-    it('never returns a max below the step, even for an absurd portion', () => {
+    it('never returns a max below the min, even for an absurd portion', () => {
       const feast: Unit = { key: 'feast', label: 'Feast', toGrams: (q) => q * 99999 }
-      expect(quantityBounds(feast).max).toBe(1)
+      expect(quantityBounds(feast).max).toBe(quantityBounds(feast).min)
     })
   })
 
   describe('stepQuantity', () => {
-    it('moves a whole unit per tap', () => {
-      expect(stepQuantity(1, 1, katori)).toBe(2)
-      expect(stepQuantity(3, -1, katori)).toBe(2)
-      expect(stepQuantity(100, 1, GRAMS_UNIT)).toBe(125)
-      expect(stepQuantity(100, -1, GRAMS_UNIT)).toBe(75)
-    })
-
-    it('snaps an off-grid amount onto the grid', () => {
-      expect(stepQuantity(107, 1, GRAMS_UNIT)).toBe(125)
-      expect(stepQuantity(107, -1, GRAMS_UNIT)).toBe(100)
-      expect(stepQuantity(1.5, 1, katori)).toBe(2)
-      expect(stepQuantity(1.5, -1, katori)).toBe(1)
+    it('moves one step per tap', () => {
+      expect(stepQuantity(1, 1, katori)).toBe(1.5)
+      expect(stepQuantity(2, -1, katori)).toBe(1.5)
+      expect(stepQuantity(100, 1, GRAMS_UNIT)).toBe(110)
+      expect(stepQuantity(100, -1, GRAMS_UNIT)).toBe(90)
     })
 
     it('never raises the value on a decrement below the minimum', () => {
-      // A hand-typed 10g sits under the 25g minimum — Math.max(min, q - step)
-      // would have bumped it *up* to 25.
-      expect(stepQuantity(10, -1, GRAMS_UNIT)).toBe(10)
-      expect(stepQuantity(0.5, -1, katori)).toBe(0.5)
-      expect(stepQuantity(25, -1, GRAMS_UNIT)).toBe(25)
-      expect(stepQuantity(1, -1, katori)).toBe(1)
+      // A hand-typed 3g sits under the 5g minimum — Math.max(min, q - step)
+      // would have bumped it *up* to 5.
+      expect(stepQuantity(3, -1, GRAMS_UNIT)).toBe(3)
+      expect(stepQuantity(0.1, -1, katori)).toBe(0.1)
+      expect(stepQuantity(5, -1, GRAMS_UNIT)).toBe(5)
+      expect(stepQuantity(8, -1, GRAMS_UNIT)).toBe(5)
     })
 
     it('clamps at the maximum so the payload stays under the server cap', () => {
@@ -288,30 +327,31 @@ describe('quantity stepper', () => {
     })
 
     it('falls back to the minimum for a non-finite quantity', () => {
-      expect(stepQuantity(NaN, 1, katori)).toBe(2)
-      expect(stepQuantity(NaN, -1, katori)).toBe(1)
+      expect(stepQuantity(NaN, 1, katori)).toBe(0.75)
+      expect(stepQuantity(NaN, -1, katori)).toBe(0.25)
     })
 
     it('does not accumulate floating-point noise', () => {
       let q = 1
       for (let i = 0; i < 10; i++) q = stepQuantity(q, 1, katori)
-      expect(q).toBe(11)
+      expect(q).toBe(6)
     })
   })
 
   describe('normalizeQuantity', () => {
     it('repairs empty, zero, negative and unparseable input to the minimum', () => {
-      expect(normalizeQuantity('', katori)).toBe(1)
-      expect(normalizeQuantity('0', katori)).toBe(1)
-      expect(normalizeQuantity('-3', katori)).toBe(1)
-      expect(normalizeQuantity('abc', katori)).toBe(1)
-      expect(normalizeQuantity('.', GRAMS_UNIT)).toBe(25)
-      expect(normalizeQuantity('', GRAMS_UNIT)).toBe(25)
+      expect(normalizeQuantity('', katori)).toBe(0.25)
+      expect(normalizeQuantity('0', katori)).toBe(0.25)
+      expect(normalizeQuantity('-3', katori)).toBe(0.25)
+      expect(normalizeQuantity('abc', katori)).toBe(0.25)
+      expect(normalizeQuantity('', GRAMS_UNIT)).toBe(5)
+      expect(normalizeQuantity('.', GRAMS_UNIT)).toBe(5)
     })
 
     it('leaves a deliberately small typed amount alone', () => {
-      // 5g of ghee is a real log — only invalid input snaps.
-      expect(normalizeQuantity('5', GRAMS_UNIT)).toBe(5)
+      // 5g of ghee, or a 30g namkeen packet, are real logs — only invalid
+      // input snaps.
+      expect(normalizeQuantity('30', GRAMS_UNIT)).toBe(30)
       expect(normalizeQuantity('0.5', katori)).toBe(0.5)
       expect(normalizeQuantity('1.', katori)).toBe(1)
     })
