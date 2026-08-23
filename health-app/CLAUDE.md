@@ -17,7 +17,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **69 files / 958 tests**. There is no `vitest.config.ts`; defaults apply.
+- **Tests:** Vitest 4.1 — **69 files / 998 tests**. There is no `vitest.config.ts`; defaults apply.
 - **Deploy:** Vercel **Hobby** plan, region `bom1`. The Hobby limits are load-bearing (see Hard rules).
 
 ## Architecture / directory map
@@ -31,9 +31,11 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   makes `docs/refactor-safety-contract.md` hold — keep it true. Components may only `fetch()` these
   routes; routes validate with Zod and recompute derived values server-side.
 - **`lib/`** — pure domain logic, each module pinned by a matching `tests/*.test.ts`. Routes stay thin
-  precisely so the logic stays testable. Key modules: `tdee.ts` (Mifflin-St Jeor → macro targets),
-  `streak.ts`, `dateUtils.ts` (**IST** day windows — the whole app's day boundary), `validations.ts`
-  (Zod schemas shared by forms and routes), `nutrition.ts`, `subscription.ts` (the Pro gate).
+  precisely so the logic stays testable. Key modules: `tdee.ts` (Mifflin-St Jeor → macro targets, plus
+  `calculateMaintenance` — the one source of TDEE), `deficit-calculator.ts` (the one definition of
+  "deficit"; see Hard rules), `streak.ts`, `dateUtils.ts` (**IST** day windows — the whole app's day
+  boundary), `validations.ts` (Zod schemas shared by forms and routes), `nutrition.ts`,
+  `subscription.ts` (the Pro gate).
 - **`lib/supabase/`** — three factories, never interchangeable: `createServerClient()` (cookie-bound,
   acts as the current user), `createAdminClient()` (service-role; trusted server-only routes),
   `getBrowserSupabaseClient()` (Client Components).
@@ -46,7 +48,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   `logMilestones.ts`, `badges.ts`, `seasons.ts`, `streakRescue.ts`, `mealSuggest.ts`, `shareCard.ts`.
 - **`components/`** — `ui/` holds primitives; everything else is domain-scoped (`dashboard/`, `log/`,
   `story/`, `milestones/`, `camera/`, `chat/`, …). **`hooks/`** are fetch/TanStack wrappers only — no writes.
-- **`supabase/migrations/`** — `001`–`037`. Numbers are **not unique** (`002`, `004`, `005`, `009` each
+- **`supabase/migrations/`** — `001`–`038`. Numbers are **not unique** (`002`, `004`, `005`, `009` each
   appear twice) and there is **no `021`**. Always reference a migration by its exact filename.
 - **`middleware.ts`** — self-contained (there is no `lib/supabase/middleware.ts`). Refreshes the
   session cookie on every request, redirects unauthenticated users to `/auth/sign-in?returnTo=…`, and
@@ -68,7 +70,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (69 files / 958 tests)
+npm test                 # vitest run — the whole suite (69 files / 998 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
 npm run check:tokens     # design-token guard: no raw hex, no broken opacity modifiers
@@ -127,6 +129,29 @@ actively seeding.
   Server Component / Route Handler. `createAdminClient()` is for trusted server-only routes only.
 - **Never reference the four dropped wellness tables** (`water_logs`, `sleep_logs`, `fasting_sessions`,
   `measurements_logs`) — migration `019` removed them. Only `exercise_logs` remains of the extended trackers.
+- **`SMART_PORTIONS` is ordered, specific before generic** (`lib/portion-units.ts`). It is scanned with
+  `.find`, so the first matching pattern wins and a name can match two: "Moong Dal Namkeen" carries both
+  a dish word and a snack word. With the dal rule first it pre-selected a 200 g katori and offered
+  **~952 kcal** for a 30 g packet. Adding a pattern near the top, or a broad one anywhere, silently
+  re-homes every food that also matches something below it — `tests/portionUnits.test.ts` pins both
+  directions, and a fix in search ranking is only half a fix until the portion default agrees with it.
+- **"Deficit" has exactly one definition: `maintenance − eaten`**, and it comes from
+  `lib/deficit-calculator.ts`. Never re-derive it, and never compute `daily_calorie_target − eaten` —
+  that is "did you hit your eat-goal", a different question with a different answer. Trends and
+  `/deficit` each rolled their own for months and disagreed by ~1,200 kcal on cards that link to each
+  other (audit P1-11).
+- **Today is never passed to the deficit maths.** A day in progress holds one meal, so `tdee − eaten`
+  reads as a ~1,900 kcal triumph at 9am and *shrinks with every honest log* — the app punishing its own
+  core action (audit P1-12). `buildPeriodWindow` peels today off once so no screen has to remember;
+  render it as in-progress, never as a number that counts.
+- **Anything comparing a day to a benchmark must say which benchmark.** `daily_calorie_target` (what to
+  eat) and maintenance (TDEE) are both live in this app and point opposite ways: 819 kcal is a *miss*
+  against a 1,600 goal and the *best day of the week* against 2,602 maintenance. Deficit surfaces use
+  maintenance.
+- **Deficit periods are calendar windows, never rolling.** Mon–Sun, or the 1st to month end. A calendar
+  total only grows and then resets; a trailing window drops whenever a good day ages out of the back,
+  which reads as punishment for nothing. Week is free, month is Pro — and the month is withheld
+  **server-side**, so a free client never receives numbers a padlock is merely covering.
 - **Streak freezes are never paywalled.** The free auto-*freeze* prevents a break; the Pro *rescue*
   repairs one. Do not merge or gate the two.
 - **If you move the reminder cron, move `CATCH_ALL_IST_HOUR` with it.** They are coupled, and
@@ -149,6 +174,12 @@ actively seeding.
   passes" beats "the code looks right".
 - **Touching `lib/` means touching `tests/` in the same pass.** Those pure functions are the safety
   contract; an unpinned change to one is a silent behavior change.
+- **Adding a card means deleting what it replaces.** A correct new number beside a stale one that
+  answers the same question reads as a broken app, not a better one — the screen is judged whole, top
+  to bottom. Before adding a surface, grep the same screen for anything answering the same question and
+  remove it. The deficit rebuild shipped a provably correct card next to the old tiles, so one screen
+  said both "5 of 5 days" and "7 of 7 days", and both "1,623" and "2,134" for a typical day; it was
+  rejected on sight despite the maths being right.
 - **Prefer changing data over changing ranking.** In search especially, the tier order is load-bearing
   in both directions — fix the synonym group or the row first. When the comparator genuinely must
   change, change **what string the tiers are applied to** (`normalize`/`foldSpelling`, `nameReadings`,
@@ -225,4 +256,8 @@ Migrations worth knowing: `001_initial.sql` (core schema) · `007_seed_indian_fo
 logged in", so any account could delete a catalogue row and cascade it out of **every** user's diary) ·
 `036_reminder_hour.sql` (`profiles.reminder_hour`, IST, default 20) · `037_name_packaged_moong_dal.sql`
 (renamed ten OFF-persisted namkeen packets keyed by barcode — the precedent for correcting a name Open
-Food Facts gave us, and for how to audit such an `UPDATE` in the file header).
+Food Facts gave us, and for how to audit such an `UPDATE` in the file header) ·
+`038_correct_mislabelled_food_rows.sql` (the same, for **values**: a row whose per-serving column landed
+in the per-100 g fields is rescaled by its own `serving_size_g`, never by another product's numbers, and
+guarded on a plausibility range so a second hand-paste cannot rescale twice — these are applied by hand,
+so every value-correcting `UPDATE` needs to be idempotent).
