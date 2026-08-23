@@ -4,6 +4,7 @@ import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { scaleMacros } from '../../../../lib/nutrition'
 import { captureFoodLogged, captureServerEvent } from '../../../../lib/posthog/server'
 import { getLogActivationContext } from '../../../../lib/logActivation'
+import { streakEventsForLog } from '../../../../lib/streakEvents'
 
 const schema = z.object({
   meal_id: z.string().uuid(),
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
       items: logRows.length,
       isFirstLog: activation.is_first_log,
       daysSinceSignup: activation.days_since_signup,
+      streakEvents: streakEventsForLog(activation.logs_before, new Date().toISOString(), activation.rescued_dates),
     })
 
     return NextResponse.json({ ok: true, logged: logRows.length })

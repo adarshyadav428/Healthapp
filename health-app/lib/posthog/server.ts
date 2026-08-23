@@ -1,5 +1,6 @@
 import { PostHog } from 'posthog-node'
 import { isFoodLogMethod, type AnalyticsEvent, type FoodLogMethod } from './events'
+import type { StreakEvent } from '../streakEvents'
 
 let client: PostHog | null = null
 
@@ -39,14 +40,23 @@ export function captureServerEvent(
 export function readLogMeta(
   req: Request,
   fallbackMethod: FoodLogMethod
-): { method: FoodLogMethod; seconds_since_open: number | null } {
+): { method: FoodLogMethod; seconds_since_open: number | null; seconds_to_log: number | null } {
   const rawMethod = req.headers.get('x-log-method')
-  const rawSeconds = req.headers.get('x-seconds-since-open')
-  const seconds = rawSeconds === null || rawSeconds === '' ? NaN : Number(rawSeconds)
+
+  // Same untrusted-input treatment for both timings.
+  const readSeconds = (header: string): number | null => {
+    const raw = req.headers.get(header)
+    const n = raw === null || raw === '' ? NaN : Number(raw)
+    return Number.isFinite(n) && n >= 0 ? n : null
+  }
 
   return {
     method: isFoodLogMethod(rawMethod) ? rawMethod : fallbackMethod,
-    seconds_since_open: Number.isFinite(seconds) && seconds >= 0 ? seconds : null,
+    seconds_since_open: readSeconds('x-seconds-since-open'),
+    // Time from opening a logging surface to the log landing. Distinct from
+    // seconds_since_open, which is measured from app load and never resets —
+    // see markLogStart in ./client for why that can't answer this question.
+    seconds_to_log: readSeconds('x-seconds-to-log'),
   }
 }
 
@@ -66,10 +76,16 @@ export function captureFoodLogged(
     daysSinceSignup: number | null
     kcal?: number
     items?: number
+    /**
+     * Streak-lifecycle events this log produced, from streakEventsForLog.
+     * Routed through here so all five log routes emit them identically and the
+     * shape can't drift, exactly as `food_logged` itself is funnelled.
+     */
+    streakEvents?: StreakEvent[]
   }
 ): void {
-  const { method, seconds_since_open } = readLogMeta(req, fallbackMethod)
-  const base = { method, meal: data.meal, seconds_since_open }
+  const { method, seconds_since_open, seconds_to_log } = readLogMeta(req, fallbackMethod)
+  const base = { method, meal: data.meal, seconds_since_open, seconds_to_log }
 
   captureServerEvent(userId, 'food_logged', {
     ...base,
@@ -80,4 +96,8 @@ export function captureFoodLogged(
   })
 
   if (data.isFirstLog) captureServerEvent(userId, 'first_food_logged', base)
+
+  for (const event of data.streakEvents ?? []) {
+    captureServerEvent(userId, event.name, { ...event.props, method })
+  }
 }

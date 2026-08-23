@@ -12,6 +12,8 @@ import { useCameraScan, type Mode } from '../../hooks/useCameraScan'
 type Props = {
   onClose: () => void
   onFoodFound: (food: Food) => void
+  /** The IST day to log to. Omitted means today — see useCameraScan. */
+  logDate?: string
 }
 
 const MEAL_OPTIONS = [
@@ -21,7 +23,7 @@ const MEAL_OPTIONS = [
   { value: 'snack',     label: '🥜 Snack' },
 ] as const
 
-export function CameraModal({ onClose, onFoodFound }: Props) {
+export function CameraModal({ onClose, onFoodFound, logDate }: Props) {
   const {
     videoRef, canvasRef, galleryRef,
     barcodeSupport, mode, camError, barcodeLoading, captured, analyzing,
@@ -32,7 +34,7 @@ export function CameraModal({ onClose, onFoodFound }: Props) {
     onGallerySelect, capturePhoto, analyzePhoto, submitManualBarcode,
     retake, switchMode, selectResult, logFood,
     kcal, protein, carbs, fat, coaching, amountMin, amountMax, amountStep,
-  } = useCameraScan({ onClose, onFoodFound })
+  } = useCameraScan({ onClose, onFoodFound, logDate })
 
   const nameInputRef = useRef<HTMLInputElement>(null)
 

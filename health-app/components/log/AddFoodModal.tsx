@@ -6,10 +6,10 @@ import { useUser } from '../../hooks/useUser'
 import { toast } from '../ui/use-toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { getIstDayRange, dateStrToUtcMidnight } from '../../lib/dateUtils'
-import { ArrowLeft, ChevronDown, Drumstick, Droplet, Wheat, Sprout, Loader2 } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Drumstick, Droplet, Wheat, Sprout, Loader2, Minus, Plus } from 'lucide-react'
 import { reportLogMilestone } from '../../store/milestoneStore'
 import type { LogMilestone } from '../../lib/logMilestones'
-import { buildUnits, pickDefaultUnit, type Unit } from '../../lib/portion-units'
+import { buildUnits, defaultPortionFor, type Unit } from '../../lib/portion-units'
 import { mealForTime } from '../../lib/meal'
 import { MEAL_CONTEXTS, MEAL_CONTEXT_LABELS, type MealContext } from '../../lib/mealContext'
 import { logMetaHeaders } from '../../lib/posthog/client'
@@ -25,6 +25,7 @@ const MEAL_OPTIONS = [
 type MealValue = (typeof MEAL_OPTIONS)[number]['value']
 
 const round1 = (n: number) => Math.round(n * 10) / 10
+const round2 = (n: number) => Math.round(n * 100) / 100
 
 /** Pick an emoji based on the food name — fallback when we have no real image. */
 function foodEmoji(name: string): string {
@@ -65,14 +66,34 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
   const queryClient = useQueryClient()
 
   const units = useMemo(() => buildUnits(food), [food])
-  const [unit, setUnit] = useState<Unit>(() => pickDefaultUnit(units, food))
-  const [quantityStr, setQuantityStr] = useState('1')
+  // Same helper the search row's "+" uses, so tapping through to this modal
+  // and quick-adding log identical amounts of the same food.
+  const initialPortion = useMemo(() => defaultPortionFor(food, units), [food, units])
+  const [unit, setUnit] = useState<Unit>(() => initialPortion.unit)
+  const [quantityStr, setQuantityStr] = useState(() => String(initialPortion.quantity))
   const [meal, setMeal] = useState<MealValue>(mealForTime())
   const [context, setContext] = useState<MealContext | null>(null)
   const [showUnitPicker, setShowUnitPicker] = useState(false)
 
   const quantityNum = Math.max(0, parseFloat(quantityStr) || 0)
   const grams = unit.toGrams(quantityNum)
+
+  // Same granularity EditFoodLogModal uses: 10 g in gram mode, half a portion
+  // otherwise, so the two amount editors behave identically.
+  const step = unit.key === 'g' ? 10 : unit.key === 'oz' ? 1 : 0.5
+  const minQuantity = unit.key === 'g' ? 5 : 0.25
+  const stepBy = (dir: 1 | -1) =>
+    setQuantityStr(String(Math.max(minQuantity, round2(quantityNum + dir * step))))
+
+  // Switching measure keeps the AMOUNT, not the number in the box. Without
+  // this, opening on "1 katori" and switching to Grams left the quantity at 1
+  // and silently logged one gram.
+  const switchUnit = (u: Unit) => {
+    const per = u.toGrams(1)
+    setUnit(u)
+    setQuantityStr(String(per > 0 ? round2(grams / per) : 1))
+    setShowUnitPicker(false)
+  }
 
   const nutrition = useMemo(() => {
     const factor = grams / 100
@@ -168,15 +189,35 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
           <div className="grid grid-cols-2 gap-2">
             <div>
               <p className="text-xs text-ink-2 font-medium mb-1.5 px-1">Quantity</p>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={quantityStr}
-                onChange={(e) => setQuantityStr(e.target.value)}
-                onFocus={(e) => e.target.select()}
-                placeholder="1"
-                className="w-full h-12 rounded-control bg-surface-2 px-3 text-lg font-bold text-ink outline-none focus:ring-[3px] focus:ring-brand-ring transition-all"
-              />
+              {/* Steppers so the common nudge (one more roti, half a katori
+                  less) costs a tap instead of the number pad. */}
+              <div className="flex h-12 items-center rounded-control bg-surface-2">
+                <button
+                  type="button"
+                  onClick={() => stepBy(-1)}
+                  aria-label="Decrease quantity"
+                  className="flex h-12 w-10 shrink-0 items-center justify-center text-ink-2 tap-scale"
+                >
+                  <Minus className="h-4 w-4" strokeWidth={2.5} />
+                </button>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={quantityStr}
+                  onChange={(e) => setQuantityStr(e.target.value)}
+                  onFocus={(e) => e.target.select()}
+                  placeholder="1"
+                  className="h-12 min-w-0 flex-1 bg-transparent px-1 text-center text-lg font-bold text-ink outline-none focus:ring-[3px] focus:ring-brand-ring rounded-control transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => stepBy(1)}
+                  aria-label="Increase quantity"
+                  className="flex h-12 w-10 shrink-0 items-center justify-center text-ink-2 tap-scale"
+                >
+                  <Plus className="h-4 w-4" strokeWidth={2.5} />
+                </button>
+              </div>
             </div>
             <div>
               <p className="text-xs text-ink-2 font-medium mb-1.5 px-1">Measure</p>
@@ -296,7 +337,7 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
           foodName={food.name}
           units={units}
           selected={unit}
-          onSelect={(u) => { setUnit(u); setShowUnitPicker(false) }}
+          onSelect={switchUnit}
           onClose={() => setShowUnitPicker(false)}
         />
       )}

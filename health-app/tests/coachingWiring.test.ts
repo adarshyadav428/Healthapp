@@ -49,22 +49,32 @@ describe('useChatLog scopes the day context to the day being logged to', () => {
   })
 })
 
-describe('useCameraScan uses today, because that is the day it writes to', () => {
-  it('takes no date argument', () => {
-    expect(cameraScan).toMatch(/useDailyTotals\(user\?\.id \?\? null\)/)
+/**
+ * The camera used to take no date at all: it always wrote to today, and this
+ * file pinned that, with a tripwire saying today's totals stop being the right
+ * context the moment a `date` is added to the payload.
+ *
+ * That tripwire fired. The camera is reachable from the Food tab's day nav
+ * (FoodLanding and FoodSearch both pass `logDate`), so "always today" silently
+ * misfiled any meal scanned while viewing an earlier day. It now back-dates
+ * like useChatLog, and is held to the same contract: the day it writes to and
+ * the day it talks about must be the same day.
+ */
+describe('useCameraScan scopes the day context to the day being logged to', () => {
+  it('passes the logged date into useDailyTotals', () => {
+    expect(cameraScan).toMatch(/useDailyTotals\(\s*user\?\.id \?\? null,\s*logDate \?/)
   })
 
-  /**
-   * The above is only correct while the camera has no back-dating. If a `date`
-   * is ever added to its log payload, today's totals become the wrong context
-   * and this test should fail rather than let the mismatch ship quietly.
-   */
-  it('does not back-date its log, which is what makes today correct', () => {
+  it('converts the date string with the IST-aware helper', () => {
+    expect(cameraScan).toContain('dateStrToUtcMidnight(logDate)')
+  })
+
+  it('still sends that same date when it logs the meal', () => {
     const logBody = /body: JSON\.stringify\(\{ food_id: selected\.food\.id[^}]*\}\)/.exec(
       cameraScan
     )?.[0]
     expect(logBody, 'the camera log payload moved or changed shape').toBeTruthy()
-    expect(logBody).not.toMatch(/\bdate\b/)
+    expect(logBody).toMatch(/date: logDate/)
   })
 })
 

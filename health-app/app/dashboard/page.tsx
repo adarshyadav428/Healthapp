@@ -9,7 +9,6 @@ import { DashboardClient } from '../../components/dashboard/DashboardClient'
 import { getIstDayRange, istDateStr } from '../../lib/dateUtils'
 import { calculateStreakState, findStreakRescue, longestStreak } from '../../lib/streak'
 import { rescuesRemaining } from '../../lib/streakRescue'
-import { getSeasonState } from '../../lib/seasonServer'
 import { computeWeightTrend } from '../../lib/weightTrend'
 import { goalProjection } from '../../lib/goalProjection'
 import { detectPlateau, intakeSummary } from '../../lib/plateau'
@@ -127,10 +126,6 @@ export default async function DashboardPage() {
       ? findStreakRescue((recentLogs ?? []) as unknown as FoodLog[], new Date(), rescuedDates)
       : null
 
-  // Seasons are free to join — retention shouldn't be paywalled — so this runs
-  // for everyone. Returns null between seasons and the card renders nothing.
-  const seasonState = await getSeasonState(supabase, user.id)
-
   // Projected goal date. A weigh-in read that fails leaves `weighIns` empty,
   // which computeWeightTrend reports as "no trend" — so the card falls back to
   // the planned pace or hides, and never invents a measurement it doesn't have.
@@ -201,7 +196,6 @@ export default async function DashboardPage() {
           aiTrialRemaining={aiTrialRemaining}
           weeklyRecap={weeklyRecap}
           rescueOffer={rescueOffer}
-          seasonState={seasonState}
           projection={projection}
           plateau={plateau}
         />

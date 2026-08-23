@@ -3,25 +3,33 @@
 import { useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Search, ScanLine, Camera, Zap, Plus, Copy, ChevronLeft, Loader2, Layers, Sparkles } from 'lucide-react'
+import { Search, ScanLine, Camera, Zap, Plus, ChevronLeft, Sparkles, X } from 'lucide-react'
 import type { Food } from '../../types/index'
 import { toast } from '../ui/use-toast'
-import { foodEmoji, tintFor } from '../../lib/foodVisual'
 import { reportLogMilestone } from '../../store/milestoneStore'
 import type { LogMilestone } from '../../lib/logMilestones'
 import { mealForTime } from '../../lib/meal'
-import { logMetaHeaders } from '../../lib/posthog/client'
+import { defaultPortionFor } from '../../lib/portion-units'
+import { captureEvent, logMetaHeaders, markLogStart } from '../../lib/posthog/client'
+import { EVENTS } from '../../lib/posthog/events'
+import { useUser } from '../../hooks/useUser'
+import { useFoodFavourites } from '../../hooks/useFoodFavourites'
+import {
+  ComboTile, CopyYesterdayButton, EmojiTile, ShortcutHeading, ShortcutRow,
+} from './shortcuts'
 
 // Modals + the full search are only opened on demand — defer their JS.
 const FoodSearch    = dynamic(() => import('./FoodSearch').then(m => m.FoodSearch),        { ssr: false })
 const CameraModal   = dynamic(() => import('../camera/CameraModal').then(m => m.CameraModal), { ssr: false })
 const AddFoodModal  = dynamic(() => import('./AddFoodModal').then(m => m.AddFoodModal),     { ssr: false })
 const QuickAddModal = dynamic(() => import('./QuickAddModal').then(m => m.QuickAddModal),   { ssr: false })
-const MealSuggestDeck = dynamic(() => import('./MealSuggestDeck').then(m => m.MealSuggestDeck), { ssr: false })
 
 type RecentLogItem = { food: Food; grams: number; kcal: number; meal: string }
+
+/** One row from /api/foods/suggest — the fields this surface renders. */
+type Suggestion = { food: Food; grams: number; kcal: number }
 
 type SavedMealSummary = {
   id: string
@@ -52,19 +60,7 @@ type Props = {
 
 const AIR = { boxShadow: 'var(--shadow-air)' } as const
 
-function EmojiTile({ name }: { name: string }) {
-  return (
-    <div
-      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px]"
-      style={{ backgroundColor: `color-mix(in srgb, ${tintFor(name)} 14%, transparent)` }}
-    >
-      <span className="text-[22px] leading-none" aria-hidden="true">{foodEmoji(name)}</span>
-    </div>
-  )
-}
-
 export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYesterdayLogs, logDate, isToday = true }: Props) {
-  const router = useRouter()
   const searchParams = useSearchParams()
   // Home's "Add food manually" links here with ?search=1 to jump straight
   // into the search box instead of landing on this page first.
@@ -72,15 +68,33 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
   const [showCamera, setShowCamera] = useState(false)
   const [foundFood, setFoundFood] = useState<Food | null>(null)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
-  const [showSuggest, setShowSuggest] = useState(false)
+  const [suggestIndex, setSuggestIndex] = useState(0)
   const [relogId, setRelogId] = useState<string | null>(null)
   const [copying, setCopying] = useState(false)
   const [loggingMealId, setLoggingMealId] = useState<string | null>(null)
   const queryClient = useQueryClient()
+  const { user } = useUser()
+  // Favourites are the only shortcut the user curates by hand, and they used
+  // to be visible on exactly one screen — inside search mode, with the box
+  // empty. Anyone who starred a dish had to search their way back to it.
+  const { favouriteFoods } = useFoodFavourites(user?.id ?? null)
 
   // The meal slot this time of day belongs to — drives both which saved
   // templates surface first and which past items lead "Log again".
   const currentMeal = mealForTime()
+
+  // One suggested dish that fits the calories left. Only fetched on today —
+  // the row doesn't render on a past day, so neither should the request.
+  const { data: suggestData } = useQuery({
+    queryKey: ['meal-suggestions-landing'],
+    enabled: isToday,
+    queryFn: async () => {
+      const res = await fetch('/api/foods/suggest')
+      if (!res.ok) return { suggestions: [] as Suggestion[] }
+      return res.json() as Promise<{ suggestions: Suggestion[] }>
+    },
+  })
+  const suggestion = suggestData?.suggestions?.[suggestIndex] ?? null
 
   // Saved meal templates: the genuine two-tap path (open Food -> tap combo).
   const { data: savedMeals = [] } = useQuery({
@@ -94,6 +108,7 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
 
   const logSavedMeal = async (meal: SavedMealSummary) => {
     if (loggingMealId) return
+    markLogStart()
     setLoggingMealId(meal.id)
     try {
       const res = await fetch('/api/meals/log', {
@@ -121,13 +136,25 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
     return [...forSlot.slice(0, 3), ...forSlot.slice(3), ...rest]
   }, [recentLogItems, currentMeal])
 
+  // Leaving search only needs the `?search=1` deep-link param gone. router
+  // .replace('/log') did that by re-running a force-dynamic page — six
+  // Supabase queries to close a text box. Strip it in place instead, the same
+  // way BottomNav clears `?scan=1`.
+  const closeSearch = () => {
+    setSearching(false)
+    const url = new URL(window.location.href)
+    if (!url.searchParams.has('search')) return
+    url.searchParams.delete('search')
+    window.history.replaceState(null, '', url.pathname + url.search + url.hash)
+  }
+
   // Search mode: hand off to the full search experience.
   if (searching) {
     return (
       <div>
         <button
           type="button"
-          onClick={() => { setSearching(false); router.replace('/log') }}
+          onClick={closeSearch}
           className="mb-3 flex items-center gap-1 text-[13px] font-semibold text-brand-ink tap-scale"
         >
           <ChevronLeft className="h-4 w-4" /> Done
@@ -146,6 +173,7 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
 
   const relog = async (item: RecentLogItem) => {
     if (relogId) return
+    markLogStart()
     setRelogId(item.food.id)
     try {
       const res = await fetch('/api/logs/add', {
@@ -165,8 +193,58 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
     }
   }
 
+  // "Not this" is the deck's left-swipe: it persists to food_dismissals so the
+  // same dish stops coming back, then shows the next candidate. Fire-and-forget
+  // — a failed dismissal costs one repeated suggestion, not a blocked UI.
+  const dismissSuggestion = () => {
+    const current = suggestion
+    if (!current) return
+    captureEvent(EVENTS.MEAL_SUGGESTION_SWIPED, {
+      direction: 'left',
+      source: current.food.source,
+      kcal: current.kcal,
+    })
+    fetch('/api/foods/suggest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ foodId: current.food.id }),
+    }).catch(() => {})
+    setSuggestIndex((i) => i + 1)
+  }
+
+  // A starred food has no past-log grams to reuse, so it takes the same
+  // default portion the search row's "+" and AddFoodModal both use.
+  const quickAddFavourite = async (food: Food) => {
+    if (relogId) return
+    markLogStart()
+    setRelogId(food.id)
+    try {
+      const res = await fetch('/api/logs/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...logMetaHeaders('log_again') },
+        body: JSON.stringify({
+          food_id: food.id,
+          meal: currentMeal,
+          servings: 1,
+          grams: defaultPortionFor(food).grams,
+          date: logDate,
+        }),
+      })
+      const j = (await res.json().catch(() => ({}))) as { error?: string; milestone?: LogMilestone }
+      if (!res.ok) throw new Error(j.error ?? 'Log failed')
+      queryClient.invalidateQueries({ queryKey: ['food-logs'] })
+      toast({ title: `Logged ${food.name}`, duration: 2000 })
+      reportLogMilestone(j.milestone)
+    } catch (e) {
+      toast({ title: 'Could not log', description: (e as Error).message, variant: 'error' })
+    } finally {
+      setRelogId(null)
+    }
+  }
+
   const copyYesterday = async () => {
     if (copying) return
+    markLogStart()
     setCopying(true)
     try {
       const res = await fetch('/api/logs/copy-yesterday', { method: 'POST', headers: logMetaHeaders('copy_yesterday') })
@@ -223,60 +301,78 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
         </button>
       </div>
 
-      {/* "What should I eat?" — the one question the app never answered. Only on
-          today: suggesting dinner for a day that's already over is nonsense. */}
-      {isToday && (
-        <button
-          type="button"
-          onClick={() => setShowSuggest(true)}
-          className="flex w-full items-center gap-3 rounded-[20px] bg-surface p-[16px] text-left tap-scale"
-          style={AIR}
-        >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
-            <Sparkles className="h-[18px] w-[18px]" strokeWidth={2} />
+      {/* "What should I eat?" — one suggested dish inline, not a full-screen
+          deck. The deck was a whole surface (and its own swipe grammar) for a
+          decision that is really "log this, or show me another". Only on today:
+          suggesting dinner for a day that's already over is nonsense. */}
+      {isToday && suggestion && (
+        <div className="flex items-center gap-3.5 rounded-[20px] bg-surface p-3" style={AIR}>
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft text-brand">
+            <Sparkles className="h-5 w-5" strokeWidth={2} />
           </span>
-          <span className="min-w-0">
-            <span className="block text-[14.5px] font-semibold text-ink">What should I eat?</span>
-            <span className="mt-0.5 block text-[11.5px] text-ink-3">Ideas that fit what&apos;s left today</span>
-          </span>
-        </button>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[14.5px] font-semibold text-ink">{suggestion.food.name}</p>
+            <p className="mt-[3px] text-[12px] text-ink-3">
+              {Math.round(suggestion.grams)}g · {Math.round(suggestion.kcal)} kcal · fits what&apos;s left
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={dismissSuggestion}
+            aria-label="Suggest something else"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink-3 tap-scale"
+          >
+            <X className="h-4 w-4" strokeWidth={2.2} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setFoundFood(suggestion.food)}
+            aria-label={`Log ${suggestion.food.name}`}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cta-grad tap-scale"
+            style={{ boxShadow: 'var(--fab-shadow)' }}
+          >
+            <Plus className="h-[18px] w-[18px] text-white" strokeWidth={2.2} />
+          </button>
+        </div>
       )}
 
       {/* Your combos — saved templates, the fastest path to a full meal */}
       {savedMeals.length > 0 && (
         <div className="pt-2">
-          <div className="mb-2.5 flex items-baseline gap-2 px-0.5">
-            <p className="text-[16px] font-semibold text-ink">Your combos</p>
-            <span className="text-[12.5px] text-ink-3">one tap → {currentMeal}</span>
-          </div>
+          <ShortcutHeading title="Your combos" hint={`one tap → ${currentMeal}`} />
           <div className="flex flex-col gap-2.5">
             {savedMeals.map((meal) => (
-              <button
+              <ShortcutRow
                 key={meal.id}
-                type="button"
-                onClick={() => logSavedMeal(meal)}
+                name={meal.name}
+                detail={`${meal.saved_meal_items?.length ?? 0} items · ${savedMealKcal(meal)} kcal`}
+                tile={<ComboTile />}
+                busy={loggingMealId === meal.id}
                 disabled={!!loggingMealId}
-                className="flex items-center gap-3.5 rounded-[20px] bg-surface p-3 text-left tap-scale disabled:opacity-50"
-                style={AIR}
-              >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft">
-                  <Layers className="h-5 w-5 text-brand" strokeWidth={2} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14.5px] font-semibold text-ink">{meal.name}</p>
-                  <p className="mt-[3px] text-[12px] text-ink-3">
-                    {meal.saved_meal_items?.length ?? 0} items · {savedMealKcal(meal)} kcal
-                  </p>
-                </div>
-                <span
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cta-grad"
-                  style={{ boxShadow: 'var(--fab-shadow)' }}
-                >
-                  {loggingMealId === meal.id
-                    ? <Loader2 className="h-4 w-4 animate-spin text-white" />
-                    : <Plus className="h-[18px] w-[18px] text-white" strokeWidth={2.2} />}
-                </span>
-              </button>
+                actionLabel={`Log ${meal.name}`}
+                onAdd={() => logSavedMeal(meal)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Favourites — curated by hand, so they lead the re-log surfaces */}
+      {favouriteFoods.length > 0 && (
+        <div className="pt-2">
+          <ShortcutHeading title="Favourites" hint={`one tap → ${currentMeal}`} />
+          <div className="flex flex-col gap-2.5">
+            {favouriteFoods.map((food) => (
+              <ShortcutRow
+                key={food.id}
+                name={food.name}
+                detail={`${Math.round(defaultPortionFor(food).grams)}g`}
+                tile={<EmojiTile name={food.name} />}
+                busy={relogId === food.id}
+                disabled={!!relogId}
+                actionLabel={`Log ${food.name}`}
+                onAdd={() => quickAddFavourite(food)}
+              />
             ))}
           </div>
         </div>
@@ -291,25 +387,16 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
           </div>
           <div className="flex flex-col gap-2.5">
             {orderedRecentItems.map((item) => (
-              <div key={item.food.id} className="flex items-center gap-3.5 rounded-[20px] bg-surface p-3" style={AIR}>
-                <EmojiTile name={item.food.name} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14.5px] font-semibold text-ink">{item.food.name}</p>
-                  <p className="mt-[3px] text-[12px] text-ink-3">{Math.round(item.grams)}g · {Math.round(item.kcal)} kcal</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => relog(item)}
-                  disabled={!!relogId}
-                  aria-label={`Log ${item.food.name} again`}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cta-grad tap-scale disabled:opacity-50"
-                  style={{ boxShadow: 'var(--fab-shadow)' }}
-                >
-                  {relogId === item.food.id
-                    ? <Loader2 className="h-4 w-4 animate-spin text-white" />
-                    : <Plus className="h-[18px] w-[18px] text-white" strokeWidth={2.2} />}
-                </button>
-              </div>
+              <ShortcutRow
+                key={item.food.id}
+                name={item.food.name}
+                detail={`${Math.round(item.grams)}g · ${Math.round(item.kcal)} kcal`}
+                tile={<EmojiTile name={item.food.name} />}
+                busy={relogId === item.food.id}
+                disabled={!!relogId}
+                actionLabel={`Log ${item.food.name} again`}
+                onAdd={() => relog(item)}
+              />
             ))}
           </div>
         </div>
@@ -317,29 +404,14 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
 
       {/* Copy yesterday — only meaningful on today's view (it copies into today) */}
       {isToday && hasYesterdayLogs && (
-        <button
-          type="button"
-          onClick={copyYesterday}
-          disabled={copying}
-          className="flex w-full items-center gap-3 rounded-[20px] bg-surface p-4 text-left tap-scale disabled:opacity-50"
-          style={AIR}
-        >
-          <Copy className="h-[18px] w-[18px] shrink-0 text-brand" strokeWidth={2} />
-          <span className="text-[14px] font-semibold text-ink">{copying ? 'Copying…' : "Copy yesterday's meals"}</span>
-        </button>
+        <CopyYesterdayButton copying={copying} onClick={copyYesterday} />
       )}
 
       {showCamera && (
-        <CameraModal onClose={() => setShowCamera(false)} onFoodFound={(food) => { setShowCamera(false); setFoundFood(food) }} />
+        <CameraModal logDate={logDate} onClose={() => setShowCamera(false)} onFoodFound={(food) => { setShowCamera(false); setFoundFood(food) }} />
       )}
       {foundFood && <AddFoodModal food={foundFood} onClose={() => setFoundFood(null)} logDate={logDate} />}
       {showQuickAdd && <QuickAddModal onClose={() => setShowQuickAdd(false)} logDate={logDate} />}
-      {showSuggest && (
-        <MealSuggestDeck
-          onClose={() => setShowSuggest(false)}
-          onPick={(food) => { setShowSuggest(false); setFoundFood(food) }}
-        />
-      )}
     </div>
   )
 }

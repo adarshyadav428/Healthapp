@@ -25,19 +25,43 @@ export type LogActivationContext = {
   days_since_signup: number | null
   total_logs_before: number
   is_pro: boolean
+  /**
+   * The user's logged_at history as it stood BEFORE this log, windowed to the
+   * last 60 days — enough for calculateStreakState, which never looks further
+   * back than the current run. Feeds lib/streakEvents.ts, the only way the
+   * streak (recomputed pure from logs everywhere else) can announce a change.
+   */
+  logs_before: { logged_at: string }[]
+  /**
+   * IST date keys a Pro Streak Rescue already covered. calculateStreakState
+   * takes these as an argument rather than reading them, so they have to be
+   * fetched alongside — without them a rescued day looks like a break and the
+   * streak number on the events would be wrong for exactly the paying users.
+   */
+  rescued_dates: string[]
 }
 
 export async function getLogActivationContext(
   supabase: SupabaseClient,
   userId: string
 ): Promise<LogActivationContext> {
-  const [{ count }, { data: profileRow }, { data: subRow }] = await Promise.all([
+  const sixtyDaysAgo = new Date(Date.now() - 60 * 86_400_000).toISOString()
+
+  const [{ count }, { data: profileRow }, { data: subRow }, { data: logRows }, { data: rescueRows }] = await Promise.all([
     supabase
       .from('food_logs')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId),
     supabase.from('profiles').select('created_at').eq('id', userId).maybeSingle(),
     supabase.from('subscriptions').select('status').eq('user_id', userId).maybeSingle(),
+    // logged_at only, and only 60 days: this runs on every log, so it has to
+    // stay a narrow indexed read rather than pulling joined food rows.
+    supabase
+      .from('food_logs')
+      .select('logged_at')
+      .eq('user_id', userId)
+      .gte('logged_at', sixtyDaysAgo),
+    supabase.from('streak_rescues').select('rescued_date').eq('user_id', userId),
   ])
 
   const daysSinceSignup = profileRow?.created_at
@@ -49,6 +73,8 @@ export async function getLogActivationContext(
     days_since_signup: daysSinceSignup,
     total_logs_before: count ?? 0,
     is_pro: isProStatus(subRow?.status),
+    logs_before: (logRows ?? []) as { logged_at: string }[],
+    rescued_dates: (rescueRows ?? []).map((r) => (r as { rescued_date: string }).rescued_date),
   }
 }
 

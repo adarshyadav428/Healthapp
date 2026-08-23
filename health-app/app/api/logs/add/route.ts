@@ -4,6 +4,7 @@ import { addFoodSchema } from '../../../../lib/validations'
 import { captureFoodLogged } from '../../../../lib/posthog/server'
 import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
 import { resolveLoggedAtForRequest } from '../../../../lib/backfill'
+import { streakEventsForLog } from '../../../../lib/streakEvents'
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
@@ -40,7 +41,10 @@ export async function POST(req: Request) {
     if (!when.ok) return NextResponse.json({ error: when.error, upgrade: when.upgrade }, { status: when.status })
     const logged_at = when.logged_at
 
-    const activation = await getLogActivationContext(supabase, user.id)
+    // An undo is not a new log — skip the activation read entirely rather than
+    // computing a milestone we must then throw away.
+    const isRestore = parsed.data.restore === true
+    const activation = isRestore ? null : await getLogActivationContext(supabase, user.id)
 
     const { data: inserted, error: insertError } = await supabase
       .from('food_logs')
@@ -65,16 +69,23 @@ export async function POST(req: Request) {
 
     if (insertError) throw new Error(insertError.message)
 
-    // `method` defaults to search: this route backs the search/add-food sheet
-    // unless the client names a more specific path (re-log, quick add).
-    captureFoodLogged(user.id, req, 'search', {
-      meal: parsed.data.meal,
-      kcal,
-      isFirstLog: activation.is_first_log,
-      daysSinceSignup: activation.days_since_signup,
-    })
+    if (activation) {
+      // `method` defaults to search: this route backs the search/add-food sheet
+      // unless the client names a more specific path (re-log, quick add).
+      captureFoodLogged(user.id, req, 'search', {
+        meal: parsed.data.meal,
+        kcal,
+        isFirstLog: activation.is_first_log,
+        daysSinceSignup: activation.days_since_signup,
+        streakEvents: streakEventsForLog(activation.logs_before, logged_at, activation.rescued_dates),
+      })
+    }
 
-    return NextResponse.json({ ok: true, row: inserted, milestone: toLogMilestone(activation, 1) })
+    return NextResponse.json({
+      ok: true,
+      row: inserted,
+      milestone: activation ? toLogMilestone(activation, 1) : null,
+    })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }

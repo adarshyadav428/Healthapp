@@ -43,7 +43,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   emitters. **`lib/push/`** — `budgetedSend.ts` is the only sanctioned scheduled-push path.
 - **Retention/coaching logic** (all pure, all in `lib/`): `adaptiveTarget.ts`, `coaching.ts`,
   `proteinCoach.ts`, `plateau.ts`, `projection.ts`, `goalProjection.ts`, `weightTrend.ts`,
-  `logMilestones.ts`, `badges.ts`, `seasons.ts`, `streakRescue.ts`, `mealSuggest.ts`, `shareCard.ts`.
+  `logMilestones.ts`, `badges.ts`, `streakRescue.ts`, `mealSuggest.ts`, `shareCard.ts`.
 - **`components/`** — `ui/` holds primitives; everything else is domain-scoped (`dashboard/`, `log/`,
   `story/`, `milestones/`, `camera/`, `chat/`, …). **`hooks/`** are fetch/TanStack wrappers only — no writes.
 - **`supabase/migrations/`** — `001`–`037`. Numbers are **not unique** (`002`, `004`, `005`, `009` each
@@ -187,7 +187,7 @@ These are deep dives, kept out of this file on purpose. Read the relevant one **
 | `docs/food-search.md` | `app/api/foods/search/`, `lib/searchRanking.ts`, `lib/searchFilter.ts`, `lib/food-synonyms.ts`, `lib/spelling-variants.ts`, `lib/typo-correction.ts`, `lib/mergeSearchResults.ts`, `lib/searchCache.ts` |
 | `docs/billing.md` | `app/api/razorpay/`, `app/api/play/`, `app/api/stripe/`, `lib/razorpay/`, `lib/play/`, `lib/stripe/`, `lib/subscription.ts`, `app/upgrade/` |
 | `docs/design-system.md` | `app/globals.css`, `tailwind.config.ts`, `components/ui/`, `components/layout/`, any screen styling |
-| `docs/growth-mechanics-plan-2026-07-29.md` | `components/story/`, `lib/seasons.ts`, `lib/streakRescue.ts`, `lib/mealSuggest.ts`, `lib/pushBudget.ts`, `lib/reminderSchedule.ts`, `lib/cronBatch.ts` |
+| `docs/growth-mechanics-plan-2026-07-29.md` | `components/story/`, `lib/streakRescue.ts`, `lib/mealSuggest.ts`, `lib/pushBudget.ts`, `lib/reminderSchedule.ts`, `lib/cronBatch.ts` — note Seasons was cut, see below |
 | `docs/refactor-safety-contract.md` | Any refactor — it maps each covered behavior to the test that pins it, and lists the accepted residual gaps |
 | `TESTING.md` | Shipping. The manual script for everything tests can't reach (auth, real phones, the day boundary) |
 | `docs/deep-dive-audit-2026-07-31.md` | Investigating a suspected systemic issue — the last full audit |
@@ -202,10 +202,14 @@ Full rationale in `docs/growth-mechanics-plan-2026-07-29.md`.
   behind `prefers-reduced-motion`. Cards are JSX-free and serializable so a Server Component can build them.
 - **`/welcome` fires on entitlement granted** (`active` *or* `trialing`), not on payment captured —
   Play's trial captures nothing for 3 days, so a payment-based trigger would hide it from trial users.
-- **Seasons** are authored in **code**, not rows; progress is recomputed from logs, never stored. Season
-  badges are a **separate collection** from the ten in `lib/badges.ts` — that cap is doctrine. Free to join.
+- **Seasons were cut** (2026-08-23). The 30-day competitive frame duplicated the streak's psychological
+  job with a migration, three lib modules, a route, a card and a push rung to maintain — the
+  2026-07-31 audit's Table 3 called it the clearest growth mechanic that hadn't earned its keep.
+  `season_participants` (migration `031`) is **deliberately left applied and unread**, the same
+  treatment `026_anonymous_users` gets: dropping a table to tidy up is not worth the risk. Do not
+  reintroduce Seasons without re-arguing the case — the ten-badge cap in `lib/badges.ts` is still doctrine.
 - **Push budget:** one push per user per day across all sources, priority
-  `streak-save > season-deadline > monthly-wrapped > weekly-recap > daily-reminder`, backing off after 5 ignored.
+  `streak-save > monthly-wrapped > weekly-recap > daily-reminder`, backing off after 5 ignored.
 - **Reminder hours** need `.github/workflows/reminder-tick.yml` plus the `CRON_SECRET` and `APP_URL`
   repo secrets. Without them nobody loses a reminder — the 20:30 IST Vercel catch-all still fires; the
   chosen hour just isn't honoured.
@@ -216,7 +220,9 @@ Full rationale in `docs/growth-mechanics-plan-2026-07-29.md`.
 
 `profiles`, `food_logs`, `foods`, `weight_logs`, `subscriptions`, `exercise_logs`, `food_favourites`,
 `saved_meals`, `saved_meal_items`, `camera_photo_logs`, `chat_logs`, `push_subscriptions`,
-`weekly_recaps`, `streak_rescues`, `monthly_wraps`, `food_dismissals`, `season_participants`, `push_sends`.
+`weekly_recaps`, `streak_rescues`, `monthly_wraps`, `food_dismissals`, `push_sends`.
+
+`season_participants` still exists in the database but nothing reads it — see the Seasons note above.
 
 Migrations worth knowing: `001_initial.sql` (core schema) · `007_seed_indian_foods.sql`,
 `009_seed_indian_foods_v2.sql`, `010_seed_missing_foods.sql` (IFCT data) ·

@@ -3,17 +3,10 @@ import { createAdminClient } from '../../../../lib/supabase/server'
 import { getIstDayRange } from '../../../../lib/dateUtils'
 import { calculateStreakState } from '../../../../lib/streak'
 
-import { currentSeason, daysRemaining } from '../../../../lib/seasons'
 
 /** Below this, a streak isn't worth a "don't lose it" notification yet. */
 const STREAK_SAVE_MIN_DAYS = 3
 
-/**
- * How close to the end a season has to be before it's worth a push. The whole
- * point of a season is that it ends — a deadline nudge on day 4 of 30 is just
- * another daily reminder wearing a costume.
- */
-const SEASON_DEADLINE_DAYS = 3
 import { sendBudgetedPush } from '../../../../lib/push/budgetedSend'
 import {
   DEFAULT_REMINDER_HOUR,
@@ -43,7 +36,7 @@ export const runtime = 'nodejs'
 // day — so the two callers can never double-nag, in either order.
 //
 // For every user served: a streak-save nudge if they have a streak worth
-// protecting (higher urgency), else a season deadline, else a plain reminder.
+// protecting (higher urgency), else a plain reminder.
 export async function GET(req: Request) {
   const authHeader = req.headers.get('authorization')
   if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -110,34 +103,6 @@ export async function GET(req: Request) {
     rescuesByUser.set(uid, arr)
   }
 
-  // `season-deadline` sits second in the push priority ladder and was documented
-  // as live, but nothing ever sent it — the kind existed and had no call site, so
-  // a season could close without the one nudge that gives it any stakes. It
-  // belongs here rather than in a third cron: vercel.json is capped at two on the
-  // Hobby plan, and this job already has the "who hasn't logged today" set in
-  // hand. One extra batched read, no per-user queries.
-  const season = currentSeason()
-  const seasonDaysLeft = season ? daysRemaining(season) : 0
-  const seasonClosing = season !== null && seasonDaysLeft > 0 && seasonDaysLeft <= SEASON_DEADLINE_DAYS
-
-  const seasonPending = new Set<string>()
-  if (season && seasonClosing) {
-    const { data: participantRows, error: participantError } = await admin
-      .from('season_participants')
-      .select('user_id, completed_at')
-      .eq('season_slug', season.slug)
-      .in('user_id', userIds)
-    if (participantError) {
-      return NextResponse.json({ error: participantError.message }, { status: 500 })
-    }
-    for (const row of participantRows ?? []) {
-      // Already finished it — a deadline nudge would be nagging about something
-      // they've done.
-      if (row.completed_at) continue
-      seasonPending.add(row.user_id as string)
-    }
-  }
-
   // Already logged today — no nudge needed. Then: is this their hour? The
   // catch-all answers yes for everyone, so this only narrows the hourly tick.
   const pending = userIds.filter(
@@ -161,30 +126,11 @@ export async function GET(req: Request) {
     // "don't lose your 1-day streak" is pressure without stakes, and it trains
     // people to swipe the notification away.
     // Priority ladder, in the order lib/pushBudget.ts declares it:
-    // streak-save > season-deadline > daily-reminder. The budget allows one push
-    // a day, so this picks the most urgent thing we have to say — it never sends
-    // two.
+    // streak-save > daily-reminder. The budget allows one push a day, so this
+    // picks the most urgent thing we have to say — it never sends two.
     const kind = streak >= STREAK_SAVE_MIN_DAYS
       ? 'streak-save' as const
-      : seasonPending.has(userId)
-        ? 'season-deadline' as const
-        : 'daily-reminder' as const
-
-    if (kind === 'season-deadline' && season) {
-      const dayWord = seasonDaysLeft === 1 ? 'Last day' : `${seasonDaysLeft} days left`
-      const result = await sendBudgetedPush(userId, 'season-deadline', {
-        title: `${dayWord} — ${season.title}`,
-        // Deliberately does not claim they're on track or behind: this cron
-        // doesn't compute season progress (that needs four queries per user),
-        // and a nudge that guesses at someone's standing is worse than one that
-        // just states the deadline.
-        body: `Log today to keep your ${season.badge.name} within reach.`,
-        url: '/progress',
-        tag: 'season-deadline',
-      })
-      if (result.sent > 0) sent += 1
-      return
-    }
+      : 'daily-reminder' as const
 
     const payload = streak >= STREAK_SAVE_MIN_DAYS
       ? {

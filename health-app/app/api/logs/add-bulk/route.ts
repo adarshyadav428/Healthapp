@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { captureFoodLogged } from '../../../../lib/posthog/server'
 import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
 import { resolveLoggedAtForRequest } from '../../../../lib/backfill'
+import { streakEventsForLog } from '../../../../lib/streakEvents'
 
 const bulkLogSchema = z.object({
   items: z.array(z.object({
@@ -71,6 +72,7 @@ export async function POST(req: Request) {
       items: rows.length,
       isFirstLog: activation.is_first_log,
       daysSinceSignup: activation.days_since_signup,
+      streakEvents: streakEventsForLog(activation.logs_before, logged_at, activation.rescued_dates),
     })
 
     return NextResponse.json({ ok: true, logged: rows.length, milestone: toLogMilestone(activation, rows.length) })
