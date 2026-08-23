@@ -3,11 +3,13 @@ import {
   signUpSchema,
   onboardingSchema,
   addFoodSchema,
+  editFoodLogSchema,
   weightLogSchema,
   exerciseLogSchema,
   profileUpdateSchema,
   customFoodSchema,
 } from '../lib/validations'
+import { MAX_LOG_GRAMS } from '../lib/portion-units'
 
 describe('signUpSchema', () => {
   it('accepts a valid email + password', () => {
@@ -72,9 +74,20 @@ describe('addFoodSchema', () => {
     expect(addFoodSchema.safeParse({ ...valid, food_id: '123' }).success).toBe(false)
   })
 
-  it('caps servings at 99 and grams at 10,000', () => {
+  it('caps servings at 99 and grams at MAX_LOG_GRAMS', () => {
     expect(addFoodSchema.safeParse({ ...valid, servings: 100 }).success).toBe(false)
-    expect(addFoodSchema.safeParse({ ...valid, grams: 10001 }).success).toBe(false)
+    expect(MAX_LOG_GRAMS).toBe(10000)
+    expect(addFoodSchema.safeParse({ ...valid, grams: MAX_LOG_GRAMS }).success).toBe(true)
+    expect(addFoodSchema.safeParse({ ...valid, grams: MAX_LOG_GRAMS + 1 }).success).toBe(false)
+  })
+
+  it('rejects a non-positive or unparseable grams amount', () => {
+    // The stepper clamps client-side; this is the boundary that has to hold
+    // regardless of what any caller sends.
+    expect(addFoodSchema.safeParse({ ...valid, grams: 0 }).success).toBe(false)
+    expect(addFoodSchema.safeParse({ ...valid, grams: -5 }).success).toBe(false)
+    expect(addFoodSchema.safeParse({ ...valid, grams: NaN }).success).toBe(false)
+    expect(addFoodSchema.safeParse({ ...valid, servings: 0 }).success).toBe(false)
   })
 
   // `restore` marks an undo of a just-deleted entry. The routes branch on it
@@ -93,6 +106,51 @@ describe('addFoodSchema', () => {
 
   it('rejects unknown meal names', () => {
     expect(addFoodSchema.safeParse({ ...valid, meal: 'brunch' }).success).toBe(false)
+  })
+})
+
+describe('editFoodLogSchema', () => {
+  const valid = {
+    id: 'e58ed763-928c-4155-bee9-fdbaaadc15f3',
+    grams: 150,
+    servings: 1,
+    meal: 'lunch',
+    kcal: 200,
+    protein_g: 5,
+    carbs_g: 30,
+    fat_g: 4,
+  }
+
+  it('accepts a valid payload', () => {
+    expect(editFoodLogSchema.safeParse(valid).success).toBe(true)
+  })
+
+  it('rejects a non-positive grams amount', () => {
+    expect(editFoodLogSchema.safeParse({ ...valid, grams: 0 }).success).toBe(false)
+    expect(editFoodLogSchema.safeParse({ ...valid, grams: -5 }).success).toBe(false)
+    expect(editFoodLogSchema.safeParse({ ...valid, grams: NaN }).success).toBe(false)
+  })
+
+  it('enforces the same bounds as the add path', () => {
+    // These used to disagree: an edit could store grams the add route forbade.
+    expect(editFoodLogSchema.safeParse({ ...valid, grams: MAX_LOG_GRAMS }).success).toBe(true)
+    expect(editFoodLogSchema.safeParse({ ...valid, grams: MAX_LOG_GRAMS + 1 }).success).toBe(false)
+    expect(editFoodLogSchema.safeParse({ ...valid, servings: 100 }).success).toBe(false)
+  })
+
+  it('defaults servings and keeps context nullable but optional', () => {
+    const { servings, ...noServings } = valid
+    const parsed = editFoodLogSchema.safeParse(noServings)
+    expect(parsed.success).toBe(true)
+    expect(parsed.success && parsed.data.servings).toBe(1)
+    expect(editFoodLogSchema.safeParse({ ...valid, context: null }).success).toBe(true)
+    expect(editFoodLogSchema.safeParse({ ...valid, context: 'restaurant' }).success).toBe(true)
+    expect(editFoodLogSchema.safeParse({ ...valid, context: 'spaceship' }).success).toBe(false)
+  })
+
+  it('rejects negative macros', () => {
+    expect(editFoodLogSchema.safeParse({ ...valid, kcal: -1 }).success).toBe(false)
+    expect(editFoodLogSchema.safeParse({ ...valid, protein_g: -1 }).success).toBe(false)
   })
 })
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { addFoodSchema } from '../../../../lib/validations'
+import { zodErrorMessage } from '../../../../lib/apiError'
 import { captureFoodLogged } from '../../../../lib/posthog/server'
 import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
 import { resolveLoggedAtForRequest } from '../../../../lib/backfill'
@@ -17,7 +18,12 @@ export async function POST(req: Request) {
 
     const json = await req.json()
     const parsed = addFoodSchema.safeParse(json)
-    if (!parsed.success) return NextResponse.json({ error: parsed.error.message }, { status: 400 })
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: zodErrorMessage(parsed.error, 'Check the amount and try again.') },
+        { status: 400 }
+      )
+    }
 
     const { data: food, error: foodError } = await supabase
       .from('foods')

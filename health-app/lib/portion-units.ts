@@ -800,3 +800,58 @@ export function inferPortionSelection(units: Unit[], grams: number): { unit: Uni
   if (best) return { unit: best.unit, quantity: best.quantity }
   return { unit: gramUnit, quantity: grams }
 }
+
+/**
+ * Grams ceiling for a single food log — mirrors `addFoodSchema.grams`
+ * (lib/validations.ts), which imports this constant so the cap has exactly one
+ * definition. The client clamps to it rather than letting the server reject a
+ * payload it never should have been offered.
+ */
+export const MAX_LOG_GRAMS = 10000
+
+const round2q = (n: number) => Math.round(n * 100) / 100
+
+/**
+ * Bounds for the − / + quantity stepper shared by AddFoodModal and
+ * EditFoodLogModal: 10g in gram mode, an ounce in ounce mode, half a portion
+ * otherwise. Both sheets read them from here so they cannot drift apart.
+ *
+ * `max` is derived from MAX_LOG_GRAMS via the unit's own weight, so the stepper
+ * physically cannot build a payload the server would reject — an oversized
+ * portion used to reach the API and come back as a serialized Zod error.
+ */
+export function quantityBounds(unit: Unit): { step: number; min: number; max: number } {
+  const step = unit.key === 'g' ? 10 : unit.key === 'oz' ? 1 : 0.5
+  const min = unit.key === 'g' ? 5 : 0.25
+  const perUnit = unit.toGrams(1)
+  const max = perUnit > 0 ? Math.max(min, round2q(MAX_LOG_GRAMS / perUnit)) : min
+  return { step, min, max }
+}
+
+/**
+ * One tap of − / +.
+ *
+ * A tap of − must never *raise* the value: a hand-typed 3g sits below the 5g
+ * minimum, and a plain `Math.max(min, q - step)` would bump it up to 5. Below
+ * the minimum, − simply holds.
+ */
+export function stepQuantity(quantity: number, dir: 1 | -1, unit: Unit): number {
+  const { step, min, max } = quantityBounds(unit)
+  const q = Number.isFinite(quantity) ? quantity : min
+  if (dir === -1) return q <= min ? round2q(q) : round2q(Math.max(min, q - step))
+  return round2q(Math.min(max, q + step))
+}
+
+/**
+ * Blur-time repair for the free-text quantity field. Empty, zero, negative and
+ * unparseable input all become the minimum — the field is never left in a
+ * state that disables the Add button, which is what an emptied field used to
+ * do. A deliberately small typed amount (5g of ghee) is left alone; only the
+ * invalid cases snap.
+ */
+export function normalizeQuantity(raw: string, unit: Unit): number {
+  const { min, max } = quantityBounds(unit)
+  const n = parseFloat(raw)
+  if (!Number.isFinite(n) || n <= 0) return min
+  return round2q(Math.min(n, max))
+}

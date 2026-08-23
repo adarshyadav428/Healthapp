@@ -6,7 +6,13 @@ import {
   inferPortionSelection,
   defaultPortionFor,
   FALLBACK_SERVING_G,
+  quantityBounds,
+  stepQuantity,
+  normalizeQuantity,
+  GRAMS_UNIT,
+  MAX_LOG_GRAMS,
   SMART_PORTIONS,
+  type Unit,
 } from '../lib/portion-units'
 
 function makeFood(over: Partial<Food> = {}): Food {
@@ -272,5 +278,95 @@ describe('defaultPortionFor — the one answer both log buttons use', () => {
     const portion = defaultPortionFor(pack)
     expect(portion.grams).toBe(30)
     expect(portion.quantity).toBe(1)
+  })
+})
+
+describe('quantity stepper', () => {
+  const katori: Unit = { key: 'katori', label: 'Katori (200g)', toGrams: (q) => q * 200 }
+  const ounce: Unit  = { key: 'oz',     label: 'Ounces',        toGrams: (q) => q * 28.35 }
+
+  describe('quantityBounds', () => {
+    it('keeps the granularity both amount editors already shipped with', () => {
+      expect(quantityBounds(GRAMS_UNIT)).toMatchObject({ step: 10, min: 5 })
+      expect(quantityBounds(katori)).toMatchObject({ step: 0.5, min: 0.25 })
+      expect(quantityBounds(ounce)).toMatchObject({ step: 1, min: 0.25 })
+    })
+
+    it('derives the maximum from the server grams cap', () => {
+      expect(quantityBounds(GRAMS_UNIT).max).toBe(MAX_LOG_GRAMS)
+      expect(quantityBounds(katori).max).toBe(50) // 10,000g / 200g
+    })
+
+    it('never returns a max below the min, even for an absurd portion', () => {
+      const feast: Unit = { key: 'feast', label: 'Feast', toGrams: (q) => q * 99999 }
+      expect(quantityBounds(feast).max).toBe(quantityBounds(feast).min)
+    })
+  })
+
+  describe('stepQuantity', () => {
+    it('moves one step per tap', () => {
+      expect(stepQuantity(1, 1, katori)).toBe(1.5)
+      expect(stepQuantity(2, -1, katori)).toBe(1.5)
+      expect(stepQuantity(100, 1, GRAMS_UNIT)).toBe(110)
+      expect(stepQuantity(100, -1, GRAMS_UNIT)).toBe(90)
+    })
+
+    it('never raises the value on a decrement below the minimum', () => {
+      // A hand-typed 3g sits under the 5g minimum — Math.max(min, q - step)
+      // would have bumped it *up* to 5.
+      expect(stepQuantity(3, -1, GRAMS_UNIT)).toBe(3)
+      expect(stepQuantity(0.1, -1, katori)).toBe(0.1)
+      expect(stepQuantity(5, -1, GRAMS_UNIT)).toBe(5)
+      expect(stepQuantity(8, -1, GRAMS_UNIT)).toBe(5)
+    })
+
+    it('clamps at the maximum so the payload stays under the server cap', () => {
+      expect(stepQuantity(50, 1, katori)).toBe(50)
+      expect(katori.toGrams(stepQuantity(50, 1, katori))).toBeLessThanOrEqual(MAX_LOG_GRAMS)
+      expect(stepQuantity(MAX_LOG_GRAMS, 1, GRAMS_UNIT)).toBe(MAX_LOG_GRAMS)
+    })
+
+    it('falls back to the minimum for a non-finite quantity', () => {
+      expect(stepQuantity(NaN, 1, katori)).toBe(0.75)
+      expect(stepQuantity(NaN, -1, katori)).toBe(0.25)
+    })
+
+    it('does not accumulate floating-point noise', () => {
+      let q = 1
+      for (let i = 0; i < 10; i++) q = stepQuantity(q, 1, katori)
+      expect(q).toBe(6)
+    })
+  })
+
+  describe('normalizeQuantity', () => {
+    it('repairs empty, zero, negative and unparseable input to the minimum', () => {
+      expect(normalizeQuantity('', katori)).toBe(0.25)
+      expect(normalizeQuantity('0', katori)).toBe(0.25)
+      expect(normalizeQuantity('-3', katori)).toBe(0.25)
+      expect(normalizeQuantity('abc', katori)).toBe(0.25)
+      expect(normalizeQuantity('', GRAMS_UNIT)).toBe(5)
+      expect(normalizeQuantity('.', GRAMS_UNIT)).toBe(5)
+    })
+
+    it('leaves a deliberately small typed amount alone', () => {
+      // 5g of ghee, or a 30g namkeen packet, are real logs — only invalid
+      // input snaps.
+      expect(normalizeQuantity('30', GRAMS_UNIT)).toBe(30)
+      expect(normalizeQuantity('0.5', katori)).toBe(0.5)
+      expect(normalizeQuantity('1.', katori)).toBe(1)
+    })
+
+    it('clamps an over-cap amount to the maximum', () => {
+      expect(normalizeQuantity('999', katori)).toBe(50)
+      expect(normalizeQuantity('50000', GRAMS_UNIT)).toBe(MAX_LOG_GRAMS)
+    })
+
+    it('never returns a value the add schema would reject', () => {
+      for (const raw of ['', '0', '-3', 'abc', '999', '50000', '1.5']) {
+        const grams = katori.toGrams(normalizeQuantity(raw, katori))
+        expect(grams, raw).toBeGreaterThan(0)
+        expect(grams, raw).toBeLessThanOrEqual(MAX_LOG_GRAMS)
+      }
+    })
   })
 })

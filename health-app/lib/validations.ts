@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { MEAL_CONTEXTS } from './mealContext'
+import { MAX_LOG_GRAMS } from './portion-units'
 
 export const signInSchema = z.object({
   email: z.string().email(),
@@ -26,7 +27,7 @@ export const addFoodSchema = z.object({
   food_id: z.string().uuid(),
   meal: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
   servings: z.number().positive().max(99, { message: 'Servings cannot exceed 99' }),
-  grams: z.number().positive().max(10000, { message: 'Grams cannot exceed 10,000' }),
+  grams: z.number().positive().max(MAX_LOG_GRAMS, { message: 'Grams cannot exceed 10,000' }),
   // Optional backfill target — an IST calendar date (YYYY-MM-DD). Absent = today.
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   // Where the meal was eaten. Optional and nullable — a wrong value is worse
@@ -40,6 +41,31 @@ export const addFoodSchema = z.object({
   // `food_logged` event and no milestone, or an undo would inflate the log
   // count and could fire the first-log celebration a second time.
   restore: z.boolean().optional(),
+})
+
+/**
+ * Editing an existing log entry. Lives here rather than inline in
+ * app/api/logs/edit/route.ts so it is testable and so its bounds can be read
+ * against addFoodSchema's — the two used to disagree, and an edit could store
+ * a grams amount the add path forbids.
+ *
+ * The macro fields are client-computed here (unlike the add route, which
+ * recomputes them server-side from the food row) because an entry may have no
+ * linked food at all — a camera or chat log carries its own macros.
+ */
+export const editFoodLogSchema = z.object({
+  id: z.string().uuid(),
+  grams: z.number().positive().max(MAX_LOG_GRAMS, { message: 'Grams cannot exceed 10,000' }),
+  servings: z.number().positive().max(99, { message: 'Servings cannot exceed 99' }).default(1),
+  meal: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
+  kcal: z.number().nonnegative(),
+  protein_g: z.number().nonnegative(),
+  carbs_g: z.number().nonnegative(),
+  fat_g: z.number().nonnegative(),
+  // Optional by design (migration 032). `null` is a real value here — it's how
+  // a user clears a tag they set by mistake — so nullable rather than optional
+  // alone, and `undefined` leaves the existing tag untouched.
+  context: z.enum(MEAL_CONTEXTS).nullable().optional(),
 })
 
 export const weightLogSchema = z.object({

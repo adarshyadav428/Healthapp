@@ -9,10 +9,11 @@ import { getIstDayRange, dateStrToUtcMidnight } from '../../lib/dateUtils'
 import { ArrowLeft, ChevronDown, Drumstick, Droplet, Wheat, Sprout, Loader2, Minus, Plus } from 'lucide-react'
 import { reportLogMilestone } from '../../store/milestoneStore'
 import type { LogMilestone } from '../../lib/logMilestones'
-import { buildUnits, defaultPortionFor, type Unit } from '../../lib/portion-units'
+import { buildUnits, defaultPortionFor, quantityBounds, stepQuantity, normalizeQuantity, type Unit } from '../../lib/portion-units'
 import { mealForTime } from '../../lib/meal'
 import { MEAL_CONTEXTS, MEAL_CONTEXT_LABELS, type MealContext } from '../../lib/mealContext'
 import { logMetaHeaders } from '../../lib/posthog/client'
+import { userFacingApiError } from '../../lib/apiError'
 import { UnitPicker } from './UnitPicker'
 
 const MEAL_OPTIONS = [
@@ -79,11 +80,17 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
   const grams = unit.toGrams(quantityNum)
 
   // Same granularity EditFoodLogModal uses: 10 g in gram mode, half a portion
-  // otherwise, so the two amount editors behave identically.
-  const step = unit.key === 'g' ? 10 : unit.key === 'oz' ? 1 : 0.5
-  const minQuantity = unit.key === 'g' ? 5 : 0.25
-  const stepBy = (dir: 1 | -1) =>
-    setQuantityStr(String(Math.max(minQuantity, round2(quantityNum + dir * step))))
+  // otherwise, so the two amount editors behave identically. Both now read it
+  // from lib/portion-units.ts rather than each keeping its own copy.
+  const bounds = quantityBounds(unit)
+  const stepBy = (dir: 1 | -1) => setQuantityStr(String(stepQuantity(quantityNum, dir, unit)))
+  // Strip anything that isn't a digit or a dot: kills the minus key, `e`
+  // notation and a pasted "-500" in one pass, while still allowing a
+  // half-typed "1." and a momentarily empty field.
+  const onQuantityChange = (raw: string) => setQuantityStr(raw.replace(/[^0-9.]/g, ''))
+  // Leaving the field never leaves it broken: empty, zero and negative all
+  // snap to the minimum rather than silently disabling the Add button.
+  const onQuantityBlur = () => setQuantityStr(String(normalizeQuantity(quantityStr, unit)))
 
   // Switching measure keeps the AMOUNT, not the number in the box. Without
   // this, opening on "1 katori" and switching to Grams left the quantity at 1
@@ -132,7 +139,9 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
 
       const body = (await res.json().catch(() => ({}))) as { error?: string; row?: FoodLog; milestone?: LogMilestone }
 
-      if (!res.ok) throw new Error(body?.error || 'Failed to log food')
+      // 4xx is a validation message written for a person; 5xx is a Postgres
+      // string written for us. See lib/apiError.ts.
+      if (!res.ok) throw new Error(userFacingApiError(res.status, body?.error, 'Could not log this food.'))
 
       // API now returns the full inserted row — update cache instantly (no refetch needed).
       // Key by the day the entry belongs to (the viewed day when backfilling).
@@ -195,8 +204,9 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
                 <button
                   type="button"
                   onClick={() => stepBy(-1)}
+                  disabled={quantityNum <= bounds.min}
                   aria-label="Decrease quantity"
-                  className="flex h-12 w-10 shrink-0 items-center justify-center text-ink-2 tap-scale"
+                  className="flex h-12 w-10 shrink-0 items-center justify-center text-ink-2 tap-scale disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Minus className="h-4 w-4" strokeWidth={2.5} />
                 </button>
@@ -204,7 +214,11 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
                   type="number"
                   inputMode="decimal"
                   value={quantityStr}
-                  onChange={(e) => setQuantityStr(e.target.value)}
+                  min={bounds.min}
+                  max={bounds.max}
+                  step={bounds.step}
+                  onChange={(e) => onQuantityChange(e.target.value)}
+                  onBlur={onQuantityBlur}
                   onFocus={(e) => e.target.select()}
                   placeholder="1"
                   className="h-12 min-w-0 flex-1 bg-transparent px-1 text-center text-lg font-bold text-ink outline-none focus:ring-[3px] focus:ring-brand-ring rounded-control transition-all"
@@ -212,8 +226,9 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
                 <button
                   type="button"
                   onClick={() => stepBy(1)}
+                  disabled={quantityNum >= bounds.max}
                   aria-label="Increase quantity"
-                  className="flex h-12 w-10 shrink-0 items-center justify-center text-ink-2 tap-scale"
+                  className="flex h-12 w-10 shrink-0 items-center justify-center text-ink-2 tap-scale disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Plus className="h-4 w-4" strokeWidth={2.5} />
                 </button>
