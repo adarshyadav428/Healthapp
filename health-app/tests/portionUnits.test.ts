@@ -4,7 +4,13 @@ import {
   buildUnits,
   pickDefaultUnit,
   inferPortionSelection,
+  quantityBounds,
+  stepQuantity,
+  normalizeQuantity,
+  GRAMS_UNIT,
+  MAX_LOG_GRAMS,
   SMART_PORTIONS,
+  type Unit,
 } from '../lib/portion-units'
 
 function makeFood(over: Partial<Food> = {}): Food {
@@ -221,5 +227,106 @@ describe('SMART_PORTIONS table sanity', () => {
     expect(firstMatch('Pav Bhaji').portions[0].grams).toBe(280) // not 40g pav
     expect(firstMatch('Pani Puri').portions[0].grams).toBe(90)  // not 25g puri
     expect(firstMatch('Chicken Biryani').portions.some((p) => p.label.includes('plate'))).toBe(true) // biryani, not chicken curry
+  })
+})
+
+describe('quantity stepper', () => {
+  const katori: Unit = { key: 'katori', label: 'Katori (200g)', toGrams: (q) => q * 200 }
+  const ounce: Unit  = { key: 'oz',     label: 'Ounces',        toGrams: (q) => q * 28.35 }
+
+  describe('quantityBounds', () => {
+    it('steps whole units: 25g in gram mode, 1 portion otherwise', () => {
+      expect(quantityBounds(GRAMS_UNIT).step).toBe(25)
+      expect(quantityBounds(katori).step).toBe(1)
+      expect(quantityBounds(ounce).step).toBe(1)
+    })
+
+    it('uses the step as the minimum', () => {
+      expect(quantityBounds(GRAMS_UNIT).min).toBe(25)
+      expect(quantityBounds(katori).min).toBe(1)
+    })
+
+    it('derives the maximum from the server grams cap', () => {
+      expect(quantityBounds(GRAMS_UNIT).max).toBe(MAX_LOG_GRAMS)
+      expect(quantityBounds(katori).max).toBe(50) // 10,000g / 200g
+    })
+
+    it('never returns a max below the step, even for an absurd portion', () => {
+      const feast: Unit = { key: 'feast', label: 'Feast', toGrams: (q) => q * 99999 }
+      expect(quantityBounds(feast).max).toBe(1)
+    })
+  })
+
+  describe('stepQuantity', () => {
+    it('moves a whole unit per tap', () => {
+      expect(stepQuantity(1, 1, katori)).toBe(2)
+      expect(stepQuantity(3, -1, katori)).toBe(2)
+      expect(stepQuantity(100, 1, GRAMS_UNIT)).toBe(125)
+      expect(stepQuantity(100, -1, GRAMS_UNIT)).toBe(75)
+    })
+
+    it('snaps an off-grid amount onto the grid', () => {
+      expect(stepQuantity(107, 1, GRAMS_UNIT)).toBe(125)
+      expect(stepQuantity(107, -1, GRAMS_UNIT)).toBe(100)
+      expect(stepQuantity(1.5, 1, katori)).toBe(2)
+      expect(stepQuantity(1.5, -1, katori)).toBe(1)
+    })
+
+    it('never raises the value on a decrement below the minimum', () => {
+      // A hand-typed 10g sits under the 25g minimum — Math.max(min, q - step)
+      // would have bumped it *up* to 25.
+      expect(stepQuantity(10, -1, GRAMS_UNIT)).toBe(10)
+      expect(stepQuantity(0.5, -1, katori)).toBe(0.5)
+      expect(stepQuantity(25, -1, GRAMS_UNIT)).toBe(25)
+      expect(stepQuantity(1, -1, katori)).toBe(1)
+    })
+
+    it('clamps at the maximum so the payload stays under the server cap', () => {
+      expect(stepQuantity(50, 1, katori)).toBe(50)
+      expect(katori.toGrams(stepQuantity(50, 1, katori))).toBeLessThanOrEqual(MAX_LOG_GRAMS)
+      expect(stepQuantity(MAX_LOG_GRAMS, 1, GRAMS_UNIT)).toBe(MAX_LOG_GRAMS)
+    })
+
+    it('falls back to the minimum for a non-finite quantity', () => {
+      expect(stepQuantity(NaN, 1, katori)).toBe(2)
+      expect(stepQuantity(NaN, -1, katori)).toBe(1)
+    })
+
+    it('does not accumulate floating-point noise', () => {
+      let q = 1
+      for (let i = 0; i < 10; i++) q = stepQuantity(q, 1, katori)
+      expect(q).toBe(11)
+    })
+  })
+
+  describe('normalizeQuantity', () => {
+    it('repairs empty, zero, negative and unparseable input to the minimum', () => {
+      expect(normalizeQuantity('', katori)).toBe(1)
+      expect(normalizeQuantity('0', katori)).toBe(1)
+      expect(normalizeQuantity('-3', katori)).toBe(1)
+      expect(normalizeQuantity('abc', katori)).toBe(1)
+      expect(normalizeQuantity('.', GRAMS_UNIT)).toBe(25)
+      expect(normalizeQuantity('', GRAMS_UNIT)).toBe(25)
+    })
+
+    it('leaves a deliberately small typed amount alone', () => {
+      // 5g of ghee is a real log — only invalid input snaps.
+      expect(normalizeQuantity('5', GRAMS_UNIT)).toBe(5)
+      expect(normalizeQuantity('0.5', katori)).toBe(0.5)
+      expect(normalizeQuantity('1.', katori)).toBe(1)
+    })
+
+    it('clamps an over-cap amount to the maximum', () => {
+      expect(normalizeQuantity('999', katori)).toBe(50)
+      expect(normalizeQuantity('50000', GRAMS_UNIT)).toBe(MAX_LOG_GRAMS)
+    })
+
+    it('never returns a value the add schema would reject', () => {
+      for (const raw of ['', '0', '-3', 'abc', '999', '50000', '1.5']) {
+        const grams = katori.toGrams(normalizeQuantity(raw, katori))
+        expect(grams, raw).toBeGreaterThan(0)
+        expect(grams, raw).toBeLessThanOrEqual(MAX_LOG_GRAMS)
+      }
+    })
   })
 })

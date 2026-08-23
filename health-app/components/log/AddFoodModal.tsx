@@ -9,10 +9,11 @@ import { getIstDayRange, dateStrToUtcMidnight } from '../../lib/dateUtils'
 import { ArrowLeft, ChevronDown, Drumstick, Droplet, Wheat, Sprout, Loader2 } from 'lucide-react'
 import { reportLogMilestone } from '../../store/milestoneStore'
 import type { LogMilestone } from '../../lib/logMilestones'
-import { buildUnits, pickDefaultUnit, type Unit } from '../../lib/portion-units'
+import { buildUnits, pickDefaultUnit, quantityBounds, stepQuantity, normalizeQuantity, type Unit } from '../../lib/portion-units'
 import { mealForTime } from '../../lib/meal'
 import { MEAL_CONTEXTS, MEAL_CONTEXT_LABELS, type MealContext } from '../../lib/mealContext'
 import { logMetaHeaders } from '../../lib/posthog/client'
+import { userFacingApiError } from '../../lib/apiError'
 import { UnitPicker } from './UnitPicker'
 
 const MEAL_OPTIONS = [
@@ -74,6 +75,16 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
   const quantityNum = Math.max(0, parseFloat(quantityStr) || 0)
   const grams = unit.toGrams(quantityNum)
 
+  // − / + stepper — whole units per tap, bounded by the server's grams cap.
+  const bounds = quantityBounds(unit)
+  const stepBy = (dir: 1 | -1) => setQuantityStr(String(stepQuantity(quantityNum, dir, unit)))
+  // Strip anything that isn't a digit or a dot: kills the minus key, `e`
+  // notation and a pasted "-500" in one pass, while still allowing a
+  // half-typed "1." and a momentarily empty field.
+  const onQuantityChange = (raw: string) => setQuantityStr(raw.replace(/[^0-9.]/g, ''))
+  // Leaving the field never leaves it broken: empty/zero snaps to the minimum.
+  const onQuantityBlur = () => setQuantityStr(String(normalizeQuantity(quantityStr, unit)))
+
   const nutrition = useMemo(() => {
     const factor = grams / 100
     return {
@@ -111,7 +122,9 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
 
       const body = (await res.json().catch(() => ({}))) as { error?: string; row?: FoodLog; milestone?: LogMilestone }
 
-      if (!res.ok) throw new Error(body?.error || 'Failed to log food')
+      // 4xx is a validation message written for a person; 5xx is a Postgres
+      // string written for us. See lib/apiError.ts.
+      if (!res.ok) throw new Error(userFacingApiError(res.status, body?.error, 'Could not log this food.'))
 
       // API now returns the full inserted row — update cache instantly (no refetch needed).
       // Key by the day the entry belongs to (the viewed day when backfilling).
@@ -165,31 +178,50 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
 
         {/* Quantity + Measure */}
         <div className="rounded-card bg-surface border border-hairline p-3 mb-6">
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <p className="text-xs text-ink-2 font-medium mb-1.5 px-1">Quantity</p>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={quantityStr}
-                onChange={(e) => setQuantityStr(e.target.value)}
-                onFocus={(e) => e.target.select()}
-                placeholder="1"
-                className="w-full h-12 rounded-control bg-surface-2 px-3 text-lg font-bold text-ink outline-none focus:ring-[3px] focus:ring-brand-ring transition-all"
-              />
-            </div>
-            <div>
-              <p className="text-xs text-ink-2 font-medium mb-1.5 px-1">Measure</p>
-              <button
-                type="button"
-                onClick={() => setShowUnitPicker(true)}
-                className="w-full h-12 rounded-control bg-surface-2 px-3 flex items-center justify-between text-left transition-all hover:bg-hairline"
-              >
-                <span className="text-base font-bold text-ink truncate">{unit.label}</span>
-                <ChevronDown className="h-4 w-4 text-ink-2 flex-shrink-0 ml-1" />
-              </button>
-            </div>
+          <p className="text-xs text-ink-2 font-medium mb-1.5 px-1">Quantity</p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => stepBy(-1)}
+              disabled={quantityNum <= bounds.min}
+              aria-label="Decrease quantity"
+              className="h-12 w-12 flex-shrink-0 rounded-control bg-surface-2 text-xl font-bold text-ink hover:bg-hairline active:scale-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
+            >
+              −
+            </button>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={quantityStr}
+              min={bounds.min}
+              max={bounds.max}
+              step={bounds.step}
+              onChange={(e) => onQuantityChange(e.target.value)}
+              onBlur={onQuantityBlur}
+              onFocus={(e) => e.target.select()}
+              placeholder="1"
+              className="flex-1 min-w-0 h-12 rounded-control bg-surface-2 px-3 text-center text-lg font-bold text-ink tabular-nums outline-none focus:ring-[3px] focus:ring-brand-ring transition-all"
+            />
+            <button
+              type="button"
+              onClick={() => stepBy(1)}
+              disabled={quantityNum >= bounds.max}
+              aria-label="Increase quantity"
+              className="h-12 w-12 flex-shrink-0 rounded-control bg-surface-2 text-xl font-bold text-ink hover:bg-hairline active:scale-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
+            >
+              +
+            </button>
           </div>
+
+          <p className="text-xs text-ink-2 font-medium mb-1.5 mt-3 px-1">Measure</p>
+          <button
+            type="button"
+            onClick={() => setShowUnitPicker(true)}
+            className="w-full h-12 rounded-control bg-surface-2 px-3 flex items-center justify-between text-left transition-all hover:bg-hairline"
+          >
+            <span className="text-base font-bold text-ink truncate">{unit.label}</span>
+            <ChevronDown className="h-4 w-4 text-ink-2 flex-shrink-0 ml-1" />
+          </button>
         </div>
 
         {/* Macronutrients Breakdown */}

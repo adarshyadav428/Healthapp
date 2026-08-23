@@ -771,3 +771,65 @@ export function inferPortionSelection(units: Unit[], grams: number): { unit: Uni
   if (best) return { unit: best.unit, quantity: best.quantity }
   return { unit: gramUnit, quantity: grams }
 }
+
+/**
+ * Grams ceiling for a single food log — mirrors `addFoodSchema.grams`
+ * (lib/validations.ts), which imports this constant so the cap has exactly one
+ * definition. The client clamps to it rather than letting the server reject a
+ * payload it never should have been offered.
+ */
+export const MAX_LOG_GRAMS = 10000
+
+const EPSILON = 1e-9
+const round2q = (n: number) => Math.round(n * 100) / 100
+
+/**
+ * Bounds for the − / + quantity stepper shared by AddFoodModal and
+ * EditFoodLogModal. Whole units per tap: 25g in gram mode, 1 whole portion
+ * (or ounce) otherwise — a katori goes 1 → 2 → 3, never 1.5.
+ *
+ * `max` is derived from MAX_LOG_GRAMS via the unit's own weight, so the
+ * stepper physically cannot build a payload the server would reject.
+ */
+export function quantityBounds(unit: Unit): { step: number; min: number; max: number } {
+  const step = unit.key === 'g' ? 25 : 1
+  const perUnit = unit.toGrams(1)
+  const max = perUnit > 0 ? Math.max(step, Math.floor(MAX_LOG_GRAMS / perUnit)) : step
+  return { step, min: step, max }
+}
+
+/**
+ * One tap of − / +. Snaps onto the step grid so amounts stay round
+ * (107g → 125g going up, → 100g going down).
+ *
+ * A tap of − must never *raise* the value: a hand-typed 10g sits below the 25g
+ * minimum, and a naive `Math.max(min, q - step)` would bump it up to 25. Below
+ * the minimum, − simply holds.
+ */
+export function stepQuantity(quantity: number, dir: 1 | -1, unit: Unit): number {
+  const { step, min, max } = quantityBounds(unit)
+  const q = Number.isFinite(quantity) ? quantity : min
+  const ratio = q / step
+
+  if (dir === 1) {
+    const next = (Math.floor(ratio + EPSILON) + 1) * step
+    return round2q(Math.min(max, Math.max(min, next)))
+  }
+
+  if (q <= min + EPSILON) return round2q(q)
+  const prev = (Math.ceil(ratio - EPSILON) - 1) * step
+  return round2q(Math.max(min, prev))
+}
+
+/**
+ * Blur-time repair for the free-text quantity field. Empty, zero, negative and
+ * unparseable input all become the minimum — the field is never left in a state
+ * that disables the Add button. A deliberately small typed amount (5g of ghee)
+ * is left alone; only the invalid cases snap.
+ */
+export function normalizeQuantity(raw: string, unit: Unit): number {
+  const { min, max } = quantityBounds(unit)
+  const n = parseFloat(raw)
+  if (!Number.isFinite(n) || n <= 0) return min
+  return round2q(Math.min(n, max))
+}

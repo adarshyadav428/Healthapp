@@ -10,8 +10,9 @@ import { X, ChevronDown } from 'lucide-react'
 import { getIstDayRange } from '../../lib/dateUtils'
 import { MEAL_CONTEXTS, MEAL_CONTEXT_LABELS, isMealContext, type MealContext } from '../../lib/mealContext'
 import { useUser } from '../../hooks/useUser'
-import { buildUnits, inferPortionSelection, GRAMS_UNIT, type Unit } from '../../lib/portion-units'
+import { buildUnits, inferPortionSelection, quantityBounds, stepQuantity, normalizeQuantity, GRAMS_UNIT, type Unit } from '../../lib/portion-units'
 import { UnitPicker } from './UnitPicker'
+import { userFacingApiError } from '../../lib/apiError'
 
 const MEAL_OPTIONS = [
   { value: 'breakfast', label: '🥣 Breakfast' },
@@ -55,11 +56,12 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
   const quantity = Math.max(0, parseFloat(quantityStr) || 0)
   const grams = round2(unit.toGrams(quantity))
 
-  // Stepper granularity: 10g in gram mode, half a portion otherwise
-  const step = unit.key === 'g' ? 10 : unit.key === 'oz' ? 1 : 0.5
-  const minQuantity = unit.key === 'g' ? 5 : 0.25
-  const stepBy = (dir: 1 | -1) =>
-    setQuantityStr(String(Math.max(minQuantity, round2(quantity + dir * step))))
+  // Stepper granularity, bounds and blur repair are shared with AddFoodModal so
+  // both sheets agree on what one tap of − / + means (lib/portion-units.ts).
+  const bounds = quantityBounds(unit)
+  const stepBy = (dir: 1 | -1) => setQuantityStr(String(stepQuantity(quantity, dir, unit)))
+  const onQuantityChange = (raw: string) => setQuantityStr(raw.replace(/[^0-9.]/g, ''))
+  const onQuantityBlur = () => setQuantityStr(String(normalizeQuantity(quantityStr, unit)))
 
   // Switching measure keeps the amount constant — re-express current grams in the new unit
   const switchUnit = (u: Unit) => {
@@ -114,7 +116,7 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Update failed')
+      if (!res.ok) throw new Error(userFacingApiError(res.status, data?.error, 'Could not update this entry.'))
 
       // Update cache in-place — no re-fetch needed (keyed to the day this
       // entry belongs to, not necessarily today — see logDate)
@@ -167,8 +169,9 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
             <button
               type="button"
               onClick={() => stepBy(-1)}
+              disabled={quantity <= bounds.min}
               aria-label="Decrease amount"
-              className="h-10 w-10 rounded-control border border-hairline bg-surface-2 text-ink font-bold hover:bg-hairline flex-shrink-0 transition-colors"
+              className="h-10 w-10 rounded-control border border-hairline bg-surface-2 text-ink font-bold hover:bg-hairline flex-shrink-0 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               −
             </button>
@@ -176,16 +179,20 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
               type="number"
               inputMode="decimal"
               value={quantityStr}
-              min={0}
-              onChange={(e) => setQuantityStr(e.target.value)}
+              min={bounds.min}
+              max={bounds.max}
+              step={bounds.step}
+              onChange={(e) => onQuantityChange(e.target.value)}
+              onBlur={onQuantityBlur}
               onFocus={(e) => e.target.select()}
-              className="w-20 flex-shrink-0 rounded-control border border-hairline bg-surface text-ink px-2 py-2.5 text-sm text-center outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
+              className="w-20 flex-shrink-0 rounded-control border border-hairline bg-surface text-ink px-2 py-2.5 text-sm text-center tabular-nums outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
             />
             <button
               type="button"
               onClick={() => stepBy(1)}
+              disabled={quantity >= bounds.max}
               aria-label="Increase amount"
-              className="h-10 w-10 rounded-control border border-hairline bg-surface-2 text-ink font-bold hover:bg-hairline flex-shrink-0 transition-colors"
+              className="h-10 w-10 rounded-control border border-hairline bg-surface-2 text-ink font-bold hover:bg-hairline flex-shrink-0 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               +
             </button>

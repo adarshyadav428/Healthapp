@@ -34,3 +34,30 @@ export function userFacingApiError(
   if (status >= 400 && status < 500) return message
   return fallback
 }
+
+/**
+ * The server-side counterpart: turn a ZodError into ONE sentence a person can
+ * act on, for the body of a 400.
+ *
+ * `ZodError.message` is the *serialized issue array*, so returning it hands the
+ * client a wall of JSON — and `userFacingApiError` above relays 4xx messages
+ * verbatim by design, which is precisely how a user came to see
+ * `[{"code":"too_big","maximum":10000,...}]` in a toast after logging an
+ * oversized portion. Only the first issue is relayed: a single toast can only
+ * report one thing to fix.
+ */
+export function zodErrorMessage(
+  error: { issues: readonly { path: readonly (string | number)[]; message: string }[] },
+  fallback: string = 'Some of that information was invalid.'
+): string {
+  const issue = error.issues[0]
+  const message = issue?.message?.trim()
+  if (!message) return fallback
+  // Zod's own defaults ("Required", "Invalid uuid", "Expected number, received
+  // nan") never say WHICH field, so name it. A message we authored ("Grams
+  // cannot exceed 10,000") already reads as a sentence and is left alone.
+  const field = issue.path.filter((p) => typeof p === 'string').join('.')
+  return field && /^(Required|Invalid|Expected|Number|String)\b/.test(message)
+    ? `${field}: ${message}`
+    : message
+}
