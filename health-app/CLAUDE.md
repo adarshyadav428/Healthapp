@@ -17,7 +17,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **72 files / 1,036 tests**. There is no `vitest.config.ts`; defaults apply.
+- **Tests:** Vitest 4.1 — **73 files / 1,070 tests**. There is no `vitest.config.ts`; defaults apply.
 - **Deploy:** Vercel **Hobby** plan, region `bom1`. The Hobby limits are load-bearing (see Hard rules).
 
 ## Architecture / directory map
@@ -55,7 +55,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   `components/log/shortcuts.tsx` holds the one set of re-log / combo / copy-yesterday tiles that both
   `FoodLanding` and `FoodSearch` render — they used to be implemented twice, with different ordering
   and different meal-selection behaviour, which is how the same shortcut came to mean two things.
-- **`supabase/migrations/`** — `001`–`038`. Numbers are **not unique** (`002`, `004`, `005`, `009` each
+- **`supabase/migrations/`** — `001`–`039`. Numbers are **not unique** (`002`, `004`, `005`, `009` each
   appear twice) and there is **no `021`**. Always reference a migration by its exact filename.
 - **`middleware.ts`** — self-contained (there is no `lib/supabase/middleware.ts`). Refreshes the
   session cookie on every request, redirects unauthenticated users to `/auth/sign-in?returnTo=…`, and
@@ -77,7 +77,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (72 files / 1,036 tests)
+npm test                 # vitest run — the whole suite (73 files / 1,070 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
 npm run check:tokens     # design guard: no raw hex, broken opacity modifiers, off-scale type/radius/tracking
@@ -340,4 +340,13 @@ Food Facts gave us, and for how to audit such an `UPDATE` in the file header) ·
 `038_correct_mislabelled_food_rows.sql` (the same, for **values**: a row whose per-serving column landed
 in the per-100 g fields is rescaled by its own `serving_size_g`, never by another product's numbers, and
 guarded on a plausibility range so a second hand-paste cannot rescale twice — these are applied by hand,
-so every value-correcting `UPDATE` needs to be idempotent).
+so every value-correcting `UPDATE` needs to be idempotent) ·
+`039_onboarding_personalisation.sql` (`profiles.obstacles`, `profiles.tracking_experience` — the two
+personalising answers from onboarding steps 5 and 6). Both are nullable with no backfill: every account
+that onboarded earlier has NULL, and NULL means "never asked", so no surface may infer an answer from it.
+
+**Reading a column from an unapplied migration breaks the page, not just the feature.** Naming one in a
+`select` fails the whole query, which nulls the row — and on `app/onboarding/plan/page.tsx` a null profile
+trips a `redirect('/onboarding')`, bouncing a user who just finished onboarding straight back into it,
+forever. Anything optional (copy, personalisation) reads in a **separate, try/caught query**, the same
+way `app/api/onboarding/route.ts` writes `start_weight_kg` and the 039 columns.
