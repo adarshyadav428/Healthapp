@@ -2,15 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import dynamic from 'next/dynamic'
 import type { FoodLog, Profile } from '../../types/index'
 import { CalorieHeroCard } from '../home/CalorieHeroCard'
 import { GoalProjectionCard } from '../home/GoalProjectionCard'
 import type { GoalProjection } from '../../lib/goalProjection'
 import { PlateauCard } from '../home/PlateauCard'
 import { StreakRestartCard } from '../home/StreakRestartCard'
-import { pickDashboardMoment, type DashboardMoment } from '../../lib/dashboardMoments'
+import { useHomeSlot } from './HomeSlot'
 import { streakRestart } from '../../lib/streakRestart'
 import type { Plateau } from '../../lib/plateau'
 import { RecentMealCard } from '../home/RecentMealCard'
@@ -27,27 +25,22 @@ import { InstallPromptCard } from '../pwa/InstallPromptCard'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
 import { nextUnseenStreakMilestone } from '../../lib/logMilestones'
-import { nextStreakBadge } from '../../lib/badges'
 import { proteinCoachLine } from '../../lib/proteinCoach'
 import { cn } from '../../lib/utils'
 import { reportStreakMilestone } from '../../store/milestoneStore'
-import { Flame, Plus, MessageCircle, Snowflake } from 'lucide-react'
+import { Flame, Plus, Snowflake } from 'lucide-react'
 
-const ChatLogModal = dynamic(() => import('../chat/ChatLogModal').then(m => m.ChatLogModal), { ssr: false })
 
 interface Props {
   profile: Profile
   initialLogs: FoodLog[]
   streakDays: number
-  /** Best streak ever reached — the badge shelf awards on this, so the "next
-   *  badge" nudge must respect it or it offers rungs already earned. */
+  /** Best streak ever reached — what the comeback card counts back up to. */
   longestStreakDays?: number
   /** Streak freezes available — free for everyone, never a Pro gate. */
   freezesBanked?: number
   loggedDates: string[]
   isPro: boolean
-  /** Lifetime free AI scans left (0 for Pro — they're unlimited, never gated). */
-  aiTrialRemaining?: number
   weeklyRecap: WeeklyRecap | null
   /** A repairable streak break, Pro only. Null when there's nothing to offer. */
   rescueOffer?: { date: string; streakAfter: number } | null
@@ -57,12 +50,10 @@ interface Props {
   plateau?: Plateau | null
 }
 
-export function DashboardClient({ profile, initialLogs, streakDays, longestStreakDays = 0, freezesBanked = 0, loggedDates, isPro, aiTrialRemaining = 0, weeklyRecap, rescueOffer = null, projection = null, plateau = null }: Props) {
-  const router = useRouter()
+export function DashboardClient({ profile, initialLogs, streakDays, longestStreakDays = 0, freezesBanked = 0, loggedDates, isPro, weeklyRecap, rescueOffer = null, projection = null, plateau = null }: Props) {
   const { user } = useUser()
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, new Date(), initialLogs)
   const [editingLog, setEditingLog] = useState<FoodLog | null>(null)
-  const [showChat, setShowChat] = useState(false)
 
   // Celebrate a 7/30/100-day streak once each (localStorage-gated, fail-open).
   useEffect(() => {
@@ -93,7 +84,6 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
     [logs]
   )
 
-  const canUseAi = isPro || aiTrialRemaining > 0
 
   const target = profile.daily_calorie_target
   const hasLogs = logs.length > 0
@@ -108,18 +98,20 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
   )
   const recent = logs.slice(0, 3) // logs arrive newest-first
   const todayDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
-  const nextBadge = nextStreakBadge(streakDays, longestStreakDays)
 
-  // Home gets one moment. Each card still owns whether it *could* speak; this
-  // decides which one actually does. Without it, a Pro user at a streak of zero
-  // saw the rescue offer and the start-over card arguing with each other.
-  const moment = useMemo<DashboardMoment | null>(() => {
-    const eligible: DashboardMoment[] = []
-    if (rescueOffer) eligible.push('streak-rescue')
-    if (streakRestart(streakDays, longestStreakDays)) eligible.push('streak-restart')
-    if (plateau && profile.id) eligible.push('plateau')
-    return pickDashboardMoment(eligible)
-  }, [rescueOffer, streakDays, longestStreakDays, plateau, profile.id])
+  // Home gets one attention card. These three know their eligibility from
+  // props, so they claim it here; the six that have to probe the browser claim
+  // it from inside themselves. Both routes go through the same order in
+  // lib/dashboardMoments — see components/dashboard/HomeSlot.tsx for why the
+  // probing ones were not lifted up here instead.
+  //
+  // This replaced a local picker that coordinated only these three, which meant
+  // the other five still stacked underneath: a stalled scale, a Pro recap, a
+  // verify-email card, a notifications ask and an install ask could all land on
+  // one screen and push the calorie ring off the top.
+  const showRescue = useHomeSlot('streak-rescue', Boolean(rescueOffer))
+  const showRestart = useHomeSlot('streak-restart', Boolean(streakRestart(streakDays, longestStreakDays)))
+  const showPlateau = useHomeSlot('plateau', Boolean(plateau && profile.id))
 
   return (
     <>
@@ -152,15 +144,6 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
                 </span>
               )}
             </div>
-            {/* The badge shelf lives on Trends, which people rarely open — so the
-                one rung that's actually within reach gets a whisper here. Ink,
-                not ember: on Home ember is reserved for data, and this is a
-                prompt. Hidden entirely when the next rung is far away. */}
-            {nextBadge && (
-              <p className="mt-[7px] pr-1 text-caption font-medium text-ink-3">
-                {nextBadge.daysAway} {nextBadge.daysAway === 1 ? 'day' : 'days'} to {nextBadge.name} {nextBadge.emoji}
-              </p>
-            )}
           </div>
         )}
       </div>
@@ -194,24 +177,22 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
         </p>
       )}
 
-      {/* ── One moment, not three. See lib/dashboardMoments for the order and
-           for the contradiction it exists to prevent. ── */}
-      {moment === 'streak-rescue' && <StreakRescueCard offer={rescueOffer} />}
-      {moment === 'streak-restart' && (
+      {/* ── The one attention card. Every candidate below renders nothing unless
+           it won the slot, so at most one of these ever appears. The order they
+           sit in here is cosmetic — lib/dashboardMoments decides. ── */}
+      {showRescue && <StreakRescueCard offer={rescueOffer} />}
+      {showRestart && (
         <StreakRestartCard streakDays={streakDays} longestStreakDays={longestStreakDays} />
       )}
-
-      {/* ── Where today's number is taking them ── */}
-      {projection && (
-        <div className="mt-4">
-          <GoalProjectionCard projection={projection} targetKg={profile.target_weight_kg ?? null} />
-        </div>
-      )}
-
-      {/* ── The stall, named. Sits above the target suggestion on purpose: this
-           explains what is happening over weeks, that offers a lever for it. ── */}
-      {moment === 'plateau' && plateau && profile.id && (
+      {showPlateau && plateau && profile.id && (
         <PlateauCard plateau={plateau} goal={profile.goal} userId={profile.id} />
+      )}
+      {/* No wrapper div: `projection` is never actually null (goalProjection
+          returns `{ kind: 'none' }`, which is truthy), so a `mt-4` wrapper here
+          rendered an empty 16px gap on every screen where the card stayed
+          hidden. The card carries its own top margin instead. */}
+      {projection && (
+        <GoalProjectionCard projection={projection} targetKg={profile.target_weight_kg ?? null} />
       )}
 
       {/* ── Suggested target adjustment (opt-in, never auto-applied) ── */}
@@ -265,25 +246,6 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
         />
       )}
 
-      {/* Floating chat entry — describe a meal in free text instead of searching/scanning */}
-      <button
-        type="button"
-        // Chat logging is entirely AI, so for a blocked user the modal is a
-        // dead end — they'd type a meal out and only then be told it's Pro.
-        // Send them to the paywall on tap instead. Someone with trial scans
-        // left is not blocked, so they get the modal. (The camera FAB
-        // deliberately isn't gated this way: that modal also does barcode
-        // scanning, which stays free, so its Pro boundary lives at the
-        // photo-scan call.)
-        onClick={() => canUseAi ? setShowChat(true) : router.push('/upgrade?reason=chat_scan_pro')}
-        aria-label={canUseAi ? 'Log a meal by describing it' : 'AI meal logging — a Pro feature'}
-        className="fixed right-5 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-surface tap-scale"
-        style={{ bottom: 'calc(84px + env(safe-area-inset-bottom))', boxShadow: 'var(--shadow-float)' }}
-      >
-        <MessageCircle className="h-5 w-5 text-brand" strokeWidth={2} />
-      </button>
-
-      {showChat && <ChatLogModal onClose={() => setShowChat(false)} />}
     </>
   )
 }

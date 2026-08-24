@@ -9,6 +9,7 @@ import { toast } from '../ui/use-toast'
 import { Button } from '../ui/button'
 import { captureEvent } from '../../lib/posthog/client'
 import type { AdaptiveSuggestion } from '../../lib/adaptiveTarget'
+import { useHomeSlot } from './HomeSlot'
 
 const AIR = { boxShadow: 'var(--shadow-air)' } as const
 
@@ -48,7 +49,10 @@ export function AdaptiveTargetCard({ profile }: { profile: Profile }) {
   })
 
   const suggestion = data?.suggestion ?? null
-  if (!suggestion || dismissed) return null
+  // See components/dashboard/HomeSlot.tsx — one attention card on Home.
+  const wins = useHomeSlot('adaptive-target', Boolean(suggestion) && !dismissed)
+  // `!suggestion` stays in the guard so TypeScript keeps narrowing it below.
+  if (!wins || !suggestion) return null
 
   const isIncrease = suggestion.deltaKcal > 0
 

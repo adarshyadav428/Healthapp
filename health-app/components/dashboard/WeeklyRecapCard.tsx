@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { Sparkles } from 'lucide-react'
 import { captureEvent } from '../../lib/posthog/client'
+import { useHomeSlot } from './HomeSlot'
 
 export type WeeklyRecap = {
   daysLogged: number
@@ -32,7 +33,9 @@ export function WeeklyRecapCard({ recap, isPro, dailyTarget, streakDays }: {
     if (hasRecap) captureEvent('weekly_recap_viewed')
   }, [hasRecap])
 
-  if (!isPro) return null
+  // See components/dashboard/HomeSlot.tsx — one attention card on Home.
+  const wins = useHomeSlot('weekly-recap', isPro)
+  if (!wins) return null
 
   if (!recap) {
     return (

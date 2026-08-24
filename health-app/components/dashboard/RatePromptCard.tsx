@@ -10,6 +10,7 @@ import {
   shouldShowRatePrompt,
 } from '../../lib/ratePrompt'
 import { captureEvent } from '../../lib/posthog/client'
+import { useHomeSlot } from './HomeSlot'
 
 const storageKey = (uid: string) => `gis.ratePrompt.${uid}`
 
@@ -57,7 +58,11 @@ export function RatePromptCard({ streakDays }: { streakDays: number }) {
     }
   }, [user?.id, streakDays])
 
-  if (!visible || !user?.id) return null
+  // Claims Home's one attention slot rather than rendering on its own say-so.
+  // The probe above is unchanged and still the only thing that knows whether
+  // this card *could* speak; the slot decides whether it does.
+  const wins = useHomeSlot('rate', visible && Boolean(user?.id))
+  if (!wins || !user?.id) return null
 
   return (
     <div

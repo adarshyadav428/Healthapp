@@ -12,12 +12,27 @@
  * Same shape as lib/pushBudget.ts on purpose: a frozen priority order, and a
  * picker that returns at most one.
  *
- * Scope: this covers the moments Home already knows about when it renders.
- * The prompt cards that probe the browser for themselves — install, rate,
- * notification priming, email verification — still self-gate independently,
- * because their eligibility isn't knowable until they mount. Folding those in
- * needs their checks lifted out first; until then this is the ordering for the
- * three that genuinely collide.
+ * **Scope grew on 2026-08-25.** This used to cover only the three moments Home
+ * knew about at render time, and said so: "the prompt cards that probe the
+ * browser for themselves — install, rate, notification priming, email
+ * verification — still self-gate independently, because their eligibility isn't
+ * knowable until they mount. Folding those in needs their checks lifted out
+ * first." Their checks are now lifted out (hooks/useHomeSlot.ts does the
+ * probing and hands the results here as data), so the list below covers every
+ * card on Home that asks for attention.
+ *
+ * That was the whole problem: coordinating three of eight still left five
+ * uncoordinated, and a user could meet a stalled-scale card, a Pro recap, a
+ * verify-your-email card, a notifications ask and an install ask on one screen.
+ * Each is individually reasonable. Together they are a wall, and the calorie
+ * ring — the reason the screen exists — scrolls off the top.
+ *
+ * The order below is the editorial judgement, stated once so it stops being an
+ * accident of JSX order:
+ *   1. things that repair or explain the user's own data  (rescue → plateau)
+ *   2. things that unlock a capability they already have  (verify → notify)
+ *   3. things that only ask                               (rate → install)
+ * A pure growth ask never outranks a broken streak.
  */
 
 /** Every moment Home can lead with, most important first. */
@@ -32,6 +47,26 @@ export const DASHBOARD_MOMENTS = [
   'streak-restart',
   /** The week-3-4 stall, explained. Weeks-long, so it can wait a day. */
   'plateau',
+  /**
+   * "Your target should move to N." A correction to the number every other
+   * screen is measured against, so it outranks anything merely informational.
+   */
+  'adaptive-target',
+  /** The projected goal date. Motivating, but it is news, not an action. */
+  'goal-projection',
+  /** Pro's Sunday summary. Worth a slot, but it keeps until the streak is safe. */
+  'weekly-recap',
+  /**
+   * Confirming an email unlocks the free AI scans, so this gives the user
+   * something. That is why it outranks the two asks below it.
+   */
+  'verify-email',
+  /** Reminders protect the streak — useful, but the app works without them. */
+  'notification-prime',
+  /** A pure ask: the user gets nothing. Gated on a 3-day streak already. */
+  'rate',
+  /** The other pure ask, and the most interruptive, so it goes last. */
+  'install',
 ] as const
 
 export type DashboardMoment = (typeof DASHBOARD_MOMENTS)[number]

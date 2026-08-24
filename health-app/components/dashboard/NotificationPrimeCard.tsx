@@ -5,6 +5,7 @@ import { Bell, X } from 'lucide-react'
 import { toast } from '../ui/use-toast'
 import { captureEvent } from '../../lib/posthog/client'
 import { isPushSupported, getCurrentPushSubscription, subscribeToPush } from '../../lib/push/client'
+import { useHomeSlot } from './HomeSlot'
 
 const DISMISS_KEY = 'gis.notifPrimeDismissed'
 
@@ -34,7 +35,9 @@ export function NotificationPrimeCard() {
     return () => { active = false }
   }, [])
 
-  if (!visible) return null
+  // See components/dashboard/HomeSlot.tsx — one attention card on Home.
+  const wins = useHomeSlot('notification-prime', visible)
+  if (!wins) return null
 
   const enable = async () => {
     if (busy) return

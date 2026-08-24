@@ -10,6 +10,7 @@ import {
 } from '../../lib/emailVerification'
 import { captureEvent } from '../../lib/posthog/client'
 import { AI_TRIAL_SCANS } from '../../lib/aiTrial'
+import { useHomeSlot } from './HomeSlot'
 
 const storageKey = (uid: string) => `gis.verifyEmail.${uid}`
 
@@ -62,7 +63,9 @@ export function VerifyEmailCard() {
     )
   }, [user?.id, profile])
 
-  if (!visible || !user?.id || !user.email) return null
+  // See components/dashboard/HomeSlot.tsx — one attention card on Home.
+  const wins = useHomeSlot('verify-email', visible && Boolean(user?.id) && Boolean(user?.email))
+  if (!wins || !user?.id || !user.email) return null
 
   return (
     <div className="mt-4 rounded-card bg-surface p-4" style={{ boxShadow: 'var(--shadow-air)' }}>

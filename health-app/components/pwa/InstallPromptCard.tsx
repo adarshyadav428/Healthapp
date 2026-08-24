@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Download } from 'lucide-react'
 import { parseA2hsState, shouldShowA2hs, type A2hsState } from '../../lib/a2hs'
 import { captureEvent } from '../../lib/posthog/client'
+import { useHomeSlot } from '../dashboard/HomeSlot'
 
 // Chrome's non-standard event — not in lib.dom.
 type BeforeInstallPromptEvent = Event & {
@@ -54,7 +55,9 @@ export function InstallPromptCard() {
     return () => window.removeEventListener('beforeinstallprompt', onPrompt)
   }, [])
 
-  if (!visible) return null
+  // See components/dashboard/HomeSlot.tsx — one attention card on Home.
+  const wins = useHomeSlot('install', visible)
+  if (!wins) return null
 
   const install = async () => {
     const deferred = promptRef.current

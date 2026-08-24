@@ -1,6 +1,9 @@
+'use client'
+
 import Link from 'next/link'
 import type { GoalProjection } from '../../lib/goalProjection'
 import { goalProjectionCopy } from '../../lib/goalProjection'
+import { useHomeSlot } from '../dashboard/HomeSlot'
 
 /**
  * The projected-goal-date moment on Home.
@@ -26,16 +29,24 @@ export function GoalProjectionCard({
   projection: GoalProjection
   targetKg: number | null
 }) {
-  if (targetKg == null) return null
-  const copy = goalProjectionCopy(projection, targetKg)
-  if (!copy) return null
+  // Computed before the slot claim rather than short-circuiting above it: a
+  // hook cannot sit behind an early return, and `goalProjectionCopy` is pure so
+  // running it every render costs nothing. It returns null for `kind: 'none'`,
+  // which is the real suppression — the prop itself is never null.
+  const copy = targetKg == null ? null : goalProjectionCopy(projection, targetKg)
+
+  // See components/dashboard/HomeSlot.tsx — one attention card on Home.
+  const wins = useHomeSlot('goal-projection', copy !== null)
+  if (!copy || !wins) return null
 
   const isMeasured = projection.kind === 'measured'
 
   return (
     <Link
       href="/weight"
-      className="flex w-full items-center gap-3.5 rounded-card bg-surface p-3.5 text-left tap-scale"
+      // mt-4 lives here rather than on a wrapper in DashboardClient: the card
+      // can decline to render, and a wrapper would have left its margin behind.
+      className="mt-4 flex w-full items-center gap-3.5 rounded-card bg-surface p-3.5 text-left tap-scale"
       style={{ boxShadow: 'var(--shadow-air)' }}
     >
       <div
