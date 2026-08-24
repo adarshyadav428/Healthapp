@@ -8,6 +8,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef, useState } from 'react'
+import { useCountUp } from '../../hooks/useCountUp'
 import { Story } from '../story/Story'
 import type { StoryCard } from '../story/types'
 import { buildShareCardData, buildPlateSplit, drawShareCard } from '../../lib/shareCard'
@@ -173,27 +174,9 @@ const WORLDS: Record<Direction, Record<string, string>> = {
 }
 
 // ── Count-up hook (respects reduced motion) ─────────────────────────────────
-function useCountUp(target: number, duration = 700, deps: unknown[] = []) {
-  const [val, setVal] = useState(0)
-  const raf = useRef<number>()
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setVal(target)
-      return
-    }
-    const start = performance.now()
-    const tick = (now: number) => {
-      const t = Math.min((now - start) / duration, 1)
-      const eased = 1 - Math.pow(1 - t, 4)
-      setVal(Math.round(target * eased))
-      if (t < 1) raf.current = requestAnimationFrame(tick)
-    }
-    raf.current = requestAnimationFrame(tick)
-    return () => { if (raf.current) cancelAnimationFrame(raf.current) }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps)
-  return val
-}
+// The local copy of useCountUp lived here — the same hook as the dashboard's,
+// minus the safety timeout that guarantees the number when requestAnimationFrame
+// never fires. Now imported, so the studio demonstrates what actually ships.
 
 // ── The luminous ring ───────────────────────────────────────────────────────
 function StudioRing({ eaten, target, animKey }: { eaten: number; target: number; animKey: string }) {

@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Drumstick, Wheat, Droplet } from 'lucide-react'
+import { useCountUp } from '../../hooks/useCountUp'
 
 // Ember Air hero (v2): a 132px calorie ring (ember, always — no red over-goal
 // state) with the eaten total centred, the three macros as icon-rings down the
@@ -28,43 +29,6 @@ interface Props {
   fatTarget: number
 }
 
-function useCountUp(target: number, duration = 800) {
-  const [val, setVal] = useState(0)
-  const raf = useRef<number>()
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setVal(target)
-      return
-    }
-    const start = performance.now()
-    const tick = (now: number) => {
-      const t = Math.min((now - start) / duration, 1)
-      const eased = 1 - Math.pow(1 - t, 4)
-      setVal(Math.round(target * eased))
-      if (t < 1) raf.current = requestAnimationFrame(tick)
-      else clearTimeout(safety)
-    }
-
-    // requestAnimationFrame does not always run. Battery saver, a backgrounded
-    // tab, and some embedded webviews suppress it entirely — and because this
-    // hook starts at 0, the hero then renders a permanent "0 kcal eaten" while
-    // the line right below it says "50 kcal over". Observed exactly that during
-    // the 2026-07-31 audit in a tab where rAF never fired. The animation is
-    // decoration; the number is not, so guarantee the number.
-    const safety = setTimeout(() => {
-      if (raf.current) cancelAnimationFrame(raf.current)
-      setVal(target)
-    }, duration + 300)
-
-    raf.current = requestAnimationFrame(tick)
-    return () => {
-      if (raf.current) cancelAnimationFrame(raf.current)
-      clearTimeout(safety)
-    }
-  }, [target, duration])
-  return val
-}
-
 function MacroRow({ icon: Icon, label, eaten, target, color }: {
   icon: typeof Drumstick
   label: string
@@ -76,6 +40,10 @@ function MacroRow({ icon: Icon, label, eaten, target, color }: {
   useEffect(() => { setMounted(true) }, [])
   const pct = target > 0 ? Math.min(eaten / target, 1) : 0
   const offset = M_CIRC * (1 - (mounted ? pct : 0))
+  // The ring already glides to its value. Without this the grams beside it
+  // jumped, and a number snapping next to a ring that travels reads as a
+  // glitch rather than as two things doing different jobs.
+  const shownGrams = useCountUp(Math.round(eaten))
   return (
     <div className="flex items-center gap-3">
       <div className="relative shrink-0" style={{ width: M, height: M }}>
@@ -93,7 +61,7 @@ function MacroRow({ icon: Icon, label, eaten, target, color }: {
         </div>
       </div>
       <div className="flex items-baseline gap-1.5">
-        <span className="text-body font-bold tabular-nums text-ink">{Math.round(eaten)}g</span>
+        <span className="text-body font-bold tabular-nums text-ink">{shownGrams}g</span>
         <span className="text-caption text-ink-3">{label}</span>
       </div>
     </div>
