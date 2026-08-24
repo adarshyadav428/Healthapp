@@ -23,7 +23,27 @@ export type LogMilestone = {
 
 export type MilestoneAction = 'first_log_celebration' | 'log_paywall' | null
 
-export const LOG_PAYWALL_THRESHOLD = 3
+/**
+ * Lifetime logs after which a free user is shown the paywall once.
+ *
+ * Was 3. The interstitial's stated job is to "guarantee every free user sees
+ * the paywall once" — but a threshold can only guarantee that for users who
+ * reach it, and reaching three logs is a bar most new signups never clear. The
+ * users who churn early were the ones the guarantee silently excluded, and they
+ * are the majority.
+ *
+ * At 2 the offer lands on the log right after the first-log celebration, which
+ * for anyone who logs twice in a sitting is the same session — while the
+ * product has just visibly worked. That is the moment worth asking in, and it
+ * costs nothing to be wrong about: the interstitial is one-time, dismissible,
+ * and never blocks logging, because free logs stay unlimited (CLAUDE.md).
+ *
+ * This is a judgement, not a measurement — it is the one number in this change
+ * not backed by data. The funnel already emits `paywall_viewed` with a source
+ * and `upgrade_completed`, so two weeks of real traffic settles whether 2 or 3
+ * converts better far more honestly than any benchmark can.
+ */
+export const LOG_PAYWALL_THRESHOLD = 2
 
 /**
  * Streak lengths (days) worth a one-time celebration. The early rungs (3, 14,

@@ -19,10 +19,23 @@ describe('getLogMilestoneAction', () => {
     ).toBe(null)
   })
 
-  it('stays quiet on logs 1 and 2 for a free user (celebration already seen)', () => {
+  it('stays quiet below the threshold for a free user (celebration already seen)', () => {
+    // Derived from the constant rather than hardcoded, so moving the threshold
+    // changes one number instead of silently leaving a test asserting the old
+    // behaviour under a name that still sounds right.
     const seen = { celebrationSeen: true, paywallSeen: false }
-    expect(getLogMilestoneAction({ isFirstLog: false, totalLogs: 1, isPro: false }, seen)).toBe(null)
-    expect(getLogMilestoneAction({ isFirstLog: false, totalLogs: 2, isPro: false }, seen)).toBe(null)
+    for (let logs = 1; logs < LOG_PAYWALL_THRESHOLD; logs++) {
+      expect(getLogMilestoneAction({ isFirstLog: false, totalLogs: logs, isPro: false }, seen)).toBe(null)
+    }
+  })
+
+  it('lands on the log straight after the first-log celebration', () => {
+    // The whole point of moving the threshold: the ask should reach the users
+    // who log twice and stop, not only those who reach three. If this ever
+    // needs the celebration and the paywall on the *same* log, that is a
+    // different (and worse) design — two overlays stacked on one action.
+    const seen = { celebrationSeen: true, paywallSeen: false }
+    expect(getLogMilestoneAction({ isFirstLog: false, totalLogs: 2, isPro: false }, seen)).toBe('log_paywall')
   })
 
   it(`fires the paywall when a free user reaches ${LOG_PAYWALL_THRESHOLD} logs`, () => {

@@ -249,8 +249,14 @@ export function LogMilestones() {
             You&apos;re building
             <br />a real habit.
           </h1>
+          {/* Deliberately names no count. It used to say "Three meals logged",
+              which was already wrong for anyone arriving past the threshold —
+              the gate is `>=`, so an existing free user could be seeing this at
+              fifty logs — and would have become wrong for everyone the moment
+              LOG_PAYWALL_THRESHOLD moved. A sentence true at 2 and at 50 cannot
+              drift with the constant. */}
           <p className="mt-2.5 text-body text-ink-2">
-            Three meals logged — that&apos;s how progress starts. Pro takes the limits off.
+            You&apos;re past the first meal — that&apos;s how progress starts. Pro takes the limits off.
           </p>
 
           <div className="mt-7 space-y-3.5">
