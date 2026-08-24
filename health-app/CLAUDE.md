@@ -17,7 +17,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **71 files / 1,026 tests**. There is no `vitest.config.ts`; defaults apply.
+- **Tests:** Vitest 4.1 — **72 files / 1,036 tests**. There is no `vitest.config.ts`; defaults apply.
 - **Deploy:** Vercel **Hobby** plan, region `bom1`. The Hobby limits are load-bearing (see Hard rules).
 
 ## Architecture / directory map
@@ -77,10 +77,10 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (71 files / 1,026 tests)
+npm test                 # vitest run — the whole suite (72 files / 1,036 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
-npm run check:tokens     # design-token guard: no raw hex, no broken opacity modifiers
+npm run check:tokens     # design guard: no raw hex, broken opacity modifiers, off-scale type/radius/tracking
 npx tsc --noEmit         # typecheck (there is no `typecheck` script)
 ```
 
@@ -125,6 +125,12 @@ actively seeding.
   re-run it; keep `tests/curatedFoods.test.ts` green — it's what stops a meat dish shipping with a
   carb dish's protein.
 - **Never write a raw hex color** in `app/` or `components/` — reference a token (`bg-brand`, `text-ink`, …).
+- **Never write an off-scale font size, radius or tracking.** Type is ten named steps (`text-micro`
+  … `text-hero-lg`), radius is four (`rounded-control/card/card-lg/sheet`), tracking is `tracking-caps`
+  or nothing. **`text-[13px]` and Tailwind's `text-sm` are both violations** — the defaults are a
+  second parallel scale, and having two is how the app reached ~35 sizes with eight of them spelled
+  two ways at once. Each step owns its line-height and tracking; overriding them replaces a considered
+  value with a flat one. `npm run check:tokens` fails the build on all of it. → `docs/design-system.md`
 - **Never use Tailwind's `/NN` opacity modifier on a token color.** Our tokens are plain `var(--x)`
   strings, so `bg-brand/40` is a **silent no-op** that renders full strength. Use a pre-mixed alpha
   token (`--brand-soft`, `--scrim`, …) or an inline `color-mix()`.
@@ -254,6 +260,8 @@ actively seeding.
   message (it was written for a person), swallow a 5xx (it's a Postgres or provider string written for
   us). `lib/checkoutErrors.ts` does the same job on the checkout path.
 - **Numerals use `tabular-nums`.** Type is Inter (body) + Inter Tight (display); keep weights restrained.
+  A numeral sitting beside an animating ring or bar counts up with it (`hooks/useCountUp`) — a number
+  that snaps next to one that glides reads as a glitch. Animate the value, never the target.
 - **Sentry is runtime capture only** — `instrumentation.ts`, deliberately *not* `withSentryConfig`, so
   the build pipeline stays untouched when a DSN or auth token is missing. Don't add the webpack plugin.
 
