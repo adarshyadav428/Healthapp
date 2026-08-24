@@ -16,9 +16,9 @@ const buttonVariants = cva(
         danger:  'bg-danger-soft text-danger hover:brightness-95',
       },
       size: {
-        default: 'h-11 px-5 text-sm',
-        sm:      'h-9 px-3.5 text-sm',
-        lg:      'h-12 px-6 text-base',
+        default: 'h-11 px-5 text-body',
+        sm:      'h-9 px-3.5 text-body',
+        lg:      'h-12 px-6 text-body-lg',
         icon:    'h-10 w-10',
       },
     },

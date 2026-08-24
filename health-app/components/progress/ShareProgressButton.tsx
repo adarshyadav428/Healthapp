@@ -51,7 +51,7 @@ export function ShareProgressButton({ streakDays, startWeightKg, currentWeightKg
       type="button"
       onClick={share}
       disabled={busy}
-      className="tap-scale mt-3 flex w-full items-center justify-center gap-2 rounded-[16px] border border-dashed border-brand-ring py-[13px] text-[13px] font-semibold text-brand-ink disabled:opacity-60"
+      className="tap-scale mt-3 flex w-full items-center justify-center gap-2 rounded-card border border-dashed border-brand-ring py-[13px] text-caption font-semibold text-brand-ink disabled:opacity-60"
     >
       {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" strokeWidth={2} />}
       Share your progress

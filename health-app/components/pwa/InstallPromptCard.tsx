@@ -79,14 +79,14 @@ export function InstallPromptCard() {
   }
 
   return (
-    <div className="mt-4 rounded-[20px] bg-surface p-4" style={{ boxShadow: 'var(--shadow-air)' }}>
+    <div className="mt-4 rounded-card bg-surface p-4" style={{ boxShadow: 'var(--shadow-air)' }}>
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
           <Download size={18} strokeWidth={2} />
         </div>
         <div className="min-w-0">
-          <p className="text-[14.5px] font-semibold text-ink">Install GetInShape</p>
-          <p className="mt-0.5 text-[13px] leading-snug text-ink-2">
+          <p className="text-body font-semibold text-ink">Install GetInShape</p>
+          <p className="mt-0.5 text-caption leading-snug text-ink-2">
             Add it to your home screen — full-screen, faster, one tap away.
           </p>
         </div>
@@ -95,14 +95,14 @@ export function InstallPromptCard() {
         <button
           type="button"
           onClick={install}
-          className="tap-scale flex h-10 flex-1 items-center justify-center rounded-control bg-brand-soft text-sm font-semibold text-brand-ink"
+          className="tap-scale flex h-10 flex-1 items-center justify-center rounded-control bg-brand-soft text-body font-semibold text-brand-ink"
         >
           Install
         </button>
         <button
           type="button"
           onClick={dismiss}
-          className="tap-scale flex h-10 flex-1 items-center justify-center rounded-control bg-surface-2 text-sm font-semibold text-ink-2"
+          className="tap-scale flex h-10 flex-1 items-center justify-center rounded-control bg-surface-2 text-body font-semibold text-ink-2"
         >
           Not now
         </button>

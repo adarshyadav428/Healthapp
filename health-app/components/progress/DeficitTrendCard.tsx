@@ -71,14 +71,14 @@ export function DeficitTrendCard({
   const daysInWindow = s.days_logged + s.days_unlogged
 
   return (
-    <div className="mt-3 rounded-[24px] bg-surface p-5" style={AIR}>
+    <div className="mt-3 rounded-card-lg bg-surface p-5" style={AIR}>
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[13px] font-semibold text-ink">Calorie deficit</p>
+        <p className="text-caption font-semibold text-ink">Calorie deficit</p>
         <PeriodToggle kind={kind} onChange={setKind} monthUnlocked={!!month} isPro={isPro} />
       </div>
 
       {s.days_logged === 0 ? (
-        <p className="mt-2.5 text-[13px] text-ink-2">
+        <p className="mt-2.5 text-caption text-ink-2">
           {todayKcal != null
             ? 'Today is still in progress — your first full day lands here tomorrow.'
             : 'Log a day and your deficit starts building here.'}
@@ -87,27 +87,27 @@ export function DeficitTrendCard({
         <>
           {/* Beat 1 — the number. */}
           <div className="mt-2.5 flex items-baseline justify-between gap-2">
-            <p className="text-[11px] text-ink-3">{label}</p>
-            <p className="text-[11px] font-bold" style={{ color: statusColor }}>
+            <p className="text-micro text-ink-3">{label}</p>
+            <p className="text-micro font-bold" style={{ color: statusColor }}>
               {STATUS_LABEL[s.status]}
             </p>
           </div>
 
           <div className="mt-1 flex items-baseline gap-1.5">
             <span
-              className="font-display text-[32px] font-bold leading-none tabular-nums"
-              style={{ letterSpacing: '-0.02em', color: statusColor }}
+              className="font-display text-display font-bold leading-none tabular-nums"
+              style={{ color: statusColor }}
             >
               {magnitude.toLocaleString('en-IN')}
             </span>
-            <span className="text-[12px] text-ink-2">
+            <span className="text-caption text-ink-2">
               kcal {under ? 'under' : 'over'} maintenance
             </span>
           </div>
 
           {/* Beat 2 — what it is worth. */}
           {under && fatKg > 0 && (
-            <p className="mt-1 text-[12px] text-ink-2">
+            <p className="mt-1 text-caption text-ink-2">
               That&apos;s <span className="font-semibold text-ink">{fatLabel} of fat</span>.
             </p>
           )}
@@ -123,7 +123,7 @@ export function DeficitTrendCard({
             </div>
           )}
 
-          <p className="mt-2.5 text-[11px] text-ink-3">
+          <p className="mt-2.5 text-micro text-ink-3">
             {s.days_logged} of {daysInWindow} {daysInWindow === 1 ? 'day' : 'days'} logged
             {s.days_unlogged > 0 && ` · ${s.days_unlogged} not logged`}
             {isFallback
@@ -133,13 +133,13 @@ export function DeficitTrendCard({
                 : ''}
           </p>
 
-          <p className="mt-2 text-[12px] text-ink-2">{s.insight}</p>
+          <p className="mt-2 text-caption text-ink-2">{s.insight}</p>
         </>
       )}
 
       <Link
         href="/deficit"
-        className="mt-3 flex items-center gap-1 text-[12px] font-semibold text-brand-ink tap-scale"
+        className="mt-3 flex items-center gap-1 text-caption font-semibold text-brand-ink tap-scale"
       >
         How maintenance works <ChevronRight className="h-3.5 w-3.5" />
       </Link>
@@ -160,7 +160,7 @@ function PeriodToggle({
   monthUnlocked: boolean
   isPro: boolean
 }) {
-  const base = 'rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all'
+  const base = 'rounded-full px-2.5 py-1 text-micro font-semibold transition-all'
 
   return (
     <div className="flex gap-1 rounded-full bg-surface-2 p-0.5">

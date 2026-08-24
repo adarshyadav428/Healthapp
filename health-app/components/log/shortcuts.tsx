@@ -21,10 +21,10 @@ const AIR = { boxShadow: 'var(--shadow-air)' } as const
 export function EmojiTile({ name }: { name: string }) {
   return (
     <div
-      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px]"
+      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control"
       style={{ backgroundColor: `color-mix(in srgb, ${tintFor(name)} 14%, transparent)` }}
     >
-      <span className="text-[22px] leading-none" aria-hidden="true">{foodEmoji(name)}</span>
+      <span className="text-title leading-none" aria-hidden="true">{foodEmoji(name)}</span>
     </div>
   )
 }
@@ -64,11 +64,11 @@ export function ShortcutRow({ name, detail, tile, busy, disabled, actionLabel, o
   deleteLabel?: string
 }) {
   return (
-    <div className="flex items-center gap-3.5 rounded-[20px] bg-surface p-3" style={AIR}>
+    <div className="flex items-center gap-3.5 rounded-card bg-surface p-3" style={AIR}>
       {tile}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[14.5px] font-semibold text-ink">{name}</p>
-        <p className="mt-[3px] text-[12px] text-ink-3">{detail}</p>
+        <p className="truncate text-body font-semibold text-ink">{name}</p>
+        <p className="mt-[3px] text-caption text-ink-3">{detail}</p>
       </div>
       {onDelete && (
         <button
@@ -88,7 +88,7 @@ export function ShortcutRow({ name, detail, tile, busy, disabled, actionLabel, o
 /** A saved meal template. */
 export function ComboTile() {
   return (
-    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft">
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control bg-brand-soft">
       <Layers className="h-5 w-5 text-brand" strokeWidth={2} />
     </div>
   )
@@ -97,8 +97,8 @@ export function ComboTile() {
 export function ShortcutHeading({ title, hint }: { title: string; hint?: React.ReactNode }) {
   return (
     <div className="mb-2.5 flex items-baseline gap-2 px-0.5">
-      <p className="text-[16px] font-semibold text-ink">{title}</p>
-      {hint && <span className="text-[12.5px] text-ink-3">{hint}</span>}
+      <p className="text-body-lg font-semibold text-ink">{title}</p>
+      {hint && <span className="text-caption text-ink-3">{hint}</span>}
     </div>
   )
 }
@@ -109,11 +109,11 @@ export function CopyYesterdayButton({ copying, onClick }: { copying: boolean; on
       type="button"
       onClick={onClick}
       disabled={copying}
-      className="flex w-full items-center gap-3 rounded-[20px] bg-surface p-4 text-left tap-scale disabled:opacity-50"
+      className="flex w-full items-center gap-3 rounded-card bg-surface p-4 text-left tap-scale disabled:opacity-50"
       style={AIR}
     >
       <Copy className="h-[18px] w-[18px] shrink-0 text-brand" strokeWidth={2} />
-      <span className="text-[14px] font-semibold text-ink">
+      <span className="text-body font-semibold text-ink">
         {copying ? 'Copying…' : "Copy yesterday's meals"}
       </span>
     </button>

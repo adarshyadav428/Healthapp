@@ -31,7 +31,7 @@ function NavTab({ href, icon: Icon, label, active }: {
       className={`flex w-[60px] flex-col items-center gap-[3px] tap-scale ${active ? 'text-brand-ink' : 'text-ink-3'}`}
     >
       <Icon className="h-[23px] w-[23px]" strokeWidth={active ? 2 : 1.75} />
-      <span className={`text-[10px] ${active ? 'font-semibold' : 'font-medium'}`}>{label}</span>
+      <span className={`text-micro ${active ? 'font-semibold' : 'font-medium'}`}>{label}</span>
     </Link>
   )
 }

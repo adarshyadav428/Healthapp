@@ -27,7 +27,7 @@ export function ThemeSegmented() {
             type="button"
             onClick={() => setTheme(m.value)}
             className={cn(
-              'flex flex-col items-center gap-1.5 rounded-control border py-3 text-xs font-semibold transition-all tap-scale',
+              'flex flex-col items-center gap-1.5 rounded-control border py-3 text-caption font-semibold transition-all tap-scale',
               active
                 ? 'border-brand bg-brand-soft text-brand-ink'
                 : 'border-hairline bg-surface-2 text-ink-2 hover:border-brand-ring'

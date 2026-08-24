@@ -91,8 +91,8 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
   if (!logs || logs.length === 0) {
     return (
       <div className="py-6 text-center">
-        <p className="text-2xl mb-1">🍽️</p>
-        <p className="text-sm text-ink-2">Nothing logged on this day.</p>
+        <p className="text-title mb-1">🍽️</p>
+        <p className="text-body text-ink-2">Nothing logged on this day.</p>
       </div>
     )
   }
@@ -112,20 +112,20 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
       {/* Day total */}
       <div className="flex gap-2 flex-wrap">
         <div className="rounded-control bg-energy-soft border border-hairline px-3 py-1.5 text-center">
-          <p className="text-sm font-bold text-energy-ink tabular-nums">{Math.round(totalKcal)}</p>
-          <p className="text-[10px] text-energy-ink opacity-80">kcal</p>
+          <p className="text-body font-bold text-energy-ink tabular-nums">{Math.round(totalKcal)}</p>
+          <p className="text-micro text-energy-ink opacity-80">kcal</p>
         </div>
         <div className="rounded-control border border-hairline px-3 py-1.5 text-center" style={{ background: 'color-mix(in srgb, var(--protein) 8%, transparent)' }}>
-          <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--protein)' }}>{Math.round(totalP)}g</p>
-          <p className="text-[10px] opacity-80" style={{ color: 'var(--protein)' }}>protein</p>
+          <p className="text-body font-bold tabular-nums" style={{ color: 'var(--protein)' }}>{Math.round(totalP)}g</p>
+          <p className="text-micro opacity-80" style={{ color: 'var(--protein)' }}>protein</p>
         </div>
         <div className="rounded-control border border-hairline px-3 py-1.5 text-center" style={{ background: 'color-mix(in srgb, var(--carbs) 10%, transparent)' }}>
-          <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--carbs)' }}>{Math.round(totalC)}g</p>
-          <p className="text-[10px] opacity-80" style={{ color: 'var(--carbs)' }}>carbs</p>
+          <p className="text-body font-bold tabular-nums" style={{ color: 'var(--carbs)' }}>{Math.round(totalC)}g</p>
+          <p className="text-micro opacity-80" style={{ color: 'var(--carbs)' }}>carbs</p>
         </div>
         <div className="rounded-control border border-hairline px-3 py-1.5 text-center" style={{ background: 'color-mix(in srgb, var(--fat) 10%, transparent)' }}>
-          <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--fat)' }}>{Math.round(totalF)}g</p>
-          <p className="text-[10px] opacity-80" style={{ color: 'var(--fat)' }}>fat</p>
+          <p className="text-body font-bold tabular-nums" style={{ color: 'var(--fat)' }}>{Math.round(totalF)}g</p>
+          <p className="text-micro opacity-80" style={{ color: 'var(--fat)' }}>fat</p>
         </div>
       </div>
 
@@ -140,19 +140,19 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-1.5">
                   <span>{cfg.emoji}</span>
-                  <span className={`text-xs font-bold ${cfg.color}`}>{cfg.label}</span>
+                  <span className={`text-caption font-bold ${cfg.color}`}>{cfg.label}</span>
                 </div>
-                <span className="text-[11px] text-ink-2 font-medium tabular-nums">{Math.round(mealKcal)} kcal</span>
+                <span className="text-micro text-ink-2 font-medium tabular-nums">{Math.round(mealKcal)} kcal</span>
               </div>
               <div className="space-y-1.5">
                 {items.map((log) => (
                   <div key={log.id} className="flex items-center justify-between rounded-control bg-surface-2 border border-hairline px-3 py-2">
                     <div className="min-w-0 flex-1 mr-2">
-                      <p className="text-xs font-semibold text-ink truncate">{log.food?.name ?? 'Food item'}</p>
-                      <p className="text-[10px] text-ink-2 tabular-nums">{Math.round(log.grams)}g · {Math.round(log.protein_g)}P {Math.round(log.carbs_g)}C {Math.round(log.fat_g)}F</p>
+                      <p className="text-caption font-semibold text-ink truncate">{log.food?.name ?? 'Food item'}</p>
+                      <p className="text-micro text-ink-2 tabular-nums">{Math.round(log.grams)}g · {Math.round(log.protein_g)}P {Math.round(log.carbs_g)}C {Math.round(log.fat_g)}F</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <span className="text-xs font-bold text-ink mr-1 tabular-nums">{Math.round(log.kcal)} kcal</span>
+                      <span className="text-caption font-bold text-ink mr-1 tabular-nums">{Math.round(log.kcal)} kcal</span>
                       <button
                         type="button"
                         onClick={() => setEditingLog(log)}
@@ -192,8 +192,8 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
         <div>
           <div className="flex items-center gap-1.5 mb-1.5">
             <Dumbbell className="h-3.5 w-3.5 text-brand" />
-            <span className="text-xs font-bold text-brand-ink">Exercise</span>
-            <span className="text-[11px] text-ink-2 font-medium ml-auto tabular-nums">
+            <span className="text-caption font-bold text-brand-ink">Exercise</span>
+            <span className="text-micro text-ink-2 font-medium ml-auto tabular-nums">
               −{exerciseLogs.reduce((s, e) => s + e.calories, 0)} kcal burned
             </span>
           </div>
@@ -203,11 +203,11 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <Flame className="h-3 w-3 shrink-0" style={{ color: 'var(--fat)' }} />
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-ink capitalize truncate">{log.activity}</p>
-                    <p className="text-[10px] text-ink-2">{log.duration_min} min</p>
+                    <p className="text-caption font-semibold text-ink capitalize truncate">{log.activity}</p>
+                    <p className="text-micro text-ink-2">{log.duration_min} min</p>
                   </div>
                 </div>
-                <span className="text-xs font-bold text-brand-ink shrink-0 tabular-nums">{log.calories} kcal</span>
+                <span className="text-caption font-bold text-brand-ink shrink-0 tabular-nums">{log.calories} kcal</span>
               </div>
             ))}
           </div>

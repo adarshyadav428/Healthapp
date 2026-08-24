@@ -126,8 +126,8 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
       {/* ── Header ── */}
       <div className="flex items-start justify-between pt-2">
         <div>
-          <p className="text-[13px] font-medium text-ink-3">{todayDate}</p>
-          <h1 className="font-display mt-[3px] text-[24px] font-bold tracking-[-0.02em] text-ink">Today</h1>
+          <p className="text-caption font-medium text-ink-3">{todayDate}</p>
+          <h1 className="font-display mt-[3px] text-title font-bold text-ink">Today</h1>
         </div>
         {streakDays > 0 && (
           <div className="flex flex-col items-end">
@@ -139,11 +139,11 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
                 : undefined}
             >
               <Flame className="h-[15px] w-[15px] text-brand" strokeWidth={2} />
-              <span className="text-[13.5px] font-semibold tabular-nums text-ink">{streakDays}</span>
+              <span className="text-body font-semibold tabular-nums text-ink">{streakDays}</span>
               {/* The in-app counterpart of the freeze-aware push. Ink, not red —
                   a banked freeze is reassurance, never a warning. */}
               {freezesBanked > 0 && (
-                <span className="flex items-center gap-0.5 border-l border-hairline pl-1.5 text-[12px] font-semibold text-ink-3">
+                <span className="flex items-center gap-0.5 border-l border-hairline pl-1.5 text-caption font-semibold text-ink-3">
                   <Snowflake className="h-[13px] w-[13px]" strokeWidth={2} aria-hidden="true" />
                   <span className="tabular-nums">{freezesBanked}</span>
                   <span className="sr-only">
@@ -157,7 +157,7 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
                 not ember: on Home ember is reserved for data, and this is a
                 prompt. Hidden entirely when the next rung is far away. */}
             {nextBadge && (
-              <p className="mt-[7px] pr-1 text-[11.5px] font-medium text-ink-3">
+              <p className="mt-[7px] pr-1 text-caption font-medium text-ink-3">
                 {nextBadge.daysAway} {nextBadge.daysAway === 1 ? 'day' : 'days'} to {nextBadge.name} {nextBadge.emoji}
               </p>
             )}
@@ -186,7 +186,7 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
       {proteinLine && (
         <p
           className={cn(
-            'mt-2.5 px-1 text-[13px]',
+            'mt-2.5 px-1 text-caption',
             proteinLine.tone === 'met' ? 'font-semibold text-good' : 'text-ink-2'
           )}
         >
@@ -224,9 +224,9 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
 
       {/* ── Recently logged ── */}
       <div className="mb-3 mt-6 flex items-baseline justify-between px-0.5">
-        <p className="text-[16px] font-semibold tracking-[-0.01em] text-ink">Recently logged</p>
+        <p className="text-body-lg font-semibold text-ink">Recently logged</p>
         {hasLogs && (
-          <Link href="/log" className="text-[13px] font-semibold text-brand-ink tap-scale">See all</Link>
+          <Link href="/log" className="text-caption font-semibold text-brand-ink tap-scale">See all</Link>
         )}
       </div>
 
@@ -237,7 +237,7 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
           ))}
           <Link
             href="/log?search=1"
-            className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-[16px] border border-dashed border-brand-ring py-[13px] text-[13px] font-semibold text-brand-ink tap-scale"
+            className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-card border border-dashed border-brand-ring py-[13px] text-caption font-semibold text-brand-ink tap-scale"
           >
             <Plus className="h-4 w-4" /> Add food manually
           </Link>

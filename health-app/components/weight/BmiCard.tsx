@@ -41,15 +41,15 @@ export function BmiCard({ logs, profile }: { logs: WeightLog[]; profile: Profile
     <div className="rounded-sheet border border-hairline p-4 shadow-rest" style={{ background: cat.soft }}>
       <div className="flex items-start justify-between mb-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-2 mb-0.5">Body Mass Index</p>
+          <p className="text-caption font-semibold uppercase tracking-caps text-ink-2 mb-0.5">Body Mass Index</p>
           <div className="flex items-baseline gap-1.5">
-            <span className="font-display text-3xl font-bold tabular-nums" style={{ color: cat.color }}>{bmiRounded}</span>
-            <span className="text-sm text-ink-2">kg/m²</span>
+            <span className="font-display text-title-lg font-bold tabular-nums" style={{ color: cat.color }}>{bmiRounded}</span>
+            <span className="text-body text-ink-2">kg/m²</span>
           </div>
         </div>
         <div className="flex items-center gap-1.5 rounded-card border border-hairline px-3 py-1.5 bg-surface">
-          <span className="text-sm">{cat.emoji}</span>
-          <span className="text-xs font-bold" style={{ color: cat.color }}>{cat.label}</span>
+          <span className="text-body">{cat.emoji}</span>
+          <span className="text-caption font-bold" style={{ color: cat.color }}>{cat.label}</span>
         </div>
       </div>
 
@@ -64,7 +64,7 @@ export function BmiCard({ logs, profile }: { logs: WeightLog[]; profile: Profile
       </div>
 
       {/* Zone labels */}
-      <div className="relative flex justify-between text-[9px] text-ink-2 font-medium mb-3 px-0.5">
+      <div className="relative flex justify-between text-micro text-ink-2 font-medium mb-3 px-0.5">
         {ZONE_MARKERS.map((m) => (
           <span key={m.bmi} style={{ left: `${getBmiBarPercent(m.bmi)}%` }} className="absolute -translate-x-1/2">
             {m.label}
@@ -73,7 +73,7 @@ export function BmiCard({ logs, profile }: { logs: WeightLog[]; profile: Profile
         <span className="invisible">placeholder</span>
       </div>
 
-      <p className="text-xs text-ink-2 mt-3">
+      <p className="text-caption text-ink-2 mt-3">
         Healthy weight for your height:{' '}
         <span className="font-bold text-good">{minIdeal}–{maxIdeal} kg</span>
       </p>

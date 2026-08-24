@@ -93,8 +93,8 @@ function MacroRow({ icon: Icon, label, eaten, target, color }: {
         </div>
       </div>
       <div className="flex items-baseline gap-1.5">
-        <span className="text-[15px] font-bold tabular-nums text-ink">{Math.round(eaten)}g</span>
-        <span className="text-[12px] text-ink-3">{label}</span>
+        <span className="text-body font-bold tabular-nums text-ink">{Math.round(eaten)}g</span>
+        <span className="text-caption text-ink-3">{label}</span>
       </div>
     </div>
   )
@@ -112,7 +112,7 @@ export function CalorieHeroCard({
   const kcalLeft = target - eaten
 
   return (
-    <div className="rounded-[24px] bg-surface px-6 py-[26px]" style={{ boxShadow: 'var(--shadow-air)' }}>
+    <div className="rounded-card-lg bg-surface px-6 py-[26px]" style={{ boxShadow: 'var(--shadow-air)' }}>
       <div className="flex items-center gap-5">
         {/* Ring */}
         <div className="relative shrink-0" style={{ width: RING, height: RING }}>
@@ -126,10 +126,10 @@ export function CalorieHeroCard({
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="font-display text-[32px] font-bold tabular-nums leading-none text-ink" style={{ letterSpacing: '-0.03em' }}>
+            <span className="font-display text-display font-bold tabular-nums leading-none text-ink">
               {shown.toLocaleString('en-IN')}
             </span>
-            <span className="mt-1 text-[11.5px] text-ink-3">kcal eaten</span>
+            <span className="mt-1 text-caption text-ink-3">kcal eaten</span>
           </div>
         </div>
 
@@ -143,10 +143,10 @@ export function CalorieHeroCard({
 
       {/* kcal left / goal strip */}
       <div className="mt-5 flex items-baseline justify-between border-t border-hairline pt-4">
-        <span className="text-[12.5px] text-ink-3">
+        <span className="text-caption text-ink-3">
           <b className="font-bold tabular-nums text-ink">{Math.abs(kcalLeft).toLocaleString('en-IN')}</b> kcal {kcalLeft >= 0 ? 'left' : 'over'}
         </span>
-        <span className="text-[12.5px] text-ink-3">
+        <span className="text-caption text-ink-3">
           Goal <b className="font-bold tabular-nums text-ink">{target.toLocaleString('en-IN')}</b> kcal
         </span>
       </div>

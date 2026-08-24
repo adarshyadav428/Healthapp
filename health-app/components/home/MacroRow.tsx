@@ -10,8 +10,8 @@ function MacroItem({ label, color, eaten, target }: MacroItemProps) {
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-baseline justify-between">
-        <span className="text-[10px] font-medium uppercase tracking-[.1em] text-ink-3">{label}</span>
-        <span className="text-[11.5px] font-medium text-ink-2 tabular-nums">
+        <span className="text-micro font-medium uppercase tracking-caps text-ink-3">{label}</span>
+        <span className="text-caption font-medium text-ink-2 tabular-nums">
           {Math.round(eaten)} / {Math.round(target)}g
         </span>
       </div>

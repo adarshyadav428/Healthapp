@@ -4,7 +4,7 @@ export default function DashboardLoading() {
       {/* Navbar skeleton */}
       <div className="sticky top-0 z-40 border-b border-hairline bg-header-bg backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-md items-center justify-between px-4">
-          <div className="h-6 w-24 rounded-lg bg-surface-2 animate-shimmer" />
+          <div className="h-6 w-24 rounded-full bg-surface-2 animate-shimmer" />
           <div className="h-8 w-8 rounded-full bg-surface-2 animate-shimmer" />
         </div>
       </div>
@@ -13,7 +13,7 @@ export default function DashboardLoading() {
         {/* Greeting skeleton */}
         <div className="space-y-1.5">
           <div className="h-4 w-40 rounded bg-surface-2 animate-shimmer" />
-          <div className="h-7 w-16 rounded-lg bg-surface-2 animate-shimmer" />
+          <div className="h-7 w-16 rounded-full bg-surface-2 animate-shimmer" />
           <div className="h-3 w-32 rounded bg-surface-2 animate-shimmer" />
         </div>
 

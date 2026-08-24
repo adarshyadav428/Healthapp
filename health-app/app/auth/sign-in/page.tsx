@@ -60,16 +60,16 @@ export default function SignInPage() {
         <div className="flex h-9 w-9 items-center justify-center rounded-control bg-brand-soft">
           <Flame className="h-[18px] w-[18px] text-brand" strokeWidth={2.2} />
         </div>
-        <span className="font-display text-xl font-bold tracking-tight text-ink">GetInShape</span>
+        <span className="font-display text-title-sm font-bold text-ink">GetInShape</span>
       </Link>
 
       <div className="w-full max-w-sm">
-        <h1 className="font-display text-2xl font-bold text-ink mb-1">Welcome back</h1>
-        <p className="text-sm text-ink-2 mb-7">Sign in to continue your journey.</p>
+        <h1 className="font-display text-title font-bold text-ink mb-1">Welcome back</h1>
+        <p className="text-body text-ink-2 mb-7">Sign in to continue your journey.</p>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wide text-ink-2 mb-1.5">
+            <label htmlFor="email" className="block text-caption font-bold uppercase tracking-caps text-ink-2 mb-1.5">
               Email
             </label>
             <Input
@@ -80,16 +80,16 @@ export default function SignInPage() {
               placeholder="you@example.com"
             />
             {form.formState.errors.email && (
-              <p className="mt-1.5 text-xs text-danger">{form.formState.errors.email.message}</p>
+              <p className="mt-1.5 text-caption text-danger">{form.formState.errors.email.message}</p>
             )}
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label htmlFor="password" className="text-xs font-bold uppercase tracking-wide text-ink-2">
+              <label htmlFor="password" className="text-caption font-bold uppercase tracking-caps text-ink-2">
                 Password
               </label>
-              <Link href="/auth/forgot-password" className="text-xs font-semibold text-brand-ink hover:underline">
+              <Link href="/auth/forgot-password" className="text-caption font-semibold text-brand-ink hover:underline">
                 Forgot?
               </Link>
             </div>
@@ -101,7 +101,7 @@ export default function SignInPage() {
               placeholder="••••••••"
             />
             {form.formState.errors.password && (
-              <p className="mt-1.5 text-xs text-danger">{form.formState.errors.password.message}</p>
+              <p className="mt-1.5 text-caption text-danger">{form.formState.errors.password.message}</p>
             )}
           </div>
 
@@ -121,7 +121,7 @@ export default function SignInPage() {
             <div className="w-full border-t border-hairline" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-canvas px-3 text-xs text-ink-2">or</span>
+            <span className="bg-canvas px-3 text-caption text-ink-2">or</span>
           </div>
         </div>
 
@@ -131,7 +131,7 @@ export default function SignInPage() {
           Continue with Google
         </Button>
 
-        <p className="mt-7 text-center text-sm text-ink-2">
+        <p className="mt-7 text-center text-body text-ink-2">
           New to GetInShape?{' '}
           <Link href="/auth/sign-up" className="font-bold text-brand-ink hover:underline">
             Create account

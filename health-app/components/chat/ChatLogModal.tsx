@@ -31,7 +31,7 @@ export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDat
         <div className="flex items-center justify-between px-5 pb-3 border-b border-hairline">
           <div className="flex items-center gap-2">
             <MessageSquarePlus className="h-5 w-5 text-brand" />
-            <h2 className="font-display text-base font-bold text-ink">Log with AI</h2>
+            <h2 className="font-display text-body-lg font-bold text-ink">Log with AI</h2>
           </div>
           <button onClick={onClose} className="rounded-full p-1.5 hover:bg-surface-2 transition-colors">
             <X className="h-4 w-4 text-ink-2" />
@@ -44,7 +44,7 @@ export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDat
           {/* User message bubble */}
           {'message' in state && (
             <div className="flex justify-end">
-              <div className="max-w-[85%] rounded-card rounded-tr-sm bg-brand px-4 py-2.5 text-sm text-white">
+              <div className="max-w-[85%] rounded-card rounded-tr-sm bg-brand px-4 py-2.5 text-body text-white">
                 {(state as { message: string }).message}
               </div>
             </div>
@@ -52,7 +52,7 @@ export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDat
 
           {/* Analyzing state */}
           {state.type === 'analyzing' && (
-            <div className="flex items-center gap-2.5 text-sm text-ink-2">
+            <div className="flex items-center gap-2.5 text-body text-ink-2">
               <Loader2 className="h-4 w-4 animate-spin text-brand" />
               <span>Analysing your meal...</span>
             </div>
@@ -68,7 +68,7 @@ export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDat
                     key={opt.value}
                     type="button"
                     onClick={() => state.type === 'confirm' && setState({ ...state, meal: opt.value })}
-                    className={`px-3 py-1.5 rounded-control text-xs font-semibold border transition-all ${
+                    className={`px-3 py-1.5 rounded-control text-caption font-semibold border transition-all ${
                       state.meal === opt.value
                         ? 'border-brand bg-brand-soft text-brand-ink'
                         : 'border-hairline text-ink-2 bg-surface-2'
@@ -87,11 +87,11 @@ export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDat
                     <div key={idx} className="rounded-card border border-hairline bg-surface-2 p-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-ink truncate">{item.food.name}</p>
-                          <p className="text-xs text-ink-2 mt-0.5">{item.portion_desc}</p>
+                          <p className="text-body font-semibold text-ink truncate">{item.food.name}</p>
+                          <p className="text-caption text-ink-2 mt-0.5">{item.portion_desc}</p>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-sm font-bold text-brand-ink tabular-nums">{itemKcal} kcal</span>
+                          <span className="text-body font-bold text-brand-ink tabular-nums">{itemKcal} kcal</span>
                           <button
                             onClick={() => removeItem(idx)}
                             className="rounded-full p-1 hover:bg-hairline transition-colors"
@@ -111,9 +111,9 @@ export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDat
                           onChange={(e) => updateGrams(idx, Number(e.target.value))}
                           className="flex-1 accent-brand"
                         />
-                        <span className="text-xs font-bold text-ink w-12 text-right tabular-nums">{item.grams}g</span>
+                        <span className="text-caption font-bold text-ink w-12 text-right tabular-nums">{item.grams}g</span>
                       </div>
-                      <div className="mt-1 flex gap-3 text-[11px] text-ink-2 tabular-nums">
+                      <div className="mt-1 flex gap-3 text-micro text-ink-2 tabular-nums">
                         <span style={{ color: 'var(--protein)' }}>P {round1(item.food.protein_g_per_100g * item.grams / 100)}g</span>
                         <span style={{ color: 'var(--carbs)' }}>C {round1(item.food.carbs_g_per_100g * item.grams / 100)}g</span>
                         <span style={{ color: 'var(--fat)' }}>F {round1(item.food.fat_g_per_100g * item.grams / 100)}g</span>
@@ -123,7 +123,7 @@ export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDat
                 })}
 
                 {state.type === 'logging' && (
-                  <div className="flex items-center gap-2 text-sm text-ink-2 py-2">
+                  <div className="flex items-center gap-2 text-body text-ink-2 py-2">
                     <Loader2 className="h-4 w-4 animate-spin text-brand" />
                     <span>Logging your meal...</span>
                   </div>
@@ -132,15 +132,15 @@ export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDat
 
               {/* Post-scan coaching line — makes the AI feel like a coach */}
               {state.type === 'confirm' && coaching && (
-                <p className="mb-2 px-1 text-[12.5px] leading-relaxed text-ink-2">💡 {coaching}</p>
+                <p className="mb-2 px-1 text-caption leading-relaxed text-ink-2">💡 {coaching}</p>
               )}
 
               {/* Total + actions */}
               {state.type === 'confirm' && (
                 <div className="rounded-card bg-energy-soft border border-hairline p-3">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold text-energy-ink">Total</span>
-                    <span className="font-display text-lg font-bold text-ink tabular-nums">{totalKcal} kcal</span>
+                    <span className="text-caption font-semibold text-energy-ink">Total</span>
+                    <span className="font-display text-title-sm font-bold text-ink tabular-nums">{totalKcal} kcal</span>
                   </div>
                   <div className="flex gap-2">
                     <Button onClick={handleLog} className="flex-1 gap-1.5 tap-scale">
@@ -162,10 +162,10 @@ export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDat
             <div className="space-y-3">
               <div className="rounded-card border border-hairline p-4 text-center" style={{ background: 'color-mix(in srgb, var(--good) 8%, transparent)' }}>
                 <CheckCircle className="h-8 w-8 text-good mx-auto mb-2" />
-                <p className="text-sm font-bold text-good">
+                <p className="text-body font-bold text-good">
                   Logged {state.logged} item{state.logged > 1 ? 's' : ''} · {state.kcal} kcal
                 </p>
-                <p className="text-xs text-good mt-0.5 capitalize opacity-80">Added to {state.meal}</p>
+                <p className="text-caption text-good mt-0.5 capitalize opacity-80">Added to {state.meal}</p>
               </div>
               <Button variant="outline" size="lg" onClick={() => setState({ type: 'idle' })} className="w-full tap-scale">
                 Log another meal
@@ -176,7 +176,7 @@ export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDat
           {/* Idle hint */}
           {state.type === 'idle' && (
             <div className="rounded-card bg-surface-2 p-4">
-              <p className="text-xs font-semibold text-ink-2 mb-2">Try saying:</p>
+              <p className="text-caption font-semibold text-ink-2 mb-2">Try saying:</p>
               {[
                 '4 medium roti, aloo beans sabzi, 1 katori dal, 3 katori chawal',
                 '2 paratha with curd and achar',
@@ -185,7 +185,7 @@ export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDat
                 <button
                   key={ex}
                   onClick={() => setInput(ex)}
-                  className="block w-full text-left text-xs text-brand-ink py-1.5 hover:underline"
+                  className="block w-full text-left text-caption text-brand-ink py-1.5 hover:underline"
                 >
                   &ldquo;{ex}&rdquo;
                 </button>
@@ -205,7 +205,7 @@ export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDat
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
                 placeholder="Describe what you ate — e.g. 4 roti, dal, sabzi..."
                 rows={2}
-                className="flex-1 resize-none rounded-control border border-hairline bg-surface-2 px-4 py-2.5 text-sm text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
+                className="flex-1 resize-none rounded-control border border-hairline bg-surface-2 px-4 py-2.5 text-body text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
               />
               <button
                 onClick={handleSend}

@@ -6,11 +6,11 @@ export default function PrivacyPage() {
       <div className="mx-auto w-full max-w-2xl">
         <div className="mb-6">
           <Link href="/" className="flex items-center gap-2 mb-8">
-            <span className="text-2xl">🥗</span>
-            <span className="font-display text-xl font-bold text-brand-ink">GetInShape</span>
+            <span className="text-title">🥗</span>
+            <span className="font-display text-title-sm font-bold text-brand-ink">GetInShape</span>
           </Link>
-          <h1 className="font-display text-3xl font-bold text-ink">Privacy Policy</h1>
-          <p className="text-sm text-ink-2 mt-1">Last updated: July 11, 2026</p>
+          <h1 className="font-display text-title-lg font-bold text-ink">Privacy Policy</h1>
+          <p className="text-body text-ink-2 mt-1">Last updated: July 11, 2026</p>
         </div>
 
         <div className="space-y-6 rounded-sheet border border-hairline bg-surface p-6 shadow-rest">
@@ -90,8 +90,8 @@ export default function PrivacyPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="font-display text-base font-bold text-ink mb-2">{title}</h2>
-      <div className="text-sm text-ink-2 leading-relaxed">{children}</div>
+      <h2 className="font-display text-body-lg font-bold text-ink mb-2">{title}</h2>
+      <div className="text-body text-ink-2 leading-relaxed">{children}</div>
     </div>
   )
 }

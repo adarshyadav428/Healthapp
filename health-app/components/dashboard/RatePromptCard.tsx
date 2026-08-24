@@ -61,7 +61,7 @@ export function RatePromptCard({ streakDays }: { streakDays: number }) {
 
   return (
     <div
-      className="mt-4 rounded-[20px] bg-surface p-4"
+      className="mt-4 rounded-card bg-surface p-4"
       style={{ boxShadow: 'var(--shadow-air)' }}
     >
       <div className="flex items-start gap-3">
@@ -69,8 +69,8 @@ export function RatePromptCard({ streakDays }: { streakDays: number }) {
           <Star size={18} strokeWidth={2} />
         </div>
         <div className="min-w-0">
-          <p className="text-[14.5px] font-semibold text-ink">Enjoying GetInShape?</p>
-          <p className="mt-0.5 text-[13px] leading-snug text-ink-2">
+          <p className="text-body font-semibold text-ink">Enjoying GetInShape?</p>
+          <p className="mt-0.5 text-caption leading-snug text-ink-2">
             {streakDays}-day streak! A quick rating on Google Play helps others find us.
           </p>
         </div>
@@ -85,7 +85,7 @@ export function RatePromptCard({ streakDays }: { streakDays: number }) {
             captureEvent('rate_prompt_clicked')
             setVisible(false)
           }}
-          className="tap-scale flex h-10 flex-1 items-center justify-center rounded-control bg-brand-soft text-sm font-semibold text-brand-ink"
+          className="tap-scale flex h-10 flex-1 items-center justify-center rounded-control bg-brand-soft text-body font-semibold text-brand-ink"
         >
           Rate on Play
         </a>
@@ -96,7 +96,7 @@ export function RatePromptCard({ streakDays }: { streakDays: number }) {
             captureEvent('rate_prompt_dismissed')
             setVisible(false)
           }}
-          className="tap-scale flex h-10 flex-1 items-center justify-center rounded-control bg-surface-2 text-sm font-semibold text-ink-2"
+          className="tap-scale flex h-10 flex-1 items-center justify-center rounded-control bg-surface-2 text-body font-semibold text-ink-2"
         >
           Not now
         </button>

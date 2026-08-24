@@ -72,8 +72,8 @@ export default function SignUpPage() {
           <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-full bg-brand-soft mb-5">
             <Mail className="h-6 w-6 text-brand" strokeWidth={2} />
           </div>
-          <h2 className="font-display text-2xl font-bold text-ink">Check your inbox</h2>
-          <p className="mt-2 text-sm text-ink-2 max-w-xs mx-auto">
+          <h2 className="font-display text-title font-bold text-ink">Check your inbox</h2>
+          <p className="mt-2 text-body text-ink-2 max-w-xs mx-auto">
             We sent you a confirmation link. Tap it and you&apos;ll be signed in automatically — no need to come back here.
           </p>
         </div>
@@ -88,16 +88,16 @@ export default function SignUpPage() {
         <div className="flex h-9 w-9 items-center justify-center rounded-control bg-brand-soft">
           <Flame className="h-[18px] w-[18px] text-brand" strokeWidth={2.2} />
         </div>
-        <span className="font-display text-xl font-bold tracking-tight text-ink">GetInShape</span>
+        <span className="font-display text-title-sm font-bold text-ink">GetInShape</span>
       </Link>
 
       <div className="w-full max-w-sm">
-        <h1 className="font-display text-2xl font-bold text-ink mb-1">Start for free</h1>
-        <p className="text-sm text-ink-2 mb-7">Create your account in seconds.</p>
+        <h1 className="font-display text-title font-bold text-ink mb-1">Start for free</h1>
+        <p className="text-body text-ink-2 mb-7">Create your account in seconds.</p>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wide text-ink-2 mb-1.5">
+            <label htmlFor="email" className="block text-caption font-bold uppercase tracking-caps text-ink-2 mb-1.5">
               Email
             </label>
             <Input
@@ -108,12 +108,12 @@ export default function SignUpPage() {
               placeholder="you@example.com"
             />
             {form.formState.errors.email && (
-              <p className="mt-1.5 text-xs text-danger">{form.formState.errors.email.message}</p>
+              <p className="mt-1.5 text-caption text-danger">{form.formState.errors.email.message}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-xs font-bold uppercase tracking-wide text-ink-2 mb-1.5">
+            <label htmlFor="password" className="block text-caption font-bold uppercase tracking-caps text-ink-2 mb-1.5">
               Password
             </label>
             <div className="relative">
@@ -135,7 +135,7 @@ export default function SignUpPage() {
               </button>
             </div>
             {form.formState.errors.password && (
-              <p className="mt-1.5 text-xs text-danger">{form.formState.errors.password.message}</p>
+              <p className="mt-1.5 text-caption text-danger">{form.formState.errors.password.message}</p>
             )}
           </div>
 
@@ -150,7 +150,7 @@ export default function SignUpPage() {
             <div className="w-full border-t border-hairline" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-canvas px-3 text-xs text-ink-2">or</span>
+            <span className="bg-canvas px-3 text-caption text-ink-2">or</span>
           </div>
         </div>
 
@@ -160,14 +160,14 @@ export default function SignUpPage() {
           Continue with Google
         </Button>
 
-        <p className="mt-5 text-center text-xs text-ink-2">
+        <p className="mt-5 text-center text-caption text-ink-2">
           By signing up you agree to our{' '}
           <Link href="/terms" className="text-brand-ink hover:underline">Terms</Link>
           {' '}and{' '}
           <Link href="/privacy" className="text-brand-ink hover:underline">Privacy Policy</Link>.
         </p>
 
-        <p className="mt-4 text-center text-sm text-ink-2">
+        <p className="mt-4 text-center text-body text-ink-2">
           Already have an account?{' '}
           <Link href="/auth/sign-in" className="font-bold text-brand-ink hover:underline">
             Sign in

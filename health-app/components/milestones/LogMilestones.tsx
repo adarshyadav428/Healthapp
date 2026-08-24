@@ -185,13 +185,13 @@ export function LogMilestones() {
       >
         <div className="relative w-full max-w-xs rounded-sheet bg-surface px-6 pb-7 pt-8 text-center shadow-float">
           <ConfettiBurst />
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-soft text-[28px]">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-soft text-title-lg">
             {isStreak ? '🔥' : isWeight ? '⚖️' : '🎉'}
           </div>
-          <h2 className="mt-4 font-display text-[22px] font-bold text-ink">
+          <h2 className="mt-4 font-display text-title font-bold text-ink">
             {isStreak ? `${streakDays}-day streak!` : isWeight ? `${formatKg(weightKg)} kg down!` : 'First meal logged!'}
           </h2>
-          <p className="mt-1.5 text-sm text-ink-2">
+          <p className="mt-1.5 text-body text-ink-2">
             {isStreak
               ? `${streakDays} days in a row — this is how the habit sticks. Keep it going.`
               : isWeight
@@ -215,7 +215,7 @@ export function LogMilestones() {
               <button
                 type="button"
                 onClick={() => setStreakDays(null)}
-                className="w-full py-1.5 text-[13px] font-semibold text-ink-3 tap-scale"
+                className="w-full py-1.5 text-caption font-semibold text-ink-3 tap-scale"
               >
                 Not now
               </button>
@@ -242,14 +242,14 @@ export function LogMilestones() {
             <Crown size={22} strokeWidth={2} />
           </div>
 
-          <div className="mt-5 text-[11px] font-semibold uppercase tracking-wide text-brand-ink">
+          <div className="mt-5 text-micro font-semibold uppercase tracking-caps text-brand-ink">
             GetInShape Pro
           </div>
-          <h1 className="mt-1.5 font-display text-[28px] font-bold leading-tight text-ink">
+          <h1 className="mt-1.5 font-display text-title-lg font-bold leading-tight text-ink">
             You&apos;re building
             <br />a real habit.
           </h1>
-          <p className="mt-2.5 text-sm text-ink-2">
+          <p className="mt-2.5 text-body text-ink-2">
             Three meals logged — that&apos;s how progress starts. Pro takes the limits off.
           </p>
 
@@ -259,7 +259,7 @@ export function LogMilestones() {
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
                   <Check size={12} strokeWidth={3} />
                 </span>
-                <span className="text-sm text-ink">
+                <span className="text-body text-ink">
                   <b>{bold}</b>
                   {rest}
                 </span>
@@ -269,7 +269,7 @@ export function LogMilestones() {
 
           <div className="flex-1" />
 
-          <p className="mt-8 text-center text-[13px] text-ink-2">
+          <p className="mt-8 text-center text-caption text-ink-2">
             {paywallPriceLine(playAvailable)}
           </p>
           <Button

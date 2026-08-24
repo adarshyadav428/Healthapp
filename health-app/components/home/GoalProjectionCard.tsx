@@ -35,19 +35,19 @@ export function GoalProjectionCard({
   return (
     <Link
       href="/weight"
-      className="flex w-full items-center gap-3.5 rounded-[20px] bg-surface p-3.5 text-left tap-scale"
+      className="flex w-full items-center gap-3.5 rounded-card bg-surface p-3.5 text-left tap-scale"
       style={{ boxShadow: 'var(--shadow-air)' }}
     >
       <div
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-brand-soft"
         aria-hidden="true"
       >
-        <span className="text-[20px] leading-none">{isMeasured ? '🎯' : '🌱'}</span>
+        <span className="text-title-sm leading-none">{isMeasured ? '🎯' : '🌱'}</span>
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="text-[14.5px] font-semibold leading-snug text-ink">{copy.headline}</p>
-        <p className="mt-[3px] text-[12px] leading-snug text-ink-3">{copy.detail}</p>
+        <p className="text-body font-semibold leading-snug text-ink">{copy.headline}</p>
+        <p className="mt-[3px] text-caption leading-snug text-ink-3">{copy.detail}</p>
       </div>
     </Link>
   )

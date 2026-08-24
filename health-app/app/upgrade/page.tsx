@@ -122,8 +122,8 @@ function ReasonBanner() {
     <div className="rounded-card border border-hairline bg-energy-soft p-4 mb-6 flex items-start gap-3">
       <Lock className="h-5 w-5 text-energy-ink flex-shrink-0 mt-0.5" />
       <div>
-        <p className="text-sm font-bold text-ink">{reasonCopy.title}</p>
-        <p className="text-xs text-energy-ink mt-0.5">{reasonCopy.description}</p>
+        <p className="text-body font-bold text-ink">{reasonCopy.title}</p>
+        <p className="text-caption text-energy-ink mt-0.5">{reasonCopy.description}</p>
       </div>
     </div>
   )
@@ -173,24 +173,24 @@ export default function UpgradePage() {
     return (
       <div className="min-h-screen">
         <div className="mx-auto w-full max-w-lg px-4 py-8">
-          <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-ink-2 hover:text-ink mb-6">
+          <Link href="/dashboard" className="inline-flex items-center gap-1 text-body text-ink-2 hover:text-ink mb-6">
             <ArrowLeft className="h-4 w-4" />
             Back to dashboard
           </Link>
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 rounded-full bg-brand-soft border border-hairline px-3 py-1 text-xs font-semibold text-brand-ink mb-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-brand-soft border border-hairline px-3 py-1 text-caption font-semibold text-brand-ink mb-3">
               <Crown className="h-3.5 w-3.5" />
               GetInShape Pro
             </div>
-            <h1 className="font-display text-3xl font-bold text-ink">You&apos;re already on Pro</h1>
-            <p className="mt-2 text-sm text-ink-2">
+            <h1 className="font-display text-title-lg font-bold text-ink">You&apos;re already on Pro</h1>
+            <p className="mt-2 text-body text-ink-2">
               Everything is unlocked — unlimited AI logging, your full history, custom foods and the weekly recap.
             </p>
             <div className="mt-6 flex flex-col gap-2">
               <Link href="/dashboard">
                 <Button className="w-full">Back to logging</Button>
               </Link>
-              <Link href="/settings" className="text-sm text-ink-2 hover:text-ink py-2">
+              <Link href="/settings" className="text-body text-ink-2 hover:text-ink py-2">
                 Manage subscription
               </Link>
             </div>
@@ -204,7 +204,7 @@ export default function UpgradePage() {
     <div className="min-h-screen">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       <div className="mx-auto w-full max-w-lg px-4 py-8">
-        <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-ink-2 hover:text-ink mb-6">
+        <Link href="/dashboard" className="inline-flex items-center gap-1 text-body text-ink-2 hover:text-ink mb-6">
           <ArrowLeft className="h-4 w-4" />
           Back to dashboard
         </Link>
@@ -217,15 +217,15 @@ export default function UpgradePage() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-brand-soft border border-hairline px-3 py-1 text-xs font-semibold text-brand-ink mb-3">
+          <div className="inline-flex items-center gap-2 rounded-full bg-brand-soft border border-hairline px-3 py-1 text-caption font-semibold text-brand-ink mb-3">
             <Crown className="h-3.5 w-3.5" />
             GetInShape Pro
           </div>
-          <h1 className="font-display text-3xl font-bold text-ink">Upgrade to Pro</h1>
-          <p className="mt-2 text-sm text-ink-2">Log freely. Get deeper insights when you&apos;re ready.</p>
-          <p className="mt-1.5 text-xs font-semibold text-brand-ink">Founder pricing — lock in ₹1,999/year while we&apos;re new.</p>
+          <h1 className="font-display text-title-lg font-bold text-ink">Upgrade to Pro</h1>
+          <p className="mt-2 text-body text-ink-2">Log freely. Get deeper insights when you&apos;re ready.</p>
+          <p className="mt-1.5 text-caption font-semibold text-brand-ink">Founder pricing — lock in ₹1,999/year while we&apos;re new.</p>
           {projection && profile && (
-            <p className="mt-2 text-[13px] text-ink-2">
+            <p className="mt-2 text-caption text-ink-2">
               You&apos;re on track for <span className="font-semibold text-ink">{profile.target_weight_kg} kg by ~{formatGoalDate(projection.date)}</span> — see your full curve with Pro.
             </p>
           )}
@@ -235,11 +235,11 @@ export default function UpgradePage() {
         <div className="rounded-sheet border border-hairline bg-surface p-5 mb-6 shadow-rest">
           <div className="flex items-center gap-2 mb-4">
             <Zap className="h-4 w-4 text-brand" />
-            <p className="text-sm font-bold text-ink">What you get with Pro</p>
+            <p className="text-body font-bold text-ink">What you get with Pro</p>
           </div>
           <ul className="space-y-2">
             {FEATURES.map((f) => (
-              <li key={f} className="flex items-center gap-2.5 text-sm text-ink-2">
+              <li key={f} className="flex items-center gap-2.5 text-body text-ink-2">
                 <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-brand-soft">
                   <Check className="h-3 w-3 text-brand" />
                 </span>
@@ -262,20 +262,20 @@ export default function UpgradePage() {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-2">{plan.title}</p>
+                  <p className="text-caption font-semibold uppercase tracking-caps text-ink-2">{plan.title}</p>
                   <div className="flex items-baseline gap-1 mt-0.5">
-                    <span className="font-display text-3xl font-bold text-ink tabular-nums">
+                    <span className="font-display text-title-lg font-bold text-ink tabular-nums">
                       {playPrices[PLAY_PRODUCT_FOR_PLAN[plan.id]] ?? plan.price}
                     </span>
-                    <span className="text-sm text-ink-2">{plan.per}</span>
+                    <span className="text-body text-ink-2">{plan.per}</span>
                   </div>
-                  <p className="text-xs text-ink-2 mt-0.5">{playAvailable ? plan.playNote : plan.note}</p>
+                  <p className="text-caption text-ink-2 mt-0.5">{playAvailable ? plan.playNote : plan.note}</p>
                 </div>
                 {plan.badge && (
                   // shrink-0 + nowrap: as a plain flex child this pill got
                   // squeezed by the price block and wrapped onto a second line
                   // that spilled past its own rounded edge.
-                  <span className="shrink-0 whitespace-nowrap rounded-full bg-energy px-2.5 py-1 text-xs font-bold text-energy-ink">
+                  <span className="shrink-0 whitespace-nowrap rounded-full bg-energy px-2.5 py-1 text-caption font-bold text-energy-ink">
                     {plan.badge}
                   </span>
                 )}
@@ -307,7 +307,7 @@ export default function UpgradePage() {
         {/* Google Play is the only permitted checkout inside the TWA, and it
             isn't selling. Say so plainly rather than leaving a dead button. */}
         {purchasesUnavailable && (
-          <p className="mt-4 text-center text-xs text-ink-2">
+          <p className="mt-4 text-center text-caption text-ink-2">
             Google Play isn’t able to take payments for GetInShape right now. Nothing is wrong with
             your account — everything on the free plan keeps working, and Pro will be available again
             shortly.
@@ -316,7 +316,7 @@ export default function UpgradePage() {
 
         {/* Why the buttons say "confirm your email" instead of a price */}
         {!purchasesUnavailable && needsVerification && (
-          <p className="mt-4 text-center text-xs text-ink-2">
+          <p className="mt-4 text-center text-caption text-ink-2">
             {verificationSent
               ? `We sent a link to ${user?.email}. Tap it, then come back to subscribe.`
               : 'We need a working email to send your receipt and handle refunds. Tap above and we’ll send a confirmation link.'}
@@ -325,12 +325,12 @@ export default function UpgradePage() {
 
         {/* Footer */}
         <div className="mt-8 text-center space-y-2">
-          <p className="text-xs text-ink-2">
+          <p className="text-caption text-ink-2">
             {playAvailable
               ? 'Billed securely through Google Play · Cancel anytime'
               : 'Secured by Razorpay · Cancel anytime · 30-day money back'}
           </p>
-          <div className="flex justify-center gap-4 text-xs text-ink-2">
+          <div className="flex justify-center gap-4 text-caption text-ink-2">
             <Link href="/terms" className="underline hover:text-ink">Terms</Link>
             <Link href="/privacy" className="underline hover:text-ink">Privacy</Link>
           </div>

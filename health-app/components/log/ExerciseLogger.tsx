@@ -79,9 +79,9 @@ export function ExerciseLogger({ weightKg = 70 }: Props) {
       >
         <div className="flex items-center gap-2">
           <Flame className="h-4 w-4" style={{ color: 'var(--fat)' }} />
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-2">Exercise</p>
+          <p className="text-caption font-semibold uppercase tracking-caps text-ink-2">Exercise</p>
           {totalCaloriesBurned > 0 && (
-            <span className="rounded-full text-xs font-bold px-2 py-0.5" style={{ background: 'var(--bad-soft)', color: 'var(--fat)' }}>
+            <span className="rounded-full text-caption font-bold px-2 py-0.5" style={{ background: 'var(--bad-soft)', color: 'var(--fat)' }}>
               −{totalCaloriesBurned} kcal burned
             </span>
           )}
@@ -97,8 +97,8 @@ export function ExerciseLogger({ weightKg = 70 }: Props) {
               {logs.map(log => (
                 <div key={log.id} className="flex items-center justify-between rounded-card px-3 py-2" style={{ background: 'var(--bad-soft)' }}>
                   <div>
-                    <p className="text-xs font-semibold text-ink">{log.activity}</p>
-                    <p className="text-[10px] text-ink-2">{log.duration_min} min · {log.calories} kcal burned</p>
+                    <p className="text-caption font-semibold text-ink">{log.activity}</p>
+                    <p className="text-micro text-ink-2">{log.duration_min} min · {log.calories} kcal burned</p>
                   </div>
                   <button
                     type="button"
@@ -114,14 +114,14 @@ export function ExerciseLogger({ weightKg = 70 }: Props) {
 
           {/* Quick activity chips */}
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-2 mb-1.5">Activity</p>
+            <p className="text-micro font-semibold uppercase tracking-caps text-ink-2 mb-1.5">Activity</p>
             <div className="flex flex-wrap gap-1.5">
               {COMMON_ACTIVITIES.map(a => (
                 <button
                   key={a.name}
                   type="button"
                   onClick={() => handleActivitySelect(a.name, a.met)}
-                  className={`rounded-control px-2.5 py-1 text-xs font-semibold border transition-all ${
+                  className={`rounded-control px-2.5 py-1 text-caption font-semibold border transition-all ${
                     activity === a.name
                       ? 'border-2'
                       : 'bg-surface-2 text-ink-2 border-hairline hover:border-brand-ring'
@@ -138,14 +138,14 @@ export function ExerciseLogger({ weightKg = 70 }: Props) {
               value={activity}
               onChange={e => setActivity(e.target.value)}
               placeholder="Or type custom activity…"
-              className="mt-2 w-full rounded-control border border-hairline bg-surface-2 px-3 py-2 text-sm text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all placeholder:text-ink-3"
+              className="mt-2 w-full rounded-control border border-hairline bg-surface-2 px-3 py-2 text-body text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all placeholder:text-ink-3"
             />
           </div>
 
           {/* Duration + Calories */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-2 mb-1.5">Duration (min)</p>
+              <p className="text-micro font-semibold uppercase tracking-caps text-ink-2 mb-1.5">Duration (min)</p>
               <input
                 type="number"
                 inputMode="numeric"
@@ -153,11 +153,11 @@ export function ExerciseLogger({ weightKg = 70 }: Props) {
                 onChange={e => handleDurationChange(e.target.value)}
                 onFocus={e => e.target.select()}
                 min={1}
-                className="w-full rounded-control border border-hairline bg-surface-2 px-3 py-2 text-sm font-bold text-center text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
+                className="w-full rounded-control border border-hairline bg-surface-2 px-3 py-2 text-body font-bold text-center text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
               />
             </div>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-2 mb-1.5">
+              <p className="text-micro font-semibold uppercase tracking-caps text-ink-2 mb-1.5">
                 Kcal burned {autoCalories && !caloriesStr ? '(estimated)' : ''}
               </p>
               <input
@@ -168,7 +168,7 @@ export function ExerciseLogger({ weightKg = 70 }: Props) {
                 onFocus={e => e.target.select()}
                 placeholder={autoCalories ? String(autoCalories) : '0'}
                 min={1}
-                className="w-full rounded-control border border-hairline bg-surface-2 px-3 py-2 text-sm font-bold text-center text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
+                className="w-full rounded-control border border-hairline bg-surface-2 px-3 py-2 text-body font-bold text-center text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
               />
             </div>
           </div>

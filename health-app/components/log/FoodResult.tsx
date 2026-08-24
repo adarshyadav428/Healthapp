@@ -37,22 +37,22 @@ export function FoodResult({
       <button type="button" className="flex-1 min-w-0 text-left" onClick={() => onSelect(food)}>
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-ink truncate leading-tight">{food.name}</p>
-            {food.brand && <p className="text-[11px] text-ink-2 truncate">{food.brand}</p>}
+            <p className="text-body font-bold text-ink truncate leading-tight">{food.name}</p>
+            {food.brand && <p className="text-micro text-ink-2 truncate">{food.brand}</p>}
           </div>
-          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.color}`}>
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-micro font-semibold ${badge.color}`}>
             {badge.label}
           </span>
         </div>
         <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-          <span className="text-xs font-bold text-ink tabular-nums">{Math.round(food.kcal_per_100g)} kcal</span>
-          <span className="text-xs font-medium tabular-nums" style={{ color: 'var(--protein)' }}>P {Math.round(food.protein_g_per_100g)}g</span>
-          <span className="text-xs font-medium tabular-nums" style={{ color: 'var(--carbs)' }}>C {Math.round(food.carbs_g_per_100g)}g</span>
-          <span className="text-xs font-medium tabular-nums" style={{ color: 'var(--fat)' }}>F {Math.round(food.fat_g_per_100g)}g</span>
+          <span className="text-caption font-bold text-ink tabular-nums">{Math.round(food.kcal_per_100g)} kcal</span>
+          <span className="text-caption font-medium tabular-nums" style={{ color: 'var(--protein)' }}>P {Math.round(food.protein_g_per_100g)}g</span>
+          <span className="text-caption font-medium tabular-nums" style={{ color: 'var(--carbs)' }}>C {Math.round(food.carbs_g_per_100g)}g</span>
+          <span className="text-caption font-medium tabular-nums" style={{ color: 'var(--fat)' }}>F {Math.round(food.fat_g_per_100g)}g</span>
           {food.fiber_g_per_100g != null && food.fiber_g_per_100g > 0 && (
-            <span className="text-xs font-medium text-good tabular-nums">Fi {Math.round(food.fiber_g_per_100g)}g</span>
+            <span className="text-caption font-medium text-good tabular-nums">Fi {Math.round(food.fiber_g_per_100g)}g</span>
           )}
-          <span className="text-[10px] text-ink-2">per 100g</span>
+          <span className="text-micro text-ink-2">per 100g</span>
         </div>
       </button>
 

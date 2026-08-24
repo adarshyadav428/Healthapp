@@ -23,8 +23,8 @@ export function PageHeader({ label, title, back }: { label: string; title: strin
           <ChevronLeft className="h-[18px] w-[18px] text-ink" strokeWidth={2} />
         </button>
       )}
-      <p className="text-[13px] font-medium text-ink-3">{label}</p>
-      <h1 className="font-display mt-[3px] text-[24px] font-bold tracking-[-0.02em] text-ink">{title}</h1>
+      <p className="text-caption font-medium text-ink-3">{label}</p>
+      <h1 className="font-display mt-[3px] text-title font-bold text-ink">{title}</h1>
     </div>
   )
 }
