@@ -42,12 +42,12 @@ function AddButton({ busy, label, onClick, disabled }: {
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cta-grad tap-scale disabled:opacity-50"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink tap-scale disabled:opacity-50"
       style={{ boxShadow: 'var(--fab-shadow)' }}
     >
       {busy
-        ? <Loader2 className="h-4 w-4 animate-spin text-white" />
-        : <Plus className="h-[18px] w-[18px] text-white" strokeWidth={2.2} />}
+        ? <Loader2 className="h-4 w-4 animate-spin text-canvas" />
+        : <Plus className="h-[18px] w-[18px] text-canvas" strokeWidth={2.2} />}
     </button>
   )
 }

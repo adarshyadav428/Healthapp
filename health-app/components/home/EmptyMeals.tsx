@@ -3,7 +3,7 @@ import { Utensils } from 'lucide-react'
 
 export function EmptyMeals() {
   return (
-    <div className="flex flex-col items-center rounded-card bg-surface px-6 py-10 text-center shadow-rest">
+    <div className="flex flex-col items-center rounded-card bg-surface px-6 py-10 text-center shadow-air">
       <div className="mb-4 flex h-[60px] w-[60px] items-center justify-center rounded-card bg-brand-soft">
         <Utensils className="h-6 w-6 text-brand" strokeWidth={1.75} />
       </div>

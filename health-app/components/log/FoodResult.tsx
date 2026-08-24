@@ -32,8 +32,12 @@ export function FoodResult({
 }) {
   const badge = SOURCE_BADGE[food.source] ?? SOURCE_BADGE.off
 
+  // One delineation, not two: a hairline border under an elevation shadow draws
+  // the same edge twice, which is what makes a list of search results read as
+  // boxed rather than floating. The border went, so the hover that recoloured
+  // it went too — it had nothing left to act on.
   return (
-    <div className="flex w-full items-center gap-2 rounded-card border border-hairline bg-surface px-4 py-3 shadow-rest hover:border-brand-ring transition-all">
+    <div className="flex w-full items-center gap-2 rounded-card bg-surface px-4 py-3 shadow-air transition-all">
       <button type="button" className="flex-1 min-w-0 text-left" onClick={() => onSelect(food)}>
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
@@ -78,7 +82,7 @@ export function FoodResult({
           type="button"
           onClick={() => onQuickAdd(food)}
           disabled={isQuickAdding}
-          className="h-9 w-9 flex-shrink-0 rounded-control bg-brand text-white flex items-center justify-center hover:opacity-90 active:scale-90 disabled:opacity-50 transition-all shadow-rest"
+          className="h-9 w-9 flex-shrink-0 rounded-control bg-ink text-canvas flex items-center justify-center hover:opacity-90 active:scale-90 disabled:opacity-50 transition-all"
           aria-label="Quick add"
         >
           {isQuickAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}

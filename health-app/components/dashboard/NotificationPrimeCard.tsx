@@ -70,7 +70,7 @@ export function NotificationPrimeCard() {
             type="button"
             onClick={enable}
             disabled={busy}
-            className="rounded-full bg-cta-grad px-4 py-1.5 text-caption font-semibold text-white tap-scale disabled:opacity-50"
+            className="rounded-full bg-ink px-4 py-1.5 text-caption font-semibold text-canvas tap-scale disabled:opacity-50"
             style={{ boxShadow: 'var(--cta-shadow)' }}
           >
             {busy ? 'Enabling…' : 'Turn on reminders'}

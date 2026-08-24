@@ -226,7 +226,7 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
       <div className="mb-3 mt-6 flex items-baseline justify-between px-0.5">
         <p className="text-body-lg font-semibold text-ink">Recently logged</p>
         {hasLogs && (
-          <Link href="/log" className="text-caption font-semibold text-brand-ink tap-scale">See all</Link>
+          <Link href="/log" className="text-caption font-semibold text-ink-2 tap-scale">See all</Link>
         )}
       </div>
 
@@ -237,7 +237,7 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
           ))}
           <Link
             href="/log?search=1"
-            className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-card border border-dashed border-brand-ring py-[13px] text-caption font-semibold text-brand-ink tap-scale"
+            className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-card border border-dashed border-hairline py-[13px] text-caption font-semibold text-ink-2 tap-scale"
           >
             <Plus className="h-4 w-4" /> Add food manually
           </Link>

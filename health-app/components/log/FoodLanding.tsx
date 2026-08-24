@@ -278,13 +278,17 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
         <button
           type="button"
           onClick={() => setShowCamera(true)}
-          className="flex flex-col gap-5 rounded-card bg-cta-grad p-[18px] text-left tap-scale"
-          style={{ boxShadow: 'var(--cta-shadow)' }}
+          className="flex flex-col gap-5 rounded-card bg-ink p-[18px] text-left tap-scale"
+          style={{ boxShadow: 'var(--shadow-air)' }}
         >
-          <Camera className="h-5 w-5 text-white" strokeWidth={2} />
+          <Camera className="h-5 w-5 text-canvas" strokeWidth={2} />
           <div>
-            <p className="text-body font-semibold text-white">Scan meal</p>
-            <p className="mt-0.5 text-caption" style={{ color: 'rgba(255,255,255,.72)' }}>Point &amp; log</p>
+            <p className="text-body font-semibold text-canvas">Scan meal</p>
+            {/* Was rgba(255,255,255,.72) — a literal that could not follow the
+                theme, and which the token guard only tolerated because it is
+                not hex. Mixing the two tokens keeps the same softened contrast
+                and inverts with the card. */}
+            <p className="mt-0.5 text-caption" style={{ color: 'color-mix(in srgb, var(--canvas) 72%, var(--ink))' }}>Point &amp; log</p>
           </div>
         </button>
         <button
@@ -328,10 +332,10 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
             type="button"
             onClick={() => setFoundFood(suggestion.food)}
             aria-label={`Log ${suggestion.food.name}`}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cta-grad tap-scale"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink tap-scale"
             style={{ boxShadow: 'var(--fab-shadow)' }}
           >
-            <Plus className="h-[18px] w-[18px] text-white" strokeWidth={2.2} />
+            <Plus className="h-[18px] w-[18px] text-canvas" strokeWidth={2.2} />
           </button>
         </div>
       )}

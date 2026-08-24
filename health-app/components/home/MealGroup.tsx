@@ -27,7 +27,7 @@ export function MealGroup({ meal, items, onEdit }: Props) {
   const lastLogged = items[0]?.logged_at
 
   return (
-    <div className="rounded-card overflow-hidden bg-surface shadow-rest">
+    <div className="rounded-card overflow-hidden bg-surface shadow-air">
       {/* Group header */}
       <div className="flex items-center justify-between px-4 py-[14px]">
         <div className="flex items-center gap-3">
@@ -84,7 +84,7 @@ export function MealGroup({ meal, items, onEdit }: Props) {
         <div className="border-t border-hairline px-4 py-3">
           <Link
             href="/log"
-            className="flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-brand-ring py-[13px] text-caption font-semibold text-brand-ink tap-scale"
+            className="flex w-full items-center justify-center gap-1.5 rounded-control border border-dashed border-hairline py-[13px] text-caption font-semibold text-ink-2 tap-scale"
           >
             <span className="text-body-lg">+</span> Add food
           </Link>

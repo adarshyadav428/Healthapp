@@ -119,6 +119,16 @@ const config: Config = {
         float: 'var(--shadow-float)',
         cta:   'var(--cta-shadow)',
         fab:   'var(--fab-shadow)',
+        // `--shadow-air` is the Ember Air card elevation and has existed as a
+        // token since that pass began — but never as a Tailwind key, so the
+        // only way to reach it was an inline style, which is why ~27 sites
+        // write `style={{ boxShadow: 'var(--shadow-air)' }}` by hand. Worse,
+        // `shadow-air` silently rendered as *no shadow at all*: Tailwind emits
+        // nothing for an unknown key, so the class looked right in review and
+        // did nothing in the browser. Prefer this class from here on; the
+        // remaining inline uses still work, and the conditional ones
+        // (`isToday ? undefined : …`) genuinely need to stay inline.
+        air:   'var(--shadow-air)',
       },
       backgroundImage: {
         'cta-grad':  'var(--cta-grad)',

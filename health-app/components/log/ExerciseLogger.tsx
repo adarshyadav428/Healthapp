@@ -70,7 +70,7 @@ export function ExerciseLogger({ weightKg = 70 }: Props) {
   }
 
   return (
-    <div className="rounded-sheet border border-hairline bg-surface shadow-rest overflow-hidden">
+    <div className="rounded-sheet bg-surface shadow-air overflow-hidden">
       {/* Header toggle */}
       <button
         type="button"

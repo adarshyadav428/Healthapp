@@ -56,7 +56,7 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
   }
 
   return (
-    <div className="rounded-card overflow-hidden bg-surface shadow-rest">
+    <div className="rounded-card overflow-hidden bg-surface shadow-air">
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
