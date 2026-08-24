@@ -17,7 +17,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **72 files / 1,036 tests**. There is no `vitest.config.ts`; defaults apply.
+- **Tests:** Vitest 4.1 — **72 files / 1,042 tests**. There is no `vitest.config.ts`; defaults apply.
 - **Deploy:** Vercel **Hobby** plan, region `bom1`. The Hobby limits are load-bearing (see Hard rules).
 
 ## Architecture / directory map
@@ -77,7 +77,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (72 files / 1,036 tests)
+npm test                 # vitest run — the whole suite (72 files / 1,042 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
 npm run check:tokens     # design guard: no raw hex, broken opacity modifiers, off-scale type/radius/tracking
@@ -165,13 +165,22 @@ actively seeding.
   `istDateStr`; there is no UTC day helper left and none may come back. When the page resolved the day
   in IST and the header in UTC, everything between 00:00 and 05:30 IST — the late-dinner window — was
   off by one: the "Today" pill sat on the wrong day and the next-day chevron unlocked.
-- **Home leads with one attention card, never two.** `pickDashboardMoment` (`lib/dashboardMoments.ts`)
-  holds the frozen order `streak-rescue > streak-restart > plateau`, the same shape as `lib/pushBudget.ts`
-  one screen further in. At a streak of zero a Pro user inside the rescue window qualifies for two cards
-  that argue: "repair it and it goes back to 12" above "your best run was 12 days, start again". Both are
-  true; only one can be the next action. Cards that probe the browser for themselves (install, rate,
-  notification priming, email verification) still self-gate — folding them in needs their checks lifted
-  out first.
+- **Home leads with one attention card, never two.** `DASHBOARD_MOMENTS` (`lib/dashboardMoments.ts`)
+  holds the frozen order for **all ten**, the same shape as `lib/pushBudget.ts` one screen further in.
+  At a streak of zero a Pro user inside the rescue window qualifies for two cards that argue: "repair it
+  and it goes back to 12" above "your best run was 12 days, start again". Both are true; only one can be
+  the next action.
+  - The six cards that decide eligibility by probing the browser (install, rate, notification priming,
+    email verification, plateau dismissal, target suggestion) **keep their probes** and call
+    `useHomeSlot(moment, eligible)` (`components/dashboard/HomeSlot.tsx`) to claim the slot instead of
+    rendering on it. Their checks were deliberately *not* lifted into a central hook: that would put six
+    components' gating logic in a second place, and the copies drift the first time one is fixed.
+  - **Adding a card to Home means adding it to `DASHBOARD_MOMENTS` in the same pass** — a card with no
+    slot renders *alongside* the winner instead of competing with it, which is the failure the module
+    exists to prevent. `tests/dashboardMoments.test.ts` pins the full list, so forgetting fails the suite.
+  - `HomeSlotProvider` wraps `DashboardClient` from `app/dashboard/page.tsx`, not inside it, because
+    DashboardClient itself claims three of the slots. Outside a provider `useHomeSlot` returns `eligible`
+    unchanged, so these cards still work anywhere else.
 - **"Deficit" has exactly one definition: `maintenance − eaten`**, and it comes from
   `lib/deficit-calculator.ts`. Never re-derive it, and never compute `daily_calorie_target − eaten` —
   that is "did you hit your eat-goal", a different question with a different answer. Trends and
