@@ -1,6 +1,13 @@
 import { z } from 'zod'
 import { MEAL_CONTEXTS } from './mealContext'
 import { MAX_LOG_GRAMS } from './portion-units'
+import {
+  MAX_OBSTACLES,
+  isObstacleId,
+  isTrackingExperienceId,
+  type ObstacleId,
+  type TrackingExperienceId,
+} from './onboardingOptions'
 
 export const signInSchema = z.object({
   email: z.string().email(),
@@ -21,6 +28,19 @@ export const onboardingSchema = z.object({
   goal: z.enum(['lose', 'maintain', 'gain']),
   activity_level: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']),
   pace_kg_per_week: z.number().min(0).max(2),
+  // The two personalising answers (migration 039). Both optional and both
+  // skippable in the UI: they shape the plan reveal's copy, they do not feed
+  // the maths, and a user who declines to answer must still get a plan.
+  // Validated against the type guards in onboardingOptions rather than a
+  // second copy of the id list, so the form, the schema and the database
+  // CHECK cannot drift apart.
+  obstacles: z
+    .array(z.custom<ObstacleId>(isObstacleId, { message: 'Unknown obstacle' }))
+    .max(MAX_OBSTACLES)
+    .optional(),
+  tracking_experience: z
+    .custom<TrackingExperienceId>(isTrackingExperienceId, { message: 'Unknown tracking experience' })
+    .optional(),
 })
 
 export const addFoodSchema = z.object({

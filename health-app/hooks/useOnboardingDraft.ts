@@ -6,20 +6,41 @@ import type { OnboardingData } from '../lib/validations'
 import { captureEvent } from '../lib/posthog/client'
 import { EVENTS } from '../lib/posthog/events'
 
-// Four screens: the activation log, then three question screens. Was six —
-// each extra screen is a place to drop out, and "What should we call you?"
-// alone did not earn one. Nothing was removed, only regrouped.
-export const TOTAL_STEPS = 4
+// Six screens: the activation log, three question screens, then two about the
+// person rather than the body.
+//
+// This was six, then four — "each extra screen is a place to drop out", and at
+// current scale the binding constraint is activation, not conversion. That
+// reasoning still stands, so the two added back are held to a harder rule than
+// the four that were cut: both are **single-tap** (no typing, no keyboard) and
+// both **visibly change the plan reveal** two screens later. A question whose
+// answer changes nothing the user sees does not earn a screen here.
+//
+// They sit last on purpose. Everything the plan actually needs is captured by
+// step 4, so an abandoner at step 5 or 6 has still given us a complete profile
+// — the fields are optional in the schema precisely so that stays true.
+export const TOTAL_STEPS = 6
 const ONBOARDING_STORAGE_KEY = 'gis.onboarding.progress'
 
-export const STEP_LABELS = ['Log a meal', 'About you', 'Your body & goal', 'Lifestyle']
+export const STEP_LABELS = [
+  'Log a meal',
+  'About you',
+  'Your body & goal',
+  'Lifestyle',
+  'What makes it hard',
+  'Your experience',
+]
 
-// Which fields must validate before advancing past each step.
+// Which fields must validate before advancing past each step. Steps 5 and 6 are
+// deliberately empty: both are skippable, and a required "why do you struggle"
+// screen is a wall in front of a plan the user has already earned.
 const fieldsByStep: Record<number, (keyof OnboardingData)[]> = {
   1: [],
   2: ['display_name', 'age', 'sex'],
   3: ['height_cm', 'current_weight_kg', 'target_weight_kg', 'goal'],
   4: ['activity_level', 'pace_kg_per_week'],
+  5: [],
+  6: [],
 }
 
 /**

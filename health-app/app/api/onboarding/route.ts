@@ -3,6 +3,7 @@ import { onboardingSchema } from '../../../lib/validations'
 import { createServerClient } from '../../../lib/supabase/server'
 import { calculateTDEE } from '../../../lib/tdee'
 import { captureServerEvent } from '../../../lib/posthog/server'
+import { normaliseObstacles } from '../../../lib/onboardingOptions'
 
 export async function POST(req: Request) {
   try {
@@ -59,7 +60,31 @@ export async function POST(req: Request) {
       await supabase.from('profiles').update({ start_weight_kg: data.current_weight_kg }).eq('id', user.id)
     } catch { /* column not present yet — ignore */ }
 
-    captureServerEvent(user.id, 'onboarding_completed', { goal: data.goal })
+    // The two personalising answers (migration 039), written the same
+    // best-effort way and for the same reason: they shape the plan reveal's
+    // copy, they do not feed the maths, and onboarding must not fail on a
+    // column that has not been applied by hand yet. `normaliseObstacles` runs
+    // again server-side even though Zod already validated — it also drops
+    // duplicates and caps the length, and the array CHECK in 039 rejects a
+    // long list with an error the user would see as "something went wrong".
+    const obstacles = normaliseObstacles(data.obstacles)
+    try {
+      await supabase
+        .from('profiles')
+        .update({
+          obstacles: obstacles.length ? obstacles : null,
+          tracking_experience: data.tracking_experience ?? null,
+        })
+        .eq('id', user.id)
+    } catch { /* columns not present yet — ignore */ }
+
+    captureServerEvent(user.id, 'onboarding_completed', {
+      goal: data.goal,
+      // Which questions actually got answered — the whole point of adding two
+      // skippable screens is being able to see whether they cost completions.
+      obstacle_count: obstacles.length,
+      tracking_experience: data.tracking_experience ?? 'skipped',
+    })
 
     return NextResponse.json({ ok: true })
   } catch (err) {

@@ -235,3 +235,50 @@ describe('customFoodSchema', () => {
     expect(r.success && r.data.serving_description).toBe('1 serving')
   })
 })
+
+describe('onboardingSchema — the personalising answers (migration 039)', () => {
+  const valid = {
+    display_name: 'Adarsh',
+    age: 25,
+    sex: 'male',
+    height_cm: 175,
+    current_weight_kg: 80,
+    target_weight_kg: 70,
+    goal: 'lose',
+    activity_level: 'moderate',
+    pace_kg_per_week: 0.5,
+  }
+
+  it('accepts a payload with neither field — both questions are skippable', () => {
+    // Also the shape every client sent before these questions existed.
+    expect(onboardingSchema.safeParse(valid).success).toBe(true)
+  })
+
+  it('accepts an explicit empty obstacle list', () => {
+    expect(onboardingSchema.safeParse({ ...valid, obstacles: [] }).success).toBe(true)
+  })
+
+  it('accepts real ids', () => {
+    const parsed = onboardingSchema.safeParse({
+      ...valid,
+      obstacles: ['late_night', 'sweets'],
+      tracking_experience: 'tried',
+    })
+    expect(parsed.success).toBe(true)
+  })
+
+  it('rejects an obstacle id the app does not offer', () => {
+    expect(onboardingSchema.safeParse({ ...valid, obstacles: ['skip_breakfast'] }).success).toBe(false)
+  })
+
+  it('rejects a tracking experience the app does not offer', () => {
+    expect(onboardingSchema.safeParse({ ...valid, tracking_experience: 'sometimes' }).success).toBe(false)
+  })
+
+  it('rejects more obstacles than the UI allows', () => {
+    // The database CHECK in 039 caps the array too; this is the boundary that
+    // returns a 400 instead of a 500.
+    const tooMany = ['late_night', 'eating_out', 'portions', 'sweets']
+    expect(onboardingSchema.safeParse({ ...valid, obstacles: tooMany }).success).toBe(false)
+  })
+})

@@ -34,6 +34,25 @@ export default async function OnboardingPlanPage() {
   // complete — send them back rather than showing a plan built from nulls.
   if (!profile || !profile.daily_calorie_target) redirect('/onboarding')
 
+  // The personalising answers (migration 039) are fetched separately and
+  // best-effort, matching how app/api/onboarding/route.ts writes them.
+  // Deliberately NOT folded into the select above: migrations here are applied
+  // by hand, and naming an unapplied column makes the whole select fail — which
+  // would null the profile, trip the redirect on the line above and bounce a
+  // user who has just finished onboarding straight back into it, forever.
+  // These two only change wording, so failing to read them must cost nothing.
+  let obstacles: string[] | null = null
+  let trackingExperience: string | null = null
+  try {
+    const { data: extra } = await supabase
+      .from('profiles')
+      .select('obstacles, tracking_experience')
+      .eq('id', user.id)
+      .maybeSingle()
+    obstacles = extra?.obstacles ?? null
+    trackingExperience = extra?.tracking_experience ?? null
+  } catch { /* 039 not applied yet — the story reads fine without them */ }
+
   const cards = buildPlanCards({
     firstName: profile.display_name?.trim().split(/\s+/)[0] ?? null,
     dailyCalorieTarget: profile.daily_calorie_target,
@@ -42,6 +61,8 @@ export default async function OnboardingPlanPage() {
     currentWeightKg: profile.current_weight_kg,
     targetWeightKg: profile.target_weight_kg,
     paceKgPerWeek: profile.pace_kg_per_week ?? null,
+    obstacles,
+    trackingExperience,
   })
 
   return (
@@ -50,8 +71,18 @@ export default async function OnboardingPlanPage() {
       cards={cards}
       ctaLabel="Log my first meal"
       ctaHref="/log"
-      exitHref="/dashboard"
-      meta={{ goal: profile.goal }}
+      // ✕ used to go to /dashboard. This page exists because the binding
+      // constraint is activation — signups who never log a meal — and sending
+      // the people who skip the story to a dashboard full of zeroes is the
+      // exact leak it was built to close. Both exits now lead to logging.
+      exitHref="/log"
+      meta={{
+        goal: profile.goal,
+        // So the funnel can answer whether the two added screens paid for
+        // themselves: does a personalised plan finish and convert better?
+        obstacle_count: obstacles?.length ?? 0,
+        tracking_experience: trackingExperience ?? 'skipped',
+      }}
     />
   )
 }

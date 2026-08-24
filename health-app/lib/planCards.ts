@@ -13,6 +13,7 @@
 
 import type { StoryCard } from '../components/story/types'
 import { projectGoalDate, formatGoalDate } from './projection'
+import { planIntroFor, obstaclePlanLine } from './onboardingOptions'
 
 export type PlanCardArgs = {
   firstName?: string | null
@@ -22,6 +23,13 @@ export type PlanCardArgs = {
   currentWeightKg: number
   targetWeightKg: number
   paceKgPerWeek: number | null
+  /**
+   * The two personalising answers from onboarding (migration 039). Both
+   * optional: every account created before those questions existed has null
+   * here, and the story must read identically well without them.
+   */
+  obstacles?: readonly string[] | null
+  trackingExperience?: string | null
   /** Injected so tests aren't hostage to the clock. */
   now?: Date
 }
@@ -29,7 +37,8 @@ export type PlanCardArgs = {
 export function buildPlanCards(args: PlanCardArgs): StoryCard[] {
   const {
     firstName, dailyCalorieTarget, proteinTargetG, goal,
-    currentWeightKg, targetWeightKg, paceKgPerWeek, now,
+    currentWeightKg, targetWeightKg, paceKgPerWeek,
+    obstacles, trackingExperience, now,
   } = args
 
   const name = firstName?.trim()
@@ -40,7 +49,11 @@ export function buildPlanCards(args: PlanCardArgs): StoryCard[] {
       glyph: '✅',
       eyebrow: 'You’re all set',
       title: name ? `Here’s your plan, ${name}.` : 'Here’s your plan.',
-      body: 'Built from your height, weight, age and how active you are.',
+      // Shaped by the tracking-history answer, and falling back to the generic
+      // line when it was skipped or predates the question. Someone who has
+      // tried and stopped needs the opposite reassurance from a first-timer,
+      // and this used to write one sentence for both.
+      body: planIntroFor(trackingExperience),
     },
   ]
 
@@ -84,6 +97,24 @@ export function buildPlanCards(args: PlanCardArgs): StoryCard[] {
       value: formatGoalDate(projection.date),
       label: `when you reach ${targetWeightKg} kg`,
       body: 'At your chosen pace. Log consistently and this is the date to beat.',
+    })
+  }
+
+  // What they said gets in the way, answered. This is the card that makes the
+  // extra onboarding screen worth its drop-out risk: an answer that never
+  // surfaces is friction the user paid for and got nothing back from.
+  //
+  // It sits *before* the closing card deliberately. The story has to end on
+  // "log one meal" — that is the action the whole surface exists to produce,
+  // and tests/planCards.test.ts pins it.
+  const obstacleLine = obstaclePlanLine(obstacles)
+  if (obstacleLine) {
+    cards.push({
+      id: 'plan-obstacle',
+      glyph: '🚧',
+      eyebrow: 'The hard part',
+      label: 'We’ll aim at this',
+      body: obstacleLine,
     })
   }
 

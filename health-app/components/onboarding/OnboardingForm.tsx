@@ -13,6 +13,12 @@ import { computeBmi, bmiCategory, healthyWeightRange, suggestedTargets } from '.
 import { projectGoalDate, formatGoalDate } from '../../lib/projection'
 import { ftInToCm } from '../../lib/units'
 import { useOnboardingDraft, TOTAL_STEPS, STEP_LABELS } from '../../hooks/useOnboardingDraft'
+import {
+  OBSTACLES,
+  MAX_OBSTACLES,
+  TRACKING_EXPERIENCES,
+  type ObstacleId,
+} from '../../lib/onboardingOptions'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 import { ConfettiBurst } from '../ui/ConfettiBurst'
@@ -22,7 +28,8 @@ const CameraModal  = dynamic(() => import('../camera/CameraModal').then(m => m.C
 const ChatLogModal = dynamic(() => import('../chat/ChatLogModal').then(m => m.ChatLogModal),  { ssr: false })
 const AddFoodModal = dynamic(() => import('../log/AddFoodModal').then(m => m.AddFoodModal),   { ssr: false })
 
-const STEP_EMOJIS = ['📸', '👤', '📏', '⚖️', '🎯', '🏃']
+// One per step, in STEP_LABELS order.
+const STEP_EMOJIS = ['📸', '👤', '📏', '🏃', '🚧', '📊']
 
 const selectClass =
   'w-full rounded-control border border-hairline bg-surface-2 px-4 py-2.5 text-body font-semibold text-ink outline-none transition-all focus:border-brand focus:ring-[3px] focus:ring-brand-ring'
@@ -62,6 +69,21 @@ export function OnboardingForm() {
     step, isNavigating, heightFt, setHeightFt, heightIn, setHeightIn,
     nextStep, prevStep, clearDraft,
   } = useOnboardingDraft(form)
+
+  const selectedObstacles = form.watch('obstacles') ?? []
+
+  /** Toggle one obstacle chip, refusing silently once MAX_OBSTACLES are held. */
+  const toggleObstacle = (id: ObstacleId) => {
+    const current = form.getValues('obstacles') ?? []
+    const next = current.includes(id)
+      ? current.filter((x) => x !== id)
+      : current.length >= MAX_OBSTACLES
+        ? current
+        : [...current, id]
+    // shouldDirty so the draft-persist effect in useOnboardingDraft picks this
+    // up — without it a refresh mid-wizard loses the chips but keeps the rest.
+    form.setValue('obstacles', next, { shouldDirty: true })
+  }
 
   const onSubmit = async (values: OnboardingData) => {
     try {
@@ -428,6 +450,84 @@ export function OnboardingForm() {
               Mifflin-St Jeor formula, protein at {PROTEIN_G_PER_KG} g per kg of bodyweight.
               You can adjust this anytime in settings.
             </p>
+          </div>
+        )}
+
+        {/* Step 5: Obstacles — multi-select, up to MAX_OBSTACLES.
+            Everything the plan needs was captured by step 4, so this is
+            genuinely optional: it changes the words on the plan reveal, never
+            the numbers. Single-tap by design — a screen asking someone to type
+            out why they have failed before is a screen they close. */}
+        {step === 5 && (
+          <div className="space-y-4">
+            <div>
+              <h2 className="font-display text-title-sm font-bold text-ink">What usually gets in the way?</h2>
+              <p className="mt-1 text-body text-ink-2">
+                Pick up to {MAX_OBSTACLES}. We&apos;ll aim your plan at these — skip if none fit.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {OBSTACLES.map((o) => {
+                const chosen = selectedObstacles.includes(o.id)
+                const atLimit = selectedObstacles.length >= MAX_OBSTACLES && !chosen
+                return (
+                  <button
+                    key={o.id}
+                    type="button"
+                    aria-pressed={chosen}
+                    disabled={atLimit}
+                    onClick={() => toggleObstacle(o.id)}
+                    className={`flex flex-col items-start gap-1.5 rounded-control border px-3.5 py-3 text-left transition-all ${
+                      chosen ? pillOn : pillOff
+                    } ${atLimit ? 'opacity-40' : ''}`}
+                  >
+                    <span className="text-title-sm">{o.emoji}</span>
+                    <span className={`text-caption font-semibold ${chosen ? 'text-brand-ink' : 'text-ink'}`}>
+                      {o.label}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+            <p className="text-micro text-ink-3" aria-live="polite">
+              {selectedObstacles.length}/{MAX_OBSTACLES} chosen
+            </p>
+          </div>
+        )}
+
+        {/* Step 6: Tracking history. Someone who has tried and stopped needs
+            the opposite reassurance from a first-timer, and the app used to
+            write one line for both. Also optional. */}
+        {step === 6 && (
+          <div className="space-y-4">
+            <div>
+              <h2 className="font-display text-title-sm font-bold text-ink">Have you counted calories before?</h2>
+              <p className="mt-1 text-body text-ink-2">There&apos;s no wrong answer — it just changes where we start you.</p>
+            </div>
+            <div className="space-y-2">
+              {TRACKING_EXPERIENCES.map((t) => {
+                const chosen = form.watch('tracking_experience') === t.id
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    aria-pressed={chosen}
+                    onClick={() =>
+                      // Tapping the chosen one again clears it — otherwise the
+                      // only way to un-answer an optional question is to
+                      // restart onboarding.
+                      form.setValue('tracking_experience', chosen ? undefined : t.id)
+                    }
+                    className={`w-full flex items-center gap-3 rounded-control border px-4 py-3 text-left transition-all ${
+                      chosen ? pillOn : pillOff
+                    }`}
+                  >
+                    <span className="text-title-sm">{t.emoji}</span>
+                    <p className={`text-body font-semibold ${chosen ? 'text-brand-ink' : 'text-ink'}`}>{t.label}</p>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         )}
 

@@ -115,3 +115,58 @@ describe('buildPlanCards — names', () => {
     }
   })
 })
+
+describe('buildPlanCards — personalisation (migration 039)', () => {
+  it('answers the obstacle the user named', () => {
+    const card = buildPlanCards({ ...base, obstacles: ['late_night'] })
+      .find((c) => c.id === 'plan-obstacle')!
+    expect(card).toBeDefined()
+    expect(card.body).toMatch(/log dinner before you sit down/i)
+  })
+
+  it('still closes on the action card, with the obstacle card before it', () => {
+    // The whole surface exists to produce one log. A personalisation card is
+    // never allowed to become the last thing the user sees.
+    const cards = buildPlanCards({ ...base, obstacles: ['sweets'] })
+    expect(cards.at(-1)!.id).toBe('plan-go')
+    expect(cards.at(-2)!.id).toBe('plan-obstacle')
+  })
+
+  it('shows no obstacle card when the question was skipped', () => {
+    // Optional means optional: skipping must not leave a card saying nothing.
+    for (const skipped of [undefined, null, []]) {
+      expect(ids({ obstacles: skipped })).not.toContain('plan-obstacle')
+    }
+  })
+
+  it('opens differently for someone who has tried and stopped', () => {
+    const tried = buildPlanCards({ ...base, trackingExperience: 'tried' })[0]
+    const never = buildPlanCards({ ...base, trackingExperience: 'never' })[0]
+    expect(tried.body).not.toBe(never.body)
+    expect(tried.body).toMatch(/done this before/i)
+  })
+
+  it('reads identically well for an account that predates the questions', () => {
+    // Every existing user has NULL in both columns. The story must not
+    // degrade, and must never claim something they did not say.
+    const legacy = buildPlanCards(base)
+    const explicitlyNull = buildPlanCards({ ...base, obstacles: null, trackingExperience: null })
+    expect(explicitlyNull).toEqual(legacy)
+    expect(legacy[0].body).toMatch(/height, weight, age/i)
+  })
+
+  it('ignores an obstacle id that is no longer offered', () => {
+    expect(ids({ obstacles: ['retired_option'] })).not.toContain('plan-obstacle')
+  })
+
+  it('keeps ids unique and serializable with every option answered', () => {
+    const cards = buildPlanCards({
+      ...base,
+      obstacles: ['portions', 'sweets', 'weekends'],
+      trackingExperience: 'current',
+    })
+    const all = cards.map((c) => c.id)
+    expect(new Set(all).size).toBe(all.length)
+    expect(JSON.parse(JSON.stringify(cards))).toEqual(cards)
+  })
+})
