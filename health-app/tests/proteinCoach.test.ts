@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { proteinCoachLine } from '../lib/proteinCoach'
+import { proteinCoachLine, PROTEIN_SOURCES } from '../lib/proteinCoach'
 import { PROTEIN_G_PER_KG } from '../lib/tdee'
 
 describe('proteinCoachLine', () => {
@@ -45,6 +45,38 @@ describe('proteinCoachLine', () => {
       const line = proteinCoachLine(0, gap, 65)
       expect(line?.tone).toBe('gap')
       expect(line?.text).toMatch(/curd|dal|egg|paneer|rajma|soya chunks|milk/)
+    }
+  })
+
+  it('never claims a portion covers a gap it cannot', () => {
+    // Before the first meal the gap is the whole target, so this is the line
+    // Home shows every morning. Nothing in the table is anywhere near 104g.
+    const line = proteinCoachLine(0, 104, 65)
+    expect(line?.tone).toBe('gap')
+    expect(line?.text).toContain('104g of protein to go')
+    expect(line?.text).not.toContain('covers it')
+    expect(line?.text).toContain('26g of that')
+  })
+
+  it('only claims coverage when the named portion genuinely closes the gap', () => {
+    // The invariant the old copy broke: "covers it" must imply enough protein.
+    for (let gap = 6; gap <= 130; gap++) {
+      const text = proteinCoachLine(0, gap, 65)?.text ?? ''
+      if (!text.includes('covers it')) continue
+      const named = PROTEIN_SOURCES.find((s) => text.includes(s.portion))
+      expect(named).toBeDefined()
+      expect(named!.grams).toBeGreaterThanOrEqual(gap)
+    }
+  })
+
+  it('states a real contribution whenever it cannot claim coverage', () => {
+    for (let gap = 6; gap <= 130; gap++) {
+      const text = proteinCoachLine(0, gap, 65)?.text ?? ''
+      if (text.includes('covers it')) continue
+      const named = PROTEIN_SOURCES.find((s) => text.includes(s.portion))
+      expect(named).toBeDefined()
+      expect(text).toContain(`is ${named!.grams}g of that`)
+      expect(named!.grams).toBeLessThan(gap)
     }
   })
 

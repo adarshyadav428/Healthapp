@@ -23,7 +23,7 @@ export type ProteinCoachLine = {
  * household portion delivers. Deliberately staples, not supplements: a
  * suggestion you have to shop for is a suggestion you ignore.
  */
-const SOURCES: { name: string; grams: number; portion: string }[] = [
+export const PROTEIN_SOURCES: { name: string; grams: number; portion: string }[] = [
   { name: 'curd',         grams: 11, portion: 'a bowl of curd' },
   { name: 'dal',          grams: 9,  portion: 'a katori of dal' },
   { name: 'egg',          grams: 6,  portion: 'an egg' },
@@ -35,9 +35,9 @@ const SOURCES: { name: string; grams: number; portion: string }[] = [
 
 /** The single source that most nearly closes `gap` without wild overshoot. */
 function bestSuggestion(gap: number): { portion: string; grams: number } {
-  let best = SOURCES[0]
+  let best = PROTEIN_SOURCES[0]
   let bestDistance = Infinity
-  for (const s of SOURCES) {
+  for (const s of PROTEIN_SOURCES) {
     const distance = Math.abs(s.grams - gap)
     if (distance < bestDistance) {
       best = s
@@ -75,6 +75,14 @@ export function proteinCoachLine(
     return { tone: 'close', text: `${gap}g of protein to go — you're basically there.` }
   }
 
-  const { portion } = bestSuggestion(gap)
+  const { portion, grams } = bestSuggestion(gap)
+
+  // Nothing in PROTEIN_SOURCES exceeds 26g, so a large gap has no single
+  // portion that closes it. Saying one "covers it" is false for every gap
+  // above that — including the whole-target gap Home shows each morning
+  // before the first meal. State what the portion actually contributes.
+  if (grams < gap) {
+    return { tone: 'gap', text: `${gap}g of protein to go — ${portion} is ${grams}g of that.` }
+  }
   return { tone: 'gap', text: `${gap}g of protein to go — about ${portion} covers it.` }
 }
