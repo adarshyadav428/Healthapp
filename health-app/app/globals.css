@@ -148,13 +148,40 @@
     font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
     -webkit-tap-highlight-color: transparent;
   }
+  /* No tracking here. This rule used to @apply tracking-tight, which is a flat
+     -0.025em on every heading in the app — and it silently outranked the
+     per-step tracking the type scale sets in tailwind.config.ts. A 20px title
+     and a 36px hero numeral need different tracking, which is exactly what the
+     scale encodes; a single global value is the thing it replaced. The token
+     guard cannot see this file, so it is called out here instead. */
   h1, h2, h3, h4 {
     font-family: var(--font-display, var(--font-sans, ui-sans-serif, system-ui, sans-serif));
-    @apply font-bold tracking-tight;
+    @apply font-bold;
   }
 }
 
 @layer utilities {
+  /* ── Continuous corner curves ──
+     A plain border-radius is a circular arc: it meets the flat edge at a visible
+     break in curvature. Apple's hardware and UI have used a superellipse since
+     iOS 7, and the difference is one of those things that reads as "considered"
+     without being nameable. `corner-shape: squircle` is the CSS for it.
+
+     Purely additive: everything is inside @supports, so a browser without it
+     keeps today's arc and nothing needs a fallback. Chromium has shipped it
+     since 139, which covers the TWA — the surface where this app is judged
+     against native apps rather than against websites. Scoped to the four radius
+     steps, deliberately: `rounded-full` is already a circle and squircling a
+     pill would flatten it. */
+  @supports (corner-shape: squircle) {
+    .rounded-control,
+    .rounded-card,
+    .rounded-card-lg,
+    .rounded-sheet {
+      corner-shape: squircle;
+    }
+  }
+
   /* Display face for big numerals / hero type */
   .font-display {
     font-family: var(--font-display, var(--font-sans, ui-sans-serif, system-ui, sans-serif));
