@@ -86,9 +86,31 @@ Easiest on the `+qa1` fixture account (30 days of history).
 - [ ] Milestone overlays fire at 3, 7, 14, 21, 30, 50, 100.
 - [ ] At 7/30/100 the overlay **waits for a tap** and offers "Share this".
       At 3/14/21/50 it auto-dismisses after ~2.6s with no share button.
-- [ ] "Share this" → system share sheet on Android with a 1080×1080 card;
+- [ ] A whole-kg **weight** milestone ("3 kg down!") also waits and offers the
+      card — it is the most postable moment in the app and used to vanish.
+- [ ] "Share this" → system share sheet on Android with a 1080×1920 card;
       PNG download on desktop. Cancelling the sheet is not an error.
 - [ ] Freezes are available to a **free** account. They must never be gated.
+
+## 4b. Share cards — the parts automation cannot reach
+
+The card art itself is reviewable without signing in at **`/studio` → Card**
+(every topic × both formats). These need a real phone and a real account:
+
+- [ ] `/progress` → "Share your progress" opens a chooser. Each row's preview is
+      the file the share sheet then delivers — pick all three and confirm they
+      match.
+- [ ] The card leads with what was **picked**, not with the streak. Specifically:
+      with a multi-kg loss and a 1–2 day streak, "Weight lost" is preselected.
+- [ ] **Status** format posted to WhatsApp status fills the screen — no grey
+      bars top and bottom. **Post** format is the square.
+- [ ] On a **free** account the chooser offers no month deficit at all. The
+      month is withheld server-side, so this is absence, not a padlock.
+- [ ] `/wrapped` on an unlocked account: "Share my month" **shares** — it must
+      not navigate to `/progress`. Its weight line names the month ("down in
+      August"), never "since I started".
+- [ ] The exported card is the Kelp green, in both light and dark app themes —
+      it is a brand asset and must not follow the viewer's theme.
 
 ## 5. Coach & adaptive targets (Phase 6)
 
