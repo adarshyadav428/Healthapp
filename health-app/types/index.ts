@@ -82,7 +82,16 @@ export type FoodLog = {
   protein_g: number
   carbs_g: number
   fat_g: number
+  /** The IST day this food is attributed to — what every total is grouped by. */
   logged_at: string
+  /**
+   * When the row was written. Optional because most reads don't select it; the
+   * one place it is load-bearing is the streak, where `created_at` on a later
+   * IST day than `logged_at` marks a backfill. See countsTowardStreak in
+   * lib/streak.ts — a missing value there means "counts", so a read that
+   * forgets this column is generous rather than wrong.
+   */
+  created_at?: string | null
 }
 
 export type ExerciseLog = {

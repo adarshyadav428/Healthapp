@@ -182,7 +182,7 @@ async function generateMonthlyWraps(
   const to = istDayStartInstant(nextMonth)
 
   const [{ data: logs }, { data: weights }, { data: done }] = await Promise.all([
-    admin.from('food_logs').select('user_id, kcal, protein_g, logged_at, food:foods(name)')
+    admin.from('food_logs').select('user_id, kcal, protein_g, logged_at, created_at, food:foods(name)')
       .gte('logged_at', from).lt('logged_at', to),
     admin.from('weight_logs').select('user_id, weight_kg, measured_at')
       .gte('measured_at', from).lt('measured_at', to),

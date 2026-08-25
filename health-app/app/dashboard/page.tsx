@@ -46,7 +46,7 @@ export default async function DashboardPage() {
     // needs recent intake and these are exactly the rows it would have fetched.
     supabase
       .from('food_logs')
-      .select('logged_at, kcal')
+      .select('logged_at, created_at, kcal')
       .eq('user_id', user.id)
       .gte('logged_at', sixtyDaysAgo),
     supabase.from('subscriptions').select('status').eq('user_id', user.id).maybeSingle(),
@@ -89,17 +89,13 @@ export default async function DashboardPage() {
   const rescueRows = rescuesResult.data ?? []
   const rescuedDates = rescueRows.map((r) => r.rescued_date as string)
 
-  const streakState = calculateStreakState(
-    (recentLogs ?? []) as unknown as FoodLog[],
-    new Date(),
-    rescuedDates
-  )
+  const streakState = calculateStreakState(recentLogs ?? [], new Date(), rescuedDates)
   const streakDays = streakState.streak
 
   // Feeds the "next badge" nudge. Free — it reuses the 60-day window already
   // fetched for the streak, and is the same window the badge shelf on Trends
   // derives from, so the two can't disagree about what's been earned.
-  const bestStreak = longestStreak((recentLogs ?? []) as unknown as FoodLog[])
+  const bestStreak = longestStreak(recentLogs ?? [])
 
   // IST date keys with at least one log — feeds the week strip's dots, matching
   // /log's IST ?date= semantics (a 1am-IST log belongs to that IST day).
@@ -123,7 +119,7 @@ export default async function DashboardPage() {
   // is otherwise entirely free territory.
   const rescueOffer =
     isPro && rescuesRemaining(rescueRows.map((r) => r.created_at as string)) > 0
-      ? findStreakRescue((recentLogs ?? []) as unknown as FoodLog[], new Date(), rescuedDates)
+      ? findStreakRescue(recentLogs ?? [], new Date(), rescuedDates)
       : null
 
   // Projected goal date. A weigh-in read that fails leaves `weighIns` empty,

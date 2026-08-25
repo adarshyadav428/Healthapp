@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { calculateStreak, calculateStreakState, findStreakRescue, longestStreak, MAX_FREEZES_BANKED } from '../lib/streak'
+import {
+  BACKFILL_RULE_START_IST,
+  calculateStreak,
+  calculateStreakState,
+  countsTowardStreak,
+  findStreakRescue,
+  longestStreak,
+  MAX_FREEZES_BANKED,
+} from '../lib/streak'
 import type { FoodLog } from '../types/index'
 
 const log = (iso: string) => ({ logged_at: iso }) as FoodLog
@@ -247,5 +255,149 @@ describe('findStreakRescue', () => {
     // break left to sell a repair for.
     const logs = [...days('2026-07-01', 7), '2026-07-09'].map(onDay)
     expect(findStreakRescue(logs, noonIst('2026-07-09'))).toBeNull()
+  })
+})
+
+/**
+ * Backfill buys data, never streak credit.
+ *
+ * These dates are derived from BACKFILL_RULE_START_IST rather than written as
+ * literals, so bumping the constant when the release slips can never quietly
+ * grandfather the very cases that are supposed to prove the rule.
+ */
+describe('countsTowardStreak (a day logged vs. a day filled in)', () => {
+  const RULE_MS = Date.parse(`${BACKFILL_RULE_START_IST}T00:00:00Z`)
+  /** An IST date `n` days after the rule came into force. */
+  const after = (n: number) => new Date(RULE_MS + n * 86400000).toISOString().slice(0, 10)
+  /** An IST date `n` days before it. */
+  const before = (n: number) => new Date(RULE_MS - n * 86400000).toISOString().slice(0, 10)
+
+  /** Eaten on `ate`, written on `wrote` — both at noon IST. */
+  const row = (ate: string, wrote: string) => ({
+    logged_at: `${ate}T06:30:00Z`,
+    created_at: `${wrote}T06:30:00Z`,
+  })
+
+  it('counts a log written the same IST day it is attributed to', () => {
+    expect(countsTowardStreak(row(after(3), after(3)))).toBe(true)
+  })
+
+  it('does not count a day filled in afterwards', () => {
+    expect(countsTowardStreak(row(after(3), after(4)))).toBe(false)
+  })
+
+  it('counts a row with no created_at — absence is not proof of backfill', () => {
+    expect(countsTowardStreak({ logged_at: `${after(3)}T06:30:00Z` })).toBe(true)
+    expect(countsTowardStreak({ logged_at: `${after(3)}T06:30:00Z`, created_at: null })).toBe(true)
+  })
+
+  it('counts a row whose created_at is unreadable, rather than throwing', () => {
+    expect(countsTowardStreak({ logged_at: `${after(3)}T06:30:00Z`, created_at: 'nonsense' }))
+      .toBe(true)
+  })
+
+  it('grandfathers a backfill written before the rule came into force', () => {
+    // Unmistakably a backfill — eaten five days before it was written — but it
+    // predates the rule, so nobody loses a streak they had already banked.
+    expect(countsTowardStreak(row(before(6), before(1)))).toBe(true)
+  })
+
+  it('forgives clock skew across IST midnight', () => {
+    // 23:59:50 IST, written ten seconds later — on the next IST day by the
+    // clock, but the same act. Postgres stamps created_at a round trip after
+    // the app computes logged_at, so this is a real shape, not a contrived one.
+    const day = after(2)
+    expect(countsTowardStreak({
+      logged_at: `${day}T18:29:50Z`,
+      created_at: `${day}T18:30:10Z`,
+    })).toBe(true)
+  })
+
+  it('still catches a backfill ten minutes past midnight', () => {
+    // Past the grace window: this is someone opening the app after midnight to
+    // fill in yesterday, which is exactly what the rule is for.
+    const day = after(2)
+    expect(countsTowardStreak({
+      logged_at: `${day}T18:29:50Z`,
+      created_at: `${day}T18:40:00Z`,
+    })).toBe(false)
+  })
+
+  describe('calculateStreakState', () => {
+    it('does not let a backfilled day bridge a break', () => {
+      // Logged on days 0, 1 and 3. Day 2 was missed and filled in on day 3.
+      const logs = [
+        row(after(0), after(0)),
+        row(after(1), after(1)),
+        row(after(2), after(3)), // the backfill
+        row(after(3), after(3)),
+      ]
+      expect(calculateStreakState(logs, noonIst(after(3))).streak).toBe(1)
+    })
+
+    it('...where the same shape without created_at still counts — the live bug', () => {
+      // Identical days, only the provenance missing. This is what production
+      // does today, and why free 7-day backfill has been out-reaching the Pro
+      // 3-day Streak Rescue that exists to sell exactly this repair.
+      const logs = [after(0), after(1), after(2), after(3)]
+        .map((d) => ({ logged_at: `${d}T06:30:00Z` }))
+      expect(calculateStreakState(logs, noonIst(after(3))).streak).toBe(4)
+    })
+
+    it('does not bank a freeze on a backfilled day', () => {
+      // Seven consecutive days would earn one freeze — but day 3 was filled in,
+      // so the run is really 3 + 3 and nothing is banked.
+      const withBackfill = [0, 1, 2, 3, 4, 5, 6].map((n) =>
+        row(after(n), n === 3 ? after(4) : after(n))
+      )
+      const s = calculateStreakState(withBackfill, noonIst(after(6)))
+      expect(s.streak).toBe(3)
+      expect(s.freezesBanked).toBe(0)
+
+      // The honest version of the same week does earn it.
+      const honest = [0, 1, 2, 3, 4, 5, 6].map((n) => row(after(n), after(n)))
+      const t = calculateStreakState(honest, noonIst(after(6)))
+      expect(t.streak).toBe(7)
+      expect(t.freezesBanked).toBe(1)
+    })
+
+    it('leaves a pre-cutoff streak exactly as it was', () => {
+      // The grandfather clause, end to end: a run built out of backfills before
+      // the rule shipped must not shrink the day it does.
+      const logs = [6, 5, 4, 3, 2, 1].map((n) => row(before(n), before(1)))
+      expect(calculateStreakState(logs, noonIst(before(1))).streak).toBe(6)
+    })
+  })
+
+  describe('longestStreak', () => {
+    it('excludes backfilled days from the best run', () => {
+      // Five days, the middle one filled in later: the honest best run is 2.
+      const logs = [0, 1, 2, 3, 4].map((n) => row(after(n), n === 2 ? after(4) : after(n)))
+      expect(longestStreak(logs)).toBe(2)
+    })
+  })
+
+  describe('findStreakRescue', () => {
+    it('offers to repair a day the user backfilled', () => {
+      // The streak really is broken on that day, so refusing the offer would
+      // leave the user holding a break with no way to close it. Backfill sells
+      // the data back; Rescue sells the streak back.
+      const logs = [
+        row(after(0), after(0)),
+        row(after(1), after(1)),
+        row(after(2), after(3)), // backfilled — breaks the streak
+        row(after(3), after(3)),
+      ]
+      expect(findStreakRescue(logs, noonIst(after(3)))?.date).toBe(after(2))
+    })
+  })
+})
+
+describe('BACKFILL_RULE_START_IST', () => {
+  it('is a well-formed IST date key', () => {
+    // It is meant to be bumped by hand when a release slips, and a typo here
+    // would silently disable the rule for every row ever written.
+    expect(BACKFILL_RULE_START_IST).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(Number.isFinite(Date.parse(`${BACKFILL_RULE_START_IST}T00:00:00Z`))).toBe(true)
   })
 })

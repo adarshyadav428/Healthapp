@@ -38,7 +38,7 @@ export default async function WelcomePage() {
     supabase.from('profiles').select('display_name').eq('id', user.id).maybeSingle(),
     supabase
       .from('food_logs')
-      .select('kcal, protein_g, logged_at, food:foods(name)')
+      .select('kcal, protein_g, logged_at, created_at, food:foods(name)')
       .eq('user_id', user.id)
       .gte('logged_at', sixtyDaysAgo),
     supabase

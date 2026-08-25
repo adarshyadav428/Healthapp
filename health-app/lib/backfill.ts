@@ -4,7 +4,13 @@ import { isProStatus } from './subscription'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-/** Free users may log to today back through the last 7 IST days (today = day 1). */
+/**
+ * Free users may log to today back through the last 7 IST days (today = day 1).
+ *
+ * This window governs the *data* only. A day filled in afterwards never extends
+ * the streak — see `countsTowardStreak` in lib/streak.ts, which is what keeps
+ * this from being a free, longer-reaching version of the Pro Streak Rescue.
+ */
 export const FREE_BACKFILL_DAYS = 7
 
 /** True if `dateStr` (YYYY-MM-DD, IST) is inside the free backfill window. */

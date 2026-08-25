@@ -28,7 +28,7 @@ export async function POST() {
 
   const [subResult, logsResult, rescuesResult] = await Promise.all([
     supabase.from('subscriptions').select('status').eq('user_id', user.id).maybeSingle(),
-    supabase.from('food_logs').select('logged_at').eq('user_id', user.id).gte('logged_at', sixtyDaysAgo),
+    supabase.from('food_logs').select('logged_at, created_at').eq('user_id', user.id).gte('logged_at', sixtyDaysAgo),
     supabase.from('streak_rescues').select('rescued_date, created_at').eq('user_id', user.id),
   ])
 

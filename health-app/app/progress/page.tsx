@@ -109,7 +109,7 @@ export default async function ProgressPage() {
       .maybeSingle(),
     supabase
       .from('food_logs')
-      .select('logged_at')
+      .select('logged_at, created_at')
       .eq('user_id', user.id)
       .gte('logged_at', sixtyDaysAgo.toISOString()),
     supabase
@@ -154,7 +154,7 @@ export default async function ProgressPage() {
   const withinTier = <T extends { logged_at: string }>(rows: T[]) =>
     isPro ? rows : rows.filter((r) => new Date(r.logged_at).getTime() >= freeCutoffMs)
 
-  const streak      = calculateStreakState((streakResult.data ?? []) as unknown as FoodLog[]).streak
+  const streak      = calculateStreakState(streakResult.data ?? []).streak
   const weightLogs  = (weightResult.data ?? []) as unknown as WeightLog[]
   const loggedDates = (streakResult.data ?? []).map((r) => r.logged_at as string)
   const logs        = withinTier(logsResult.data ?? [])
@@ -204,7 +204,7 @@ export default async function ProgressPage() {
   const badgeStats = {
     totalLogs: logCountResult.count ?? 0,
     currentStreak: streak,
-    longestStreak: longestStreak((streakResult.data ?? []) as unknown as FoodLog[]),
+    longestStreak: longestStreak(streakResult.data ?? []),
     proteinTargetDaysHit,
     weighIns: weighInCountResult.count ?? 0,
     savedMealTemplates: savedMealCountResult.count ?? 0,

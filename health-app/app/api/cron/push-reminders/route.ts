@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '../../../../lib/supabase/server'
 import { getIstDayRange } from '../../../../lib/dateUtils'
-import { calculateStreakState } from '../../../../lib/streak'
+import { calculateStreakState, type StreakLog } from '../../../../lib/streak'
 
 
 /** Below this, a streak isn't worth a "don't lose it" notification yet. */
@@ -16,7 +16,6 @@ import {
   type ReminderSlot,
 } from '../../../../lib/reminderSchedule'
 import { processInBatches, CRON_TIME_BUDGET_MS } from '../../../../lib/cronBatch'
-import type { FoodLog } from '../../../../types/index'
 
 export const runtime = 'nodejs'
 
@@ -80,17 +79,20 @@ export async function GET(req: Request) {
   // exceeded the function timeout and silently stopped pushing partway
   // through — with no error anywhere to say so.
   const [{ data: windowLogs }, { data: rescueRows }] = await Promise.all([
-    admin.from('food_logs').select('user_id, logged_at').in('user_id', userIds).gte('logged_at', sixtyDaysAgo),
+    admin.from('food_logs').select('user_id, logged_at, created_at').in('user_id', userIds).gte('logged_at', sixtyDaysAgo),
     admin.from('streak_rescues').select('user_id, rescued_date').in('user_id', userIds),
   ])
 
-  const logsByUser = new Map<string, { logged_at: string }[]>()
+  const logsByUser = new Map<string, StreakLog[]>()
   const loggedTodayIds = new Set<string>()
   for (const row of windowLogs ?? []) {
     const uid = row.user_id as string
     const at = row.logged_at as string
     const arr = logsByUser.get(uid) ?? []
-    arr.push({ logged_at: at })
+    // created_at rides along: without it every row looks same-day and the
+    // streak in a "don't lose your 12-day run" push would count days the user
+    // backfilled — overstating exactly the number the push is leaning on.
+    arr.push({ logged_at: at, created_at: (row.created_at as string | null) ?? null })
     logsByUser.set(uid, arr)
     if (at >= start && at < end) loggedTodayIds.add(uid)
   }
@@ -117,7 +119,7 @@ export async function GET(req: Request) {
 
   const outcome = await processInBatches(pending, async (userId) => {
     const { streak, freezesBanked } = calculateStreakState(
-      (logsByUser.get(userId) ?? []) as unknown as FoodLog[],
+      logsByUser.get(userId) ?? [],
       new Date(),
       rescuesByUser.get(userId) ?? []
     )

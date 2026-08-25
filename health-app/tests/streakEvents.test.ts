@@ -12,6 +12,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { streakEventsForLog, type LoggedAt } from '../lib/streakEvents'
+import { BACKFILL_RULE_START_IST } from '../lib/streak'
 
 /** Noon IST on the given IST date, expressed as the UTC instant we store. */
 function at(istDate: string): string {
@@ -101,5 +102,38 @@ describe('a Pro rescue is honoured', () => {
       events.find((e) => e.name === 'day_completed')!.props.streak
 
     expect(streakOf(withRescue)).toBeGreaterThan(streakOf(without))
+  })
+})
+
+/**
+ * A day filled in after the fact.
+ *
+ * `day_completed` still fires — the day genuinely gained data — but it carries
+ * `backfilled: 1`, because the module's own contract is that true breaks are
+ * derived downstream from gaps in `day_completed`. Without the flag, a gap
+ * closed on a Sunday afternoon would look like a day the user showed up for and
+ * quietly erase the break from the funnel.
+ *
+ * Dates derive from BACKFILL_RULE_START_IST so bumping that constant when a
+ * release slips cannot grandfather away the cases meant to prove the rule.
+ */
+describe('backfilling a past day', () => {
+  const RULE_MS = Date.parse(`${BACKFILL_RULE_START_IST}T00:00:00Z`)
+  const day = (n: number) => new Date(RULE_MS + n * 86400000).toISOString().slice(0, 10)
+
+  it('completes the day, flags it, and claims no increment', () => {
+    const now = new Date(at(day(3)))
+    const events = streakEventsForLog(logsFor(day(0), day(1)), at(day(2)), [], now)
+
+    expect(names(events)).toEqual(['day_completed'])
+    expect(events[0].props.backfilled).toBe(1)
+  })
+
+  it('leaves a same-day log unflagged and still incrementing', () => {
+    const now = new Date(at(day(3)))
+    const events = streakEventsForLog(logsFor(day(2)), at(day(3)), [], now)
+
+    expect(events[0].props.backfilled).toBe(0)
+    expect(names(events)).toContain('streak_incremented')
   })
 })

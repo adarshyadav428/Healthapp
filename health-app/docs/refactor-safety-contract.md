@@ -29,6 +29,7 @@ then no behavior listed below can change without a failing check.
 | API input contracts (bounds, enums, macro sanity) | `lib/validations.ts` | `tests/validations.test.ts` |
 | Pro gate vocabulary (`active`/`trialing`) | `lib/subscription.ts` | `tests/subscription.test.ts` |
 | Streak (IST day semantics) | `lib/streak.ts` | `tests/streak.test.ts` |
+| Backfill earns data, not streak credit | `lib/streak.ts` (`countsTowardStreak`) | `tests/streak.test.ts` |
 | IST day windows / 7-day cutoff (`istDaysAgoStart`) | `lib/dateUtils.ts` | `tests/dateUtils.test.ts` |
 | Log date grouping | `lib/logDates.ts` | `tests/logDates.test.ts` |
 | Nutrition scaling | `lib/nutrition.ts` | `tests/nutrition.test.ts` |

@@ -1,5 +1,4 @@
-import type { FoodLog } from '../types/index'
-import { calculateStreakState, longestStreak } from './streak'
+import { calculateStreakState, countsTowardStreak, longestStreak, type StreakLog } from './streak'
 
 /**
  * Which streak-lifecycle events a newly-created log produces.
@@ -36,8 +35,13 @@ export type StreakEventName =
   | 'streak_frozen'
   | 'streak_restarted'
 
-/** All these calculations need from a log is when it happened. */
-export type LoggedAt = { logged_at: string }
+/**
+ * All these calculations need from a log is when it happened — and, since the
+ * streak stopped counting days filled in after the fact, when it was written.
+ * An alias rather than its own shape: two structural types for "the columns the
+ * streak reads" is how one of them ends up missing `created_at`.
+ */
+export type LoggedAt = StreakLog
 
 export type StreakEvent = {
   name: StreakEventName
@@ -56,17 +60,12 @@ export function streakEventsForLog(
   rescuedDates: readonly string[] = [],
   referenceDate: Date = new Date()
 ): StreakEvent[] {
-  // calculateStreakState is typed for FoodLog but reads only logged_at, and
-  // the caller has only the timestamps (a narrow indexed read — see
-  // getLogActivationContext). Widening the parameter here rather than making
-  // routes fabricate whole FoodLog rows to satisfy a type.
-  const asLogs = (rows: readonly LoggedAt[]) => rows as unknown as FoodLog[]
+  // The row being created right now, so its `created_at` is `referenceDate` by
+  // definition — which is exactly what makes a log with a past `logged_at`
+  // recognisable as a backfill without the caller passing anything extra.
+  const newLog: StreakLog = { logged_at: newLoggedAt, created_at: referenceDate.toISOString() }
 
-  const after = calculateStreakState(
-    asLogs([...logsBefore, { logged_at: newLoggedAt }]),
-    referenceDate,
-    rescuedDates
-  )
+  const after = calculateStreakState([...logsBefore, newLog], referenceDate, rescuedDates)
 
   // A second log on a day that already had one changes nothing about the
   // streak. Emitting on every log would make day_completed a duplicate of
@@ -76,8 +75,16 @@ export function streakEventsForLog(
   const newKey = istKey(newLoggedAt)
   if (logsBefore.some((l) => istKey(l.logged_at) === newKey)) return []
 
-  const before = calculateStreakState(asLogs(logsBefore), referenceDate, rescuedDates)
-  const events: StreakEvent[] = [{ name: 'day_completed', props: { streak: after.streak } }]
+  const before = calculateStreakState(logsBefore, referenceDate, rescuedDates)
+
+  // `backfilled` is what keeps "breaks are gaps in day_completed" true after the
+  // streak stopped counting filled-in days. The day really did gain data, so the
+  // event still fires — but a gap closed on a Sunday afternoon is not a day the
+  // user showed up for, and without this flag it would look like one.
+  const backfilled = countsTowardStreak(newLog) ? 0 : 1
+  const events: StreakEvent[] = [
+    { name: 'day_completed', props: { streak: after.streak, backfilled } },
+  ]
 
   if (after.streak > before.streak) {
     events.push({ name: 'streak_incremented', props: { streak: after.streak } })
@@ -103,7 +110,7 @@ export function streakEventsForLog(
   // Back after a lapse: the run restarted at 1 despite a real streak in their
   // history. `longestStreak` deliberately ignores freezes, so this only counts
   // a genuine previous run.
-  const previousBest = longestStreak(asLogs(logsBefore))
+  const previousBest = longestStreak(logsBefore)
   if (after.streak === 1 && previousBest >= 2) {
     events.push({ name: 'streak_restarted', props: { streak: 1, previous_best: previousBest } })
   }

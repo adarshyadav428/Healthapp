@@ -185,6 +185,28 @@ actively seeding.
   **server-side**, so a free client never receives numbers a padlock is merely covering.
 - **Streak freezes are never paywalled.** The free auto-*freeze* prevents a break; the Pro *rescue*
   repairs one. Do not merge or gate the two.
+- **Backfill buys data, never streak credit.** A row whose `created_at` lands on a later IST day than
+  its `logged_at` is a day the user filled in, not a day they showed up — so it feeds the day-chip dot,
+  `daysLogged`, the deficit maths, the adaptive target and the weekly recap, and is invisible to the
+  streak, freezes and `longestStreak` (hence the streak-derived badges). `countsTowardStreak`
+  (`lib/streak.ts`) is the only place that judgement is made; everything else asks it.
+  - It **fails open in both directions**: a missing or unreadable `created_at` counts, because a row
+    cannot be *proven* to be a backfill and a streak taken away on a guess is worse than one given
+    away. So does anything created before **`BACKFILL_RULE_START_IST`** — the grandfather clause, which
+    **must be on or after the deploy date**. Shipping later than it is harmless; shipping earlier
+    retroactively shrinks streaks people already banked. If the release slips, bump it.
+  - **Every read that feeds a streak function must select `created_at`** — `app/dashboard/page.tsx`,
+    `app/progress/page.tsx`, `lib/logActivation.ts`, `app/api/streak/rescue/route.ts`,
+    `app/api/cron/push-reminders/route.ts`, `app/welcome/page.tsx`,
+    `app/api/cron/weekly-recap/route.ts`. They are narrow indexed reads and one more timestamp is
+    cheap. This is why those functions take `StreakLog` and the `as unknown as FoodLog[]` casts were
+    removed: a cast is exactly what would hide a narrowed select and silently revert the rule.
+  - This was a **live bug, not a new restriction**. The streak has always been derived from
+    `logged_at`, so free 7-day backfill has been repairing streaks in production all along, reaching
+    four days further back than the Pro Streak Rescue sold to do it. A backfilled day therefore stays
+    *rescuable* — the break is real, and refusing the offer would leave the user unable to close it.
+  - `day_completed` carries **`backfilled: 0|1`**. The module's contract is that true breaks are gaps
+    in `day_completed`; without the flag a gap closed on a Sunday afternoon erases the break.
 - **If you move the reminder cron, move `CATCH_ALL_IST_HOUR` with it.** They are coupled, and
   `tests/reminderWiring.test.ts` parses `vercel.json` to prove it.
 - **The free-tier list on `app/page.tsx` is a public claim.** If you change what's free, change both.

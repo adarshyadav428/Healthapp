@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isProStatus } from './subscription'
+import type { StreakLog } from './streak'
 import type { LogMilestone } from './logMilestones'
 
 /**
@@ -26,12 +27,16 @@ export type LogActivationContext = {
   total_logs_before: number
   is_pro: boolean
   /**
-   * The user's logged_at history as it stood BEFORE this log, windowed to the
-   * last 60 days — enough for calculateStreakState, which never looks further
-   * back than the current run. Feeds lib/streakEvents.ts, the only way the
-   * streak (recomputed pure from logs everywhere else) can announce a change.
+   * The user's log history as it stood BEFORE this log, windowed to the last
+   * 60 days — enough for calculateStreakState, which never looks further back
+   * than the current run. Feeds lib/streakEvents.ts, the only way the streak
+   * (recomputed pure from logs everywhere else) can announce a change.
+   *
+   * `created_at` rides along because the streak rules need it to tell a day
+   * that was logged from a day that was filled in later. Two columns off one
+   * index is still a narrow read.
    */
-  logs_before: { logged_at: string }[]
+  logs_before: StreakLog[]
   /**
    * IST date keys a Pro Streak Rescue already covered. calculateStreakState
    * takes these as an argument rather than reading them, so they have to be
@@ -54,11 +59,11 @@ export async function getLogActivationContext(
       .eq('user_id', userId),
     supabase.from('profiles').select('created_at').eq('id', userId).maybeSingle(),
     supabase.from('subscriptions').select('status').eq('user_id', userId).maybeSingle(),
-    // logged_at only, and only 60 days: this runs on every log, so it has to
-    // stay a narrow indexed read rather than pulling joined food rows.
+    // Two timestamp columns, and only 60 days: this runs on every log, so it
+    // has to stay a narrow indexed read rather than pulling joined food rows.
     supabase
       .from('food_logs')
-      .select('logged_at')
+      .select('logged_at, created_at')
       .eq('user_id', userId)
       .gte('logged_at', sixtyDaysAgo),
     supabase.from('streak_rescues').select('rescued_date').eq('user_id', userId),
@@ -73,7 +78,7 @@ export async function getLogActivationContext(
     days_since_signup: daysSinceSignup,
     total_logs_before: count ?? 0,
     is_pro: isProStatus(subRow?.status),
-    logs_before: (logRows ?? []) as { logged_at: string }[],
+    logs_before: (logRows ?? []) as StreakLog[],
     rescued_dates: (rescueRows ?? []).map((r) => (r as { rescued_date: string }).rescued_date),
   }
 }
