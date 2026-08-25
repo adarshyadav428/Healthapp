@@ -13,7 +13,10 @@ export function EmptyMeals() {
       </p>
       <Link
         href="/log"
-        className="mt-5 inline-block rounded-full bg-cta-grad px-[22px] py-[13px] text-body font-semibold text-white shadow-cta tap-scale"
+        // text-on-accent, never text-white: the dark-mode accent is bright and
+        // white on it measures 2.09:1. The token carries the right label colour
+        // for whichever theme is live. See scripts/check-contrast.mjs.
+        className="mt-5 inline-block rounded-full bg-brand px-[22px] py-[13px] text-body font-semibold text-on-accent shadow-cta tap-scale"
       >
         Log your first meal
       </Link>

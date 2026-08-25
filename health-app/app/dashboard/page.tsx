@@ -181,7 +181,7 @@ export default async function DashboardPage() {
     // Transparent: the body paints canvas + the ambient light field
     <div className="min-h-screen">
       <main
-        className="relative mx-auto w-full max-w-md px-6"
+        className="relative mx-auto w-full max-w-md px-edge"
         style={{
           paddingTop: 'calc(20px + env(safe-area-inset-top))',
           paddingBottom: 'calc(120px + env(safe-area-inset-bottom))',

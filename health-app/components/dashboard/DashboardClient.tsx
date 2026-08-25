@@ -204,7 +204,7 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
       <WeeklyRecapCard recap={weeklyRecap} isPro={isPro} dailyTarget={target} streakDays={streakDays} />
 
       {/* ── Recently logged ── */}
-      <div className="mb-3 mt-6 flex items-baseline justify-between px-0.5">
+      <div className="mb-3 mt-section flex items-baseline justify-between px-0.5">
         <p className="text-body-lg font-semibold text-ink">Recently logged</p>
         {hasLogs && (
           <Link href="/log" className="text-caption font-semibold text-ink-2 tap-scale">See all</Link>
@@ -216,11 +216,20 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
           {recent.map((log) => (
             <RecentMealCard key={log.id} log={log} onClick={() => setEditingLog(log)} />
           ))}
+          {/* A dashed 1px border was the one thing on this screen the teardown
+              rules out outright: "a border alone is the most reliable tell of an
+              unconsidered interface, and none of the five references has one"
+              (§4). Same affordance, stated the way every other row on Home is —
+              a surface lifted on one soft shadow. */}
           <Link
             href="/log?search=1"
-            className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-card border border-dashed border-hairline py-[13px] text-caption font-semibold text-ink-2 tap-scale"
+            className="mt-1 flex w-full items-center justify-center gap-2 rounded-card bg-surface py-[13px] text-caption font-semibold text-ink-2 tap-scale"
+            style={{ boxShadow: 'var(--shadow-air)' }}
           >
-            <Plus className="h-4 w-4" /> Add food manually
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-soft">
+              <Plus className="h-3.5 w-3.5 text-brand-ink" strokeWidth={2.5} />
+            </span>
+            Add food manually
           </Link>
         </div>
       ) : (
