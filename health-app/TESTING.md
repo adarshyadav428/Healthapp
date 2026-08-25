@@ -111,6 +111,20 @@ The card art itself is reviewable without signing in at **`/studio` → Card**
       August"), never "since I started".
 - [ ] The exported card is the Kelp green, in both light and dark app themes —
       it is a brand asset and must not follow the viewer's theme.
+- [ ] The plate reads as a *plate* against the card's ground, not a pale blob.
+      (It was white-on-near-white once; the rim now carries 3.4:1.)
+
+### The day card
+
+- [ ] `/log` and the day drawer on `/progress` both show "Share this day" under
+      the meals, and neither shows it on a day with nothing logged.
+- [ ] The card's date matches the diary's date — check this across the
+      00:00–05:30 IST window, where an IST/UTC slip would show a different day.
+- [ ] Meals read in day order (breakfast → snack), never in logging order.
+- [ ] A day with many items shows "+N more" rather than silently dropping
+      dishes, and the day's total still counts everything.
+- [ ] Switching Status → Post reflows the menu and never runs it into the green
+      footer band.
 
 ## 5. Coach & adaptive targets (Phase 6)
 

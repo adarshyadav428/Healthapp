@@ -148,17 +148,6 @@ export function ProgressClient({
   // ignore its patterns.
   const contextLine = useMemo(() => contextInsightLine(contextInsight(logs)), [logs])
 
-  // The katoris on the share card. Averages rather than window totals, because
-  // the thali is meant to read as "a typical day of mine" — which is what
-  // someone sharing it is actually claiming.
-  const shareMacros = useMemo(
-    () =>
-      avgProtein + avgCarbs + avgFat > 0
-        ? { proteinG: avgProtein, carbsG: avgCarbs, fatG: avgFat }
-        : null,
-    [avgProtein, avgCarbs, avgFat]
-  )
-
   // Deficit rows for the share chooser. `monthView` is null for free accounts —
   // the gate is server-side (app/progress/page.tsx), so nothing here decides it.
   // A fallback period is dropped rather than shared: the card says "This week",
@@ -316,7 +305,6 @@ export function ProgressClient({
         streakDays={streak}
         startWeightKg={startWeight}
         currentWeightKg={currentWeight}
-        macros={shareMacros}
         deficits={shareDeficits}
       />
 

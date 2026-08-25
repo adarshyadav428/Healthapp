@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Share2, Loader2 } from 'lucide-react'
 import {
   buildShareCardOptions,
-  buildPlateSplit,
   drawShareCard,
   resolveFonts,
   shareProgressCard,
@@ -24,8 +23,6 @@ type Props = {
   streakDays: number
   startWeightKg: number | null
   currentWeightKg: number | null
-  /** Recent macro totals — fills the thali's katoris. Omit for a plain plate. */
-  macros?: { proteinG: number; carbsG: number; fatG: number } | null
   /**
    * Deficits the server was willing to hand this account. The month is Pro and
    * is withheld server-side, so a free client simply never receives one — this
@@ -58,7 +55,6 @@ export function ShareProgressButton({
   streakDays,
   startWeightKg,
   currentWeightKg,
-  macros,
   deficits = NO_DEFICITS,
 }: Props) {
   const [open, setOpen] = useState(false)
@@ -86,7 +82,6 @@ export function ShareProgressButton({
     [streakDays, startWeightKg, currentWeightKg, deficits]
   )
 
-  const plate = useMemo(() => buildPlateSplit(macros), [macros])
   const selected = options[Math.min(topicIndex, options.length - 1)]
 
   // Redraw the preview whenever the choice changes, so what the user sees is
@@ -96,12 +91,12 @@ export function ShareProgressButton({
     let cancelled = false
     document.fonts.ready.then(() => {
       if (cancelled || !previewRef.current) return
-      drawShareCard(previewRef.current, selected.data, resolveFonts(), { plate, format })
+      drawShareCard(previewRef.current, selected.data, resolveFonts(), { format })
     })
     return () => {
       cancelled = true
     }
-  }, [open, selected, plate, format])
+  }, [open, selected, format])
 
   if (options.length === 0) return null
 
@@ -109,7 +104,7 @@ export function ShareProgressButton({
     if (busy || !selected) return
     setBusy(true)
     try {
-      const method = await shareProgressCard(selected.data, { plate, format })
+      const method = await shareProgressCard(selected.data, { format })
       captureEvent(EVENTS.PROGRESS_CARD_SHARED, {
         method,
         topic: selected.topic,
@@ -145,11 +140,11 @@ export function ShareProgressButton({
             <SheetDescription>Pick the number you want to lead with.</SheetDescription>
           </SheetHeader>
 
-          <div className="mx-auto mb-4 w-full max-w-[180px]">
+          <div className="mx-auto mb-4 w-full max-w-[150px]">
             <canvas
               ref={previewRef}
               aria-label="Preview of the card you are about to share"
-              className="w-full rounded-card bg-surface-2"
+              className="w-full rounded-card"
               style={{ height: 'auto' }}
             />
           </div>
@@ -170,9 +165,7 @@ export function ShareProgressButton({
                     )}
                   >
                     <span className="text-body font-semibold">{option.label}</span>
-                    <span className="text-caption tabular-nums">
-                      {option.data.hero.value}
-                    </span>
+                    <span className="text-caption tabular-nums">{option.data.hero.value}</span>
                   </button>
                 )
               })}

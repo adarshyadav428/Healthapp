@@ -12,8 +12,8 @@ import { useCountUp } from '../../hooks/useCountUp'
 import { Story } from '../story/Story'
 import type { StoryCard } from '../story/types'
 import {
-  buildShareCardOptions, buildPlateSplit, drawShareCard,
-  type ShareTopic, type ShareFormat,
+  buildShareCardOptions, buildDayCardData, drawShareCard, drawDayCard, MAX_ITEM_LINES,
+  type ShareTopic, type ShareFormat, type DayCardLog,
 } from '../../lib/shareCard'
 import {
   Flame, Home, UtensilsCrossed, TrendingUp, User, Plus, X, Check,
@@ -24,18 +24,10 @@ type Direction = 'onyx' | 'porcelain'
 type Screen = 'dashboard' | 'paywall' | 'quickadd' | 'story' | 'card'
 
 /**
- * The share card, drawn at full size and scaled down for review.
- *
- * It deliberately ignores the studio's light/dark switch: a share card is a
- * brand asset that leaves the app, so lib/shareCard pins it to the Porcelain
- * palette and it must look identical for every user. Seeing that it *doesn't*
- * react to the toggle is part of what this preview is for.
- */
-/**
  * One canvas. Kept as its own component so each cell of the grid below owns a
  * ref — a single effect writing into many canvases would have to re-find them.
  */
-function ShareCardCell({ topic, format }: { topic: ShareTopic; format: ShareFormat }) {
+function ShareCardCell({ topic, format }: { topic: ShareTopic | 'day'; format: ShareFormat }) {
   const ref = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -43,14 +35,18 @@ function ShareCardCell({ topic, format }: { topic: ShareTopic; format: ShareForm
     let cancelled = false
     document.fonts.ready.then(() => {
       if (cancelled || !ref.current) return
-      const option = SAMPLE_OPTIONS.find((o) => o.topic === topic)
-      if (!option) return
-      const plate = buildPlateSplit({ proteinG: 96, carbsG: 210, fatG: 58 })
       const root = getComputedStyle(document.documentElement)
-      drawShareCard(ref.current, option.data, {
+      const fonts = {
         display: root.getPropertyValue('--font-display').trim() || 'Inter Tight, sans-serif',
         sans: root.getPropertyValue('--font-sans').trim() || 'Inter, sans-serif',
-      }, { plate, format })
+      }
+      if (topic === 'day') {
+        const day = buildDayCardData({ ...SAMPLE_DAY_INPUT, maxItemLines: MAX_ITEM_LINES[format] })
+        if (day) drawDayCard(ref.current, day, fonts, { format })
+        return
+      }
+      const option = SAMPLE_OPTIONS.find((o) => o.topic === topic)
+      if (option) drawShareCard(ref.current, option.data, fonts, { format })
     })
     return () => { cancelled = true }
   }, [topic, format])
@@ -76,6 +72,23 @@ const SAMPLE_OPTIONS = buildShareCardOptions({
   deficit: { kcal: 3240, period: 'week', daysLogged: 6, fatKg: 0.42 },
 })
 
+/** A real-shaped Indian day: four meals, a long dish name, an unnamed quick add. */
+const SAMPLE_DAY_INPUT: { dateLabel: string; logs: DayCardLog[] } = {
+  dateLabel: 'Tuesday, 26 August',
+  logs: [
+    { meal: 'breakfast', name: 'Poha', kcal: 270, proteinG: 6, carbsG: 44, fatG: 7 },
+    { meal: 'breakfast', name: 'Masala Chai', kcal: 90, proteinG: 3, carbsG: 10, fatG: 4 },
+    { meal: 'lunch', name: 'Dal Tadka', kcal: 180, proteinG: 9, carbsG: 24, fatG: 5 },
+    { meal: 'lunch', name: 'Jeera Rice', kcal: 240, proteinG: 5, carbsG: 46, fatG: 4 },
+    { meal: 'lunch', name: 'Roti (2)', kcal: 200, proteinG: 6, carbsG: 38, fatG: 3 },
+    { meal: 'snack', name: null, kcal: 150, proteinG: 2, carbsG: 18, fatG: 8 },
+    { meal: 'dinner', name: 'Paneer Butter Masala', kcal: 420, proteinG: 18, carbsG: 22, fatG: 30 },
+    { meal: 'dinner', name: 'Tandoori Roti', kcal: 120, proteinG: 4, carbsG: 22, fatG: 2 },
+  ],
+}
+
+const CARD_KINDS: (ShareTopic | 'day')[] = [...SAMPLE_OPTIONS.map((o) => o.topic), 'day']
+
 /**
  * Every topic in both formats, side by side.
  *
@@ -92,13 +105,13 @@ function ShareCardScreen() {
           key={format}
           style={{
             display: 'grid',
-            gridTemplateColumns: `repeat(${SAMPLE_OPTIONS.length}, 1fr)`,
+            gridTemplateColumns: `repeat(${CARD_KINDS.length}, 1fr)`,
             gap: 10,
             marginBottom: 18,
           }}
         >
-          {SAMPLE_OPTIONS.map((o) => (
-            <ShareCardCell key={o.topic + format} topic={o.topic} format={format} />
+          {CARD_KINDS.map((kind) => (
+            <ShareCardCell key={kind + format} topic={kind} format={format} />
           ))}
         </div>
       ))}
