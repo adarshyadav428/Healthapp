@@ -158,6 +158,23 @@ export function ProgressClient({
         : null,
     [avgProtein, avgCarbs, avgFat]
   )
+
+  // Deficit rows for the share chooser. `monthView` is null for free accounts —
+  // the gate is server-side (app/progress/page.tsx), so nothing here decides it.
+  // A fallback period is dropped rather than shared: the card says "This week",
+  // and a card that says "This week" about last week is a lie, not a rounding.
+  const shareDeficits = useMemo(
+    () =>
+      [weekView, monthView]
+        .filter((v): v is DeficitPeriodView => v != null && !v.isFallback)
+        .map((v) => ({
+          kcal: v.summary.total_deficit,
+          period: v.kind,
+          daysLogged: v.summary.days_logged,
+          fatKg: v.summary.fat_loss_achieved_kg,
+        })),
+    [weekView, monthView]
+  )
   const cfg = METRIC_CONFIG[metric]
 
   // ── Month calendar ──────────────────────────────────────────────────────────
@@ -300,6 +317,7 @@ export function ProgressClient({
         startWeightKg={startWeight}
         currentWeightKg={currentWeight}
         macros={shareMacros}
+        deficits={shareDeficits}
       />
 
       {/* The "avg kcal · goal" and "N of 7 days logged" tiles used to sit here.

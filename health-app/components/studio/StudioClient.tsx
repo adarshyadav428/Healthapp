@@ -11,7 +11,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useCountUp } from '../../hooks/useCountUp'
 import { Story } from '../story/Story'
 import type { StoryCard } from '../story/types'
-import { buildShareCardData, buildPlateSplit, drawShareCard } from '../../lib/shareCard'
+import {
+  buildShareCardOptions, buildPlateSplit, drawShareCard,
+  type ShareTopic, type ShareFormat,
+} from '../../lib/shareCard'
 import {
   Flame, Home, UtensilsCrossed, TrendingUp, User, Plus, X, Check,
   ChevronLeft, Camera, Sparkles,
@@ -28,30 +31,77 @@ type Screen = 'dashboard' | 'paywall' | 'quickadd' | 'story' | 'card'
  * palette and it must look identical for every user. Seeing that it *doesn't*
  * react to the toggle is part of what this preview is for.
  */
-function ShareCardScreen() {
+/**
+ * One canvas. Kept as its own component so each cell of the grid below owns a
+ * ref — a single effect writing into many canvases would have to re-find them.
+ */
+function ShareCardCell({ topic, format }: { topic: ShareTopic; format: ShareFormat }) {
   const ref = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
-    const canvas = ref.current
-    if (!canvas) return
+    if (!ref.current) return
     let cancelled = false
     document.fonts.ready.then(() => {
       if (cancelled || !ref.current) return
-      const data = buildShareCardData({ streakDays: 12, startWeightKg: 82, currentWeightKg: 79.6 })
-      if (!data) return
+      const option = SAMPLE_OPTIONS.find((o) => o.topic === topic)
+      if (!option) return
       const plate = buildPlateSplit({ proteinG: 96, carbsG: 210, fatG: 58 })
       const root = getComputedStyle(document.documentElement)
-      drawShareCard(ref.current, data, {
+      drawShareCard(ref.current, option.data, {
         display: root.getPropertyValue('--font-display').trim() || 'Inter Tight, sans-serif',
         sans: root.getPropertyValue('--font-sans').trim() || 'Inter, sans-serif',
-      }, plate)
+      }, { plate, format })
     })
     return () => { cancelled = true }
-  }, [])
+  }, [topic, format])
 
   return (
-    <div className="st-page" style={{ display: 'grid', placeItems: 'center', padding: 18 }}>
-      <canvas ref={ref} style={{ width: '100%', maxWidth: 340, height: 'auto', borderRadius: 18 }} />
+    <figure style={{ margin: 0 }}>
+      <canvas ref={ref} style={{ width: '100%', height: 'auto', borderRadius: 14, display: 'block' }} />
+      <figcaption style={{ marginTop: 6, fontSize: 12, opacity: 0.6, textAlign: 'center' }}>
+        {topic} · {format}
+      </figcaption>
+    </figure>
+  )
+}
+
+/**
+ * Hard-coded sample numbers, never a real user's: /studio is a public route.
+ * The deficit sample is deliberately five glyphs wide — that is the hero most
+ * likely to overrun the plate's rim, and this grid is where that gets caught.
+ */
+const SAMPLE_OPTIONS = buildShareCardOptions({
+  streakDays: 12,
+  kgLost: 2.4,
+  deficit: { kcal: 3240, period: 'week', daysLogged: 6, fatKg: 0.42 },
+})
+
+/**
+ * Every topic in both formats, side by side.
+ *
+ * It deliberately ignores the studio's light/dark switch: a share card is a
+ * brand asset that leaves the app, so lib/shareCard pins it to the Kelp Shore
+ * palette and it must look identical for every user. Seeing that it *doesn't*
+ * react to the toggle is part of what this preview is for.
+ */
+function ShareCardScreen() {
+  return (
+    <div className="st-page" style={{ padding: 18, overflowY: 'auto' }}>
+      {(['story', 'square'] as ShareFormat[]).map((format) => (
+        <div
+          key={format}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${SAMPLE_OPTIONS.length}, 1fr)`,
+            gap: 10,
+            marginBottom: 18,
+          }}
+        >
+          {SAMPLE_OPTIONS.map((o) => (
+            <ShareCardCell key={o.topic + format} topic={o.topic} format={format} />
+          ))}
+        </div>
+      ))}
     </div>
   )
 }

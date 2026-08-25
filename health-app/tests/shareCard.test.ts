@@ -1,47 +1,147 @@
 import { describe, it, expect } from 'vitest'
-import { buildShareCardData, buildPlateSplit } from '../lib/shareCard'
+import { buildShareCardOptions, buildPlateSplit, kgLostFrom, type ShareCardInput } from '../lib/shareCard'
 
-describe('buildShareCardData', () => {
-  it('makes the streak the hero and shows weight loss as the subline', () => {
+const NOTHING: ShareCardInput = { streakDays: 0, kgLost: null, deficit: null }
+const input = (over: Partial<ShareCardInput> = {}): ShareCardInput => ({ ...NOTHING, ...over })
+const topics = (over: Partial<ShareCardInput> = {}) =>
+  buildShareCardOptions(input(over)).map((o) => o.topic)
+
+describe('kgLostFrom', () => {
+  it('subtracts current from start', () => {
+    expect(kgLostFrom(82, 78.8)).toBeCloseTo(3.2)
+  })
+
+  it('is null when either end is unknown', () => {
+    expect(kgLostFrom(null, 78)).toBeNull()
+    expect(kgLostFrom(82, null)).toBeNull()
+  })
+
+  it('reports a gain as negative rather than hiding it — the caller decides', () => {
+    expect(kgLostFrom(70, 71.5)).toBeCloseTo(-1.5)
+  })
+})
+
+describe('buildShareCardOptions', () => {
+  it('returns nothing to share when there is nothing to brag about', () => {
+    expect(buildShareCardOptions(NOTHING)).toEqual([])
+    expect(buildShareCardOptions(input({ kgLost: 0 }))).toEqual([])
+  })
+
+  it('never brags about the wrong direction', () => {
+    expect(topics({ kgLost: -1.5 })).toEqual([])
+  })
+
+  it('ignores sub-0.1kg scale noise', () => {
+    expect(topics({ kgLost: 0.05 })).toEqual([])
+  })
+
+  // The bug this rewrite exists to fix: the old builder made the streak the
+  // hero whenever it was >= 1, so 8 kg down with a 2-day streak posted "2".
+  it('puts a kilo or more ahead of any streak', () => {
+    expect(topics({ kgLost: 8, streakDays: 2 })).toEqual(['weight', 'streak'])
+    expect(topics({ kgLost: 8, streakDays: 400 })).toEqual(['weight', 'streak'])
+  })
+
+  it('puts a week-long streak ahead of a smaller loss', () => {
+    expect(topics({ kgLost: 0.4, streakDays: 12 })).toEqual(['streak', 'weight'])
+  })
+
+  it('keeps a short streak behind a small loss', () => {
+    expect(topics({ kgLost: 0.4, streakDays: 2 })).toEqual(['weight', 'streak'])
+  })
+
+  it('always ranks the deficit last — it is the least legible number to a friend', () => {
     expect(
-      buildShareCardData({ streakDays: 12, startWeightKg: 82, currentWeightKg: 78.8 })
-    ).toEqual({
-      hero: { value: '12', label: 'day streak' },
-      subline: '3.2 kg down since starting',
+      topics({ kgLost: 8, streakDays: 30, deficit: { kcal: 3240, period: 'week', daysLogged: 6, fatKg: 0.42 } })
+    ).toEqual(['weight', 'streak', 'deficit'])
+  })
+
+  it('offers the deficit on its own when it is all the user has', () => {
+    expect(topics({ deficit: { kcal: 3240, period: 'week', daysLogged: 6, fatKg: 0.42 } })).toEqual(['deficit'])
+  })
+
+  it('leads the weight card with the kilos and carries the streak underneath', () => {
+    const [weight] = buildShareCardOptions(input({ kgLost: 3.24, streakDays: 12 }))
+    expect(weight.data).toEqual({
+      hero: { value: '3.2 kg', label: 'down since I started' },
+      subline: '12 day logging streak',
     })
   })
 
-  it('streak hero with no weight data has no subline', () => {
-    expect(
-      buildShareCardData({ streakDays: 5, startWeightKg: null, currentWeightKg: null })
-    ).toEqual({ hero: { value: '5', label: 'day streak' }, subline: null })
+  it('leaves the weight card sublineless when there is no streak', () => {
+    const [weight] = buildShareCardOptions(input({ kgLost: 3.2 }))
+    expect(weight.data.subline).toBeNull()
   })
 
-  it('ignores weight gain (never brags about the wrong direction)', () => {
-    expect(
-      buildShareCardData({ streakDays: 5, startWeightKg: 70, currentWeightKg: 71.5 })
-    ).toEqual({ hero: { value: '5', label: 'day streak' }, subline: null })
+  it('leads the streak card with the day count and the loss underneath', () => {
+    const [streak] = buildShareCardOptions(input({ streakDays: 12, kgLost: 0.4 }))
+    expect(streak.data).toEqual({
+      hero: { value: '12', label: 'day streak' },
+      subline: '▼ 0.4 kg down since I started',
+    })
   })
 
-  it('ignores sub-0.1kg noise', () => {
-    expect(
-      buildShareCardData({ streakDays: 5, startWeightKg: 70.05, currentWeightKg: 70 })
-    ).toEqual({ hero: { value: '5', label: 'day streak' }, subline: null })
+  it('streak card has no subline with no weight data', () => {
+    const [streak] = buildShareCardOptions(input({ streakDays: 5 }))
+    expect(streak.data).toEqual({ hero: { value: '5', label: 'day streak' }, subline: null })
   })
 
-  it('falls back to weight loss as the hero when there is no streak', () => {
-    expect(
-      buildShareCardData({ streakDays: 0, startWeightKg: 82, currentWeightKg: 79 })
-    ).toEqual({ hero: { value: '3.0 kg', label: 'down since starting' }, subline: null })
+  // CLAUDE.md: anything comparing a day to a benchmark must say which benchmark.
+  // "3,240 kcal" is a miss against a 1,600 eat-goal and a win against maintenance.
+  it('names maintenance as the benchmark on the deficit card', () => {
+    const [deficit] = buildShareCardOptions(
+      input({ deficit: { kcal: 3240, period: 'week', daysLogged: 6, fatKg: 0.42 } })
+    )
+    expect(deficit.data.hero.label).toBe('kcal under maintenance')
+    expect(deficit.data.hero.value).toBe('3,240')
+    expect(deficit.data.subline).toBe('This week · 6 days logged · 0.42 kg of fat')
   })
 
-  it('returns null when there is nothing to share yet', () => {
-    expect(
-      buildShareCardData({ streakDays: 0, startWeightKg: null, currentWeightKg: null })
-    ).toBe(null)
-    expect(
-      buildShareCardData({ streakDays: 0, startWeightKg: 70, currentWeightKg: 70 })
-    ).toBe(null)
+  it('labels the month period distinctly, so the two deficits can never be confused', () => {
+    const [deficit] = buildShareCardOptions(
+      input({ deficit: { kcal: 14200, period: 'month', daysLogged: 24, fatKg: 1.84 } })
+    )
+    expect(deficit.label).toBe("This month's deficit")
+    expect(deficit.data.subline).toContain('This month')
+  })
+
+  it('singularises a one-day deficit', () => {
+    const [deficit] = buildShareCardOptions(
+      input({ deficit: { kcal: 500, period: 'week', daysLogged: 1, fatKg: 0.06 } })
+    )
+    expect(deficit.data.subline).toBe('This week · 1 day logged · 0.06 kg of fat')
+  })
+
+  // A surplus is not a brag, and a period with no completed days has no number.
+  it('drops a deficit that is a surplus or has no logged days', () => {
+    expect(topics({ deficit: { kcal: -800, period: 'week', daysLogged: 5, fatKg: -0.1 } })).toEqual([])
+    expect(topics({ deficit: { kcal: 3240, period: 'week', daysLogged: 0, fatKg: 0.42 } })).toEqual([])
+  })
+
+  // The monthly Wrapped shares a card built from one month's snapshot. Left on
+  // the default it would claim a lifetime total for a month's loss.
+  it('scopes the weight copy to the period the caller names', () => {
+    const [weight] = buildShareCardOptions(input({ kgLost: 1.8, sinceLabel: 'in August' }))
+    expect(weight.data.hero.label).toBe('down in August')
+  })
+
+  it('scopes the streak subline to the same period', () => {
+    const [streak] = buildShareCardOptions(
+      input({ streakDays: 20, kgLost: 0.4, sinceLabel: 'in August' })
+    )
+    expect(streak.data.subline).toBe('▼ 0.4 kg down in August')
+  })
+
+  it('defaults to the lifetime wording when no period is named', () => {
+    const [weight] = buildShareCardOptions(input({ kgLost: 1.8 }))
+    expect(weight.data.hero.label).toBe('down since I started')
+  })
+
+  it('gives every option a chooser label', () => {
+    const options = buildShareCardOptions(
+      input({ kgLost: 3, streakDays: 12, deficit: { kcal: 3240, period: 'week', daysLogged: 6, fatKg: 0.42 } })
+    )
+    expect(options.map((o) => o.label)).toEqual(['Weight lost', 'Streak', "This week's deficit"])
   })
 })
 
