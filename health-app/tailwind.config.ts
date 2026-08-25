@@ -26,6 +26,9 @@ const config: Config = {
         'energy-ink':  'var(--energy-ink)',
         'energy-soft': 'var(--energy-soft)',
         track:         'var(--track)',
+        // The label colour that sits ON an accent fill. Never hard-code white:
+        // the dark-mode accent is bright and white on it measures 2.3:1.
+        'on-accent':   'var(--on-accent)',
 
         // ── Semantic ──
         good:          'var(--good)',
@@ -99,16 +102,27 @@ const config: Config = {
         // the range Apple tracks caps at and holds up at both 11px and 13px.
         caps: '0.08em',
       },
+      // Three named rhythm values on top of Tailwind's 4px scale. Not a
+      // replacement for it — p-4/gap-3 stay correct for everything local. These
+      // exist so the screen edge, card padding and section gap are stated once
+      // instead of being re-guessed per screen, which is how they drifted.
+      spacing: {
+        edge:    'var(--space-edge)',     // 24px · screen edge margin
+        card:    'var(--space-card)',     // 20px · card padding
+        section: 'var(--space-section)',  // 28px · gap between sections
+      },
       borderRadius: {
         // Four steps: controls · cards · large cards · sheets (full pill is built-in).
         // `card` is 20px, not the 18px it used to be: docs/design-system.md already
         // told every core screen to write rounded-[20px], so the config was the
         // half of the pair that was wrong. 20 and 24 were the two most-used radii
         // in the app and neither existed here.
-        control: '0.75rem',  // 12px
-        card:    '1.25rem',  // 20px
-        'card-lg': '1.5rem', // 24px
-        sheet:   '1.75rem',  // 28px
+        // Values live in globals.css as --radius-*, so radius is themeable in the
+        // same place as colour rather than in a second, silently-diverging list.
+        control:   'var(--radius-control)',  // 12px
+        card:      'var(--radius-card)',     // 20px
+        'card-lg': 'var(--radius-card-lg)',  // 24px
+        sheet:     'var(--radius-sheet)',    // 28px
         // legacy aliases mapped onto the scale
         xl:      '0.75rem',
         '2xl':   '1.25rem',

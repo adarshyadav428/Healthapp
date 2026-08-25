@@ -53,6 +53,7 @@ const ALLOWLIST_FILES = new Set([
 const TOKEN_NAMES = [
   'canvas', 'surface', 'surface-2', 'ink', 'ink-2', 'ink-3', 'hairline', 'scrim', 'header-bg',
   'brand', 'brand-soft', 'brand-ink', 'brand-ring', 'energy', 'energy-ink', 'energy-soft', 'track',
+  'on-accent',
   'good', 'danger', 'danger-soft', 'protein', 'carbs', 'fat',
   'background', 'foreground', 'card', 'card-border', 'border', 'muted', 'secondary',
   'primary', 'accent', 'accent-soft', 'accent-ink', 'accent-line', 'accent-2',

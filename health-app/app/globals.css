@@ -3,124 +3,165 @@
 @tailwind utilities;
 
 /* ==========================================================================
-   Ember — one accent, two material worlds.
-   :root  = Porcelain (light): warm porcelain, borderless cards on soft
-            3-layer shadows, ember accent, bloom behind the ring.
-   .dark  = Onyx (dark): warm near-black, elevation via lighter surfaces +
-            inner top highlight, luminous ember with real glow.
-   Theme class is stamped on <html> by next-themes (system default,
-   manual override persisted). Values sourced from the /studio directions.
+   Kelp - one accent, two material worlds.
+
+   :root  = Shore (light): cool near-white ground, borderless cards lifted on a
+            soft three-layer shadow, deep sea-green accent.
+   .dark  = Trench (dark): cool near-black, elevation by lighter surface plus an
+            inner top highlight, luminous accent.
+
+   Theme class is stamped on <html> by next-themes (system default, manual
+   override persisted).
+
+   Three rules this file exists to hold, from docs/design-teardown-2026-08-25.md:
+     1. The accent is rationed to three uses - the ring arc, the today chip and
+        the primary button. It is never a label, a food name or a card fill.
+     2. The macro triad is deliberately NOT the accent, so "which macro" and
+        "how am I doing" never encode in the same colour.
+     3. Cards separate from ground by contrast plus one shadow. No borders.
+
+   Every pair here is verified by `node scripts/check-contrast.mjs` - body text
+   at 4.5:1, graphics at 3:1. Do not hand-edit a value without re-running it.
    ========================================================================== */
 :root {
-  /* Surfaces */
-  --canvas:      #F7F6F3;
+  /* -- Surfaces -- Neutrals biased cool so the ground agrees with the accent.
+     Canvas sits ~10% under surface; that gap plus one shadow is the whole
+     elevation model. */
+  --canvas:      #F2F5F4;
   --surface:     #FFFFFF;
-  --surface-2:   #F2F0EB;
-  --ink:         #17150F;
-  --ink-2:       #6E6963;
-  --ink-3:       #A6A099;
-  --hairline:    rgba(23,21,15,.06);
+  --surface-2:   #E6ECEA;
+  --ink:         #0E1413;
+  --ink-2:       #4E5856;
+  /* 4.61:1 on canvas. Darker than a muted grey instinctively wants to be -
+     that is what 4.5:1 costs, and hierarchy is carried by size and weight
+     instead. Do not lighten this without re-running the contrast check. */
+  --ink-3:       #66716F;
+  --hairline:    rgba(14,20,19,.08);
 
-  /* Translucent — scrims and blurred chrome */
-  --scrim:       rgba(23,21,15,.38);
-  --header-bg:   rgba(255,255,255,.72);
-  --glass-hair:  rgba(23,21,15,.05);
+  /* Translucent - scrims and blurred chrome */
+  --scrim:       rgba(14,20,19,.40);
+  --header-bg:   rgba(255,255,255,.75);
+  --glass-hair:  rgba(14,20,19,.06);
 
-  /* Accent — ember (the single accent; brand/energy are aliases of it) */
-  --brand:       #F1662E;
-  --brand-soft:  rgba(241,102,46,.10);
-  --brand-text:  #C24E1E;
-  --brand-ring:  rgba(241,102,46,.30);
-  --accent-hi:   #FF8A50;
-  --accent-lo:   #E8551C;
-  --energy:      #F1662E;
-  --energy-lite: #FF8A50;
-  --energy-ink:  #C24E1E;
-  --energy-soft: rgba(241,102,46,.10);
+  /* -- Accent - Kelp -- Cool, so it is not appetite-stimulating; green-adjacent,
+     so it still reads as health; deep enough to clear 4.5:1 as text on white,
+     which most greens at this saturation do not. */
+  --brand:       #0E7C66;
+  --brand-soft:  rgba(14,124,102,.10);
+  --brand-text:  #0A5F4E;
+  --brand-ring:  rgba(14,124,102,.28);
+  --accent-hi:   #16A085;
+  --accent-lo:   #0A5F4E;
+  /* Label colour ON an accent fill. A token rather than a hard-coded white
+     because in dark mode the accent is bright and white on it FAILS. */
+  --on-accent:   #FFFFFF;
+  --energy:      #0E7C66;
+  --energy-lite: #16A085;
+  --energy-ink:  #0A5F4E;
+  --energy-soft: rgba(14,124,102,.10);
 
-  /* Semantic state */
-  --good:        #3E8A5C;
-  --bad:         #D64545;
-  --bad-soft:    rgba(214,69,69,.10);
+  /* Semantic state. `good` is the accent on purpose: "on track" is the positive
+     state of this app, and two greens on one screen is noise, not information. */
+  --good:        #0E7C66;
+  --bad:         #B3322A;
+  --bad-soft:    rgba(179,50,42,.10);
 
-  /* Macros */
-  --protein:     #4A7DE0;
-  --carbs:       #E0961F;
-  --fat:         #E05A4E;
+  /* -- Macros -- A fixed triad, never the accent. Deeper than the bright
+     amber/red the reference apps use, because those measure 2.1:1 on white and
+     these are read as values, not just decoration. */
+  --protein:     #4459C6;
+  --carbs:       #9A6714;
+  --fat:         #A8433A;
 
-  /* Elevation — borders die; light separates surfaces */
-  --shadow-rest:  0 1px 1px rgba(23,21,15,.03), 0 8px 20px -8px rgba(23,21,15,.08), 0 24px 48px -24px rgba(23,21,15,.10);
-  --shadow-float: 0 2px 4px rgba(23,21,15,.04), 0 16px 32px -12px rgba(23,21,15,.12), 0 32px 64px -28px rgba(23,21,15,.14);
-  --cta-shadow:   0 10px 24px -8px rgba(241,102,46,.45);
-  --fab-shadow:   0 10px 24px -8px rgba(241,102,46,.5);
+  /* -- Elevation -- Borders die; light separates surfaces. Shadow tint carries
+     the same cool bias as the neutrals. */
+  --shadow-rest:  0 1px 1px rgba(14,20,19,.03), 0 8px 20px -8px rgba(14,20,19,.07), 0 24px 48px -24px rgba(14,20,19,.09);
+  --shadow-float: 0 2px 4px rgba(14,20,19,.04), 0 16px 32px -12px rgba(14,20,19,.11), 0 32px 64px -28px rgba(14,20,19,.13);
+  --shadow-air:   0 1px 2px rgba(14,20,19,.04), 0 12px 32px -16px rgba(14,20,19,.09);
+  --cta-shadow:   0 10px 24px -8px rgba(14,124,102,.35);
+  --fab-shadow:   0 10px 24px -8px rgba(14,124,102,.40);
 
-  /* Materials */
-  --cta-grad:    linear-gradient(160deg, #FF8A50, #EB5A20);
-  --ava-grad:    linear-gradient(150deg, #FF9560, #E8551C);
-  --ava-halo:    rgba(241,102,46,.22);
-  --ambient:     linear-gradient(180deg, rgba(255,138,80,.30) 0%, rgba(255,138,80,.13) 20%, rgba(255,138,80,0) 46%);
-  --hero-wash:   linear-gradient(180deg, #FFF2E8 0%, rgba(255,255,255,0) 52%);
-  --ring-bloom:  radial-gradient(closest-side, rgba(241,102,46,.16), transparent 72%);
+  /* -- Materials -- The CTA "gradient" is now a flat accent: every reference app
+     fills its primary button flat, and a gradient lowers the effective contrast
+     of the shape it fills. Kept as a gradient token so the remaining
+     bg-cta-grad call sites render flat without being touched, which finishes
+     the Ember Air migration docs/design-system.md has been tracking. */
+  --cta-grad:    linear-gradient(0deg, #0E7C66, #0E7C66);
+  --ava-grad:    linear-gradient(150deg, #16A085, #0A5F4E);
+  --ava-halo:    rgba(14,124,102,.20);
+  --ambient:     linear-gradient(180deg, rgba(22,160,133,.13) 0%, rgba(22,160,133,.05) 20%, rgba(22,160,133,0) 46%);
+  --hero-wash:   linear-gradient(180deg, #E7F2EE 0%, rgba(255,255,255,0) 52%);
+  --ring-bloom:  radial-gradient(closest-side, rgba(14,124,102,.13), transparent 72%);
 
   /* Ring */
-  --track:       #EFEDE8;
-  --arc-glow:    .22;
-  --ring-drop:   drop-shadow(0 8px 16px rgba(241,102,46,.18));
+  --track:       #E2E8E6;
+  --arc-glow:    .18;
+  --ring-drop:   drop-shadow(0 8px 16px rgba(14,124,102,.16));
 
-  /* Ember Air — flatter card elevation for the redesigned core screens */
-  --shadow-air:  0 1px 2px rgba(23,21,15,.04), 0 12px 32px -16px rgba(23,21,15,.10);
+  /* -- Radius -- one step per component size. */
+  --radius-control:  0.75rem;   /* 12px - chips, inputs, small tiles */
+  --radius-card:     1.25rem;   /* 20px - list rows and standard cards */
+  --radius-card-lg:  1.5rem;    /* 24px - the hero card */
+  --radius-sheet:    1.75rem;   /* 28px - bottom sheets and modals */
+
+  /* -- Spacing -- 4px base. These three are the layout rhythm: the gap between
+     sections is ~1.4x the card padding, the ratio the references hold. */
+  --space-edge:      1.5rem;    /* 24px - screen edge margin */
+  --space-card:      1.25rem;   /* 20px - card padding */
+  --space-section:   1.75rem;   /* 28px - gap between sections */
 }
 
 .dark {
-  --canvas:      #0F0E0C;
-  --surface:     #171512;
-  --surface-2:   #201D19;
-  --ink:         #F5F2EC;
-  --ink-2:       #A8A199;
-  --ink-3:       #6E6860;
-  --hairline:    rgba(245,242,236,.07);
+  --canvas:      #0A0F0E;
+  --surface:     #121918;
+  --surface-2:   #1A2220;
+  --ink:         #ECF1EF;
+  --ink-2:       #A3AEAB;
+  --ink-3:       #7E8A87;
+  --hairline:    rgba(236,241,239,.08);
 
-  --scrim:       rgba(0,0,0,.55);
-  --header-bg:   rgba(23,21,18,.55);
-  --glass-hair:  rgba(245,242,236,.08);
+  --scrim:       rgba(0,0,0,.58);
+  --header-bg:   rgba(18,25,24,.58);
+  --glass-hair:  rgba(236,241,239,.09);
 
-  --brand:       #FF7A45;
-  --brand-soft:  rgba(255,122,69,.14);
-  --brand-text:  #FFA47D;
-  --brand-ring:  rgba(255,122,69,.35);
-  --accent-hi:   #FF9F6E;
-  --accent-lo:   #FF5C1F;
-  --energy:      #FF7A45;
-  --energy-lite: #FF9F6E;
-  --energy-ink:  #FFA47D;
-  --energy-soft: rgba(255,122,69,.14);
+  --brand:       #35C9A5;
+  --brand-soft:  rgba(53,201,165,.14);
+  --brand-text:  #6FE0C4;
+  --brand-ring:  rgba(53,201,165,.32);
+  --accent-hi:   #6FE0C4;
+  --accent-lo:   #16A085;
+  /* Near-black, not white: white on this accent measures 2.3:1 and fails. */
+  --on-accent:   #08100E;
+  --energy:      #35C9A5;
+  --energy-lite: #6FE0C4;
+  --energy-ink:  #6FE0C4;
+  --energy-soft: rgba(53,201,165,.14);
 
-  --good:        #6FBE93;
-  --bad:         #FF6B5E;
-  --bad-soft:    rgba(255,107,94,.14);
+  --good:        #35C9A5;
+  --bad:         #FF7468;
+  --bad-soft:    rgba(255,116,104,.14);
 
-  --protein:     #6E9BFF;
-  --carbs:       #FFB454;
-  --fat:         #FF7A6E;
+  --protein:     #7CA4FF;
+  --carbs:       #E8B45C;
+  --fat:         #FF8A7E;
 
   /* Dark elevation: lighter surface + inner top highlight; true shadows sink */
   --shadow-rest:  0 1px 0 rgba(255,255,255,.04) inset, 0 16px 40px -20px rgba(0,0,0,.6);
   --shadow-float: 0 1px 0 rgba(255,255,255,.05) inset, 0 24px 60px -24px rgba(0,0,0,.75);
-  --cta-shadow:   0 10px 28px -8px rgba(255,92,31,.45);
-  --fab-shadow:   0 10px 26px -8px rgba(255,92,31,.55);
+  --shadow-air:   0 12px 32px -16px rgba(0,0,0,.5);
+  --cta-shadow:   0 10px 28px -8px rgba(0,0,0,.6);
+  --fab-shadow:   0 10px 26px -8px rgba(0,0,0,.66);
 
-  --cta-grad:    linear-gradient(160deg, #FF8A55, #F5551A);
-  --ava-grad:    linear-gradient(150deg, #FF9F6E, #F5551A);
-  --ava-halo:    rgba(255,122,69,.25);
-  --ambient:     linear-gradient(180deg, rgba(255,122,69,.18) 0%, rgba(255,122,69,.07) 20%, rgba(255,122,69,0) 46%);
-  --hero-wash:   linear-gradient(180deg, rgba(255,122,69,.05), rgba(255,122,69,0) 42%);
+  --cta-grad:    linear-gradient(0deg, #35C9A5, #35C9A5);
+  --ava-grad:    linear-gradient(150deg, #6FE0C4, #16A085);
+  --ava-halo:    rgba(53,201,165,.24);
+  --ambient:     linear-gradient(180deg, rgba(53,201,165,.10) 0%, rgba(53,201,165,.04) 20%, rgba(53,201,165,0) 46%);
+  --hero-wash:   linear-gradient(180deg, rgba(53,201,165,.05), rgba(53,201,165,0) 42%);
   --ring-bloom:  none;
 
-  --track:       rgba(245,242,236,.07);
-  --arc-glow:    .55;
-  --ring-drop:   drop-shadow(0 0 18px rgba(255,110,60,.25));
-
-  --shadow-air:  0 12px 32px -16px rgba(0,0,0,.5);
+  --track:       rgba(236,241,239,.08);
+  --arc-glow:    .5;
+  --ring-drop:   drop-shadow(0 0 18px rgba(53,201,165,.22));
 }
 
 @layer base {
