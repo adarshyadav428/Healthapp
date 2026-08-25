@@ -547,8 +547,9 @@ const STUDIO_CSS = `
 /* macros */
 #gis-studio .st-macros { display: flex; gap: 18px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--s-hair); }
 #gis-studio .st-macro { flex: 1; }
-#gis-studio .st-macro-lr { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
-#gis-studio .st-macro-lr b { font-size: 11.5px; font-weight: 500; color: var(--s-sec); font-variant-numeric: tabular-nums; }
+/* label above value: three columns share ~250px, too narrow to sit them side by side */
+#gis-studio .st-macro-lr { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; margin-bottom: 6px; }
+#gis-studio .st-macro-lr b { font-size: 11.5px; font-weight: 500; color: var(--s-sec); font-variant-numeric: tabular-nums; white-space: nowrap; }
 #gis-studio .st-bar { height: 4px; border-radius: 2px; background: var(--s-track); overflow: hidden; }
 #gis-studio .st-bar i { display: block; height: 100%; border-radius: 2px; }
 
