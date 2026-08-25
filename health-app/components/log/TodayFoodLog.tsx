@@ -9,6 +9,7 @@ import { toast } from '../ui/use-toast'
 import { getIstDayRange, istDateStr } from '../../lib/dateUtils'
 import { Trash2, ChevronDown, Pencil, BookmarkPlus, Check, X } from 'lucide-react'
 import { EditFoodLogModal } from './EditFoodLogModal'
+import { ShareDayButton } from './ShareDayButton'
 
 const MEAL_CONFIG: Record<string, { label: string; emoji: string; dot: string }> = {
   breakfast: { label: 'Breakfast', emoji: '🥣', dot: 'var(--brand)' },
@@ -282,6 +283,8 @@ export function TodayFoodLog({ initialLogs, date = new Date() }: { initialLogs: 
           onEdit={setEditingLog}
         />
       ))}
+
+      <ShareDayButton logs={logs} date={date} />
 
       {editingLog && (
         <EditFoodLogModal

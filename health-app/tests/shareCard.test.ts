@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildShareCardOptions, buildPlateSplit, kgLostFrom, type ShareCardInput } from '../lib/shareCard'
+import { buildShareCardOptions, buildDayCardData, kgLostFrom, MAX_ITEM_LINES, type ShareCardInput, type DayCardLog } from '../lib/shareCard'
 
 const NOTHING: ShareCardInput = { streakDays: 0, kgLost: null, deficit: null }
 const input = (over: Partial<ShareCardInput> = {}): ShareCardInput => ({ ...NOTHING, ...over })
@@ -145,42 +145,116 @@ describe('buildShareCardOptions', () => {
   })
 })
 
-describe('buildPlateSplit', () => {
-  it('normalises grams into fractions of the plate', () => {
-    const split = buildPlateSplit({ proteinG: 100, carbsG: 200, fatG: 100 })!
-    expect(split.protein).toBeCloseTo(0.25)
-    expect(split.carbs).toBeCloseTo(0.5)
-    expect(split.fat).toBeCloseTo(0.25)
+const log = (over: Partial<DayCardLog> = {}): DayCardLog => ({
+  meal: 'lunch', name: 'Dal Tadka', kcal: 180, proteinG: 9, carbsG: 24, fatG: 5, ...over,
+})
+
+describe('buildDayCardData', () => {
+  it('returns null for a day with nothing logged, so the button stays hidden', () => {
+    expect(buildDayCardData({ dateLabel: 'Tue, 26 August', logs: [] })).toBeNull()
   })
 
-  it('always sums to one, so the katoris can never overflow the plate', () => {
-    for (const m of [
-      { proteinG: 1, carbsG: 1, fatG: 1 },
-      { proteinG: 137, carbsG: 12, fatG: 3 },
-      { proteinG: 0, carbsG: 250, fatG: 0 },
-    ]) {
-      const s = buildPlateSplit(m)!
-      expect(s.protein + s.carbs + s.fat).toBeCloseTo(1)
-    }
+  it('orders meals through the day, never by when they were logged', () => {
+    const data = buildDayCardData({
+      dateLabel: 'Tue, 26 August',
+      // Deliberately reversed: a snack logged first must not head the menu.
+      logs: [log({ meal: 'snack' }), log({ meal: 'dinner' }), log({ meal: 'breakfast' })],
+    })!
+    expect(data.meals.map((m) => m.slot)).toEqual(['breakfast', 'dinner', 'snack'])
   })
 
-  it('divides by grams, not calories — a spoon of oil is not a bowl of rice', () => {
-    // 50 g fat is 450 kcal vs 50 g carbs at 200 kcal. By grams they tie, which
-    // is what someone looking at a plate expects to see.
-    const split = buildPlateSplit({ proteinG: 0, carbsG: 50, fatG: 50 })!
-    expect(split.carbs).toBeCloseTo(split.fat)
+  it('omits meals with nothing in them rather than printing empty headings', () => {
+    const data = buildDayCardData({ dateLabel: 'Tue', logs: [log({ meal: 'lunch' })] })!
+    expect(data.meals.map((m) => m.slot)).toEqual(['lunch'])
   })
 
-  it('returns null when there is nothing to divide, so the plate stays plain', () => {
-    expect(buildPlateSplit(null)).toBeNull()
-    expect(buildPlateSplit(undefined)).toBeNull()
-    expect(buildPlateSplit({ proteinG: 0, carbsG: 0, fatG: 0 })).toBeNull()
+  it('totals each meal and the day, and builds the macro line', () => {
+    const data = buildDayCardData({
+      dateLabel: 'Tue',
+      logs: [
+        log({ meal: 'breakfast', kcal: 300, proteinG: 12, carbsG: 40, fatG: 8 }),
+        log({ meal: 'lunch', kcal: 520, proteinG: 20, carbsG: 70, fatG: 15 }),
+        log({ meal: 'lunch', kcal: 180, proteinG: 9, carbsG: 24, fatG: 5 }),
+      ],
+    })!
+    expect(data.meals.find((m) => m.slot === 'lunch')!.kcal).toBe(700)
+    expect(data.totalKcal).toBe(1000)
+    expect(data.macroLine).toBe('P 41g · C 134g · F 28g')
   })
 
-  it('treats negative or missing grams as zero rather than inverting a bowl', () => {
-    const split = buildPlateSplit({ proteinG: -20, carbsG: 100, fatG: NaN })!
-    expect(split.protein).toBe(0)
-    expect(split.fat).toBe(0)
-    expect(split.carbs).toBeCloseTo(1)
+  it('drops the macro line when nothing carries macros', () => {
+    const data = buildDayCardData({
+      dateLabel: 'Tue',
+      logs: [log({ proteinG: 0, carbsG: 0, fatG: 0 })],
+    })!
+    expect(data.macroLine).toBeNull()
+  })
+
+  it('names a quick-add rather than printing an empty row', () => {
+    const data = buildDayCardData({ dateLabel: 'Tue', logs: [log({ name: null })] })!
+    expect(data.meals[0].items[0].name).toBe('Quick add')
+    expect(buildDayCardData({ dateLabel: 'Tue', logs: [log({ name: '   ' })] })!.meals[0].items[0].name)
+      .toBe('Quick add')
+  })
+
+  it('keeps a normal day whole', () => {
+    const logs = Array.from({ length: 8 }, (_, i) => log({ name: `Dish ${i}` }))
+    const data = buildDayCardData({ dateLabel: 'Tue', logs })!
+    expect(data.meals[0].items).toHaveLength(8)
+    expect(data.meals[0].hiddenItems).toBe(0)
+  })
+
+  // A card can only hold so many lines before the type shrinks past readable.
+  it('clamps a very long day to the line budget', () => {
+    const logs = Array.from({ length: 20 }, (_, i) => log({ name: `Dish ${i}` }))
+    const data = buildDayCardData({ dateLabel: 'Tue', logs })!
+    const shown = data.meals.reduce((s, m) => s + m.items.length, 0)
+    expect(shown).toBe(12)
+    expect(data.meals[0].hiddenItems).toBe(8)
+  })
+
+  it('trims the longest meal first, so a one-item meal is never emptied', () => {
+    const logs = [
+      log({ meal: 'breakfast', name: 'Poha' }),
+      log({ meal: 'snack', name: 'Chai' }),
+      ...Array.from({ length: 14 }, (_, i) => log({ meal: 'lunch', name: `Dish ${i}` })),
+    ]
+    const data = buildDayCardData({ dateLabel: 'Tue', logs })!
+    const bySlot = Object.fromEntries(data.meals.map((m) => [m.slot, m]))
+    expect(bySlot.breakfast.items.map((i) => i.name)).toEqual(['Poha'])
+    expect(bySlot.snack.items.map((i) => i.name)).toEqual(['Chai'])
+    expect(bySlot.lunch.hiddenItems).toBe(4)
+  })
+
+  // Silently dropping a dish is a lie about what someone ate.
+  it('always accounts for what it left off', () => {
+    const logs = Array.from({ length: 20 }, (_, i) => log({ name: `Dish ${i}` }))
+    const data = buildDayCardData({ dateLabel: 'Tue', logs })!
+    const shown = data.meals.reduce((s, m) => s + m.items.length, 0)
+    const hidden = data.meals.reduce((s, m) => s + m.hiddenItems, 0)
+    expect(shown + hidden).toBe(20)
+  })
+
+  // The total is the day's real total, not the sum of what survived the clamp.
+  it('totals the whole day even when items are hidden', () => {
+    const logs = Array.from({ length: 20 }, () => log({ kcal: 100 }))
+    expect(buildDayCardData({ dateLabel: 'Tue', logs })!.totalKcal).toBe(2000)
+  })
+
+  // A square has about half a story's vertical room once the plate and the
+  // footer band are paid for; one budget for both ran the menu into the band.
+  it('honours a tighter budget for the square format', () => {
+    const logs = Array.from({ length: 20 }, (_, i) => log({ name: `Dish ${i}` }))
+    const square = buildDayCardData({ dateLabel: 'Tue', logs, maxItemLines: MAX_ITEM_LINES.square })!
+    expect(square.meals.reduce((s, m) => s + m.items.length, 0)).toBe(MAX_ITEM_LINES.square)
+    expect(MAX_ITEM_LINES.square).toBeLessThan(MAX_ITEM_LINES.story)
+  })
+
+  it('still accounts for everything it dropped under the tighter budget', () => {
+    const logs = Array.from({ length: 20 }, (_, i) => log({ name: `Dish ${i}` }))
+    const square = buildDayCardData({ dateLabel: 'Tue', logs, maxItemLines: MAX_ITEM_LINES.square })!
+    const shown = square.meals.reduce((s, m) => s + m.items.length, 0)
+    const hidden = square.meals.reduce((s, m) => s + m.hiddenItems, 0)
+    expect(shown + hidden).toBe(20)
   })
 })

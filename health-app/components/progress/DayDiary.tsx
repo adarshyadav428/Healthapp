@@ -7,6 +7,7 @@ import { getIstDayRange } from '../../lib/dateUtils'
 import { Loader2, Dumbbell, Flame, Pencil, Trash2 } from 'lucide-react'
 import { toast } from '../ui/use-toast'
 import { EditFoodLogModal } from '../log/EditFoodLogModal'
+import { ShareDayButton } from '../log/ShareDayButton'
 
 const MEAL_CONFIG = {
   breakfast: { emoji: '🥣', label: 'Breakfast', color: 'text-energy-ink' },
@@ -177,6 +178,8 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
             </div>
           )
         })}
+
+      <ShareDayButton logs={logs} date={date} />
 
       {editingLog && (
         <EditFoodLogModal
