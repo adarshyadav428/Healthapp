@@ -71,6 +71,14 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 
 Run everything from `health-app/`.
 
+**npm 11 or newer is required** — pinned by `engines.npm`. npm 10 resolves one optional peer
+dependency differently: `@sentry/bundler-plugins` asks for `rollup >=3.2.0`, and the hoisted
+`rollup@2.80.0` (pinned there by `workbox-build`'s `^2.43.1`) can't satisfy it, so npm 10 demands a
+nested `rollup@4` subtree — 27 entries — that the lockfile doesn't carry, and `npm ci` dies with
+`EUSAGE ... not in sync`. Adding those entries is not the fix: npm 11+ strips them straight back out
+on the next install, which is how the lockfile drifts between contributors. Deploys are unaffected
+either way — `vercel.json` uses `npm install`, not `npm ci`.
+
 ```bash
 npm install              # install deps
 npm run dev              # dev server at http://localhost:3000
