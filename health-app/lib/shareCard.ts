@@ -3,7 +3,7 @@
  * Web Share API (WhatsApp/Instagram on Android) with a download fallback.
  *
  * Two cards:
- *  - the **stat card** (weight lost, streak, deficit) — one number on a thali
+ *  - the **stat card** (weight lost, streak, deficit) — a name, one number
  *  - the **day card** — a day's meals as a menu, under the day's total
  *
  * Two formats each: `square` (1080×1080) for a feed post or a chat, and `story`
@@ -11,17 +11,19 @@
  * story floats in a grey box, which is where most of these actually go.
  *
  * Data prep is pure (tested); drawing takes the prepared data. The palette is
- * intentionally fixed to a light look — a share card is a brand asset and must
- * render identically for dark-theme users, which is why these hex values live
- * here (lib/ is outside the check-tokens scan) and not in a component. They are
- * Kelp-derived but NOT a copy of :root: the app's ground (#F2F5F4) sits a
- * fraction under white, which on a card left the plate invisible against it.
- * See PALETTE.
+ * pinned — a share card leaves the app and must render identically for every
+ * viewer, which is why these hex values live here (lib/ is outside the
+ * check-tokens scan) and not in a component.
  */
 
 export type ShareCardData = {
-  hero: { value: string; label: string }
-  /** Already carries its own leading glyph, if any — the drawing adds none. */
+  hero: {
+    value: string
+    /** Set separately from `value` so the two can carry different faces. */
+    unit?: string
+    label: string
+  }
+  /** The card's second true stat, drawn as an outlined chip. */
   subline: string | null
 }
 
@@ -64,6 +66,21 @@ export function kgLostFrom(startKg: number | null, currentKg: number | null): nu
   return startKg - currentKg
 }
 
+/**
+ * The byline name, from `profiles.display_name`.
+ *
+ * First token only: display_name usually holds a full name, and a two-line
+ * byline would break the card's vertical rhythm. Returns null for an anonymous
+ * account (migration 026 — display_name is nullable), and the card then omits
+ * the line entirely rather than drawing a blank one.
+ */
+export function firstNameFrom(displayName: string | null | undefined): string | null {
+  if (!displayName) return null
+  const first = displayName.trim().split(/\s+/)[0]
+  if (!first) return null
+  return first.length > 16 ? first.slice(0, 16) : first
+}
+
 function formatKcal(kcal: number): string {
   return Math.round(kcal).toLocaleString('en-IN')
 }
@@ -93,8 +110,8 @@ export function buildShareCardOptions(input: ShareCardInput): ShareCardOption[] 
         topic: 'weight',
         label: 'Weight lost',
         data: {
-          hero: { value: `${kg.toFixed(1)} kg`, label: `down ${sinceLabel}` },
-          subline: streakDays >= 1 ? `${streakDays} day logging streak` : null,
+          hero: { value: kg.toFixed(1), unit: 'kg', label: `down ${sinceLabel}` },
+          subline: streakDays >= 1 ? `${streakDays}-day logging streak` : null,
         },
       },
     })
@@ -107,8 +124,12 @@ export function buildShareCardOptions(input: ShareCardInput): ShareCardOption[] 
         topic: 'streak',
         label: 'Streak',
         data: {
-          hero: { value: String(streakDays), label: 'day streak' },
-          subline: hasLoss ? `▼ ${(kgLost as number).toFixed(1)} kg down ${sinceLabel}` : null,
+          hero: {
+            value: String(streakDays),
+            unit: streakDays === 1 ? 'day' : 'days',
+            label: 'logged in a row',
+          },
+          subline: hasLoss ? `${(kgLost as number).toFixed(1)} kg down ${sinceLabel}` : null,
         },
       },
     })
@@ -125,7 +146,7 @@ export function buildShareCardOptions(input: ShareCardInput): ShareCardOption[] 
         topic: 'deficit',
         label: `${period}'s deficit`,
         data: {
-          hero: { value: formatKcal(deficit.kcal), label: 'kcal under maintenance' },
+          hero: { value: formatKcal(deficit.kcal), unit: 'kcal', label: 'under maintenance' },
           subline: `${period} · ${deficit.daysLogged} ${
             deficit.daysLogged === 1 ? 'day' : 'days'
           } logged · ${deficit.fatKg.toFixed(2)} kg of fat`,
@@ -149,7 +170,6 @@ export type DayCardItem = { name: string; kcal: number }
 export type DayCardMeal = {
   slot: DayCardMealSlot
   label: string
-  emoji: string
   kcal: number
   items: DayCardItem[]
   /** Items dropped to fit the card. 0 in the normal case. */
@@ -174,21 +194,24 @@ export type DayCardLog = {
   fatG: number
 }
 
-const MEAL_ORDER: { slot: DayCardMealSlot; label: string; emoji: string }[] = [
-  { slot: 'breakfast', label: 'Breakfast', emoji: '🥣' },
-  { slot: 'lunch', label: 'Lunch', emoji: '🍛' },
-  { slot: 'dinner', label: 'Dinner', emoji: '🍲' },
-  { slot: 'snack', label: 'Snack', emoji: '🥜' },
+const MEAL_ORDER: { slot: DayCardMealSlot; label: string }[] = [
+  { slot: 'breakfast', label: 'Breakfast' },
+  { slot: 'lunch', label: 'Lunch' },
+  { slot: 'dinner', label: 'Dinner' },
+  { slot: 'snack', label: 'Snack' },
 ]
 
+/** 1080×1080 for a post or a chat; 1080×1920 for status and stories. */
+export type ShareFormat = 'square' | 'story'
+
 /**
- * A card can only hold so many lines before the menu runs into the footer band.
+ * A card can only hold so many lines before the menu runs into the footer.
  * Past the budget the longest meals give up their last items, and the card says
  * so rather than silently truncating — a menu missing a dish with no
  * acknowledgement is a lie about what someone ate.
  *
- * A square has roughly half the vertical room of a story once the plate and the
- * band are paid for, hence two budgets rather than one.
+ * A square has roughly half the vertical room of a story once the total and the
+ * footer are paid for, hence two budgets rather than one.
  */
 export const MAX_ITEM_LINES: Record<ShareFormat, number> = { story: 12, square: 6 }
 
@@ -209,13 +232,12 @@ export function buildDayCardData(args: {
   if (logs.length === 0) return null
 
   const meals: DayCardMeal[] = []
-  for (const { slot, label, emoji } of MEAL_ORDER) {
+  for (const { slot, label } of MEAL_ORDER) {
     const rows = logs.filter((l) => l.meal === slot)
     if (rows.length === 0) continue
     meals.push({
       slot,
       label,
-      emoji,
       kcal: Math.round(rows.reduce((s, l) => s + l.kcal, 0)),
       items: rows.map((l) => ({ name: l.name?.trim() || 'Quick add', kcal: Math.round(l.kcal) })),
       hiddenItems: 0,
@@ -253,58 +275,73 @@ export function buildDayCardData(args: {
  * ------------------------------------------------------------------ */
 
 /**
- * Kelp-derived, but the ground is deliberately darker than the app's `--canvas`.
+ * Editorial Light. Pinned — none of this reads a theme token.
  *
- * The first version copied `:root` exactly, which put a #FFFFFF plate on a
- * #F2F5F4 ground — 1.03:1, so the thali read as a faint blob rather than a
- * plate, and the whole card looked unfinished. The ground is now a soft sage
- * and the rim is a real steel that clears 3:1 against it, so the plate is a
- * drawn object. Subline green is `--brand-text`, not `--brand`: at 4.29:1 the
- * lighter one missed 4.5 on this ground.
+ * The ground is near-white on purpose, not cream. An earlier version copied the
+ * app's `--canvas` and put a white plate on a near-white ground at 1.03:1,
+ * which is why the card read as a pale blob. Warmth now comes from an ember
+ * bloom behind the numeral rather than from beige paper.
+ *
+ * The accent is deliberately deep: `#FF8A50` on this ground is 2.2:1 and
+ * unreadable as text. Every value below is checked against its own ground.
  */
 const PALETTE = {
-  canvas: '#E3EDEA',
-  surface: '#FFFFFF',
-  ink: '#0E1413',
-  ink2: '#4E5856',
-  ink3: '#66716F',
-  good: '#0A5F4E',
-  // --accent-hi → --accent-lo, the same pair --ava-grad uses.
-  gradFrom: '#16A085',
-  gradTo: '#0A5F4E',
-  // The steel of the thali. `rimOuter` is the drawn edge and carries the
-  // contrast (3.4:1 on canvas); `rimInner` is the flat of the rim.
-  rimOuter: '#6E837E',
-  rimInner: '#C9D8D4',
-  hairline: '#C6D5D0',
-}
+  groundTop:  '#FFFCF9',
+  groundBot:  '#FFF7F1',
+  magInk:     '#1A1208',   // hero numeral — ~15:1
+  wordmark:   '#1F1710',
+  label:      '#574838',   // 8.2:1
+  name:       '#B0450F',   // 4.9:1
+  unit:       '#C24E1E',   // 4.5:1
+  chipText:   '#3E3226',
+  chipBorder: 'rgba(31,23,16,.20)',
+  chipFill:   'rgba(31,23,16,.03)',
+  dot:        '#E8551C',
+  tagline:    '#C24E1E',
+  url:        '#7A6A5C',   // 4.9:1
+  hairline:   '#E4D9CE',
+  emberHi:    '#FF8A50',
+  emberLo:    '#EB5A20',
+} as const
 
-/** 1080×1080 for a post or a chat; 1080×1920 for status and stories. */
-export type ShareFormat = 'square' | 'story'
+type Fonts = { display: string; sans: string; numeral: string }
 
 type Layout = {
-  W: number
-  H: number
-  brandY: number
-  tile: number
-  wordmark: number
-  cy: number
-  rOuter: number
-  rInner: number
-  sublineY: number
-  bandH: number
+  W: number; H: number
+  padX: number; padTop: number; padBottom: number
+  tile: number; wordmark: number
+  name: number; nameGap: number
+  hero: number; heroMin: number; unit: number; label: number
+  stackGap: number
+  chipFont: number; chipPadX: number; chipPadY: number
+  tagline: number; url: number; footGap: number
 }
 
 /**
- * Where everything sits, per format. One table rather than two draw functions:
- * the story card must stay the *same* card, or the two drift the first time one
- * is fixed. Width is 1080 in both, so only the vertical rhythm and the plate
- * scale change; everything inside the plate is a fraction of `rInner`.
+ * Every size in canvas pixels, per format. A square has barely half a story's
+ * vertical room once the brand lockup and footer are paid for, so it is a
+ * genuinely tighter scale rather than the story scale nudged down.
  */
 function layoutFor(format: ShareFormat): Layout {
   return format === 'story'
-    ? { W: 1080, H: 1920, brandY: 150, tile: 104, wordmark: 60, cy: 900, rOuter: 424, rInner: 352, sublineY: 1560, bandH: 150 }
-    : { W: 1080, H: 1080, brandY: 72, tile: 88, wordmark: 52, cy: 520, rOuter: 330, rInner: 274, sublineY: 905, bandH: 110 }
+    ? {
+        W: 1080, H: 1920, padX: 86, padTop: 146, padBottom: 123,
+        tile: 104, wordmark: 60,
+        name: 40, nameGap: 34,
+        hero: 254, heroMin: 120, unit: 93, label: 58,
+        stackGap: 69,
+        chipFont: 44, chipPadX: 50, chipPadY: 24,
+        tagline: 54, url: 40, footGap: 19,
+      }
+    : {
+        W: 1080, H: 1080, padX: 76, padTop: 70, padBottom: 65,
+        tile: 84, wordmark: 44,
+        name: 33, nameGap: 26,
+        hero: 184, heroMin: 96, unit: 69, label: 46,
+        stackGap: 35,
+        chipFont: 36, chipPadX: 40, chipPadY: 19,
+        tagline: 42, url: 33, footGap: 14,
+      }
 }
 
 // lucide "flame" (24×24) — same glyph as the app icon and streak pill.
@@ -328,84 +365,36 @@ function drawFlame(ctx: CanvasRenderingContext2D, x: number, y: number, sizePx: 
 }
 
 function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  const rr = Math.min(r, w / 2, h / 2)
   ctx.beginPath()
-  ctx.moveTo(x + r, y)
-  ctx.arcTo(x + w, y, x + w, y + h, r)
-  ctx.arcTo(x + w, y + h, x, y + h, r)
-  ctx.arcTo(x, y + h, x, y, r)
-  ctx.arcTo(x, y, x + w, y, r)
+  ctx.moveTo(x + rr, y)
+  ctx.arcTo(x + w, y, x + w, y + h, rr)
+  ctx.arcTo(x + w, y + h, x, y + h, rr)
+  ctx.arcTo(x, y + h, x, y, rr)
+  ctx.arcTo(x, y, x + w, y, rr)
   ctx.closePath()
 }
 
-/** Brand lockup, top-left: mini icon tile + wordmark. Shared by both cards. */
-function drawBrand(ctx: CanvasRenderingContext2D, L: Layout, fonts: Fonts) {
-  const grad = ctx.createLinearGradient(72, L.brandY, 72 + L.tile * 0.35, L.brandY + L.tile)
-  grad.addColorStop(0, PALETTE.gradFrom)
-  grad.addColorStop(1, PALETTE.gradTo)
-  roundedRect(ctx, 72, L.brandY, L.tile, L.tile, L.tile * 0.27)
-  ctx.fillStyle = grad
-  ctx.fill()
-  drawFlame(ctx, 72 + L.tile * 0.2, L.brandY + L.tile * 0.2, L.tile * 0.6, '#FFFFFF')
-  ctx.fillStyle = PALETTE.ink
-  ctx.font = `700 ${L.wordmark}px ${fonts.display}`
-  ctx.textBaseline = 'middle'
-  ctx.textAlign = 'left'
-  ctx.fillText('GetInShape', 72 + L.tile + 32, L.brandY + L.tile / 2 + 2)
-}
-
-/** Footer band — accent gradient with the site URL. Shared by both cards. */
-function drawFooter(ctx: CanvasRenderingContext2D, L: Layout, fonts: Fonts) {
-  const bandGrad = ctx.createLinearGradient(0, L.H - L.bandH, L.W * 0.4, L.H)
-  bandGrad.addColorStop(0, PALETTE.gradFrom)
-  bandGrad.addColorStop(1, PALETTE.gradTo)
-  ctx.fillStyle = bandGrad
-  ctx.fillRect(0, L.H - L.bandH, L.W, L.bandH)
-  ctx.textAlign = 'center'
-  ctx.font = `600 38px ${fonts.sans}`
-  ctx.fillStyle = '#FFFFFF'
-  ctx.fillText('getinshape.co.in · Indian Calorie Tracker', L.W / 2, L.H - L.bandH / 2 + 2)
-}
+type SpacingCtx = CanvasRenderingContext2D & { letterSpacing: string }
 
 /**
- * The thali: a round steel plate, drawn with a soft drop shadow so it sits on
- * the ground rather than being a hole in it.
- *
- * Not a rectangle with a number in it. Every tracker in the category ships the
- * rectangle; nobody owns the thali, it reads as Indian instantly, and being a
- * *shape* rather than a colour it survives being screenshotted onto any
- * background.
+ * `ctx.letterSpacing` is Chrome 99+ — Android Chrome and the TWA, which is
+ * where these cards are actually made. Everywhere else it is silently ignored
+ * and the text renders at normal tracking rather than breaking, which is the
+ * right failure. Always restore: the value otherwise leaks into the next call.
  */
-function drawPlate(ctx: CanvasRenderingContext2D, cx: number, cy: number, rOuter: number, rInner: number) {
-  ctx.save()
-  ctx.shadowColor = 'rgba(14,20,19,.18)'
-  ctx.shadowBlur = rOuter * 0.12
-  ctx.shadowOffsetY = rOuter * 0.045
-  ctx.beginPath()
-  ctx.arc(cx, cy, rOuter, 0, Math.PI * 2)
-  ctx.fillStyle = PALETTE.rimOuter
-  ctx.fill()
-  ctx.restore()
-
-  ctx.beginPath()
-  ctx.arc(cx, cy, rOuter - Math.max(6, rOuter * 0.035), 0, Math.PI * 2)
-  ctx.fillStyle = PALETTE.rimInner
-  ctx.fill()
-
-  ctx.beginPath()
-  ctx.arc(cx, cy, rInner, 0, Math.PI * 2)
-  ctx.fillStyle = PALETTE.surface
-  ctx.fill()
+function withTracking(ctx: CanvasRenderingContext2D, value: string, draw: () => void) {
+  const supported = 'letterSpacing' in ctx
+  const prev = supported ? (ctx as SpacingCtx).letterSpacing : ''
+  if (supported) (ctx as SpacingCtx).letterSpacing = value
+  try {
+    draw()
+  } finally {
+    if (supported) (ctx as SpacingCtx).letterSpacing = prev
+  }
 }
 
-type Fonts = { display: string; sans: string }
-
-/**
- * Shrink `text` until it fits `maxWidth`, and return the size that fit.
- *
- * Every string on these cards goes through this. Audit finding P2-5 was a hero
- * that overran the plate; the failure mode is a permanently broken card and
- * there is no way to notice it before a user posts one.
- */
+/** Shrink `text` until it fits `maxWidth`; returns the size that fit. */
 function fitFont(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -432,14 +421,205 @@ function ellipsize(ctx: CanvasRenderingContext2D, text: string, maxWidth: number
   return out + '…'
 }
 
-export type DrawOptions = { format?: ShareFormat }
+/** The ground, the ember bloom behind the numeral, and the heat off the base. */
+function paintGround(ctx: CanvasRenderingContext2D, L: Layout) {
+  const g = ctx.createLinearGradient(0, 0, 0, L.H)
+  g.addColorStop(0, PALETTE.groundTop)
+  g.addColorStop(1, PALETTE.groundBot)
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, L.W, L.H)
+
+  const bx = L.W / 2
+  const by = L.H * 0.46
+  const br = L.W * 0.68
+  const bloom = ctx.createRadialGradient(bx, by, 0, bx, by, br)
+  bloom.addColorStop(0, 'rgba(255,138,80,.16)')
+  bloom.addColorStop(0.62, 'rgba(241,102,46,0)')
+  ctx.fillStyle = bloom
+  ctx.fillRect(0, 0, L.W, L.H)
+
+  const heatTop = L.H * 0.58
+  const heat = ctx.createLinearGradient(0, L.H, 0, heatTop)
+  heat.addColorStop(0, 'rgba(241,102,46,.05)')
+  heat.addColorStop(1, 'rgba(241,102,46,0)')
+  ctx.fillStyle = heat
+  ctx.fillRect(0, heatTop, L.W, L.H - heatTop)
+}
 
 /**
- * The stat card: one number on the plate.
+ * Film grain, procedurally.
  *
- * The macro katoris were removed deliberately — at status size, read about
- * 360px tall, a "C 62%" label is unreadable, and three bowls crowding the rim
- * collided with the label under the hero. The plate is the hero now.
+ * The design mockup used an SVG turbulence filter, which canvas has no
+ * equivalent for — so a small noise tile is generated once and tiled. 128²
+ * keeps it cheap; multiply keeps it from lifting the whites.
+ */
+function paintGrain(ctx: CanvasRenderingContext2D, L: Layout) {
+  const TILE = 128
+  const noise = document.createElement('canvas')
+  noise.width = TILE
+  noise.height = TILE
+  const nctx = noise.getContext('2d')
+  if (!nctx) return
+  const img = nctx.createImageData(TILE, TILE)
+  for (let i = 0; i < img.data.length; i += 4) {
+    const v = 205 + Math.random() * 50
+    img.data[i] = v
+    img.data[i + 1] = v
+    img.data[i + 2] = v
+    img.data[i + 3] = 255
+  }
+  nctx.putImageData(img, 0, 0)
+  const pattern = ctx.createPattern(noise, 'repeat')
+  if (!pattern) return
+  ctx.save()
+  ctx.globalAlpha = 0.2
+  ctx.globalCompositeOperation = 'multiply'
+  ctx.fillStyle = pattern
+  ctx.fillRect(0, 0, L.W, L.H)
+  ctx.restore()
+}
+
+/** Brand lockup, top-left: ember tile + flame + wordmark. Returns its bottom. */
+function drawBrand(ctx: CanvasRenderingContext2D, L: Layout, fonts: Fonts): number {
+  const x = L.padX
+  const y = L.padTop
+  const grad = ctx.createLinearGradient(x, y, x + L.tile * 0.35, y + L.tile)
+  grad.addColorStop(0, PALETTE.emberHi)
+  grad.addColorStop(1, PALETTE.emberLo)
+  roundedRect(ctx, x, y, L.tile, L.tile, L.tile * 0.28)
+  ctx.fillStyle = grad
+  ctx.fill()
+  drawFlame(ctx, x + L.tile * 0.2, y + L.tile * 0.2, L.tile * 0.6, '#FFF2E8')
+
+  ctx.fillStyle = PALETTE.wordmark
+  ctx.font = `700 ${L.wordmark}px ${fonts.display}`
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  withTracking(ctx, '-0.015em', () => {
+    ctx.fillText('GetInShape', x + L.tile + 32, y + L.tile / 2 + 2)
+  })
+  return y + L.tile
+}
+
+/** Footer: the positioning line, then the URL. Returns its top edge. */
+function drawFooter(ctx: CanvasRenderingContext2D, L: Layout, fonts: Fonts): number {
+  const cx = L.W / 2
+  const urlY = L.H - L.padBottom
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'alphabetic'
+
+  ctx.fillStyle = PALETTE.url
+  ctx.font = `500 ${L.url}px ${fonts.sans}`
+  withTracking(ctx, '0.035em', () => ctx.fillText('getinshape.co.in', cx, urlY))
+
+  const tagY = urlY - L.url - L.footGap
+  ctx.fillStyle = PALETTE.tagline
+  ctx.font = `700 ${L.tagline}px ${fonts.display}`
+  withTracking(ctx, '-0.01em', () => ctx.fillText('Lose weight, not calories.', cx, tagY))
+
+  return tagY - L.tagline
+}
+
+/** Outlined pill carrying the card's second true stat. */
+function drawChip(
+  ctx: CanvasRenderingContext2D,
+  L: Layout,
+  fonts: Fonts,
+  text: string,
+  centerY: number
+): number {
+  ctx.font = `600 ${L.chipFont}px ${fonts.sans}`
+  const dot = L.chipFont * 0.4
+  const gap = L.chipFont * 0.5
+  const textW = ctx.measureText(text).width
+  const w = textW + dot + gap + L.chipPadX * 2
+  const h = L.chipFont + L.chipPadY * 2
+  const x = (L.W - w) / 2
+  const y = centerY - h / 2
+
+  roundedRect(ctx, x, y, w, h, h / 2)
+  ctx.fillStyle = PALETTE.chipFill
+  ctx.fill()
+  ctx.strokeStyle = PALETTE.chipBorder
+  ctx.lineWidth = 2
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.arc(x + L.chipPadX + dot / 2, centerY, dot / 2, 0, Math.PI * 2)
+  ctx.fillStyle = PALETTE.dot
+  ctx.fill()
+
+  ctx.fillStyle = PALETTE.chipText
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, x + L.chipPadX + dot + gap, centerY + 1)
+  return h
+}
+
+/* ------------------------------------------------------------------ *
+ * The numeral face
+ * ------------------------------------------------------------------ */
+
+const NUMERAL_TIMEOUT_MS = 1500
+
+/**
+ * Every glyph the numeral face is ever asked to draw.
+ *
+ * Passed to `document.fonts.load` so the browser fetches only the subset that
+ * covers them. next/font splits Instrument Serif into latin (15 KB) and
+ * latin-ext (8 KB); without this argument both are candidates, and the card
+ * would pay for an extended subset it never renders a glyph from.
+ */
+const NUMERAL_GLYPHS = '0123456789.,'
+
+/**
+ * Instrument Serif, loaded on demand.
+ *
+ * Canvas does NOT trigger a font download by setting `ctx.font` — an unloaded
+ * family silently falls back, which is exactly how a card ships looking nothing
+ * like its design review. So the face is requested explicitly, and only when
+ * someone opens a share sheet: `app/layout.tsx` registers it with
+ * `preload: false` and nothing in the DOM uses it, so a user who never shares
+ * pays zero bytes.
+ *
+ * Returns the family to use, or null on timeout/failure — and the caller then
+ * sets the hero in Inter Tight, which is why that fallback has to look
+ * deliberate rather than merely acceptable.
+ */
+export async function ensureNumeralFont(numeralStack: string): Promise<string | null> {
+  if (typeof document === 'undefined' || !document.fonts) return null
+  const family = numeralStack.split(',')[0].trim().replace(/^["']|["']$/g, '')
+  if (!family) return null
+  const spec = `400 100px "${family}"`
+  try {
+    if (document.fonts.check(spec, NUMERAL_GLYPHS)) return family
+    await Promise.race([
+      document.fonts.load(spec, NUMERAL_GLYPHS),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('numeral font timeout')), NUMERAL_TIMEOUT_MS)
+      ),
+    ])
+    return document.fonts.check(spec, NUMERAL_GLYPHS) ? family : null
+  } catch {
+    return null
+  }
+}
+
+export type DrawOptions = {
+  format?: ShareFormat
+  /** First name for the byline. Absent for anonymous accounts. */
+  firstName?: string | null
+  /** Resolved by the share helpers; null means fall back to Inter Tight. */
+  numeralFamily?: string | null
+}
+
+/**
+ * The stat card: a name, one number, and the promise.
+ *
+ * The thali plate was removed deliberately. On a light ground it needed a rim
+ * dark enough to read as steel, which fought the numeral for attention, and at
+ * status size — about 360px tall — the macro katoris were unreadable dots. The
+ * number is the whole card now.
  */
 export function drawShareCard(
   canvas: HTMLCanvasElement,
@@ -453,55 +633,104 @@ export function drawShareCard(
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas 2D not supported')
 
-  ctx.fillStyle = PALETTE.canvas
-  ctx.fillRect(0, 0, L.W, L.H)
-  drawBrand(ctx, L, fonts)
+  paintGround(ctx, L)
+  const brandBottom = drawBrand(ctx, L, fonts)
+  const footTop = drawFooter(ctx, L, fonts)
 
   const cx = L.W / 2
-  drawPlate(ctx, cx, L.cy, L.rOuter, L.rInner)
-  ctx.textAlign = 'center'
+  const maxW = L.W - L.padX * 2
+  const serif = opts.numeralFamily
+  const heroSpec = (size: number) =>
+    serif ? `400 ${size}px "${serif}", Georgia, serif` : `800 ${size}px ${fonts.display}`
 
-  // The flame sits above the number, where the katoris used to be crowding it.
-  drawFlame(ctx, cx - L.rInner * 0.125, L.cy - L.rInner * 0.62, L.rInner * 0.25, PALETTE.gradTo)
+  // Measure the whole stack before drawing any of it, so it can be centred in
+  // the space the brand lockup and footer leave behind. The byline is simply
+  // absent for an anonymous account, and because everything is measured rather
+  // than positioned by fixed offsets, its absence closes up instead of leaving
+  // a hole.
+  const name = opts.firstName ? opts.firstName.trim() : ''
+  const heroSize = fitFont(ctx, data.hero.value, maxW * 0.92, heroSpec, L.hero, L.heroMin, 6)
+  ctx.font = heroSpec(heroSize)
+  const heroM = ctx.measureText(data.hero.value)
+  const heroW = heroM.width
+  const heroAscent = heroM.actualBoundingBoxAscent || heroSize * 0.72
+  const heroDescent = heroM.actualBoundingBoxDescent || heroSize * 0.1
 
-  ctx.fillStyle = PALETTE.ink
-  const heroSize = fitFont(
-    ctx, data.hero.value, L.rInner * 1.52,
-    (s) => `700 ${s}px ${fonts.display}`,
-    Math.round(L.rInner * 0.78), Math.round(L.rInner * 0.34), 8
-  )
-  ctx.font = `700 ${heroSize}px ${fonts.display}`
-  ctx.fillText(data.hero.value, cx, L.cy + L.rInner * 0.06)
-
-  // The label is a sentence fragment now ("kcal under maintenance"), not one
-  // word, so it gets the same clamp — it overruns the rim before the hero does.
   const labelSize = fitFont(
-    ctx, data.hero.label, L.rInner * 1.62,
-    (s) => `600 ${s}px ${fonts.sans}`,
-    Math.round(L.rInner * 0.155), 22
+    ctx, data.hero.label, maxW,
+    (s) => `500 ${s}px ${fonts.sans}`, L.label, Math.round(L.label * 0.6)
   )
-  ctx.font = `600 ${labelSize}px ${fonts.sans}`
-  ctx.fillStyle = PALETTE.ink2
-  ctx.fillText(data.hero.label, cx, L.cy + L.rInner * 0.44)
 
-  if (data.subline) {
-    const subSize = fitFont(
-      ctx, data.subline, L.W - 130,
-      (s) => `600 ${s}px ${fonts.sans}`, 46, 28
-    )
-    ctx.font = `600 ${subSize}px ${fonts.sans}`
-    ctx.fillStyle = PALETTE.good
-    ctx.fillText(data.subline, cx, L.sublineY)
+  const nameBlock = name ? L.name * 1.2 + L.nameGap : 0
+  const chipH = data.subline ? L.chipFont + L.chipPadY * 2 : 0
+  const chipBlock = data.subline ? chipH + L.stackGap : 0
+  const stackH = nameBlock + heroAscent + heroDescent + labelSize * 1.5 + chipBlock
+
+  let y = Math.max(brandBottom + L.padTop * 0.35, (brandBottom + footTop) / 2 - stackH / 2)
+
+  // Byline — uppercase, widely tracked, in the accent. It claims the
+  // achievement without competing with it.
+  if (name) {
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'alphabetic'
+    ctx.fillStyle = PALETTE.name
+    ctx.font = `700 ${L.name}px ${fonts.sans}`
+    withTracking(ctx, '0.17em', () => {
+      // Tracking adds space after the final glyph, pushing the optical centre
+      // left; nudge back by roughly half a step so the line sits centred.
+      ctx.fillText(ellipsize(ctx, name.toUpperCase(), maxW), cx + L.name * 0.085, y + L.name)
+    })
+    y += nameBlock
   }
 
-  drawFooter(ctx, L, fonts)
+  // Hero numeral + unit, baseline-aligned. Two faces, two weights and two
+  // colours, so the figure reads as composed rather than as one flat string.
+  const unitText = data.hero.unit ?? ''
+  ctx.font = `600 ${L.unit}px ${fonts.display}`
+  const unitGap = unitText ? L.unit * 0.14 : 0
+  const unitW = unitText ? ctx.measureText(unitText).width : 0
+
+  const startX = cx - (heroW + unitGap + unitW) / 2
+  const baseline = y + heroAscent
+
+  ctx.font = heroSpec(heroSize)
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'alphabetic'
+  ctx.fillStyle = PALETTE.magInk
+  withTracking(ctx, serif ? '-0.012em' : '-0.045em', () => {
+    ctx.fillText(data.hero.value, startX, baseline)
+  })
+
+  if (unitText) {
+    ctx.font = `600 ${L.unit}px ${fonts.display}`
+    ctx.fillStyle = PALETTE.unit
+    withTracking(ctx, '-0.02em', () => {
+      ctx.fillText(unitText, startX + heroW + unitGap, baseline)
+    })
+  }
+  y = baseline + heroDescent
+
+  ctx.textAlign = 'center'
+  ctx.fillStyle = PALETTE.label
+  ctx.font = `500 ${labelSize}px ${fonts.sans}`
+  ctx.fillText(data.hero.label, cx, y + labelSize)
+  y += labelSize * 1.5
+
+  if (data.subline) {
+    y += L.stackGap
+    ctx.font = `600 ${L.chipFont}px ${fonts.sans}`
+    const chipText = ellipsize(ctx, data.subline, maxW - L.chipPadX * 2 - L.chipFont * 1.4)
+    drawChip(ctx, L, fonts, chipText, y + chipH / 2)
+  }
+
+  paintGrain(ctx, L)
 }
 
 /**
- * The day card: the day's total on a small plate, then the meals as a menu.
+ * The day card: the day's total, then the meals as a menu.
  *
- * The plate shrinks here on purpose — it is the signature, but the menu is the
- * content, and a menu is the one thing that fills a 9:16 frame honestly. The
+ * Same world as the stat card — same ground, same brand lockup, same footer —
+ * but a menu rather than a numeral, because that is what a day actually is. The
  * whole block is measured first and then centred, so a one-meal day doesn't
  * float at the top of a mostly empty card.
  */
@@ -517,99 +746,121 @@ export function drawDayCard(
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas 2D not supported')
 
-  ctx.fillStyle = PALETTE.canvas
-  ctx.fillRect(0, 0, L.W, L.H)
-  drawBrand(ctx, L, fonts)
+  paintGround(ctx, L)
+  const brandBottom = drawBrand(ctx, L, fonts)
+  const footTop = drawFooter(ctx, L, fonts)
 
   const cx = L.W / 2
   const story = L.H === 1920
+  const serif = opts.numeralFamily
+  const name = opts.firstName ? opts.firstName.trim() : ''
 
-  // Vertical metrics, measured before anything is drawn so the block can be
-  // centred in the space between the brand lockup and the footer band — and, if
-  // the day is a long one, squeezed to fit rather than run into the band. The
-  // line budget (MAX_ITEM_LINES) keeps `k` near 1 in practice; this is the
-  // backstop, because a menu overlapping the footer is a broken card and the
-  // user only finds out after posting it.
-  const gapTop = story ? 70 : 40
-  const contentTop = L.brandY + L.tile + gapTop
-  const contentBottom = L.H - L.bandH - (story ? 60 : 40)
+  const contentTop = brandBottom + L.padTop * 0.35
+  const contentBottom = footTop - (story ? 40 : 26)
 
   const base = {
-    plateR: story ? 210 : 150,
+    nameH: name ? L.name * 1.2 + L.nameGap * 0.6 : 0,
+    dateH: story ? 66 : 52,
+    totalH: story ? 190 : 132,
+    totalGap: story ? 44 : 30,
     mealHeadH: story ? 62 : 48,
     itemH: story ? 56 : 44,
     mealGapH: story ? 26 : 18,
-    dateH: story ? 64 : 52,
-    macroH: data.macroLine ? (story ? 70 : 56) : 0,
-    plateGap: 34,
+    macroH: data.macroLine ? (story ? 70 : 54) : 0,
   }
   const measure = (m: typeof base) =>
-    m.dateH + m.plateR * 2 + m.plateGap + m.macroH +
+    m.nameH + m.dateH + m.totalH + m.totalGap + m.macroH +
     data.meals.reduce(
       (s, meal) =>
-        s + m.mealHeadH + meal.items.length * m.itemH + (meal.hiddenItems > 0 ? m.itemH : 0) + m.mealGapH,
+        s + m.mealHeadH + meal.items.length * m.itemH +
+        (meal.hiddenItems > 0 ? m.itemH : 0) + m.mealGapH,
       0
     )
 
-  // Floored so a pathological day shrinks to unreadable rather than never.
-  const k = Math.max(0.7, Math.min(1, (contentBottom - contentTop) / measure(base)))
-  const plateR = base.plateR * k
-  const plateInner = plateR * 0.82
+  // Squeeze to fit rather than run into the footer. MAX_ITEM_LINES keeps `k`
+  // near 1 in practice; this is the backstop, because a menu overlapping the
+  // footer is a broken card the user only discovers after posting it.
+  const k = Math.max(0.68, Math.min(1, (contentBottom - contentTop) / measure(base)))
+  const f = (n: number) => Math.max(15, Math.round(n * k))
+  const nameH = base.nameH * k
+  const dateH = base.dateH * k
+  const totalGap = base.totalGap * k
   const mealHeadH = base.mealHeadH * k
   const itemH = base.itemH * k
   const mealGapH = base.mealGapH * k
-  const dateH = base.dateH * k
   const macroH = base.macroH * k
-  const blockH = measure({ ...base, plateR, mealHeadH, itemH, mealGapH, dateH, macroH, plateGap: base.plateGap * k })
 
-  // Type scales with the metrics, or a squeezed card keeps full-size text in
-  // half-size rows.
-  const f = (n: number) => Math.max(16, Math.round(n * k))
+  const totalStr = formatKcal(data.totalKcal)
+  const totalSpec = (size: number) =>
+    serif ? `400 ${size}px "${serif}", Georgia, serif` : `800 ${size}px ${fonts.display}`
+  const totalSize = fitFont(
+    ctx, totalStr, (L.W - L.padX * 2) * 0.6, totalSpec, f(base.totalH), f(70), 4
+  )
+  ctx.font = totalSpec(totalSize)
+  const totalM = ctx.measureText(totalStr)
+  const totalAsc = totalM.actualBoundingBoxAscent || totalSize * 0.72
+  const totalDesc = totalM.actualBoundingBoxDescent || totalSize * 0.1
 
+  const blockH = measure({ ...base, nameH, dateH, totalH: totalAsc + totalDesc, totalGap,
+    mealHeadH, itemH, mealGapH, macroH })
   let y = Math.max(contentTop, (contentTop + contentBottom) / 2 - blockH / 2)
 
-  // Date
   ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillStyle = PALETTE.ink3
-  const dateSize = fitFont(ctx, data.dateLabel, L.W - 160, (s) => `600 ${s}px ${fonts.sans}`, f(story ? 42 : 34), 22)
-  ctx.font = `600 ${dateSize}px ${fonts.sans}`
-  ctx.fillText(data.dateLabel, cx, y)
+  ctx.textBaseline = 'alphabetic'
+
+  if (name) {
+    ctx.fillStyle = PALETTE.name
+    ctx.font = `700 ${f(L.name)}px ${fonts.sans}`
+    withTracking(ctx, '0.17em', () => {
+      ctx.fillText(name.toUpperCase(), cx + L.name * 0.085, y + f(L.name))
+    })
+    y += nameH
+  }
+
+  ctx.fillStyle = PALETTE.label
+  const dateSize = fitFont(
+    ctx, data.dateLabel, L.W - L.padX * 2,
+    (s) => `500 ${s}px ${fonts.sans}`, f(story ? 44 : 34), 20
+  )
+  ctx.font = `500 ${dateSize}px ${fonts.sans}`
+  ctx.fillText(data.dateLabel, cx, y + dateSize)
   y += dateH
 
-  // The day's total, on the plate
-  const pcy = y + plateR
-  drawPlate(ctx, cx, pcy, plateR, plateInner)
-  ctx.fillStyle = PALETTE.ink
-  const totalStr = formatKcal(data.totalKcal)
-  const totalSize = fitFont(
-    ctx, totalStr, plateInner * 1.5,
-    (s) => `700 ${s}px ${fonts.display}`,
-    Math.round(plateInner * 0.7), Math.round(plateInner * 0.34), 4
-  )
-  ctx.font = `700 ${totalSize}px ${fonts.display}`
-  ctx.fillText(totalStr, cx, pcy - plateInner * 0.1)
-  ctx.fillStyle = PALETTE.ink2
-  ctx.font = `600 ${Math.round(plateInner * 0.2)}px ${fonts.sans}`
-  ctx.fillText('kcal', cx, pcy + plateInner * 0.42)
-  y = pcy + plateR + base.plateGap * k
+  // The day's total, with its unit alongside — same lockup as the stat card.
+  ctx.font = `600 ${f(L.unit * 0.62)}px ${fonts.display}`
+  const kcalW = ctx.measureText('kcal').width
+  const kcalGap = f(L.unit * 0.12)
+  const startX = cx - (totalM.width + kcalGap + kcalW) / 2
+  const totalBaseline = y + totalAsc
+
+  ctx.font = totalSpec(totalSize)
+  ctx.textAlign = 'left'
+  ctx.fillStyle = PALETTE.magInk
+  withTracking(ctx, serif ? '-0.012em' : '-0.045em', () => {
+    ctx.fillText(totalStr, startX, totalBaseline)
+  })
+  ctx.font = `600 ${f(L.unit * 0.62)}px ${fonts.display}`
+  ctx.fillStyle = PALETTE.unit
+  ctx.fillText('kcal', startX + totalM.width + kcalGap, totalBaseline)
+
+  y = totalBaseline + totalDesc + totalGap
 
   // The menu
-  const padX = story ? 96 : 76
+  const padX = L.padX
   const kcalX = L.W - padX
-  const nameMax = L.W - padX * 2 - (story ? 200 : 160)
+  const nameMax = L.W - padX * 2 - f(story ? 190 : 150)
 
   for (const meal of data.meals) {
-    // Meal heading: emoji + label on the left, that meal's kcal on the right
     ctx.textAlign = 'left'
-    ctx.fillStyle = PALETTE.ink
+    ctx.textBaseline = 'alphabetic'
+    ctx.fillStyle = PALETTE.wordmark
     ctx.font = `700 ${f(story ? 40 : 32)}px ${fonts.sans}`
-    ctx.fillText(`${meal.emoji}  ${meal.label}`, padX, y)
+    ctx.fillText(meal.label, padX, y)
     ctx.textAlign = 'right'
-    ctx.fillStyle = PALETTE.good
-    ctx.font = `700 ${f(story ? 38 : 30)}px ${fonts.sans}`
+    ctx.fillStyle = PALETTE.unit
+    ctx.font = `700 ${f(story ? 36 : 29)}px ${fonts.sans}`
     ctx.fillText(`${formatKcal(meal.kcal)} kcal`, kcalX, y)
-    y += mealHeadH * 0.42
+    y += mealHeadH * 0.4
 
     ctx.strokeStyle = PALETTE.hairline
     ctx.lineWidth = 2
@@ -617,15 +868,15 @@ export function drawDayCard(
     ctx.moveTo(padX, y)
     ctx.lineTo(kcalX, y)
     ctx.stroke()
-    y += mealHeadH * 0.58
+    y += mealHeadH * 0.6
 
     for (const item of meal.items) {
       ctx.textAlign = 'left'
-      ctx.fillStyle = PALETTE.ink2
+      ctx.fillStyle = PALETTE.label
       ctx.font = `500 ${f(story ? 34 : 27)}px ${fonts.sans}`
       ctx.fillText(ellipsize(ctx, item.name, nameMax), padX, y)
       ctx.textAlign = 'right'
-      ctx.fillStyle = PALETTE.ink3
+      ctx.fillStyle = PALETTE.url
       ctx.font = `500 ${f(story ? 32 : 26)}px ${fonts.sans}`
       ctx.fillText(String(item.kcal), kcalX, y)
       y += itemH
@@ -634,24 +885,26 @@ export function drawDayCard(
     // Never silently truncate a menu — say what was left off.
     if (meal.hiddenItems > 0) {
       ctx.textAlign = 'left'
-      ctx.fillStyle = PALETTE.ink3
+      ctx.fillStyle = PALETTE.url
       ctx.font = `500 italic ${f(story ? 30 : 24)}px ${fonts.sans}`
       ctx.fillText(`+${meal.hiddenItems} more`, padX, y)
       y += itemH
     }
-
     y += mealGapH
   }
 
   if (data.macroLine) {
     ctx.textAlign = 'center'
-    ctx.fillStyle = PALETTE.ink3
-    const mSize = fitFont(ctx, data.macroLine, L.W - 160, (s) => `600 ${s}px ${fonts.sans}`, f(story ? 36 : 29), 20)
+    ctx.fillStyle = PALETTE.url
+    const mSize = fitFont(
+      ctx, data.macroLine, L.W - L.padX * 2,
+      (s) => `600 ${s}px ${fonts.sans}`, f(story ? 34 : 28), 18
+    )
     ctx.font = `600 ${mSize}px ${fonts.sans}`
-    ctx.fillText(data.macroLine, cx, y + macroH * 0.4)
+    ctx.fillText(data.macroLine, cx, y + macroH * 0.45)
   }
 
-  drawFooter(ctx, L, fonts)
+  paintGrain(ctx, L)
 }
 
 /** Resolve the app's real font stacks so the card matches the UI type. */
@@ -660,6 +913,7 @@ export function resolveFonts(): Fonts {
   return {
     display: root.getPropertyValue('--font-display').trim() || 'Inter Tight, sans-serif',
     sans: root.getPropertyValue('--font-sans').trim() || 'Inter, sans-serif',
+    numeral: root.getPropertyValue('--font-numeral').trim() || 'Instrument Serif, Georgia, serif',
   }
 }
 
@@ -673,7 +927,7 @@ async function deliver(canvas: HTMLCanvasElement, name: string): Promise<'shared
       await navigator.share({
         files: [file],
         title: 'My GetInShape progress',
-        text: 'Tracking my food and weight with GetInShape 🔥 getinshape.co.in',
+        text: 'Lose weight, not calories. getinshape.co.in',
       })
       return 'shared'
     } catch (err) {
@@ -701,9 +955,11 @@ export async function shareProgressCard(
   opts: DrawOptions = {}
 ): Promise<'shared' | 'downloaded'> {
   const format = opts.format ?? 'square'
+  const fonts = resolveFonts()
+  const numeralFamily = await ensureNumeralFont(fonts.numeral)
   await document.fonts.ready
   const canvas = document.createElement('canvas')
-  drawShareCard(canvas, data, resolveFonts(), opts)
+  drawShareCard(canvas, data, fonts, { ...opts, numeralFamily })
   return deliver(canvas, `getinshape-progress-${format}.png`)
 }
 
@@ -713,8 +969,10 @@ export async function shareDayCard(
   opts: DrawOptions = {}
 ): Promise<'shared' | 'downloaded'> {
   const format = opts.format ?? 'story'
+  const fonts = resolveFonts()
+  const numeralFamily = await ensureNumeralFont(fonts.numeral)
   await document.fonts.ready
   const canvas = document.createElement('canvas')
-  drawDayCard(canvas, data, resolveFonts(), opts)
+  drawDayCard(canvas, data, fonts, { ...opts, numeralFamily })
   return deliver(canvas, `getinshape-day-${format}.png`)
 }

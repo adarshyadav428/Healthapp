@@ -53,7 +53,9 @@ function useDayExercise(userId: string | null, date: Date) {
   })
 }
 
-export function DayDiary({ userId, date }: { userId: string; date: Date }) {
+export function DayDiary(
+  { userId, date, firstName }: { userId: string; date: Date; firstName?: string | null }
+) {
   const { data: logs, isLoading } = useDayLogs(userId, date)
   const { data: exerciseLogs = [] } = useDayExercise(userId, date)
   const queryClient = useQueryClient()
@@ -179,7 +181,7 @@ export function DayDiary({ userId, date }: { userId: string; date: Date }) {
           )
         })}
 
-      <ShareDayButton logs={logs} date={date} />
+      <ShareDayButton logs={logs} date={date} firstName={firstName} />
 
       {editingLog && (
         <EditFoodLogModal

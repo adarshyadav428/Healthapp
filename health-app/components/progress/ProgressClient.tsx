@@ -9,6 +9,7 @@ import { useUser } from '../../hooks/useUser'
 import { DayDiary } from './DayDiary'
 import { dateStrToUtcMidnight } from '../../lib/dateUtils'
 import { ShareProgressButton } from './ShareProgressButton'
+import { firstNameFrom } from '../../lib/shareCard'
 import { computeWeightTrend } from '../../lib/weightTrend'
 import { contextInsight, contextInsightLine } from '../../lib/mealContext'
 import { BadgeShelf } from './BadgeShelf'
@@ -152,6 +153,10 @@ export function ProgressClient({
   // the gate is server-side (app/progress/page.tsx), so nothing here decides it.
   // A fallback period is dropped rather than shared: the card says "This week",
   // and a card that says "This week" about last week is a lie, not a rounding.
+  // The card's byline. Null for an anonymous account (display_name is
+  // nullable), and the card then omits the line rather than drawing a blank.
+  const firstName = firstNameFrom(profile.display_name)
+
   const shareDeficits = useMemo(
     () =>
       [weekView, monthView]
@@ -306,6 +311,7 @@ export function ProgressClient({
         startWeightKg={startWeight}
         currentWeightKg={currentWeight}
         deficits={shareDeficits}
+        firstName={firstName}
       />
 
       {/* The "avg kcal · goal" and "N of 7 days logged" tiles used to sit here.
@@ -397,7 +403,7 @@ export function ProgressClient({
               <X className="h-4 w-4 text-ink-2" />
             </button>
           </div>
-          <DayDiary userId={user.id} date={dateStrToUtcMidnight(selectedDate)} />
+          <DayDiary firstName={firstName} userId={user.id} date={dateStrToUtcMidnight(selectedDate)} />
         </div>
       )}
 

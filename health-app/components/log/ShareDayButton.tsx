@@ -8,6 +8,7 @@ import {
   drawDayCard,
   resolveFonts,
   shareDayCard,
+  ensureNumeralFont,
   MAX_ITEM_LINES,
   type DayCardLog,
   type ShareFormat,
@@ -46,7 +47,9 @@ function istDateLabel(date: Date): string {
  * Hidden on an empty day: `buildDayCardData` returns null and there is nothing
  * to post.
  */
-export function ShareDayButton({ logs, date }: { logs: FoodLog[]; date: Date }) {
+export function ShareDayButton(
+  { logs, date, firstName }: { logs: FoodLog[]; date: Date; firstName?: string | null }
+) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [format, setFormat] = useState<ShareFormat>('story')
@@ -76,14 +79,17 @@ export function ShareDayButton({ logs, date }: { logs: FoodLog[]; date: Date }) 
   useEffect(() => {
     if (!open || !data) return
     let cancelled = false
-    document.fonts.ready.then(() => {
+    ;(async () => {
+      const fonts = resolveFonts()
+      const numeralFamily = await ensureNumeralFont(fonts.numeral)
+      await document.fonts.ready
       if (cancelled || !previewRef.current) return
-      drawDayCard(previewRef.current, data, resolveFonts(), { format })
-    })
+      drawDayCard(previewRef.current, data, fonts, { format, numeralFamily, firstName })
+    })()
     return () => {
       cancelled = true
     }
-  }, [open, data, format])
+  }, [open, data, format, firstName])
 
   if (!data) return null
 
@@ -91,7 +97,7 @@ export function ShareDayButton({ logs, date }: { logs: FoodLog[]; date: Date }) 
     if (busy) return
     setBusy(true)
     try {
-      const method = await shareDayCard(data, { format })
+      const method = await shareDayCard(data, { format, firstName })
       captureEvent(EVENTS.DAY_CARD_SHARED, {
         method,
         format,
