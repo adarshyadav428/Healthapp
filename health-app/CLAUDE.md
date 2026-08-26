@@ -179,10 +179,15 @@ actively seeding.
   eat) and maintenance (TDEE) are both live in this app and point opposite ways: 819 kcal is a *miss*
   against a 1,600 goal and the *best day of the week* against 2,602 maintenance. Deficit surfaces use
   maintenance.
-- **Deficit periods are calendar windows, never rolling.** Mon–Sun, or the 1st to month end. A calendar
+- **Deficit periods are calendar windows by default — Mon–Sun, or the 1st to month end.** A calendar
   total only grows and then resets; a trailing window drops whenever a good day ages out of the back,
-  which reads as punishment for nothing. Week is free, month is Pro — and the month is withheld
-  **server-side**, so a free client never receives numbers a padlock is merely covering.
+  which reads as punishment for nothing. `/deficit`'s week-by-week history always uses this default.
+  The one deliberate exception: the Progress page's "Week"/"Month" trend card (`buildDeficitView` in
+  `app/progress/page.tsx`) opts into `buildPeriodWindow`'s `rolling` flag, because that card answers
+  "how have the last 7/30 days gone" rather than "how has this calendar period gone" — added 2026-08-26
+  at Adarsh's request, accepting the punishment-for-nothing trade-off there on purpose. Don't spread
+  `rolling` to other surfaces without the same explicit call. Week is free, month is Pro — and the
+  month is withheld **server-side**, so a free client never receives numbers a padlock is merely covering.
 - **Streak freezes are never paywalled.** The free auto-*freeze* prevents a break; the Pro *rescue*
   repairs one. Do not merge or gate the two.
 - **If you move the reminder cron, move `CATCH_ALL_IST_HOUR` with it.** They are coupled, and

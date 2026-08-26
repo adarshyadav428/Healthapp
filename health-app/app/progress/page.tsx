@@ -22,9 +22,15 @@ const WEEKDAY_INITIAL = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 /**
  * Assemble one period the deficit card can render.
  *
- * When the current period has nothing finished in it — every Monday, and the 1st
- * of every month — fall back to the period just gone rather than showing a dead
- * card. A finished week is a better thing to open the app to than an empty one.
+ * This card asks "how have the last 7/30 days gone", not "how has this calendar
+ * week/month gone" — so it deliberately opts into `buildPeriodWindow`'s `rolling`
+ * mode rather than the app's default calendar window (see the note atop
+ * `lib/deficit-calculator.ts`). `/deficit`'s week-by-week history is a different
+ * question and stays calendar-only.
+ *
+ * When the trailing window has nothing finished in it — a brand-new account, or
+ * a long gap with zero logs — fall back to the window just before it rather than
+ * showing a dead card.
  */
 function buildDeficitView(
   byDate: Map<string, number>,
@@ -34,10 +40,10 @@ function buildDeficitView(
   paceKgPerWeek: number,
   goal: 'lose' | 'maintain' | 'gain'
 ): DeficitPeriodView {
-  let win = buildPeriodWindow(byDate, todayStr, kind, 0)
+  let win = buildPeriodWindow(byDate, todayStr, kind, 0, true)
   let isFallback = false
   if (win.completed.length === 0) {
-    const previous = buildPeriodWindow(byDate, todayStr, kind, 1)
+    const previous = buildPeriodWindow(byDate, todayStr, kind, 1, true)
     if (previous.completed.length > 0) {
       win = previous
       isFallback = true
@@ -63,12 +69,13 @@ function buildDeficitView(
     target: Math.round(targetPerDay * (i + 1)),
   }))
 
-  const monthName = new Date(win.periodStart + 'T00:00:00Z')
-    .toLocaleDateString('en-IN', { month: 'long', timeZone: 'UTC' })
+  // "Last 7/30 days", not a calendar-period name — the window is rolling and can
+  // span two months, so labelling it by month name would misdescribe it.
+  const windowLabel = kind === 'month' ? 'Last 30 days' : 'Last 7 days'
 
   return {
     kind,
-    label: kind === 'month' ? monthName : isFallback ? 'Last week' : 'This week',
+    label: isFallback ? `Previous ${kind === 'month' ? '30' : '7'} days` : windowLabel,
     summary,
     points,
     todayKcal: win.todayKcal,

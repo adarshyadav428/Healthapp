@@ -17,7 +17,7 @@ const STATUS_LABEL: Record<WeeklyDeficitSummary['status'], string> = {
 
 export type DeficitPeriodView = {
   kind: 'week' | 'month'
-  /** "This week", "Last week", "August" — whatever the numbers actually describe. */
+  /** "Last 7 days", "Previous 30 days" — whatever the numbers actually describe. */
   label: string
   summary: WeeklyDeficitSummary
   points: DeficitPoint[]
