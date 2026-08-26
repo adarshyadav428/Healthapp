@@ -17,10 +17,10 @@ export function BadgeShelf({ stats }: { stats: BadgeStats }) {
   const earned = earnedCount(badges)
 
   return (
-    <div className="mt-3 rounded-card-lg bg-surface p-5" style={AIR}>
+    <div className="mt-3 rounded-[24px] bg-surface p-5" style={AIR}>
       <div className="flex items-baseline justify-between">
-        <p className="text-body font-bold text-ink">Badges</p>
-        <p className="text-caption font-semibold tabular-nums text-ink-3">{earned} of 10</p>
+        <p className="text-[14px] font-bold text-ink">Badges</p>
+        <p className="text-[12px] font-semibold tabular-nums text-ink-3">{earned} of 10</p>
       </div>
 
       <div className="mt-4 grid grid-cols-5 gap-x-2 gap-y-4">
@@ -32,7 +32,7 @@ export function BadgeShelf({ stats }: { stats: BadgeStats }) {
           >
             <div
               className={
-                'flex h-11 w-11 items-center justify-center rounded-full text-title-sm ' +
+                'flex h-11 w-11 items-center justify-center rounded-full text-[20px] ' +
                 (badge.earned ? 'bg-brand-soft' : 'bg-surface-2')
               }
               style={badge.earned ? undefined : { opacity: 0.45 }}
@@ -41,7 +41,7 @@ export function BadgeShelf({ stats }: { stats: BadgeStats }) {
             </div>
             <p
               className={
-                'mt-1.5 text-micro leading-tight ' +
+                'mt-1.5 text-[10.5px] leading-tight ' +
                 (badge.earned ? 'font-semibold text-ink' : 'text-ink-3')
               }
             >
@@ -55,7 +55,7 @@ export function BadgeShelf({ stats }: { stats: BadgeStats }) {
       </div>
 
       {earned < 10 && (
-        <p className="mt-4 text-micro text-ink-3">
+        <p className="mt-4 text-[11px] text-ink-3">
           Tap and hold a locked badge to see how to earn it.
         </p>
       )}

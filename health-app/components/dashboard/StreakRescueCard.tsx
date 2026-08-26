@@ -61,23 +61,23 @@ export function StreakRescueCard({ offer }: Props) {
   }
 
   return (
-    <div className="mt-4 rounded-card bg-surface p-4" style={{ boxShadow: 'var(--shadow-air)' }}>
+    <div className="mt-4 rounded-[20px] bg-surface p-4" style={{ boxShadow: 'var(--shadow-air)' }}>
       <div className="flex items-start gap-3">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
           <LifeBuoy className="h-[18px] w-[18px]" strokeWidth={2} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-body font-bold text-ink">
+          <p className="text-[14px] font-bold text-ink">
             You missed {friendlyDay(offer.date)}.
           </p>
-          <p className="mt-0.5 text-caption text-ink-2">
+          <p className="mt-0.5 text-[13px] text-ink-2">
             Repair it and your streak goes back to {offer.streakAfter} days. One rescue a month, included with Pro.
           </p>
           <button
             type="button"
             onClick={rescue}
             disabled={busy}
-            className="tap-scale mt-3 inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-caption font-semibold text-canvas disabled:opacity-60"
+            className="tap-scale mt-3 inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-[13px] font-semibold text-canvas disabled:opacity-60"
           >
             {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             {busy ? 'Rescuing…' : 'Rescue my streak'}

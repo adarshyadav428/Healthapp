@@ -24,32 +24,32 @@ export function RecentMealCard({ log, imageUrl, onClick }: { log: FoodLog; image
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3.5 rounded-card bg-surface p-3 text-left tap-scale"
+      className="flex w-full items-center gap-3.5 rounded-[20px] bg-surface p-3 text-left tap-scale"
       style={{ boxShadow: 'var(--shadow-air)' }}
     >
       {/* Thumbnail: photo when available, tinted emoji tile otherwise */}
       <div
-        className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-control"
+        className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[14px]"
         style={imageUrl ? undefined : { backgroundColor: `color-mix(in srgb, ${tint} 14%, transparent)` }}
       >
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={imageUrl} alt={name} className="h-full w-full object-cover" />
         ) : (
-          <span className="text-title-lg leading-none" aria-hidden="true">{foodEmoji(name)}</span>
+          <span className="text-[28px] leading-none" aria-hidden="true">{foodEmoji(name)}</span>
         )}
       </div>
 
       {/* Name + caption */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-body font-semibold text-ink">{name}</p>
-        <p className="mt-[3px] text-caption text-ink-3">{mealLabel} · {formatTime(log.logged_at)}</p>
+        <p className="truncate text-[14.5px] font-semibold text-ink">{name}</p>
+        <p className="mt-[3px] text-[12px] text-ink-3">{mealLabel} · {formatTime(log.logged_at)}</p>
       </div>
 
       {/* Kcal */}
       <div className="shrink-0 text-right">
-        <p className="text-body font-bold tabular-nums text-ink">{Math.round(log.kcal)}</p>
-        <p className="mt-[1px] text-micro text-ink-3">kcal</p>
+        <p className="text-[15px] font-bold tabular-nums text-ink">{Math.round(log.kcal)}</p>
+        <p className="mt-[1px] text-[10.5px] text-ink-3">kcal</p>
       </div>
     </button>
   )

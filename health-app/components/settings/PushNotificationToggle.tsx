@@ -50,7 +50,7 @@ export function PushNotificationToggle() {
         <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-control bg-surface-2">
           <Bell className="h-4 w-4 text-ink-3" strokeWidth={1.75} />
         </span>
-        <p className="text-caption text-ink-3">Push notifications aren&apos;t supported in this browser.</p>
+        <p className="text-xs text-ink-3">Push notifications aren&apos;t supported in this browser.</p>
       </div>
     )
   }
@@ -62,8 +62,8 @@ export function PushNotificationToggle() {
           <Bell className="h-4 w-4 text-brand" strokeWidth={1.75} />
         </span>
         <div className="min-w-0">
-          <p className="text-body font-semibold text-ink">Meal reminders</p>
-          <p className="text-caption text-ink-2">A daily nudge if you haven&apos;t logged yet</p>
+          <p className="text-sm font-semibold text-ink">Meal reminders</p>
+          <p className="text-xs text-ink-2">A daily nudge if you haven&apos;t logged yet</p>
         </div>
       </div>
       <button

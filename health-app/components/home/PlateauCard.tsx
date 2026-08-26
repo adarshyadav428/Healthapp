@@ -63,13 +63,13 @@ export function PlateauCard({
 
   return (
     <div
-      className="mt-4 rounded-card bg-surface p-4"
+      className="mt-4 rounded-[20px] bg-surface p-4"
       style={{ boxShadow: 'var(--shadow-air)' }}
     >
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-body font-semibold leading-snug text-ink">{copy.headline}</p>
-          <p className="mt-1.5 text-caption leading-relaxed text-ink-2">{copy.body}</p>
+          <p className="text-[14.5px] font-semibold leading-snug text-ink">{copy.headline}</p>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-ink-2">{copy.body}</p>
         </div>
         <button
           type="button"

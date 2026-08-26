@@ -1,9 +1,6 @@
-'use client'
-
 import Link from 'next/link'
 import type { GoalProjection } from '../../lib/goalProjection'
 import { goalProjectionCopy } from '../../lib/goalProjection'
-import { useHomeSlot } from '../dashboard/HomeSlot'
 
 /**
  * The projected-goal-date moment on Home.
@@ -29,36 +26,28 @@ export function GoalProjectionCard({
   projection: GoalProjection
   targetKg: number | null
 }) {
-  // Computed before the slot claim rather than short-circuiting above it: a
-  // hook cannot sit behind an early return, and `goalProjectionCopy` is pure so
-  // running it every render costs nothing. It returns null for `kind: 'none'`,
-  // which is the real suppression — the prop itself is never null.
-  const copy = targetKg == null ? null : goalProjectionCopy(projection, targetKg)
-
-  // See components/dashboard/HomeSlot.tsx — one attention card on Home.
-  const wins = useHomeSlot('goal-projection', copy !== null)
-  if (!copy || !wins) return null
+  if (targetKg == null) return null
+  const copy = goalProjectionCopy(projection, targetKg)
+  if (!copy) return null
 
   const isMeasured = projection.kind === 'measured'
 
   return (
     <Link
       href="/weight"
-      // mt-4 lives here rather than on a wrapper in DashboardClient: the card
-      // can decline to render, and a wrapper would have left its margin behind.
-      className="mt-4 flex w-full items-center gap-3.5 rounded-card bg-surface p-3.5 text-left tap-scale"
+      className="flex w-full items-center gap-3.5 rounded-[20px] bg-surface p-3.5 text-left tap-scale"
       style={{ boxShadow: 'var(--shadow-air)' }}
     >
       <div
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-brand-soft"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft"
         aria-hidden="true"
       >
-        <span className="text-title-sm leading-none">{isMeasured ? '🎯' : '🌱'}</span>
+        <span className="text-[20px] leading-none">{isMeasured ? '🎯' : '🌱'}</span>
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="text-body font-semibold leading-snug text-ink">{copy.headline}</p>
-        <p className="mt-[3px] text-caption leading-snug text-ink-3">{copy.detail}</p>
+        <p className="text-[14.5px] font-semibold leading-snug text-ink">{copy.headline}</p>
+        <p className="mt-[3px] text-[12px] leading-snug text-ink-3">{copy.detail}</p>
       </div>
     </Link>
   )

@@ -155,7 +155,7 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
         <button
           type="button"
           onClick={closeSearch}
-          className="mb-3 flex items-center gap-1 text-caption font-semibold text-brand-ink tap-scale"
+          className="mb-3 flex items-center gap-1 text-[13px] font-semibold text-brand-ink tap-scale"
         >
           <ChevronLeft className="h-4 w-4" /> Done
         </button>
@@ -265,7 +265,7 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
       {/* Search pill */}
       <div className="flex items-center gap-3 rounded-full bg-surface px-[18px] py-[14px]" style={AIR}>
         <Search className="h-[17px] w-[17px] shrink-0 text-ink-3" strokeWidth={2} />
-        <button type="button" onClick={() => setSearching(true)} className="flex-1 truncate text-left text-body text-ink-3">
+        <button type="button" onClick={() => setSearching(true)} className="flex-1 truncate text-left text-[14.5px] text-ink-3">
           Search dal makhani, roti, paratha…
         </button>
         <button type="button" onClick={() => setShowCamera(true)} aria-label="Scan barcode" className="shrink-0 tap-scale">
@@ -278,29 +278,25 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
         <button
           type="button"
           onClick={() => setShowCamera(true)}
-          className="flex flex-col gap-5 rounded-card bg-ink p-[18px] text-left tap-scale"
-          style={{ boxShadow: 'var(--shadow-air)' }}
+          className="flex flex-col gap-5 rounded-[20px] bg-cta-grad p-[18px] text-left tap-scale"
+          style={{ boxShadow: 'var(--cta-shadow)' }}
         >
-          <Camera className="h-5 w-5 text-canvas" strokeWidth={2} />
+          <Camera className="h-5 w-5 text-white" strokeWidth={2} />
           <div>
-            <p className="text-body font-semibold text-canvas">Scan meal</p>
-            {/* Was rgba(255,255,255,.72) — a literal that could not follow the
-                theme, and which the token guard only tolerated because it is
-                not hex. Mixing the two tokens keeps the same softened contrast
-                and inverts with the card. */}
-            <p className="mt-0.5 text-caption" style={{ color: 'color-mix(in srgb, var(--canvas) 72%, var(--ink))' }}>Point &amp; log</p>
+            <p className="text-[14.5px] font-semibold text-white">Scan meal</p>
+            <p className="mt-0.5 text-[11.5px]" style={{ color: 'rgba(255,255,255,.72)' }}>Point &amp; log</p>
           </div>
         </button>
         <button
           type="button"
           onClick={() => setShowQuickAdd(true)}
-          className="flex flex-col gap-5 rounded-card bg-surface p-[18px] text-left tap-scale"
+          className="flex flex-col gap-5 rounded-[20px] bg-surface p-[18px] text-left tap-scale"
           style={AIR}
         >
           <Zap className="h-5 w-5 text-ink" strokeWidth={2} />
           <div>
-            <p className="text-body font-semibold text-ink">Quick add</p>
-            <p className="mt-0.5 text-caption text-ink-3">Just calories</p>
+            <p className="text-[14.5px] font-semibold text-ink">Quick add</p>
+            <p className="mt-0.5 text-[11.5px] text-ink-3">Just calories</p>
           </div>
         </button>
       </div>
@@ -310,13 +306,13 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
           decision that is really "log this, or show me another". Only on today:
           suggesting dinner for a day that's already over is nonsense. */}
       {isToday && suggestion && (
-        <div className="flex items-center gap-3.5 rounded-card bg-surface p-3" style={AIR}>
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control bg-brand-soft text-brand">
+        <div className="flex items-center gap-3.5 rounded-[20px] bg-surface p-3" style={AIR}>
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft text-brand">
             <Sparkles className="h-5 w-5" strokeWidth={2} />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-body font-semibold text-ink">{suggestion.food.name}</p>
-            <p className="mt-[3px] text-caption text-ink-3">
+            <p className="truncate text-[14.5px] font-semibold text-ink">{suggestion.food.name}</p>
+            <p className="mt-[3px] text-[12px] text-ink-3">
               {Math.round(suggestion.grams)}g · {Math.round(suggestion.kcal)} kcal · fits what&apos;s left
             </p>
           </div>
@@ -332,10 +328,10 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
             type="button"
             onClick={() => setFoundFood(suggestion.food)}
             aria-label={`Log ${suggestion.food.name}`}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink tap-scale"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cta-grad tap-scale"
             style={{ boxShadow: 'var(--fab-shadow)' }}
           >
-            <Plus className="h-[18px] w-[18px] text-canvas" strokeWidth={2.2} />
+            <Plus className="h-[18px] w-[18px] text-white" strokeWidth={2.2} />
           </button>
         </div>
       )}
@@ -386,8 +382,8 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
       {orderedRecentItems.length > 0 && (
         <div className="pt-2">
           <div className="mb-2.5 flex items-baseline justify-between px-0.5">
-            <p className="text-body-lg font-semibold text-ink">Log again</p>
-            <Link href="/progress" className="text-caption font-semibold text-brand-ink tap-scale">History</Link>
+            <p className="text-[16px] font-semibold text-ink">Log again</p>
+            <Link href="/progress" className="text-[13px] font-semibold text-brand-ink tap-scale">History</Link>
           </div>
           <div className="flex flex-col gap-2.5">
             {orderedRecentItems.map((item) => (

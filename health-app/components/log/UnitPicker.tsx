@@ -19,7 +19,7 @@ export function UnitPicker({
       <div className="absolute inset-0 bg-scrim backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-t-sheet bg-surface px-4 pb-6 pt-3 shadow-float">
         <div className="mx-auto h-1 w-10 rounded-full bg-hairline mb-4" />
-        <p className="text-center text-caption uppercase tracking-caps font-bold text-ink-2 mb-2">{foodName}</p>
+        <p className="text-center text-xs uppercase tracking-wide font-bold text-ink-2 mb-2">{foodName}</p>
         <div className="space-y-1.5 mb-4">
           {units.map((u) => {
             const isActive = u.key === selected.key
@@ -34,7 +34,7 @@ export function UnitPicker({
                     : 'hover:bg-surface-2 text-ink'
                 }`}
               >
-                <span className={`text-body-lg ${isActive ? 'font-bold' : 'font-semibold'}`}>{u.label}</span>
+                <span className={`text-base ${isActive ? 'font-bold' : 'font-semibold'}`}>{u.label}</span>
                 {isActive && <Check className="h-5 w-5" />}
               </button>
             )

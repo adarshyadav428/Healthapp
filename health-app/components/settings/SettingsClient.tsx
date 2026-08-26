@@ -192,36 +192,36 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
     <>
       {/* ── Header ── */}
       <div className="pt-2">
-        <p className="text-caption font-medium text-ink-3">Account</p>
-        <h1 className="font-display mt-[3px] text-title font-bold text-ink">Profile</h1>
+        <p className="text-[13px] font-medium text-ink-3">Account</p>
+        <h1 className="font-display mt-[3px] text-[24px] font-bold tracking-[-0.02em] text-ink">Profile</h1>
       </div>
 
       {/* ── Identity ── */}
       <div className="mt-5 flex flex-col items-center gap-3 pb-1 pt-2">
         <div className="flex h-[76px] w-[76px] items-center justify-center rounded-full" style={{ backgroundImage: 'var(--ava-grad)' }}>
-          <span className="font-display text-title-lg font-semibold text-white">{initial}</span>
+          <span className="font-display text-[30px] font-semibold text-white">{initial}</span>
         </div>
         <div className="text-center">
-          <p className="text-title-sm font-bold text-ink">{profile.display_name || 'You'}</p>
-          <p className="mt-[3px] text-caption text-ink-3">{email}</p>
+          <p className="text-[18px] font-bold tracking-[-0.01em] text-ink">{profile.display_name || 'You'}</p>
+          <p className="mt-[3px] text-[12.5px] text-ink-3">{email}</p>
         </div>
       </div>
 
       {/* ── Stats ── */}
-      <div className="mt-[18px] grid grid-cols-3 rounded-card-lg bg-surface py-[18px]" style={{ boxShadow: 'var(--shadow-air)' }}>
+      <div className="mt-[18px] grid grid-cols-3 rounded-[24px] bg-surface py-[18px]" style={{ boxShadow: 'var(--shadow-air)' }}>
         <Stat value={profile.daily_calorie_target.toLocaleString('en-IN')} label="kcal goal" divider />
         <Stat value={`${profile.protein_g_target ?? 0}g`} label="protein" divider />
         <Stat value={profile.current_weight_kg ? String(profile.current_weight_kg) : '—'} label="weight kg" />
       </div>
 
       {/* ── Settings rows ── */}
-      <div className="mt-3.5 overflow-hidden rounded-card-lg bg-surface" style={{ boxShadow: 'var(--shadow-air)' }}>
+      <div className="mt-3.5 overflow-hidden rounded-[24px] bg-surface" style={{ boxShadow: 'var(--shadow-air)' }}>
         {/* Goals — opens the full profile + targets form */}
         <Sheet>
           <SheetTrigger asChild>
             <button type="button" className="flex w-full items-center gap-3.5 px-[18px] py-4 text-left tap-scale">
               <Target className="h-[19px] w-[19px] shrink-0 text-ink" strokeWidth={1.9} />
-              <span className="flex-1 text-body font-medium text-ink">Goals</span>
+              <span className="flex-1 text-[15px] font-medium text-ink">Goals</span>
               <RowChevron />
             </button>
           </SheetTrigger>
@@ -231,12 +231,12 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
             {/* Calorie quick-editor */}
             <div className="rounded-card bg-brand-soft p-4">
               <div className="mb-3 flex items-center justify-between">
-                <p className="text-caption font-bold uppercase tracking-caps text-brand-ink">Daily calorie goal</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-brand-ink">Daily calorie goal</p>
                 {!editingCalories && (
                   <button
                     type="button"
                     onClick={() => { setQuickKcal(String(profile.daily_calorie_target)); setEditingCalories(true); setTimeout(() => kcalInputRef.current?.focus(), 50) }}
-                    className="flex items-center gap-1 rounded-control border border-hairline bg-surface px-2.5 py-1 text-caption font-semibold text-brand-ink tap-scale"
+                    className="flex items-center gap-1 rounded-control border border-hairline bg-surface px-2.5 py-1 text-xs font-semibold text-brand-ink tap-scale"
                   >
                     <Pencil className="h-3 w-3" /> Edit
                   </button>
@@ -244,9 +244,9 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
               </div>
               {!editingCalories ? (
                 <>
-                  <p className="font-display text-display font-bold leading-none tabular-nums text-ink">{profile.daily_calorie_target.toLocaleString()}</p>
-                  <p className="mt-1 text-body text-brand-ink">kcal / day</p>
-                  <div className="mt-3 flex gap-3 text-caption">
+                  <p className="font-display text-4xl font-bold leading-none tabular-nums text-ink">{profile.daily_calorie_target.toLocaleString()}</p>
+                  <p className="mt-1 text-sm text-brand-ink">kcal / day</p>
+                  <div className="mt-3 flex gap-3 text-xs">
                     <span className="font-semibold tabular-nums" style={{ color: 'var(--protein)' }}>P {profile.protein_g_target}g</span>
                     <span className="font-semibold tabular-nums" style={{ color: 'var(--carbs)' }}>C {profile.carbs_g_target}g</span>
                     <span className="font-semibold tabular-nums" style={{ color: 'var(--fat)' }}>F {profile.fat_g_target}g</span>
@@ -258,7 +258,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
                     {[1200, 1500, 1800, 2000, 2200, 2500].map((kcal) => (
                       <button
                         key={kcal} type="button" onClick={() => setQuickKcal(String(kcal))}
-                        className={`rounded-control border px-3 py-1.5 text-body font-bold transition-all ${quickKcal === String(kcal) ? 'border-brand bg-brand text-white' : 'border-hairline bg-surface text-ink'}`}
+                        className={`rounded-control border px-3 py-1.5 text-sm font-bold transition-all ${quickKcal === String(kcal) ? 'border-brand bg-brand text-white' : 'border-hairline bg-surface text-ink'}`}
                       >{kcal.toLocaleString()}</button>
                     ))}
                   </div>
@@ -267,9 +267,9 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
                       ref={kcalInputRef} type="number" value={quickKcal} min={500} max={10000} step={50}
                       onChange={(e) => setQuickKcal(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && saveQuickKcal(Number(quickKcal))}
-                      className="w-32 rounded-control border border-hairline bg-surface px-4 py-2.5 text-title-sm font-bold text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
+                      className="w-32 rounded-control border border-hairline bg-surface px-4 py-2.5 text-lg font-bold text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
                     />
-                    <span className="text-body font-medium text-ink-2">kcal / day</span>
+                    <span className="text-sm font-medium text-ink-2">kcal / day</span>
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={() => saveQuickKcal(Number(quickKcal))} disabled={savingKcal || !quickKcal || Number(quickKcal) < 500} className="gap-1.5 tap-scale">
@@ -293,14 +293,14 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
                   <select
                     value={heightFt}
                     onChange={(e) => { const ft = Number(e.target.value); setHeightFt(ft); form.setValue('height_cm', ftInToCm(ft, heightIn), { shouldValidate: true }) }}
-                    className="flex-1 rounded-control border border-hairline bg-surface px-3 py-2 text-body font-bold text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
+                    className="flex-1 rounded-control border border-hairline bg-surface px-3 py-2 text-sm font-bold text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
                   >
                     {[3,4,5,6,7,8].map(ft => <option key={ft} value={ft}>{ft} ft</option>)}
                   </select>
                   <select
                     value={heightIn}
                     onChange={(e) => { const inches = Number(e.target.value); setHeightIn(inches); form.setValue('height_cm', ftInToCm(heightFt, inches), { shouldValidate: true }) }}
-                    className="flex-1 rounded-control border border-hairline bg-surface px-3 py-2 text-body font-bold text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
+                    className="flex-1 rounded-control border border-hairline bg-surface px-3 py-2 text-sm font-bold text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
                   >
                     {[0,1,2,3,4,5,6,7,8,9,10,11].map(i => <option key={i} value={i}>{i} in</option>)}
                   </select>
@@ -320,7 +320,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
               <Field label="Activity level" error={form.formState.errors.activity_level?.message}>
                 <select
                   {...form.register('activity_level')}
-                  className="w-full rounded-control border border-hairline bg-surface px-3 py-2.5 text-body text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
+                  className="w-full rounded-control border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
                 >
                   {Object.entries(ACTIVITY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
@@ -334,7 +334,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
                   ] as const).map((g) => (
                     <button
                       key={g.value} type="button" onClick={() => form.setValue('goal', g.value, { shouldDirty: true })}
-                      className={`rounded-control border py-2.5 text-body font-semibold transition-all ${form.watch('goal') === g.value ? 'border-brand bg-brand-soft text-brand-ink' : 'border-hairline bg-surface text-ink'}`}
+                      className={`rounded-control border py-2.5 text-sm font-semibold transition-all ${form.watch('goal') === g.value ? 'border-brand bg-brand-soft text-brand-ink' : 'border-hairline bg-surface text-ink'}`}
                     >{g.emoji} {g.label}</button>
                   ))}
                 </div>
@@ -342,7 +342,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
               <Field label="Weekly loss goal" error={form.formState.errors.pace_kg_per_week?.message}>
                 <select
                   {...form.register('pace_kg_per_week', { valueAsNumber: true })}
-                  className="w-full rounded-control border border-hairline bg-surface px-3 py-2.5 text-body text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
+                  className="w-full rounded-control border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
                 >
                   <option value="0.25">0.25 kg/week — 275 kcal/day deficit</option>
                   <option value="0.5">0.50 kg/week — 550 kcal/day deficit</option>
@@ -355,7 +355,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
                 <button type="button" onClick={() => setUseCustomTargets((v) => !v)} className="flex w-full items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sliders className="h-4 w-4 text-brand" />
-                    <span className="text-body font-semibold text-ink">Custom calorie &amp; macro targets</span>
+                    <span className="text-sm font-semibold text-ink">Custom calorie &amp; macro targets</span>
                   </div>
                   <div className={`relative h-5 w-9 rounded-full transition-colors ${useCustomTargets ? 'bg-brand' : 'bg-hairline'}`}>
                     <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface shadow transition-transform ${useCustomTargets ? 'translate-x-4' : 'translate-x-0.5'}`} />
@@ -393,7 +393,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
         {/* Log weight — dedicated page */}
         <Link href="/weight" className="flex w-full items-center gap-3.5 px-[18px] py-4 tap-scale">
           <Scale className="h-[19px] w-[19px] shrink-0 text-ink" strokeWidth={1.9} />
-          <span className="flex-1 text-body font-medium text-ink">Log weight</span>
+          <span className="flex-1 text-[15px] font-medium text-ink">Log weight</span>
           <RowChevron />
         </Link>
 
@@ -402,7 +402,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
         {/* Custom foods & recipes — the recipe builder (was orphaned; P1-13) */}
         <Link href="/recipes" className="flex w-full items-center gap-3.5 px-[18px] py-4 tap-scale">
           <BookOpen className="h-[19px] w-[19px] shrink-0 text-ink" strokeWidth={1.9} />
-          <span className="flex-1 text-body font-medium text-ink">Custom foods &amp; recipes</span>
+          <span className="flex-1 text-[15px] font-medium text-ink">Custom foods &amp; recipes</span>
           <RowChevron />
         </Link>
 
@@ -413,13 +413,13 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
           <SheetTrigger asChild>
             <button type="button" className="flex w-full items-center gap-3.5 px-[18px] py-4 text-left tap-scale">
               <Bell className="h-[19px] w-[19px] shrink-0 text-ink" strokeWidth={1.9} />
-              <span className="flex-1 text-body font-medium text-ink">Reminders</span>
+              <span className="flex-1 text-[15px] font-medium text-ink">Reminders</span>
               <RowChevron />
             </button>
           </SheetTrigger>
           <SheetContent>
             <SheetTitle className="mb-1">Meal reminders</SheetTitle>
-            <p className="mb-4 text-body text-ink-2">A gentle nudge to log if you haven&apos;t yet today.</p>
+            <p className="mb-4 text-sm text-ink-2">A gentle nudge to log if you haven&apos;t yet today.</p>
             <PushNotificationToggle />
             <ReminderHourPicker initialHour={profile.reminder_hour ?? DEFAULT_REMINDER_HOUR} />
           </SheetContent>
@@ -432,15 +432,15 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
           <SheetTrigger asChild>
             <button type="button" className="flex w-full items-center gap-3.5 px-[18px] py-4 text-left tap-scale">
               <SunMoon className="h-[19px] w-[19px] shrink-0 text-ink" strokeWidth={1.9} />
-              <span className="flex-1 text-body font-medium text-ink">Appearance</span>
-              {mounted && <span className="text-caption text-ink-3">{THEME_LABELS[theme ?? 'system']}</span>}
+              <span className="flex-1 text-[15px] font-medium text-ink">Appearance</span>
+              {mounted && <span className="text-[13px] text-ink-3">{THEME_LABELS[theme ?? 'system']}</span>}
               <RowChevron />
             </button>
           </SheetTrigger>
           <SheetContent>
             <SheetTitle className="mb-4">Appearance</SheetTitle>
             <ThemeSegmented />
-            <p className="mt-2.5 text-caption text-ink-2">System follows your phone&apos;s light/dark setting automatically.</p>
+            <p className="mt-2.5 text-xs text-ink-2">System follows your phone&apos;s light/dark setting automatically.</p>
           </SheetContent>
         </Sheet>
 
@@ -451,14 +451,14 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
           <SheetTrigger asChild>
             <button type="button" className="flex w-full items-center gap-3.5 px-[18px] py-4 text-left tap-scale">
               <BarChart3 className="h-[19px] w-[19px] shrink-0 text-ink" strokeWidth={1.9} />
-              <span className="flex-1 text-body font-medium text-ink">Usage analytics</span>
-              {mounted && <span className="text-caption text-ink-3">{analyticsOptOut ? 'Off' : 'On'}</span>}
+              <span className="flex-1 text-[15px] font-medium text-ink">Usage analytics</span>
+              {mounted && <span className="text-[13px] text-ink-3">{analyticsOptOut ? 'Off' : 'On'}</span>}
               <RowChevron />
             </button>
           </SheetTrigger>
           <SheetContent>
             <SheetTitle className="mb-1">Usage analytics</SheetTitle>
-            <p className="mb-4 text-body text-ink-2">
+            <p className="mb-4 text-sm text-ink-2">
               Anonymous product usage helps us see which features actually help people stay consistent.
               We never send your food, weight or personal details.
             </p>
@@ -467,7 +467,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
                 type="button"
                 onClick={() => toggleAnalytics(false)}
                 className={cn(
-                  'flex-1 rounded-control border py-2.5 text-caption font-semibold transition-colors',
+                  'flex-1 rounded-control border py-2.5 text-[13px] font-semibold transition-colors',
                   analyticsOptOut ? 'border-hairline bg-surface-2 text-ink-2' : 'border-brand bg-brand-soft text-brand-ink'
                 )}
               >
@@ -477,7 +477,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
                 type="button"
                 onClick={() => toggleAnalytics(true)}
                 className={cn(
-                  'flex-1 rounded-control border py-2.5 text-caption font-semibold transition-colors',
+                  'flex-1 rounded-control border py-2.5 text-[13px] font-semibold transition-colors',
                   analyticsOptOut ? 'border-brand bg-brand-soft text-brand-ink' : 'border-hairline bg-surface-2 text-ink-2'
                 )}
               >
@@ -492,7 +492,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
         {/* Export */}
         <button type="button" onClick={exportData} className="flex w-full items-center gap-3.5 px-[18px] py-4 text-left tap-scale">
           <Download className="h-[19px] w-[19px] shrink-0 text-ink" strokeWidth={1.9} />
-          <span className="flex-1 text-body font-medium text-ink">Export data</span>
+          <span className="flex-1 text-[15px] font-medium text-ink">Export data</span>
           <RowChevron />
         </button>
 
@@ -502,14 +502,14 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
         {isPro ? (
           <button type="button" onClick={manageSubscription} disabled={portalLoading} className="flex w-full items-center gap-3.5 px-[18px] py-4 text-left tap-scale disabled:opacity-50">
             <Crown className="h-[19px] w-[19px] shrink-0 text-brand" strokeWidth={1.9} />
-            <span className="flex-1 text-body font-medium text-ink">Subscription</span>
-            <span className="rounded-full bg-brand-soft px-2 py-0.5 text-micro font-bold text-brand-ink">PRO</span>
+            <span className="flex-1 text-[15px] font-medium text-ink">Subscription</span>
+            <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-bold text-brand-ink">PRO</span>
             <RowChevron />
           </button>
         ) : (
           <Link href="/upgrade" className="flex w-full items-center gap-3.5 px-[18px] py-4 tap-scale">
             <Crown className="h-[19px] w-[19px] shrink-0 text-brand" strokeWidth={1.9} />
-            <span className="flex-1 text-body font-medium text-ink">Upgrade to Pro</span>
+            <span className="flex-1 text-[15px] font-medium text-ink">Upgrade to Pro</span>
             <RowChevron />
           </Link>
         )}
@@ -517,13 +517,13 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
 
       {/* ── Sign out / delete ── */}
       <div className="mt-3.5 flex flex-col items-center gap-0.5">
-        <button type="button" onClick={signOut} disabled={signOutLoading} className="px-6 py-3 text-body font-medium text-ink-2 tap-scale disabled:opacity-50">
+        <button type="button" onClick={signOut} disabled={signOutLoading} className="px-6 py-3 text-[14px] font-medium text-ink-2 tap-scale disabled:opacity-50">
           {signOutLoading ? 'Signing out…' : 'Sign out'}
         </button>
-        <button type="button" onClick={deleteAccount} disabled={deleteLoading} className="px-6 py-1 text-caption font-medium text-danger tap-scale disabled:opacity-50">
+        <button type="button" onClick={deleteAccount} disabled={deleteLoading} className="px-6 py-1 text-[13px] font-medium text-danger tap-scale disabled:opacity-50">
           {deleteLoading ? 'Deleting…' : 'Delete account'}
         </button>
-        <p className="mt-2 text-micro text-ink-3">GetInShape v{version}</p>
+        <p className="mt-2 text-[11px] text-ink-3">GetInShape v{version}</p>
       </div>
     </>
   )
@@ -532,8 +532,8 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
 function Stat({ value, label, divider }: { value: string; label: string; divider?: boolean }) {
   return (
     <div className={`text-center ${divider ? 'border-r border-hairline' : ''}`}>
-      <p className="font-display text-title font-bold tabular-nums text-ink">{value}</p>
-      <p className="mt-[3px] text-micro text-ink-3">{label}</p>
+      <p className="font-display text-[22px] font-bold tabular-nums tracking-[-0.02em] text-ink">{value}</p>
+      <p className="mt-[3px] text-[11px] text-ink-3">{label}</p>
     </div>
   )
 }
@@ -549,9 +549,9 @@ function Divider() {
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div>
-      <Label className="text-caption font-semibold uppercase tracking-caps text-ink-2">{label}</Label>
+      <Label className="text-xs font-semibold uppercase tracking-wide text-ink-2">{label}</Label>
       <div className="mt-1">{children}</div>
-      {error && <p className="mt-1 text-caption text-danger">{error}</p>}
+      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
     </div>
   )
 }
@@ -586,22 +586,22 @@ function BmiRecommendation({ heightCm, currentWeightKg, onSelect }: {
   return (
     <div className="mt-2 space-y-2 rounded-card border border-hairline bg-brand-soft p-3">
       <div className="flex items-center justify-between">
-        <span className="text-caption text-ink-2">Your current BMI</span>
-        <span className="text-caption font-bold" style={{ color: bmiColor }}>{currentBmi} · {bmiLabel}</span>
+        <span className="text-xs text-ink-2">Your current BMI</span>
+        <span className="text-xs font-bold" style={{ color: bmiColor }}>{currentBmi} · {bmiLabel}</span>
       </div>
-      <p className="text-micro text-ink-2">
+      <p className="text-[11px] text-ink-2">
         Healthy range: <span className="font-semibold text-ink">{minHealthy}–{maxHealthy} kg</span> (BMI 18.5–24.9)
       </p>
       <div>
-        <p className="mb-1.5 text-micro font-semibold uppercase tracking-caps text-ink-2">Tap to set target</p>
+        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-ink-2">Tap to set target</p>
         <div className="flex gap-2">
           {suggestions.map((s) => (
             <button
               key={s.bmi} type="button" onClick={() => onSelect(s.kg)}
               className="flex-1 rounded-control border border-hairline bg-surface py-1.5 text-center tap-scale"
             >
-              <p className="text-caption font-bold tabular-nums text-brand-ink">{s.kg} kg</p>
-              <p className="text-micro text-ink-2">BMI {s.bmi}</p>
+              <p className="text-xs font-bold tabular-nums text-brand-ink">{s.kg} kg</p>
+              <p className="text-[10px] text-ink-2">BMI {s.bmi}</p>
             </button>
           ))}
         </div>

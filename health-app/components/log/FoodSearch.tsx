@@ -51,7 +51,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
           placeholder="Search dal makhani, roti, paneer..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full pl-10 pr-28 h-12 text-body rounded-2xl outline-none transition-all"
+          className="w-full pl-10 pr-28 h-12 text-[14px] rounded-2xl outline-none transition-all"
           style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', color: 'var(--ink)' }}
           onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--brand)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--brand-soft)' }}
           onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--hairline)'; e.currentTarget.style.boxShadow = 'none' }}
@@ -147,7 +147,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
       {/* Favourites */}
       {!isSearching && favouriteFoods.length > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-caption font-semibold uppercase tracking-caps" style={{ color: 'var(--ink-3)' }}>
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--ink-3)' }}>
             <Star className="h-3.5 w-3.5" style={{ fill: 'var(--carbs)', color: 'var(--carbs)' }} />
             <span>Favourites</span>
           </div>
@@ -170,7 +170,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
       {/* Frequent foods */}
       {showFrequent && (
         <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-caption font-semibold uppercase tracking-caps" style={{ color: 'var(--ink-3)' }}>
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--ink-3)' }}>
             <Zap className="h-3.5 w-3.5" />
             <span>Frequent · tap + to quick add</span>
           </div>
@@ -193,7 +193,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
       {/* Recent foods */}
       {showRecent && (
         <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-caption font-semibold uppercase tracking-caps" style={{ color: 'var(--ink-3)' }}>
+          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--ink-3)' }}>
             <Clock className="h-3.5 w-3.5" />
             <span>Recent</span>
           </div>
@@ -223,16 +223,16 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
               ))}
             </div>
           ) : error ? (
-            <p className="text-body px-1" style={{ color: 'var(--fat)' }}>{(error as Error).message}</p>
+            <p className="text-sm px-1" style={{ color: 'var(--fat)' }}>{(error as Error).message}</p>
           ) : (data ?? []).length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-title-lg mb-2">🔍</p>
-              <p className="text-body font-medium" style={{ color: 'var(--ink)' }}>No results for &ldquo;{debounced}&rdquo;</p>
-              <p className="text-caption mt-1 mb-4" style={{ color: 'var(--ink-3)' }}>Try a different spelling or create a custom food</p>
+              <p className="text-3xl mb-2">🔍</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--ink)' }}>No results for &ldquo;{debounced}&rdquo;</p>
+              <p className="text-xs mt-1 mb-4" style={{ color: 'var(--ink-3)' }}>Try a different spelling or create a custom food</p>
               <button
                 type="button"
                 onClick={() => setShowCreateFood(true)}
-                className="inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-body font-bold text-white tap-scale transition-all"
+                className="inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-bold text-white tap-scale transition-all"
                 style={{ background: 'var(--brand)' }}
               >
                 <PlusCircle className="h-4 w-4" />
@@ -258,13 +258,13 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
       {/* Empty state when no query and no recent foods */}
       {!isSearching && recentFoods.length === 0 && (
         <div className="py-10 text-center">
-          <p className="text-title-lg mb-2">🍱</p>
-          <p className="text-body font-medium" style={{ color: 'var(--ink)' }}>Search for any food above</p>
-          <p className="text-caption mt-1 mb-4" style={{ color: 'var(--ink-3)' }}>Includes 500+ Indian dishes, staples &amp; global foods</p>
+          <p className="text-3xl mb-2">🍱</p>
+          <p className="text-sm font-medium" style={{ color: 'var(--ink)' }}>Search for any food above</p>
+          <p className="text-xs mt-1 mb-4" style={{ color: 'var(--ink-3)' }}>Includes 500+ Indian dishes, staples &amp; global foods</p>
           <button
             type="button"
             onClick={() => setShowCreateFood(true)}
-            className="inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-body font-semibold tap-scale transition-colors"
+            className="inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold tap-scale transition-colors"
             style={{ background: 'var(--brand-soft)', border: '1px solid var(--brand-ring)', color: 'var(--brand-text)' }}
           >
             <PlusCircle className="h-4 w-4" />

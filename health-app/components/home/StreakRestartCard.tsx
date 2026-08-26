@@ -30,15 +30,15 @@ export function StreakRestartCard({
   return (
     <Link
       href="/log?search=1"
-      className="mt-4 flex items-center gap-3.5 rounded-card bg-surface p-4 tap-scale"
+      className="mt-4 flex items-center gap-3.5 rounded-[20px] bg-surface p-4 tap-scale"
       style={{ boxShadow: 'var(--shadow-air)' }}
     >
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
         <Flame className="h-5 w-5" strokeWidth={2} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-body font-semibold leading-snug text-ink">{copy.title}</span>
-        <span className="mt-1 block text-caption leading-relaxed text-ink-2">{copy.body}</span>
+        <span className="block text-[14.5px] font-semibold leading-snug text-ink">{copy.title}</span>
+        <span className="mt-1 block text-[13px] leading-relaxed text-ink-2">{copy.body}</span>
       </span>
     </Link>
   )

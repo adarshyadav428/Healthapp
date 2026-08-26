@@ -12,8 +12,7 @@ import { isPlayBillingAvailable } from '../../lib/play/billing'
 import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { formatKg } from '../../lib/formatWeight'
 import { captureEvent } from '../../lib/posthog/client'
-import { EVENTS } from '../../lib/posthog/events'
-import { buildShareCardOptions, shareProgressCard, type ShareTopic } from '../../lib/shareCard'
+import { buildShareCardData, shareProgressCard } from '../../lib/shareCard'
 import { toast } from '../ui/use-toast'
 
 const celebrationKey = (uid: string) => `gis.firstLogCelebrated.${uid}`
@@ -135,58 +134,34 @@ export function LogMilestones() {
     setStreakDays(pendingStreak)
   }, [pendingStreak])
 
-  // The three big streak rungs offer a share card, and so does every whole-kg
-  // weight milestone — "3 kg down" is the single most postable thing this app
-  // ever tells anyone, and it used to celebrate and vanish with no way to keep
-  // it. Both need more than 2.6s of decision time, so they wait for a tap
-  // instead of disappearing mid-thought.
+  // The three big streak rungs offer a share card, which needs more than 2.6s
+  // of decision time — those wait for a tap instead of vanishing mid-thought.
   const canShareStreak = streakDays != null && isShareableStreakMilestone(streakDays)
-  const canShare = canShareStreak || weightKg != null
 
   // Celebrations auto-dismiss; the paywall waits for an explicit choice.
   useEffect(() => {
     if (active !== 'first_log_celebration' && weightKg == null && streakDays == null) return
-    if (canShare) return
+    if (canShareStreak) return
     const t = setTimeout(() => {
       setActive(null)
       setWeightKg(null)
       setStreakDays(null)
     }, 2600)
     return () => clearTimeout(t)
-  }, [active, weightKg, streakDays, canShare])
+  }, [active, weightKg, streakDays, canShareStreak])
 
-  /**
-   * Share the milestone that is on screen.
-   *
-   * A milestone card is always about the thing just celebrated, so the topic is
-   * picked rather than chosen — this is not the /progress chooser. Status
-   * format, because the moment goes to a status.
-   */
-  const shareMilestone = async () => {
-    if (sharing) return
-    const topic: ShareTopic = weightKg != null ? 'weight' : 'streak'
-    const option = buildShareCardOptions({
-      streakDays: streakDays ?? 0,
-      kgLost: weightKg,
-      deficit: null,
-    }).find((o) => o.topic === topic)
-    if (!option) return
-
+  const shareStreak = async () => {
+    if (sharing || streakDays == null) return
     setSharing(true)
     try {
-      const method = await shareProgressCard(option.data, { format: 'story' })
-      captureEvent(EVENTS.PROGRESS_CARD_SHARED, {
-        method,
-        topic,
-        format: 'story',
-        streak: streakDays,
-        source: weightKg != null ? 'weight_milestone' : 'streak_milestone',
-      })
+      const data = buildShareCardData({ streakDays, startWeightKg: null, currentWeightKg: null })
+      if (!data) return
+      const method = await shareProgressCard(data)
+      captureEvent('progress_card_shared', { method, streak: streakDays, source: 'streak_milestone' })
       if (method === 'downloaded') {
         toast({ title: 'Card saved', description: 'Image downloaded — share it anywhere.', duration: 3000 })
       }
       setStreakDays(null)
-      setWeightKg(null)
     } catch (err) {
       toast({ title: 'Could not create the card', description: (err as Error).message, variant: 'error' })
     } finally {
@@ -210,13 +185,13 @@ export function LogMilestones() {
       >
         <div className="relative w-full max-w-xs rounded-sheet bg-surface px-6 pb-7 pt-8 text-center shadow-float">
           <ConfettiBurst />
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-soft text-title-lg">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-soft text-[28px]">
             {isStreak ? '🔥' : isWeight ? '⚖️' : '🎉'}
           </div>
-          <h2 className="mt-4 font-display text-title font-bold text-ink">
+          <h2 className="mt-4 font-display text-[22px] font-bold text-ink">
             {isStreak ? `${streakDays}-day streak!` : isWeight ? `${formatKg(weightKg)} kg down!` : 'First meal logged!'}
           </h2>
-          <p className="mt-1.5 text-body text-ink-2">
+          <p className="mt-1.5 text-sm text-ink-2">
             {isStreak
               ? `${streakDays} days in a row — this is how the habit sticks. Keep it going.`
               : isWeight
@@ -224,11 +199,11 @@ export function LogMilestones() {
               : "That's the hardest part done. Log every meal today and your streak begins."}
           </p>
 
-          {canShare && (
+          {canShareStreak && (
             <div className="mt-5 space-y-2" onClick={(e) => e.stopPropagation()}>
               <Button
                 type="button"
-                onClick={shareMilestone}
+                onClick={shareStreak}
                 disabled={sharing}
                 className="w-full gap-2 tap-scale"
               >
@@ -239,11 +214,8 @@ export function LogMilestones() {
               </Button>
               <button
                 type="button"
-                onClick={() => {
-                  setStreakDays(null)
-                  setWeightKg(null)
-                }}
-                className="w-full py-1.5 text-caption font-semibold text-ink-3 tap-scale"
+                onClick={() => setStreakDays(null)}
+                className="w-full py-1.5 text-[13px] font-semibold text-ink-3 tap-scale"
               >
                 Not now
               </button>
@@ -270,14 +242,14 @@ export function LogMilestones() {
             <Crown size={22} strokeWidth={2} />
           </div>
 
-          <div className="mt-5 text-micro font-semibold uppercase tracking-caps text-brand-ink">
+          <div className="mt-5 text-[11px] font-semibold uppercase tracking-wide text-brand-ink">
             GetInShape Pro
           </div>
-          <h1 className="mt-1.5 font-display text-title-lg font-bold leading-tight text-ink">
+          <h1 className="mt-1.5 font-display text-[28px] font-bold leading-tight text-ink">
             You&apos;re building
             <br />a real habit.
           </h1>
-          <p className="mt-2.5 text-body text-ink-2">
+          <p className="mt-2.5 text-sm text-ink-2">
             Three meals logged — that&apos;s how progress starts. Pro takes the limits off.
           </p>
 
@@ -287,7 +259,7 @@ export function LogMilestones() {
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
                   <Check size={12} strokeWidth={3} />
                 </span>
-                <span className="text-body text-ink">
+                <span className="text-sm text-ink">
                   <b>{bold}</b>
                   {rest}
                 </span>
@@ -297,7 +269,7 @@ export function LogMilestones() {
 
           <div className="flex-1" />
 
-          <p className="mt-8 text-center text-caption text-ink-2">
+          <p className="mt-8 text-center text-[13px] text-ink-2">
             {paywallPriceLine(playAvailable)}
           </p>
           <Button

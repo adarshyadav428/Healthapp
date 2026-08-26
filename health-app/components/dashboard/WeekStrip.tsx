@@ -44,16 +44,16 @@ export function WeekStrip({ loggedDates }: { loggedDates: string[] }) {
           key={d.key}
           href={d.isToday ? '/log' : `/log?date=${d.key}`}
           aria-label={`Open diary for ${d.key}`}
-          className={`tap-scale flex h-[58px] flex-1 flex-col items-center justify-center rounded-control ${
+          className={`tap-scale flex h-[58px] flex-1 flex-col items-center justify-center rounded-[14px] ${
             d.isToday ? 'bg-ink' : 'bg-surface'
           }`}
           style={d.isToday ? undefined : { boxShadow: 'var(--shadow-air)' }}
         >
-          <span className={`text-micro font-semibold ${d.isToday ? 'text-canvas' : 'text-ink-3'}`}>
+          <span className={`text-[10px] font-semibold ${d.isToday ? 'text-canvas' : 'text-ink-3'}`}>
             {d.letter}
           </span>
           <span
-            className={`mt-[1px] text-body font-semibold tabular-nums ${
+            className={`mt-[1px] text-[14px] font-semibold tabular-nums ${
               d.isToday ? 'text-canvas' : 'text-ink'
             }`}
           >

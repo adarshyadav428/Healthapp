@@ -179,14 +179,14 @@ export function Story({ cards, ctaLabel, onCta, onClose, onCardView, onComplete 
         className="pointer-events-none relative z-[1] flex flex-1 flex-col items-center justify-center px-8 text-center"
       >
         {card.glyph && (
-          <div className="story-rise text-hero leading-none" aria-hidden="true">
+          <div className="story-rise text-[56px] leading-none" aria-hidden="true">
             {card.glyph}
           </div>
         )}
 
         {card.eyebrow && (
           <p
-            className={`story-rise mt-5 text-micro font-semibold uppercase tracking-caps ${fgMuted}`}
+            className={`story-rise mt-5 text-[11px] font-semibold uppercase tracking-[0.14em] ${fgMuted}`}
             style={{ animationDelay: '60ms' }}
           >
             {card.eyebrow}
@@ -195,7 +195,7 @@ export function Story({ cards, ctaLabel, onCta, onClose, onCardView, onComplete 
 
         {card.value && (
           <p
-            className={`story-rise font-display mt-2 text-hero-lg font-bold leading-[1.05] tabular-nums ${fg}`}
+            className={`story-rise font-display mt-2 text-[64px] font-bold leading-[1.05] tracking-[-0.03em] tabular-nums ${fg}`}
             style={{ animationDelay: '120ms' }}
           >
             {card.value}
@@ -204,7 +204,7 @@ export function Story({ cards, ctaLabel, onCta, onClose, onCardView, onComplete 
 
         {card.title && (
           <h2
-            className={`story-rise font-display mt-2 text-title-lg font-bold leading-tight ${fg}`}
+            className={`story-rise font-display mt-2 text-[30px] font-bold leading-tight tracking-[-0.02em] ${fg}`}
             style={{ animationDelay: '120ms' }}
           >
             {card.title}
@@ -213,7 +213,7 @@ export function Story({ cards, ctaLabel, onCta, onClose, onCardView, onComplete 
 
         {card.label && (
           <p
-            className={`story-rise mt-1.5 text-body font-semibold ${fgMuted}`}
+            className={`story-rise mt-1.5 text-[15px] font-semibold ${fgMuted}`}
             style={{ animationDelay: '180ms' }}
           >
             {card.label}
@@ -222,7 +222,7 @@ export function Story({ cards, ctaLabel, onCta, onClose, onCardView, onComplete 
 
         {card.body && (
           <p
-            className={`story-rise mt-4 max-w-[19rem] text-body leading-relaxed ${fgMuted}`}
+            className={`story-rise mt-4 max-w-[19rem] text-[14.5px] leading-relaxed ${fgMuted}`}
             style={{ animationDelay: '240ms' }}
           >
             {card.body}
@@ -237,9 +237,9 @@ export function Story({ cards, ctaLabel, onCta, onClose, onCardView, onComplete 
                 className="story-rise flex items-center justify-between gap-3 text-left"
                 style={{ animationDelay: `${340 + i * 90}ms` }}
               >
-                <span className={`text-body line-through ${fgMuted}`}>{swap.before}</span>
+                <span className={`text-[13.5px] line-through ${fgMuted}`}>{swap.before}</span>
                 <ArrowRight className={`h-3.5 w-3.5 shrink-0 ${fgMuted}`} strokeWidth={2.2} aria-hidden="true" />
-                <span className={`text-body font-bold ${fg}`}>{swap.after}</span>
+                <span className={`text-[14px] font-bold ${fg}`}>{swap.after}</span>
               </div>
             ))}
           </div>
@@ -263,7 +263,7 @@ export function Story({ cards, ctaLabel, onCta, onClose, onCardView, onComplete 
             {ctaLabel}
           </Button>
         ) : (
-          <p className={`text-center text-caption ${fgMuted}`} aria-hidden="true">
+          <p className={`text-center text-[12px] ${fgMuted}`} aria-hidden="true">
             Tap to continue
           </p>
         )}

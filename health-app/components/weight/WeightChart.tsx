@@ -10,7 +10,7 @@ export function WeightChart({ logs }: { logs: WeightLog[] }) {
   if (logs.length === 0) {
     return (
       <div className="flex h-[200px] w-full items-center justify-center rounded-card border border-dashed border-hairline">
-        <p className="text-body text-ink-2">No entries yet</p>
+        <p className="text-sm text-ink-2">No entries yet</p>
       </div>
     )
   }
@@ -53,7 +53,7 @@ export function WeightChart({ logs }: { logs: WeightLog[] }) {
               if (!active || !payload?.length) return null
               const d = payload[0]?.payload as { date: string; weight: number }
               return (
-                <div className="rounded-control border border-hairline bg-surface px-3 py-2 shadow-float text-caption">
+                <div className="rounded-control border border-hairline bg-surface px-3 py-2 shadow-float text-xs">
                   <p className="font-semibold text-ink-2">{format(new Date(d.date), 'MMM d, yyyy')}</p>
                   <p className="font-bold text-good tabular-nums">{d.weight} kg</p>
                 </div>
