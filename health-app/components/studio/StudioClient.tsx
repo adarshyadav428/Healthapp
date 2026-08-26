@@ -13,6 +13,7 @@ import { Story } from '../story/Story'
 import type { StoryCard } from '../story/types'
 import {
   buildShareCardOptions, buildDayCardData, drawShareCard, drawDayCard, MAX_ITEM_LINES,
+  resolveFonts, ensureNumeralFont,
   type ShareTopic, type ShareFormat, type DayCardLog,
 } from '../../lib/shareCard'
 import {
@@ -33,20 +34,20 @@ function ShareCardCell({ topic, format }: { topic: ShareTopic | 'day'; format: S
   useEffect(() => {
     if (!ref.current) return
     let cancelled = false
-    document.fonts.ready.then(() => {
+    document.fonts.ready.then(async () => {
       if (cancelled || !ref.current) return
-      const root = getComputedStyle(document.documentElement)
-      const fonts = {
-        display: root.getPropertyValue('--font-display').trim() || 'Inter Tight, sans-serif',
-        sans: root.getPropertyValue('--font-sans').trim() || 'Inter, sans-serif',
-      }
+      const fonts = resolveFonts()
+      const numeralFamily = await ensureNumeralFont(fonts.numeral)
+      if (cancelled || !ref.current) return
       if (topic === 'day') {
         const day = buildDayCardData({ ...SAMPLE_DAY_INPUT, maxItemLines: MAX_ITEM_LINES[format] })
-        if (day) drawDayCard(ref.current, day, fonts, { format })
+        if (day) drawDayCard(ref.current, day, fonts, { format, numeralFamily, firstName: 'Adarsh' })
         return
       }
       const option = SAMPLE_OPTIONS.find((o) => o.topic === topic)
-      if (option) drawShareCard(ref.current, option.data, fonts, { format })
+      if (option) {
+        drawShareCard(ref.current, option.data, fonts, { format, numeralFamily, firstName: 'Adarsh' })
+      }
     })
     return () => { cancelled = true }
   }, [topic, format])

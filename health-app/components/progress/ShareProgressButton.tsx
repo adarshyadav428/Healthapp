@@ -7,6 +7,7 @@ import {
   drawShareCard,
   resolveFonts,
   shareProgressCard,
+  ensureNumeralFont,
   kgLostFrom,
   type ShareDeficit,
   type ShareFormat,
@@ -29,6 +30,8 @@ type Props = {
    * component shows what it was given and gates nothing of its own.
    */
   deficits?: ShareDeficit[]
+  /** Byline on the card. Null for anonymous accounts — the line is then absent. */
+  firstName?: string | null
 }
 
 const FORMAT_OPTIONS: { value: ShareFormat; label: string }[] = [
@@ -56,6 +59,7 @@ export function ShareProgressButton({
   startWeightKg,
   currentWeightKg,
   deficits = NO_DEFICITS,
+  firstName,
 }: Props) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -86,17 +90,22 @@ export function ShareProgressButton({
 
   // Redraw the preview whenever the choice changes, so what the user sees is
   // literally the file the share sheet is about to receive.
+  // The preview is the file the share sheet will deliver, so it has to render
+  // with the same numeral face — and canvas never downloads a font on its own.
   useEffect(() => {
     if (!open || !selected) return
     let cancelled = false
-    document.fonts.ready.then(() => {
+    ;(async () => {
+      const fonts = resolveFonts()
+      const numeralFamily = await ensureNumeralFont(fonts.numeral)
+      await document.fonts.ready
       if (cancelled || !previewRef.current) return
-      drawShareCard(previewRef.current, selected.data, resolveFonts(), { format })
-    })
+      drawShareCard(previewRef.current, selected.data, fonts, { format, numeralFamily, firstName })
+    })()
     return () => {
       cancelled = true
     }
-  }, [open, selected, format])
+  }, [open, selected, format, firstName])
 
   if (options.length === 0) return null
 
@@ -104,7 +113,7 @@ export function ShareProgressButton({
     if (busy || !selected) return
     setBusy(true)
     try {
-      const method = await shareProgressCard(selected.data, { format })
+      const method = await shareProgressCard(selected.data, { format, firstName })
       captureEvent(EVENTS.PROGRESS_CARD_SHARED, {
         method,
         topic: selected.topic,

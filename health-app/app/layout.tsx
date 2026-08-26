@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Inter_Tight } from 'next/font/google'
+import { Inter, Inter_Tight, Instrument_Serif } from 'next/font/google'
 import './globals.css'
 import Providers from './providers'
 
@@ -15,6 +15,28 @@ const interTight = Inter_Tight({
   subsets: ['latin'],
   variable: '--font-display',
   display: 'swap',
+})
+
+/**
+ * The share card's hero numeral — and NOTHING else in the app.
+ *
+ * The growth doctrine bans extra web fonts because these users are on metered
+ * connections. This is the one sanctioned exception, and it only holds because
+ * of `preload: false` plus the fact that no DOM node ever uses this family:
+ * nothing requests the file until `lib/shareCard.ts` explicitly calls
+ * `document.fonts.load()` when a share sheet opens. A user who never shares
+ * pays zero bytes for it.
+ *
+ * Do not reference `--font-numeral` from a component or a stylesheet. The
+ * moment something in the DOM uses it, it becomes a render-blocking download
+ * on every page and the exception stops being an exception.
+ */
+const instrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-numeral',
+  display: 'swap',
+  preload: false,
 })
 
 export const metadata: Metadata = {
@@ -57,7 +79,7 @@ export default function RootLayout({
   // suppressHydrationWarning: next-themes stamps the theme class on <html>
   // before hydration, which React would otherwise flag as a mismatch.
   return (
-    <html lang="en" suppressHydrationWarning className={`h-full ${inter.variable} ${interTight.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`h-full ${inter.variable} ${interTight.variable} ${instrumentSerif.variable}`}>
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>

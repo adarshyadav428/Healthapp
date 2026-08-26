@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildShareCardOptions, buildDayCardData, kgLostFrom, MAX_ITEM_LINES, type ShareCardInput, type DayCardLog } from '../lib/shareCard'
+import { buildShareCardOptions, buildDayCardData, kgLostFrom, firstNameFrom, MAX_ITEM_LINES, type ShareCardInput, type DayCardLog } from '../lib/shareCard'
 
 const NOTHING: ShareCardInput = { streakDays: 0, kgLost: null, deficit: null }
 const input = (over: Partial<ShareCardInput> = {}): ShareCardInput => ({ ...NOTHING, ...over })
@@ -63,8 +63,8 @@ describe('buildShareCardOptions', () => {
   it('leads the weight card with the kilos and carries the streak underneath', () => {
     const [weight] = buildShareCardOptions(input({ kgLost: 3.24, streakDays: 12 }))
     expect(weight.data).toEqual({
-      hero: { value: '3.2 kg', label: 'down since I started' },
-      subline: '12 day logging streak',
+      hero: { value: '3.2', unit: 'kg', label: 'down since I started' },
+      subline: '12-day logging streak',
     })
   })
 
@@ -76,14 +76,17 @@ describe('buildShareCardOptions', () => {
   it('leads the streak card with the day count and the loss underneath', () => {
     const [streak] = buildShareCardOptions(input({ streakDays: 12, kgLost: 0.4 }))
     expect(streak.data).toEqual({
-      hero: { value: '12', label: 'day streak' },
-      subline: '▼ 0.4 kg down since I started',
+      hero: { value: '12', unit: 'days', label: 'logged in a row' },
+      subline: '0.4 kg down since I started',
     })
   })
 
   it('streak card has no subline with no weight data', () => {
     const [streak] = buildShareCardOptions(input({ streakDays: 5 }))
-    expect(streak.data).toEqual({ hero: { value: '5', label: 'day streak' }, subline: null })
+    expect(streak.data).toEqual({
+      hero: { value: '5', unit: 'days', label: 'logged in a row' },
+      subline: null,
+    })
   })
 
   // CLAUDE.md: anything comparing a day to a benchmark must say which benchmark.
@@ -92,7 +95,8 @@ describe('buildShareCardOptions', () => {
     const [deficit] = buildShareCardOptions(
       input({ deficit: { kcal: 3240, period: 'week', daysLogged: 6, fatKg: 0.42 } })
     )
-    expect(deficit.data.hero.label).toBe('kcal under maintenance')
+    expect(deficit.data.hero.label).toBe('under maintenance')
+    expect(deficit.data.hero.unit).toBe('kcal')
     expect(deficit.data.hero.value).toBe('3,240')
     expect(deficit.data.subline).toBe('This week · 6 days logged · 0.42 kg of fat')
   })
@@ -129,12 +133,31 @@ describe('buildShareCardOptions', () => {
     const [streak] = buildShareCardOptions(
       input({ streakDays: 20, kgLost: 0.4, sinceLabel: 'in August' })
     )
-    expect(streak.data.subline).toBe('▼ 0.4 kg down in August')
+    expect(streak.data.subline).toBe('0.4 kg down in August')
   })
 
   it('defaults to the lifetime wording when no period is named', () => {
     const [weight] = buildShareCardOptions(input({ kgLost: 1.8 }))
     expect(weight.data.hero.label).toBe('down since I started')
+  })
+
+  // The unit is drawn in a different face, weight and colour from the numeral,
+  // so it has to arrive as its own field — "8.0 kg" as one flat string is what
+  // made the old card look unconsidered.
+  it('splits the unit out of the numeral on every topic', () => {
+    const options = buildShareCardOptions(
+      input({ kgLost: 3, streakDays: 12, deficit: { kcal: 3240, period: 'week', daysLogged: 6, fatKg: 0.42 } })
+    )
+    expect(options.map((o) => [o.topic, o.data.hero.value, o.data.hero.unit])).toEqual([
+      ['weight', '3.0', 'kg'],
+      ['streak', '12', 'days'],
+      ['deficit', '3,240', 'kcal'],
+    ])
+  })
+
+  it('singularises a one-day streak unit', () => {
+    const [streak] = buildShareCardOptions(input({ streakDays: 1 }))
+    expect(streak.data.hero.unit).toBe('day')
   })
 
   it('gives every option a chooser label', () => {
@@ -256,5 +279,30 @@ describe('buildDayCardData', () => {
     const shown = square.meals.reduce((s, m) => s + m.items.length, 0)
     const hidden = square.meals.reduce((s, m) => s + m.hiddenItems, 0)
     expect(shown + hidden).toBe(20)
+  })
+})
+
+describe('firstNameFrom', () => {
+  it('takes the first token of a full name', () => {
+    expect(firstNameFrom('Adarsh Yadav')).toBe('Adarsh')
+    expect(firstNameFrom('  Priya   Sharma ')).toBe('Priya')
+  })
+
+  it('passes a single name through', () => {
+    expect(firstNameFrom('Adarsh')).toBe('Adarsh')
+  })
+
+  // display_name is nullable — anonymous accounts (migration 026) have none,
+  // and the card omits the byline entirely rather than drawing a blank line.
+  it('returns null when there is no name to show', () => {
+    expect(firstNameFrom(null)).toBeNull()
+    expect(firstNameFrom(undefined)).toBeNull()
+    expect(firstNameFrom('')).toBeNull()
+    expect(firstNameFrom('   ')).toBeNull()
+  })
+
+  // A byline that wraps to two lines would break the card's vertical rhythm.
+  it('clamps a very long single name rather than letting it wrap', () => {
+    expect(firstNameFrom('Venkatanarasimharajuvaripeta')).toHaveLength(16)
   })
 })
