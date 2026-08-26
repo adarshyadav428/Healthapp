@@ -200,6 +200,28 @@ actively seeding.
 - **All five gates green before declaring done.** Never report a change as working on the strength of a
   successful build alone.
 
+## Deploying — the rules that cost a production outage
+
+All three were learned on **2026-08-26**, in one afternoon, on the live site.
+
+- **Never delete a Vercel deployment.** The custom domain is *assigned* to a specific deployment, and
+  deleting it does not fall back to the previous build — it leaves `www.getinshape.co.in` serving
+  Vercel's `DEPLOYMENT_NOT_FOUND` 404. Redeploying does **not** repair this: a redeploy is a new
+  deployment with a new URL, and nothing reattaches the domain. The fix, and the *only* way to roll
+  back, is **Promote to Production** on a known-good deployment (Deployments → the row's `…` menu).
+  Rolling back is a promote, never a delete.
+- **`main` has no branch protection, so merging a PR ships to production immediately.** There is no
+  gate, no required check, nothing to catch a wrong click. Merge from the GitHub UI only after the
+  preview has been looked at, and check the PR *number and title* first — with two PRs open, #31 was
+  merged when #30 was meant, which put the kelp rebrand live and needed a revert (#32) plus a Vercel
+  promote to undo. `gh pr merge --auto` is worse than useless here: with no protection it merges
+  instantly rather than waiting for Vercel.
+- **A long-lived branch carries everything on it, not just the commit you want.** `feat/kelp-tokens`
+  held a colour rebrand *and* several wanted features, so no build from it could ship one without the
+  other. To land one commit from such a branch, cherry-pick it onto a branch off `main` and PR that —
+  and drop `public/sw.js` from the cherry-pick, since its precache manifest lists chunk hashes from
+  the *source* branch's build and would point the service worker at files `main` never built.
+
 ## Behavioral / workflow principles
 
 - **State assumptions before coding.** Surface ambiguity rather than picking silently — most rules in
