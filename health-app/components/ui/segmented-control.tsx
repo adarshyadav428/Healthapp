@@ -40,7 +40,7 @@ export function SegmentedControl<T extends string>({
             type="button"
             onClick={() => onChange(opt.value)}
             className={cn(
-              'flex-1 rounded-control px-3 py-1.5 text-body font-semibold tap-scale transition-colors',
+              'flex-1 rounded-[0.625rem] px-3 py-1.5 text-sm font-semibold tap-scale transition-colors',
               active
                 ? 'bg-surface text-brand-ink shadow-rest'
                 : 'text-ink-2 hover:text-ink'

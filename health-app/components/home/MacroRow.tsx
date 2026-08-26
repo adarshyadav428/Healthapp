@@ -1,7 +1,3 @@
-'use client'
-
-import { useCountUp } from '../../hooks/useCountUp'
-
 interface MacroItemProps {
   label: string
   color: string
@@ -11,16 +7,12 @@ interface MacroItemProps {
 
 function MacroItem({ label, color, eaten, target }: MacroItemProps) {
   const pct = target > 0 ? Math.min(eaten / target, 1) : 0
-  // The bar below already animates its width over 700ms; the number above it
-  // did not. Only the eaten half moves — the target is a fixed reference, and
-  // counting it up would imply the goal itself was changing.
-  const shownEaten = useCountUp(Math.round(eaten), 700)
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-baseline justify-between">
-        <span className="text-micro font-medium uppercase tracking-caps text-ink-3">{label}</span>
-        <span className="text-caption font-medium text-ink-2 tabular-nums">
-          {shownEaten} / {Math.round(target)}g
+        <span className="text-[10px] font-medium uppercase tracking-[.1em] text-ink-3">{label}</span>
+        <span className="text-[11.5px] font-medium text-ink-2 tabular-nums">
+          {Math.round(eaten)} / {Math.round(target)}g
         </span>
       </div>
       <div className="h-1 rounded-full overflow-hidden bg-track">

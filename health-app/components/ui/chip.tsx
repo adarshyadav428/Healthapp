@@ -14,8 +14,8 @@ const chipVariants = cva(
         danger:  'bg-danger-soft text-danger',
       },
       size: {
-        sm: 'px-2.5 py-0.5 text-micro',
-        md: 'px-3 py-1 text-caption',
+        sm: 'px-2.5 py-0.5 text-[11px]',
+        md: 'px-3 py-1 text-xs',
       },
     },
     defaultVariants: { tone: 'neutral', size: 'md' },

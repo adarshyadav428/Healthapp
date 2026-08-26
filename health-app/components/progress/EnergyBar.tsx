@@ -62,19 +62,19 @@ export function EnergyBar({
       </div>
 
       <div className="mt-2 flex items-baseline justify-between gap-2">
-        <p className="text-micro text-ink-2">
+        <p className="text-[11px] text-ink-2">
           Ate <span className="font-semibold tabular-nums text-ink">{Math.round(eaten).toLocaleString('en-IN')}</span>
           {' '}of{' '}
           <span className="font-semibold tabular-nums text-ink">{Math.round(maintenance).toLocaleString('en-IN')}</span> kcal
         </p>
         <p
-          className="text-micro font-bold tabular-nums"
+          className="text-[11px] font-bold tabular-nums"
           style={{ color: under ? 'var(--good)' : 'var(--bad)' }}
         >
           {Math.abs(gap).toLocaleString('en-IN')} kcal {under ? 'below' : 'above'}
         </p>
       </div>
-      {label && <p className="mt-1 text-micro text-ink-3">{label}</p>}
+      {label && <p className="mt-1 text-[10.5px] text-ink-3">{label}</p>}
     </div>
   )
 }

@@ -184,12 +184,12 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
       <div className="flex-1 overflow-y-auto px-4 pb-32">
         {/* Hero card */}
         <div className="relative rounded-sheet overflow-hidden h-44 mb-5 bg-brand-soft">
-          <div className="absolute inset-0 flex items-center justify-center text-hero-lg opacity-90">
+          <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-90">
             {emoji}
           </div>
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent px-4 py-3">
-            <p className="text-white text-title-sm font-bold leading-tight">{food.name}</p>
-            {food.brand && <p className="text-white/80 text-caption font-medium">{food.brand}</p>}
+            <p className="text-white text-lg font-bold leading-tight">{food.name}</p>
+            {food.brand && <p className="text-white/80 text-xs font-medium">{food.brand}</p>}
           </div>
         </div>
 
@@ -197,7 +197,7 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
         <div className="rounded-card bg-surface border border-hairline p-3 mb-6">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <p className="text-caption text-ink-2 font-medium mb-1.5 px-1">Quantity</p>
+              <p className="text-xs text-ink-2 font-medium mb-1.5 px-1">Quantity</p>
               {/* Steppers so the common nudge (one more roti, half a katori
                   less) costs a tap instead of the number pad. */}
               <div className="flex h-12 items-center rounded-control bg-surface-2">
@@ -221,7 +221,7 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
                   onBlur={onQuantityBlur}
                   onFocus={(e) => e.target.select()}
                   placeholder="1"
-                  className="h-12 min-w-0 flex-1 bg-transparent px-1 text-center text-title-sm font-bold text-ink outline-none focus:ring-[3px] focus:ring-brand-ring rounded-control transition-all"
+                  className="h-12 min-w-0 flex-1 bg-transparent px-1 text-center text-lg font-bold text-ink outline-none focus:ring-[3px] focus:ring-brand-ring rounded-control transition-all"
                 />
                 <button
                   type="button"
@@ -235,13 +235,13 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
               </div>
             </div>
             <div>
-              <p className="text-caption text-ink-2 font-medium mb-1.5 px-1">Measure</p>
+              <p className="text-xs text-ink-2 font-medium mb-1.5 px-1">Measure</p>
               <button
                 type="button"
                 onClick={() => setShowUnitPicker(true)}
                 className="w-full h-12 rounded-control bg-surface-2 px-3 flex items-center justify-between text-left transition-all hover:bg-hairline"
               >
-                <span className="text-body-lg font-bold text-ink truncate">{unit.label}</span>
+                <span className="text-base font-bold text-ink truncate">{unit.label}</span>
                 <ChevronDown className="h-4 w-4 text-ink-2 flex-shrink-0 ml-1" />
               </button>
             </div>
@@ -249,18 +249,18 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
         </div>
 
         {/* Macronutrients Breakdown */}
-        <p className="font-display text-body-lg font-bold text-ink mb-3 px-1">Macronutrients Breakdown</p>
+        <p className="font-display text-base font-bold text-ink mb-3 px-1">Macronutrients Breakdown</p>
 
         <div className="rounded-card bg-surface border border-hairline p-4 mb-5">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <p className="text-caption text-ink-2 font-medium">Calories</p>
-              <p className="font-display text-title-lg font-bold text-ink mt-0.5 tabular-nums">
-                {nutrition.kcal} <span className="text-body-lg font-bold text-ink-2">Cal</span>
+              <p className="text-xs text-ink-2 font-medium">Calories</p>
+              <p className="font-display text-3xl font-bold text-ink mt-0.5 tabular-nums">
+                {nutrition.kcal} <span className="text-base font-bold text-ink-2">Cal</span>
               </p>
             </div>
             <div className="bg-surface-2 rounded-control px-3 py-1.5">
-              <p className="text-caption font-bold text-ink tabular-nums">Net wt: {Math.round(grams)} g</p>
+              <p className="text-xs font-bold text-ink tabular-nums">Net wt: {Math.round(grams)} g</p>
             </div>
           </div>
 
@@ -277,7 +277,7 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
         </div>
 
         {/* Meal selector */}
-        <p className="font-display text-body-lg font-bold text-ink mb-3 px-1">Meal</p>
+        <p className="font-display text-base font-bold text-ink mb-3 px-1">Meal</p>
         <div className="grid grid-cols-4 gap-2 mb-4">
           {MEAL_OPTIONS.map((m) => (
             <button
@@ -290,8 +290,8 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
                   : 'bg-surface border-hairline text-ink-2 hover:border-brand-ring'
               }`}
             >
-              <span className="text-title-sm leading-none">{m.emoji}</span>
-              <span className="text-micro font-bold">{m.label}</span>
+              <span className="text-lg leading-none">{m.emoji}</span>
+              <span className="text-[11px] font-bold">{m.label}</span>
             </button>
           ))}
         </div>
@@ -299,10 +299,10 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
         {/* Where — optional. Left null unless tapped: the Trends insight compares
             days that have a context against days that don't, so a guessed value
             is worse than no value. Tapping the selected chip clears it again. */}
-        <p className="font-display text-body-lg font-bold text-ink mb-1 px-1">
-          Where? <span className="text-caption font-normal text-ink-2">Optional</span>
+        <p className="font-display text-base font-bold text-ink mb-1 px-1">
+          Where? <span className="text-xs font-normal text-ink-2">Optional</span>
         </p>
-        <p className="text-caption text-ink-2 mb-3 px-1">Helps spot why some weeks run heavier.</p>
+        <p className="text-xs text-ink-2 mb-3 px-1">Helps spot why some weeks run heavier.</p>
         <div className="grid grid-cols-4 gap-2 mb-4">
           {MEAL_CONTEXTS.map((c) => {
             const meta = MEAL_CONTEXT_LABELS[c]
@@ -319,8 +319,8 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
                     : 'bg-surface border-hairline text-ink-2 hover:border-brand-ring'
                 }`}
               >
-                <span className="text-title-sm leading-none">{meta.emoji}</span>
-                <span className="text-micro font-bold">{meta.label}</span>
+                <span className="text-lg leading-none">{meta.emoji}</span>
+                <span className="text-[11px] font-bold">{meta.label}</span>
               </button>
             )
           })}
@@ -333,7 +333,7 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
           type="button"
           onClick={handleSubmit}
           disabled={isSubmitting || grams <= 0}
-          className="w-full rounded-control bg-brand hover:opacity-90 active:scale-[.98] py-4 text-body-lg font-bold text-white transition-all shadow-float disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full rounded-control bg-brand hover:opacity-90 active:scale-[.98] py-4 text-base font-bold text-white transition-all shadow-float disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isSubmitting ? (
             <>
@@ -365,9 +365,9 @@ function MacroRow({ icon, color, label, value }: { icon: React.ReactNode; color:
     <div className="flex items-center justify-between py-3">
       <div className="flex items-center gap-3">
         <span style={{ color }}>{icon}</span>
-        <span className="text-body font-bold text-ink">{label}</span>
+        <span className="text-sm font-bold text-ink">{label}</span>
       </div>
-      <span className="text-body font-bold text-ink tabular-nums">{value} g</span>
+      <span className="text-sm font-bold text-ink tabular-nums">{value} g</span>
     </div>
   )
 }

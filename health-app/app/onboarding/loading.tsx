@@ -5,7 +5,7 @@ export default function OnboardingLoading() {
         {/* Logo placeholder */}
         <div className="flex flex-col items-center gap-2 mb-8">
           <div className="h-10 w-10 rounded-card bg-surface-2 animate-shimmer" />
-          <div className="h-6 w-24 rounded-full bg-surface-2 animate-shimmer" />
+          <div className="h-6 w-24 rounded-lg bg-surface-2 animate-shimmer" />
         </div>
 
         {/* Progress bar */}
@@ -14,8 +14,8 @@ export default function OnboardingLoading() {
         {/* Card */}
         <div className="rounded-sheet border border-hairline bg-surface p-7 shadow-sm space-y-4">
           <div className="h-6 w-48 rounded-control bg-surface-2 animate-shimmer" />
-          <div className="h-4 w-full rounded-full bg-surface-2 animate-shimmer" />
-          <div className="h-4 w-3/4 rounded-full bg-surface-2 animate-shimmer" />
+          <div className="h-4 w-full rounded-lg bg-surface-2 animate-shimmer" />
+          <div className="h-4 w-3/4 rounded-lg bg-surface-2 animate-shimmer" />
           <div className="h-12 w-full rounded-card bg-surface-2 animate-shimmer mt-4" />
           <div className="h-12 w-full rounded-card bg-surface-2 animate-shimmer" />
           <div className="h-12 w-full rounded-card bg-surface-2 animate-shimmer mt-2" />

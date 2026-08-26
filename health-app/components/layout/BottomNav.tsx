@@ -31,7 +31,7 @@ function NavTab({ href, icon: Icon, label, active }: {
       className={`flex w-[60px] flex-col items-center gap-[3px] tap-scale ${active ? 'text-brand-ink' : 'text-ink-3'}`}
     >
       <Icon className="h-[23px] w-[23px]" strokeWidth={active ? 2 : 1.75} />
-      <span className={`text-micro ${active ? 'font-semibold' : 'font-medium'}`}>{label}</span>
+      <span className={`text-[10px] ${active ? 'font-semibold' : 'font-medium'}`}>{label}</span>
     </Link>
   )
 }
@@ -72,20 +72,16 @@ export function BottomNav() {
             <NavTab key={tab.href} {...tab} active={pathname === tab.href} />
           ))}
 
-          {/* Center FAB — ink, auto-inverting. Ember is reserved for data
-              (the calorie ring, the streak flame, the over-goal amount); the
-              chrome is ink. This was the last gradient left in the tab bar,
-              which docs/design-system.md has specified as ink since the Ember
-              Air pass began — the migration, not a new direction. */}
+          {/* Center camera FAB — ember gradient */}
           <div className="flex w-[60px] items-center justify-center">
             <button
               type="button"
               onClick={() => setShowCamera(true)}
               aria-label="Scan food with camera"
-              className="-mt-6 flex h-[54px] w-[54px] items-center justify-center rounded-full bg-ink tap-scale"
+              className="-mt-6 flex h-[54px] w-[54px] items-center justify-center rounded-full bg-cta-grad tap-scale"
               style={{ boxShadow: 'var(--fab-shadow)' }}
             >
-              <Camera className="h-[23px] w-[23px] text-canvas" strokeWidth={2} />
+              <Camera className="h-[23px] w-[23px] text-white" strokeWidth={2} />
             </button>
           </div>
 

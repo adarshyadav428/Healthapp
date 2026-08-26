@@ -35,29 +35,29 @@ export default function PricingPage() {
       <div className="mx-auto w-full max-w-2xl">
         <div className="mb-6">
           <Link href="/" className="mb-8 flex items-center gap-2">
-            <span className="text-title">🥗</span>
-            <span className="font-display text-title-sm font-bold text-brand-ink">
+            <span className="text-2xl">🥗</span>
+            <span className="font-display text-xl font-bold text-brand-ink">
               GetInShape
             </span>
           </Link>
-          <h1 className="font-display text-title-lg font-bold text-ink">Pricing</h1>
-          <p className="mt-1 text-body text-ink-2">
+          <h1 className="font-display text-3xl font-bold text-ink">Pricing</h1>
+          <p className="mt-1 text-sm text-ink-2">
             All prices in Indian Rupees (INR), inclusive of applicable taxes.
           </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-sheet border border-hairline bg-surface p-6 shadow-rest">
-            <h2 className="font-display text-title-sm font-bold text-ink">Free</h2>
-            <p className="font-display mt-1 text-title-lg font-bold text-ink tabular-nums">
+            <h2 className="font-display text-lg font-bold text-ink">Free</h2>
+            <p className="font-display mt-1 text-3xl font-bold text-ink tabular-nums">
               ₹0
             </p>
-            <p className="mt-1 text-caption text-ink-2">
+            <p className="mt-1 text-xs text-ink-2">
               Free forever · no card required
             </p>
             <ul className="mt-4 space-y-2">
               {FREE_FEATURES.map((f) => (
-                <li key={f} className="flex gap-2 text-body text-ink-2">
+                <li key={f} className="flex gap-2 text-sm text-ink-2">
                   <Check
                     className="mt-0.5 h-4 w-4 flex-shrink-0 text-good"
                     strokeWidth={2.5}
@@ -69,17 +69,17 @@ export default function PricingPage() {
           </div>
 
           <div className="rounded-sheet border border-brand-ring bg-surface p-6 shadow-float">
-            <h2 className="font-display text-title-sm font-bold text-ink">Pro</h2>
-            <p className="font-display mt-1 text-title-lg font-bold text-ink tabular-nums">
+            <h2 className="font-display text-lg font-bold text-ink">Pro</h2>
+            <p className="font-display mt-1 text-3xl font-bold text-ink tabular-nums">
               {PRICE_MONTHLY}
-              <span className="text-body-lg font-semibold text-ink-2">/month</span>
+              <span className="text-base font-semibold text-ink-2">/month</span>
             </p>
-            <p className="mt-1 text-caption text-ink-2">
+            <p className="mt-1 text-xs text-ink-2">
               or {PRICE_ANNUAL}/year · cancel anytime
             </p>
             <ul className="mt-4 space-y-2">
               {PRO_FEATURES.map((f) => (
-                <li key={f} className="flex gap-2 text-body text-ink-2">
+                <li key={f} className="flex gap-2 text-sm text-ink-2">
                   <Check
                     className="mt-0.5 h-4 w-4 flex-shrink-0 text-good"
                     strokeWidth={2.5}
@@ -90,7 +90,7 @@ export default function PricingPage() {
             </ul>
             <Link
               href="/upgrade"
-              className="mt-6 block rounded-full bg-brand px-6 py-3 text-center text-body font-bold text-white shadow-rest transition-opacity hover:opacity-90"
+              className="mt-6 block rounded-full bg-brand px-6 py-3 text-center text-sm font-bold text-white shadow-rest transition-opacity hover:opacity-90"
             >
               See plans →
             </Link>
@@ -136,7 +136,7 @@ export default function PricingPage() {
             </a>{" "}
             and installs to your home screen as an app. The Android app is
             published on Google Play under the package id{" "}
-            <span className="font-mono text-caption text-ink">
+            <span className="font-mono text-xs text-ink">
               {ANDROID_PACKAGE_ID}
             </span>
             .
@@ -158,7 +158,7 @@ export default function PricingPage() {
           </Section>
         </div>
 
-        <p className="mt-6 text-center text-caption text-ink-2">
+        <p className="mt-6 text-center text-xs text-ink-2">
           <Link href="/terms" className="hover:text-ink">
             Terms
           </Link>
@@ -189,10 +189,10 @@ function Section({
 }) {
   return (
     <div>
-      <h2 className="font-display mb-2 text-body-lg font-bold text-ink">
+      <h2 className="font-display mb-2 text-base font-bold text-ink">
         {title}
       </h2>
-      <p className="text-body leading-relaxed text-ink-2">{children}</p>
+      <p className="text-sm leading-relaxed text-ink-2">{children}</p>
     </div>
   );
 }

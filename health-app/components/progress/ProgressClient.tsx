@@ -148,21 +148,15 @@ export function ProgressClient({
   // ignore its patterns.
   const contextLine = useMemo(() => contextInsightLine(contextInsight(logs)), [logs])
 
-  // Deficit rows for the share chooser. `monthView` is null for free accounts —
-  // the gate is server-side (app/progress/page.tsx), so nothing here decides it.
-  // A fallback period is dropped rather than shared: the card says "This week",
-  // and a card that says "This week" about last week is a lie, not a rounding.
-  const shareDeficits = useMemo(
+  // The katoris on the share card. Averages rather than window totals, because
+  // the thali is meant to read as "a typical day of mine" — which is what
+  // someone sharing it is actually claiming.
+  const shareMacros = useMemo(
     () =>
-      [weekView, monthView]
-        .filter((v): v is DeficitPeriodView => v != null && !v.isFallback)
-        .map((v) => ({
-          kcal: v.summary.total_deficit,
-          period: v.kind,
-          daysLogged: v.summary.days_logged,
-          fatKg: v.summary.fat_loss_achieved_kg,
-        })),
-    [weekView, monthView]
+      avgProtein + avgCarbs + avgFat > 0
+        ? { proteinG: avgProtein, carbsG: avgCarbs, fatG: avgFat }
+        : null,
+    [avgProtein, avgCarbs, avgFat]
   )
   const cfg = METRIC_CONFIG[metric]
 
@@ -208,23 +202,23 @@ export function ProgressClient({
     <>
       {/* ── Header ── */}
       <div className="pt-2">
-        <p className="text-caption font-medium text-ink-3">Your trends over time</p>
-        <h1 className="font-display mt-[3px] text-title font-bold text-ink">Trends</h1>
+        <p className="text-[13px] font-medium text-ink-3">Your trends over time</p>
+        <h1 className="font-display mt-[3px] text-[24px] font-bold tracking-[-0.02em] text-ink">Trends</h1>
       </div>
 
       {/* ── Free-tier banner ── */}
       {!isPro && (
-        <div className="mt-4 flex items-center justify-between gap-3 rounded-card p-4" style={{ backgroundColor: 'var(--brand-soft)' }}>
+        <div className="mt-4 flex items-center justify-between gap-3 rounded-[20px] p-4" style={{ backgroundColor: 'var(--brand-soft)' }}>
           <div className="flex min-w-0 items-center gap-2.5">
             <Lock className="h-4 w-4 shrink-0 text-brand-ink" />
             <div className="min-w-0">
-              <p className="text-caption font-bold text-brand-ink">Showing last 7 days</p>
-              <p className="text-micro text-brand-ink opacity-80">Pro unlocks full trends history</p>
+              <p className="text-[12.5px] font-bold text-brand-ink">Showing last 7 days</p>
+              <p className="text-[11px] text-brand-ink opacity-80">Pro unlocks full trends history</p>
             </div>
           </div>
           <Link
             href="/upgrade?reason=history"
-            className="flex shrink-0 items-center gap-1 rounded-full bg-cta-grad px-3 py-1.5 text-micro font-bold text-white tap-scale"
+            className="flex shrink-0 items-center gap-1 rounded-full bg-cta-grad px-3 py-1.5 text-[11px] font-bold text-white tap-scale"
           >
             <Crown className="h-3 w-3" /> Upgrade
           </Link>
@@ -233,21 +227,21 @@ export function ProgressClient({
 
       {/* ── Stat cards: streak + weight ── */}
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <div className="rounded-card-lg bg-surface p-5" style={AIR}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: 'var(--brand-soft)' }}>
+        <div className="rounded-[24px] bg-surface p-5" style={AIR}>
+          <div className="flex h-9 w-9 items-center justify-center rounded-[12px]" style={{ backgroundColor: 'var(--brand-soft)' }}>
             <Flame className="h-[18px] w-[18px] text-brand" strokeWidth={2} />
           </div>
-          <p className="font-display mt-3.5 text-display font-bold leading-none tabular-nums text-ink">{streak}</p>
-          <p className="mt-[5px] text-caption text-ink-3">day streak</p>
+          <p className="font-display mt-3.5 text-[34px] font-bold leading-none tabular-nums text-ink" style={{ letterSpacing: '-0.03em' }}>{streak}</p>
+          <p className="mt-[5px] text-[12px] text-ink-3">day streak</p>
         </div>
-        <div className="rounded-card-lg bg-surface p-5" style={AIR}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: 'color-mix(in srgb, var(--carbs) 15%, transparent)' }}>
+        <div className="rounded-[24px] bg-surface p-5" style={AIR}>
+          <div className="flex h-9 w-9 items-center justify-center rounded-[12px]" style={{ backgroundColor: 'color-mix(in srgb, var(--carbs) 15%, transparent)' }}>
             <Scale className="h-[18px] w-[18px]" strokeWidth={2} style={{ color: 'var(--carbs)' }} />
           </div>
-          <p className="font-display mt-3.5 text-display font-bold leading-none tabular-nums text-ink">
+          <p className="font-display mt-3.5 text-[34px] font-bold leading-none tabular-nums text-ink" style={{ letterSpacing: '-0.03em' }}>
             {formatKg(currentWeight)}
           </p>
-          <p className="mt-[5px] text-caption text-ink-3">kg current</p>
+          <p className="mt-[5px] text-[12px] text-ink-3">kg current</p>
         </div>
       </div>
 
@@ -262,9 +256,9 @@ export function ProgressClient({
 
       {/* ── Weight trend: the smoothed answer to "am I actually moving?" ── */}
       {trend.kgPerWeek !== null && (
-        <div className="mt-3 rounded-card-lg bg-surface p-5" style={AIR}>
-          <p className="text-body font-bold text-ink">Your trend</p>
-          <p className="mt-1.5 text-caption text-ink-2">
+        <div className="mt-3 rounded-[24px] bg-surface p-5" style={AIR}>
+          <p className="text-[14px] font-bold text-ink">Your trend</p>
+          <p className="mt-1.5 text-[13px] text-ink-2">
             {Math.abs(trend.kgPerWeek) < 0.05
               ? 'Holding steady over the last few weeks.'
               : <>
@@ -276,7 +270,7 @@ export function ProgressClient({
                 </>}
           </p>
           {trend.projectedDate && (
-            <p className="mt-1.5 text-caption text-ink-2">
+            <p className="mt-1.5 text-[13px] text-ink-2">
               At this rate you&apos;ll reach{' '}
               <span className="font-semibold text-ink">{formatKg(profile.target_weight_kg)} kg</span>{' '}
               around {formatGoalDate(trend.projectedDate)}.
@@ -284,7 +278,7 @@ export function ProgressClient({
           )}
           {/* The smoothing is the point — say so, or the number looks wrong
               next to a scale reading the user just took. */}
-          <p className="mt-2 text-micro text-ink-3">
+          <p className="mt-2 text-[11px] text-ink-3">
             Averaged over 4 weeks, so day-to-day water weight doesn&apos;t move it.
           </p>
         </div>
@@ -292,9 +286,9 @@ export function ProgressClient({
 
       {/* ── Badges: free and lifetime, never Pro-gated ── */}
       {contextLine && (
-        <div className="mt-3 rounded-card bg-surface p-4" style={AIR}>
-          <p className="text-micro font-semibold uppercase tracking-caps text-ink-3">Pattern</p>
-          <p className="mt-1.5 text-body text-ink">{contextLine}</p>
+        <div className="mt-3 rounded-[20px] bg-surface p-4" style={AIR}>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-3">Pattern</p>
+          <p className="mt-1.5 text-[14px] text-ink">{contextLine}</p>
         </div>
       )}
 
@@ -305,7 +299,7 @@ export function ProgressClient({
         streakDays={streak}
         startWeightKg={startWeight}
         currentWeightKg={currentWeight}
-        deficits={shareDeficits}
+        macros={shareMacros}
       />
 
       {/* The "avg kcal · goal" and "N of 7 days logged" tiles used to sit here.
@@ -326,9 +320,9 @@ export function ProgressClient({
       {exerciseLogs.length > 0 && <ExerciseSection exerciseLogs={exerciseLogs} range={range} />}
 
       {/* ── Trend chart ── */}
-      <div className="mt-3 rounded-card-lg bg-surface p-[22px]" style={AIR}>
+      <div className="mt-3 rounded-[24px] bg-surface p-[22px]" style={AIR}>
         <div className="mb-4 flex items-center justify-between">
-          <p className="text-body font-semibold text-ink">{cfg.label} trend</p>
+          <p className="text-[15px] font-semibold text-ink">{cfg.label} trend</p>
           <div className="flex gap-1 rounded-full bg-surface-2 p-0.5">
             {RANGES.map((r) => {
               const locked = !isPro && r.days > 7
@@ -336,7 +330,7 @@ export function ProgressClient({
                 <Link
                   key={r.days}
                   href="/upgrade?reason=history"
-                  className="flex items-center gap-1 rounded-full px-2.5 py-1 text-micro font-semibold text-ink-3 opacity-70"
+                  className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-ink-3 opacity-70"
                 >
                   <Lock className="h-2.5 w-2.5" /> {r.label}
                 </Link>
@@ -345,7 +339,7 @@ export function ProgressClient({
                   key={r.days}
                   type="button"
                   onClick={() => setRange(r.days)}
-                  className={`rounded-full px-2.5 py-1 text-micro font-semibold transition-all ${range === r.days ? 'bg-surface text-ink' : 'text-ink-3'}`}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${range === r.days ? 'bg-surface text-ink' : 'text-ink-3'}`}
                   style={range === r.days ? AIR : undefined}
                 >
                   {r.label}
@@ -361,7 +355,7 @@ export function ProgressClient({
               key={m}
               type="button"
               onClick={() => setMetric(m)}
-              className={`rounded-full px-3 py-1.5 text-caption font-semibold transition-all ${metric === m ? 'text-white' : 'bg-surface-2 text-ink-2'}`}
+              className={`rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition-all ${metric === m ? 'text-white' : 'bg-surface-2 text-ink-2'}`}
               style={metric === m ? { backgroundColor: METRIC_CONFIG[m].color } : undefined}
             >
               {METRIC_CONFIG[m].label}
@@ -380,16 +374,16 @@ export function ProgressClient({
           onSelect={setSelectedDate}
         />
 
-        <p className="mt-3 text-center text-micro text-ink-3">Tap a bar to view that day&apos;s food diary</p>
+        <p className="mt-3 text-center text-[11px] text-ink-3">Tap a bar to view that day&apos;s food diary</p>
       </div>
 
       {/* ── Day diary panel ── */}
       {selectedDate && user && (
-        <div className="mt-3 rounded-card-lg bg-surface p-5" style={AIR}>
+        <div className="mt-3 rounded-[24px] bg-surface p-5" style={AIR}>
           <div className="mb-3.5 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4 text-brand" />
-              <p className="text-body font-bold text-ink">
+              <p className="text-[14px] font-bold text-ink">
                 {format(parse(selectedDate, 'yyyy-MM-dd', new Date()), 'EEEE, MMM d')}
               </p>
             </div>
@@ -403,8 +397,8 @@ export function ProgressClient({
 
       {/* ── Calorie breakdown by day ── */}
       {daysLoggedCount > 0 && (
-        <div className="mt-3 rounded-card-lg bg-surface p-5" style={AIR}>
-          <p className="mb-3.5 text-caption font-semibold text-ink">Calorie breakdown by day</p>
+        <div className="mt-3 rounded-[24px] bg-surface p-5" style={AIR}>
+          <p className="mb-3.5 text-[13px] font-semibold text-ink">Calorie breakdown by day</p>
           {/* Measured against maintenance, not the eat-goal. Against the goal, the
               best day of a week — the one furthest under — rendered as a warning,
               which inverted the story the deficit card above tells. */}
@@ -418,16 +412,16 @@ export function ProgressClient({
                   key={day.date}
                   type="button"
                   onClick={() => setSelectedDate(isSelected ? null : day.date)}
-                  className={`-mx-2 flex w-full items-center gap-3 rounded-control px-2 py-1.5 transition-colors ${isSelected ? 'bg-brand-soft' : ''}`}
+                  className={`-mx-2 flex w-full items-center gap-3 rounded-[14px] px-2 py-1.5 transition-colors ${isSelected ? 'bg-brand-soft' : ''}`}
                 >
-                  <span className={`w-14 shrink-0 text-caption font-medium ${isSelected ? 'font-bold text-brand-ink' : 'text-ink-2'}`}>{day.label}</span>
+                  <span className={`w-14 shrink-0 text-[11.5px] font-medium ${isSelected ? 'font-bold text-brand-ink' : 'text-ink-2'}`}>{day.label}</span>
                   <div className="h-5 flex-1 overflow-hidden rounded-full bg-surface-2">
                     <div
                       className="h-full rounded-full transition-all"
                       style={{ width: day.kcal === 0 ? '0%' : `${pct}%`, background: isSelected ? 'var(--brand)' : barColor }}
                     />
                   </div>
-                  <span className={`w-16 shrink-0 text-right text-caption font-bold tabular-nums ${isSelected ? 'text-brand-ink' : 'text-ink'}`}>
+                  <span className={`w-16 shrink-0 text-right text-[11.5px] font-bold tabular-nums ${isSelected ? 'text-brand-ink' : 'text-ink'}`}>
                     {day.kcal > 0 ? `${day.kcal.toLocaleString()} kcal` : '—'}
                   </span>
                 </button>
@@ -435,7 +429,7 @@ export function ProgressClient({
             })}
           </div>
           {maintenanceKcal > 0 && (
-            <div className="mt-3.5 flex items-center gap-3 text-micro text-ink-3">
+            <div className="mt-3.5 flex items-center gap-3 text-[10px] text-ink-3">
               <div className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full" style={{ background: 'var(--good)' }} /> Under maintenance</div>
               <div className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full" style={{ background: 'var(--bad)' }} /> Over maintenance</div>
               <span className="ml-auto tabular-nums">{maintenanceKcal.toLocaleString('en-IN')} kcal</span>
@@ -445,9 +439,9 @@ export function ProgressClient({
       )}
 
       {/* ── Month calendar ── */}
-      <div className="mt-3 rounded-card-lg bg-surface p-[22px]" style={AIR}>
+      <div className="mt-3 rounded-[24px] bg-surface p-[22px]" style={AIR}>
         <div className="flex items-center justify-between">
-          <p className="text-body font-semibold text-ink">{cal.monthLabel}</p>
+          <p className="text-[15px] font-semibold text-ink">{cal.monthLabel}</p>
           <div className="flex gap-1">
             <button
               type="button"
@@ -482,7 +476,7 @@ export function ProgressClient({
             )
           ))}
         </div>
-        <p className="mt-4 text-caption text-ink-3">
+        <p className="mt-4 text-[12px] text-ink-3">
           <b className="font-bold text-ink">{cal.logged} of {cal.elapsed}</b> days logged this month
         </p>
       </div>
@@ -492,9 +486,9 @@ export function ProgressClient({
 
 function MacroMiniCard({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div className="rounded-card bg-surface p-3.5 text-center" style={AIR}>
-      <p className="text-body-lg font-bold tabular-nums" style={{ color }}>{value > 0 ? value : '—'}</p>
-      <p className="mt-0.5 text-micro text-ink-3">{label}</p>
+    <div className="rounded-[18px] bg-surface p-3.5 text-center" style={AIR}>
+      <p className="text-[16px] font-bold tabular-nums" style={{ color }}>{value > 0 ? value : '—'}</p>
+      <p className="mt-0.5 text-[10.5px] text-ink-3">{label}</p>
     </div>
   )
 }
@@ -516,25 +510,25 @@ function ExerciseSection({ exerciseLogs, range }: { exerciseLogs: ExerciseRow[];
   const displayed = showAll ? filtered : filtered.slice(0, 3)
 
   return (
-    <div className="mt-3 rounded-card-lg bg-surface p-5" style={AIR}>
+    <div className="mt-3 rounded-[24px] bg-surface p-5" style={AIR}>
       <div className="mb-3.5 flex items-center gap-2">
         <Dumbbell className="h-4 w-4 text-brand" />
-        <p className="text-caption font-semibold text-ink">Exercise</p>
+        <p className="text-[13px] font-semibold text-ink">Exercise</p>
       </div>
 
       <div className="mb-3.5 grid grid-cols-3 gap-2">
-        <div className="rounded-control bg-brand-soft p-2.5 text-center">
-          <p className="text-micro font-semibold text-ink-3">Sessions</p>
-          <p className="mt-0.5 text-body-lg font-bold tabular-nums text-brand-ink">{totalSessions}</p>
+        <div className="rounded-[14px] bg-brand-soft p-2.5 text-center">
+          <p className="text-[10px] font-semibold text-ink-3">Sessions</p>
+          <p className="mt-0.5 text-[16px] font-bold tabular-nums text-brand-ink">{totalSessions}</p>
         </div>
-        <div className="rounded-control p-2.5 text-center" style={{ background: 'var(--bad-soft)' }}>
-          <p className="text-micro font-semibold text-ink-3">Burned</p>
-          <p className="mt-0.5 text-body-lg font-bold tabular-nums" style={{ color: 'var(--fat)' }}>{totalCalories.toLocaleString()}</p>
-          <p className="text-micro text-ink-3">kcal</p>
+        <div className="rounded-[14px] p-2.5 text-center" style={{ background: 'var(--bad-soft)' }}>
+          <p className="text-[10px] font-semibold text-ink-3">Burned</p>
+          <p className="mt-0.5 text-[16px] font-bold tabular-nums" style={{ color: 'var(--fat)' }}>{totalCalories.toLocaleString()}</p>
+          <p className="text-[9.5px] text-ink-3">kcal</p>
         </div>
-        <div className="rounded-control p-2.5 text-center" style={{ background: 'color-mix(in srgb, var(--protein) 8%, transparent)' }}>
-          <p className="text-micro font-semibold text-ink-3">Time</p>
-          <p className="mt-0.5 text-body-lg font-bold tabular-nums" style={{ color: 'var(--protein)' }}>
+        <div className="rounded-[14px] p-2.5 text-center" style={{ background: 'color-mix(in srgb, var(--protein) 8%, transparent)' }}>
+          <p className="text-[10px] font-semibold text-ink-3">Time</p>
+          <p className="mt-0.5 text-[16px] font-bold tabular-nums" style={{ color: 'var(--protein)' }}>
             {totalMinutes >= 60 ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m` : `${totalMinutes}m`}
           </p>
         </div>
@@ -542,15 +536,15 @@ function ExerciseSection({ exerciseLogs, range }: { exerciseLogs: ExerciseRow[];
 
       <div className="space-y-1.5">
         {displayed.map((e, i) => (
-          <div key={i} className="flex items-center justify-between rounded-control bg-surface-2 px-3 py-2">
+          <div key={i} className="flex items-center justify-between rounded-[12px] bg-surface-2 px-3 py-2">
             <div className="flex min-w-0 items-center gap-2">
               <Flame className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--fat)' }} />
               <div className="min-w-0">
-                <p className="truncate text-caption font-semibold capitalize text-ink">{e.activity}</p>
-                <p className="text-micro text-ink-3">{format(parseISO(e.logged_at), 'MMM d')} · {e.duration_min} min</p>
+                <p className="truncate text-[12px] font-semibold capitalize text-ink">{e.activity}</p>
+                <p className="text-[10px] text-ink-3">{format(parseISO(e.logged_at), 'MMM d')} · {e.duration_min} min</p>
               </div>
             </div>
-            <span className="ml-2 shrink-0 text-caption font-bold tabular-nums" style={{ color: 'var(--fat)' }}>
+            <span className="ml-2 shrink-0 text-[12px] font-bold tabular-nums" style={{ color: 'var(--fat)' }}>
               {e.calories > 0 ? `${e.calories} kcal` : '—'}
             </span>
           </div>
@@ -561,7 +555,7 @@ function ExerciseSection({ exerciseLogs, range }: { exerciseLogs: ExerciseRow[];
         <button
           type="button"
           onClick={() => setShowAll((v) => !v)}
-          className="mt-2.5 w-full text-micro font-semibold text-ink-3 tap-scale"
+          className="mt-2.5 w-full text-[11px] font-semibold text-ink-3 tap-scale"
         >
           {showAll ? 'Show less' : `Show all ${filtered.length} sessions`}
         </button>

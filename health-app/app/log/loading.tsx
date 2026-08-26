@@ -3,7 +3,7 @@ export default function LogLoading() {
     <div className="min-h-screen bg-canvas pb-24">
       <div className="sticky top-0 z-40 border-b border-hairline bg-header-bg backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-md items-center justify-between px-4">
-          <div className="h-6 w-24 rounded-full bg-surface-2 animate-shimmer" />
+          <div className="h-6 w-24 rounded-lg bg-surface-2 animate-shimmer" />
           <div className="h-8 w-8 rounded-full bg-surface-2 animate-shimmer" />
         </div>
       </div>
@@ -12,7 +12,7 @@ export default function LogLoading() {
         {/* Title */}
         <div className="flex items-center justify-between">
           <div className="space-y-1.5">
-            <div className="h-7 w-28 rounded-full bg-surface-2 animate-shimmer" />
+            <div className="h-7 w-28 rounded-lg bg-surface-2 animate-shimmer" />
             <div className="h-4 w-48 rounded bg-surface-2 animate-shimmer" />
           </div>
           <div className="h-9 w-28 rounded-card bg-surface-2 animate-shimmer" />

@@ -82,9 +82,6 @@ export const EVENTS = {
   WEIGHT_MILESTONE_SHOWN: 'weight_milestone_shown',
   STREAK_MILESTONE_SHOWN: 'streak_milestone_shown',
   PROGRESS_CARD_SHARED: 'progress_card_shared',
-  /** The day's meals shared as a menu card. Distinct from the stat card above:
-   *  one is "look how far I've come", the other is "look what I ate today". */
-  DAY_CARD_SHARED: 'day_card_shared',
   TARGET_SUGGESTION_ACCEPTED: 'target_suggestion_accepted',
   TARGET_SUGGESTION_DISMISSED: 'target_suggestion_dismissed',
   // install / notification / rating prompts

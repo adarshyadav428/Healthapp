@@ -50,7 +50,7 @@ export function TrendBarChart({
               if (!active || !payload?.length) return null
               const val = payload[0]?.value as number
               return (
-                <div className="rounded-control bg-surface px-3 py-2 text-caption" style={{ boxShadow: 'var(--shadow-air)' }}>
+                <div className="rounded-control bg-surface px-3 py-2 text-xs" style={{ boxShadow: 'var(--shadow-air)' }}>
                   <p className="font-semibold text-ink-2 mb-0.5">{label}</p>
                   <p style={{ color }} className="font-bold">
                     {val > 0 ? `${val.toLocaleString()} ${unit}` : 'Not logged'}

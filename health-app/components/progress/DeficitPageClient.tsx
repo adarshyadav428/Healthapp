@@ -81,15 +81,15 @@ export function DeficitPageClient({
 
       {/* ── Hero: the plan ── */}
       <div className="rounded-sheet border border-hairline bg-surface bg-hero-wash p-4">
-        <p className="mb-3 text-micro font-bold uppercase tracking-caps text-brand-ink">Your plan</p>
+        <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-brand-ink">Your plan</p>
 
         <div className="mb-4 flex items-baseline gap-2">
-          <span className="font-display text-hero font-bold leading-none tabular-nums text-ink">
+          <span className="font-display text-5xl font-bold leading-none tabular-nums text-ink">
             {eatTarget.toLocaleString('en-IN')}
           </span>
           <div>
-            <p className="text-body font-semibold text-ink">kcal / day</p>
-            <p className="text-micro text-ink-2">to eat each day</p>
+            <p className="text-sm font-semibold text-ink">kcal / day</p>
+            <p className="text-[11px] text-ink-2">to eat each day</p>
           </div>
         </div>
 
@@ -100,14 +100,14 @@ export function DeficitPageClient({
         </div>
 
         <div className="mt-3 flex items-center justify-between">
-          <p className="text-micro text-ink-2">
+          <p className="text-[11px] text-ink-2">
             {goal === 'lose' && impliedPaceKg > 0
               ? <>At this pace: <span className="font-semibold text-brand-ink">~{impliedPaceKg} kg/week</span></>
               : goal === 'maintain'
                 ? <>Holding steady — no deficit by design.</>
                 : <>Eating above maintenance to gain.</>}
           </p>
-          <Link href="/settings" className="text-micro font-semibold text-brand-ink">Change pace →</Link>
+          <Link href="/settings" className="text-[11px] font-semibold text-brand-ink">Change pace →</Link>
         </div>
       </div>
 
@@ -117,14 +117,14 @@ export function DeficitPageClient({
       {/* ── This week ── */}
       <div className="rounded-sheet border border-hairline bg-surface p-4 shadow-rest">
         <div className="mb-3 flex items-baseline justify-between">
-          <p className="text-micro font-bold uppercase tracking-caps text-ink-3">This week</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-ink-3">This week</p>
           {s.days_logged > 0 && goal !== 'maintain' && (
-            <p className="text-caption font-bold" style={{ color: statusColor }}>{s.progress_percent}%</p>
+            <p className="text-xs font-bold" style={{ color: statusColor }}>{s.progress_percent}%</p>
           )}
         </div>
 
         {s.days_logged === 0 ? (
-          <p className="text-caption text-ink-2">
+          <p className="text-[13px] text-ink-2">
             {todayKcal != null
               ? 'Today is still in progress. Your first finished day of the week shows up here tomorrow.'
               : 'Nothing finished yet this week — log a day and it starts building here.'}
@@ -132,15 +132,15 @@ export function DeficitPageClient({
         ) : (
           <>
             <div className="mb-1 flex items-baseline gap-1.5">
-              <span className="font-display text-title-lg font-bold leading-none tabular-nums" style={{ color: statusColor }}>
+              <span className="font-display text-3xl font-bold leading-none tabular-nums" style={{ color: statusColor }}>
                 {Math.abs(s.total_deficit).toLocaleString('en-IN')}
               </span>
-              <span className="text-caption text-ink-2">
+              <span className="text-xs text-ink-2">
                 kcal {s.total_deficit >= 0 ? 'under' : 'over'} maintenance
               </span>
             </div>
             {s.total_deficit > 0 && (
-              <p className="mb-3 text-caption text-ink-2">
+              <p className="mb-3 text-[11.5px] text-ink-2">
                 = <span className="font-semibold text-ink">{Math.round(s.fat_loss_achieved_kg * 1000).toLocaleString('en-IN')} g of fat</span>
                 {' '}from {s.days_logged} finished {s.days_logged === 1 ? 'day' : 'days'}
               </p>
@@ -154,7 +154,7 @@ export function DeficitPageClient({
                     style={{ width: `${Math.min(100, s.progress_percent)}%`, background: statusColor }}
                   />
                 </div>
-                <p className="mt-1.5 text-micro text-ink-3">
+                <p className="mt-1.5 text-[10.5px] text-ink-3">
                   Measured against {Math.abs(s.prorated_target_deficit).toLocaleString('en-IN')} kcal —
                   your daily target × the {s.days_logged} {s.days_logged === 1 ? 'day' : 'days'} you logged
                   {s.days_unlogged > 0 && `, not the full week (${s.days_unlogged} not logged)`}.
@@ -196,7 +196,7 @@ export function DeficitPageClient({
                     <div className={`h-0.5 w-full rounded-full ${d.state === 'future' ? 'bg-track' : 'bg-hairline'}`} />
                   )}
                 </div>
-                <p className={`text-micro font-bold ${d.state === 'today' ? 'text-brand-ink' : 'text-ink-3'}`}>
+                <p className={`text-[9px] font-bold ${d.state === 'today' ? 'text-brand-ink' : 'text-ink-3'}`}>
                   {DAY_LABELS[i]}
                 </p>
               </div>
@@ -204,28 +204,28 @@ export function DeficitPageClient({
           })}
         </div>
 
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-micro text-ink-2">
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-ink-2">
           <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm" style={{ background: 'var(--good)' }} />Under maintenance</span>
           <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm" style={{ background: 'var(--bad)' }} />Over</span>
           <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm border border-dashed" style={{ borderColor: 'var(--brand)' }} />Today, in progress</span>
         </div>
 
         {todayKcal != null && (
-          <p className="mt-3 border-t border-hairline pt-3 text-micro text-ink-3">
+          <p className="mt-3 border-t border-hairline pt-3 text-[11px] text-ink-3">
             Today so far: <span className="font-semibold tabular-nums text-ink-2">{todayKcal.toLocaleString('en-IN')} kcal</span>.
             It joins the totals once the day is done.
           </p>
         )}
 
-        <p className="mt-3 text-caption text-ink-2">{s.insight}</p>
+        <p className="mt-3 text-[12px] text-ink-2">{s.insight}</p>
       </div>
 
       {/* ── 4-week history ── */}
       {chartData.some(d => d.deficit !== 0) && (
         <div className="rounded-sheet border border-hairline bg-surface p-4 shadow-rest">
           <div className="mb-3 flex items-baseline justify-between">
-            <p className="text-micro font-bold uppercase tracking-caps text-ink-3">4-week history</p>
-            <p className="text-micro text-ink-2">dashed line = that week&apos;s target</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-ink-3">4-week history</p>
+            <p className="text-[10px] text-ink-2">dashed line = that week&apos;s target</p>
           </div>
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
@@ -238,7 +238,7 @@ export function DeficitPageClient({
                     if (!active || !payload?.length) return null
                     const val = payload[0]?.value as number
                     return (
-                      <div className="rounded-control border border-hairline bg-surface px-3 py-2 text-caption shadow-float">
+                      <div className="rounded-control border border-hairline bg-surface px-3 py-2 text-xs shadow-float">
                         <p className="mb-0.5 text-ink-2">week of {label}</p>
                         <p className="font-bold" style={{ color: val > 0 ? 'var(--good)' : 'var(--bad)' }}>
                           {Math.abs(val).toLocaleString('en-IN')} kcal {val > 0 ? 'under' : 'over'}
@@ -264,7 +264,7 @@ export function DeficitPageClient({
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <p className="mt-2 text-micro text-ink-3">
+          <p className="mt-2 text-[10px] text-ink-3">
             Each week is measured against the days you actually logged, so a short week is still a fair week.
           </p>
         </div>
@@ -272,17 +272,17 @@ export function DeficitPageClient({
 
       {/* ── All time ── */}
       <div className="rounded-sheet border border-hairline bg-surface p-4 shadow-rest">
-        <p className="mb-3 text-micro font-bold uppercase tracking-caps text-ink-3">All time</p>
+        <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-ink-3">All time</p>
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-card border border-hairline bg-brand-soft p-3">
-            <p className="mb-1 text-micro text-ink-2">Total fat burned</p>
-            <p className="text-title-sm font-bold text-brand-ink">{totalFatKg} kg</p>
-            <p className="text-micro text-ink-2">= {Math.round(totalFatKg * 1000).toLocaleString('en-IN')} g</p>
+            <p className="mb-1 text-[10px] text-ink-2">Total fat burned</p>
+            <p className="text-xl font-bold text-brand-ink">{totalFatKg} kg</p>
+            <p className="text-[10px] text-ink-2">= {Math.round(totalFatKg * 1000).toLocaleString('en-IN')} g</p>
           </div>
           <div className="rounded-card border border-hairline bg-surface-2 p-3">
-            <p className="mb-1 text-micro text-ink-2">Days finished</p>
-            <p className="text-title-sm font-bold text-ink">{totalDaysLogged}</p>
-            <p className="text-micro text-ink-2">since you joined</p>
+            <p className="mb-1 text-[10px] text-ink-2">Days finished</p>
+            <p className="text-xl font-bold text-ink">{totalDaysLogged}</p>
+            <p className="text-[10px] text-ink-2">since you joined</p>
           </div>
         </div>
       </div>
@@ -294,9 +294,9 @@ export function DeficitPageClient({
 function StatPill({ label, value, unit, highlight }: { label: string; value: string; unit: string; highlight?: boolean }) {
   return (
     <div className="rounded-card border border-hairline bg-surface px-2.5 py-2 text-center">
-      <p className="mb-0.5 text-micro font-semibold uppercase tracking-caps text-ink-3">{label}</p>
-      <p className={`text-body font-bold leading-tight ${highlight ? 'text-brand-ink' : 'text-ink'}`}>{value}</p>
-      {unit && <p className="text-micro text-ink-3">{unit}</p>}
+      <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-wide text-ink-3">{label}</p>
+      <p className={`text-sm font-bold leading-tight ${highlight ? 'text-brand-ink' : 'text-ink'}`}>{value}</p>
+      {unit && <p className="text-[9px] text-ink-3">{unit}</p>}
     </div>
   )
 }

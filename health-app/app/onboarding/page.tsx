@@ -27,9 +27,9 @@ export default async function OnboardingPage() {
     <div className="min-h-screen px-4 py-10">
       <div className="mx-auto w-full max-w-md">
         <div className="mb-8 text-center">
-          <span className="text-title-lg">🥗</span>
-          <h1 className="font-display mt-2 text-title font-bold text-ink">Welcome to GetInShape</h1>
-          <p className="mt-1 text-body text-ink-2">Let&apos;s get you started — takes about 2 minutes.</p>
+          <span className="text-3xl">🥗</span>
+          <h1 className="font-display mt-2 text-2xl font-bold text-ink">Welcome to GetInShape</h1>
+          <p className="mt-1 text-sm text-ink-2">Let&apos;s get you started — takes about 2 minutes.</p>
         </div>
         <div className="rounded-sheet border border-hairline bg-surface p-6 shadow-rest">
           <OnboardingForm />

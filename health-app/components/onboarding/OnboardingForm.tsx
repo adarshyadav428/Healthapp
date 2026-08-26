@@ -25,10 +25,10 @@ const AddFoodModal = dynamic(() => import('../log/AddFoodModal').then(m => m.Add
 const STEP_EMOJIS = ['📸', '👤', '📏', '⚖️', '🎯', '🏃']
 
 const selectClass =
-  'w-full rounded-control border border-hairline bg-surface-2 px-4 py-2.5 text-body font-semibold text-ink outline-none transition-all focus:border-brand focus:ring-[3px] focus:ring-brand-ring'
+  'w-full rounded-control border border-hairline bg-surface-2 px-4 py-2.5 text-sm font-semibold text-ink outline-none transition-all focus:border-brand focus:ring-[3px] focus:ring-brand-ring'
 
 const pillBase =
-  'rounded-control border px-3 py-3 text-body font-semibold capitalize transition-all'
+  'rounded-control border px-3 py-3 text-sm font-semibold capitalize transition-all'
 const pillOn = 'border-brand bg-brand-soft text-brand-ink'
 const pillOff = 'border-hairline bg-surface-2 text-ink hover:border-brand-ring'
 
@@ -125,11 +125,11 @@ export function OnboardingForm() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-canvas px-8" role="status">
           <ConfettiBurst />
           <div className="text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-soft text-title-lg">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-soft text-3xl">
               🎉
             </div>
-            <h2 className="mt-5 font-display text-title-lg font-bold text-ink">Building your plan…</h2>
-            <p className="mt-2 text-body text-ink-2">Working out your targets.</p>
+            <h2 className="mt-5 font-display text-[26px] font-bold text-ink">Building your plan…</h2>
+            <p className="mt-2 text-sm text-ink-2">Working out your targets.</p>
           </div>
         </div>
       )}
@@ -137,8 +137,8 @@ export function OnboardingForm() {
       {/* Progress */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-title-sm">{STEP_EMOJIS[step - 1]}</span>
-          <span className="text-caption font-semibold text-brand-ink tabular-nums">{step} / {TOTAL_STEPS}</span>
+          <span className="text-lg">{STEP_EMOJIS[step - 1]}</span>
+          <span className="text-xs font-semibold text-brand-ink tabular-nums">{step} / {TOTAL_STEPS}</span>
         </div>
         <div className="h-1.5 rounded-full bg-brand-soft overflow-hidden">
           <div
@@ -146,7 +146,7 @@ export function OnboardingForm() {
             style={{ width: `${progress}%` }}
           />
         </div>
-        <p className="mt-2 text-body font-semibold text-ink">{STEP_LABELS[step - 1]}</p>
+        <p className="mt-2 text-sm font-semibold text-ink">{STEP_LABELS[step - 1]}</p>
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -154,11 +154,11 @@ export function OnboardingForm() {
         {step === 1 && (
           <div className="space-y-4 text-center">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-soft">
-              <span className="text-title-lg">📸</span>
+              <span className="text-3xl">📸</span>
             </div>
             <div>
-              <h2 className="font-display text-title-sm font-bold text-ink">What did you eat recently?</h2>
-              <p className="mt-1 text-body text-ink-2">See how fast this is — then we&apos;ll set up your goals in under a minute.</p>
+              <h2 className="font-display text-lg font-bold text-ink">What did you eat recently?</h2>
+              <p className="mt-1 text-sm text-ink-2">See how fast this is — then we&apos;ll set up your goals in under a minute.</p>
             </div>
             <div className="space-y-2.5 pt-2 text-left">
               <button
@@ -170,8 +170,8 @@ export function OnboardingForm() {
                   <Camera className="h-5 w-5 text-brand" strokeWidth={1.75} />
                 </span>
                 <div>
-                  <p className="text-body font-semibold text-ink">Take a photo</p>
-                  <p className="text-caption text-ink-2">Snap your plate — AI reads the macros</p>
+                  <p className="text-sm font-semibold text-ink">Take a photo</p>
+                  <p className="text-xs text-ink-2">Snap your plate — AI reads the macros</p>
                 </div>
               </button>
               <button
@@ -183,8 +183,8 @@ export function OnboardingForm() {
                   <MessageSquarePlus className="h-5 w-5 text-brand" strokeWidth={1.75} />
                 </span>
                 <div>
-                  <p className="text-body font-semibold text-ink">Describe it</p>
-                  <p className="text-caption text-ink-2">&quot;2 roti, dal, sabzi&quot; — type it in</p>
+                  <p className="text-sm font-semibold text-ink">Describe it</p>
+                  <p className="text-xs text-ink-2">&quot;2 roti, dal, sabzi&quot; — type it in</p>
                 </div>
               </button>
             </div>
@@ -195,10 +195,10 @@ export function OnboardingForm() {
         {step === 2 && (
           <div className="space-y-4">
             <div>
-              <label className="block text-body font-semibold text-ink mb-1">What should we call you?</label>
+              <label className="block text-sm font-semibold text-ink mb-1">What should we call you?</label>
               <Input {...form.register('display_name')} placeholder="Your name" />
               {form.formState.errors.display_name && (
-                <p className="mt-1 text-caption text-danger">{form.formState.errors.display_name.message}</p>
+                <p className="mt-1 text-xs text-danger">{form.formState.errors.display_name.message}</p>
               )}
             </div>
           </div>
@@ -208,14 +208,14 @@ export function OnboardingForm() {
         {step === 2 && (
           <div className="space-y-4">
             <div>
-              <label className="block text-body font-semibold text-ink mb-1">Age</label>
+              <label className="block text-sm font-semibold text-ink mb-1">Age</label>
               <Input type="number" {...form.register('age', { valueAsNumber: true })} placeholder="25" />
               {form.formState.errors.age && (
-                <p className="mt-1 text-caption text-danger">{form.formState.errors.age.message}</p>
+                <p className="mt-1 text-xs text-danger">{form.formState.errors.age.message}</p>
               )}
             </div>
             <div>
-              <label className="block text-body font-semibold text-ink mb-1">Biological sex</label>
+              <label className="block text-sm font-semibold text-ink mb-1">Biological sex</label>
               <div className="grid grid-cols-3 gap-2">
                 {(['male', 'female', 'other'] as const).map((s) => (
                   <button
@@ -236,7 +236,7 @@ export function OnboardingForm() {
         {step === 3 && (
           <div className="space-y-4">
             <div>
-              <label className="block text-body font-semibold text-ink mb-1.5">Height</label>
+              <label className="block text-sm font-semibold text-ink mb-1.5">Height</label>
               <div className="flex gap-2">
                 <div className="flex-1">
                   <select
@@ -270,14 +270,14 @@ export function OnboardingForm() {
                 </div>
               </div>
               {form.formState.errors.height_cm && (
-                <p className="mt-1 text-caption text-danger">{form.formState.errors.height_cm.message}</p>
+                <p className="mt-1 text-xs text-danger">{form.formState.errors.height_cm.message}</p>
               )}
             </div>
             <div>
-              <label className="block text-body font-semibold text-ink mb-1">Current weight (kg)</label>
+              <label className="block text-sm font-semibold text-ink mb-1">Current weight (kg)</label>
               <Input type="number" {...form.register('current_weight_kg', { valueAsNumber: true })} placeholder="70" />
               {form.formState.errors.current_weight_kg && (
-                <p className="mt-1 text-caption text-danger">{form.formState.errors.current_weight_kg.message}</p>
+                <p className="mt-1 text-xs text-danger">{form.formState.errors.current_weight_kg.message}</p>
               )}
             </div>
           </div>
@@ -287,10 +287,10 @@ export function OnboardingForm() {
         {step === 3 && (
           <div className="space-y-4">
             <div>
-              <label className="block text-body font-semibold text-ink mb-1">Target weight (kg)</label>
+              <label className="block text-sm font-semibold text-ink mb-1">Target weight (kg)</label>
               <Input type="number" {...form.register('target_weight_kg', { valueAsNumber: true })} placeholder="65" />
               {form.formState.errors.target_weight_kg && (
-                <p className="mt-1 text-caption text-danger">{form.formState.errors.target_weight_kg.message}</p>
+                <p className="mt-1 text-xs text-danger">{form.formState.errors.target_weight_kg.message}</p>
               )}
 
               {/* BMI-based recommendation */}
@@ -309,14 +309,14 @@ export function OnboardingForm() {
                 return (
                   <div className="mt-2 rounded-card border border-hairline bg-brand-soft p-3 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-caption text-ink-2">Your current BMI</span>
-                      <span className={`text-caption font-bold ${bmiColor}`}>{currentBmi} · {bmiLabel}</span>
+                      <span className="text-xs text-ink-2">Your current BMI</span>
+                      <span className={`text-xs font-bold ${bmiColor}`}>{currentBmi} · {bmiLabel}</span>
                     </div>
-                    <p className="text-micro text-ink-2">
+                    <p className="text-[11px] text-ink-2">
                       Healthy range for your height: <span className="font-semibold text-ink">{minHealthy}–{maxHealthy} kg</span> (BMI 18.5–24.9)
                     </p>
                     <div>
-                      <p className="text-micro font-semibold uppercase tracking-caps text-ink-2 mb-1.5">Suggested targets</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-2 mb-1.5">Suggested targets</p>
                       <div className="flex gap-2">
                         {suggestions.map((s) => (
                           <button
@@ -325,8 +325,8 @@ export function OnboardingForm() {
                             onClick={() => form.setValue('target_weight_kg', s.kg, { shouldValidate: true })}
                             className="flex-1 rounded-control border border-hairline bg-surface py-1.5 text-center hover:border-brand tap-scale transition-all"
                           >
-                            <p className="text-caption font-bold text-brand-ink tabular-nums">{s.kg} kg</p>
-                            <p className="text-micro text-ink-2">BMI {s.bmi}</p>
+                            <p className="text-xs font-bold text-brand-ink tabular-nums">{s.kg} kg</p>
+                            <p className="text-[10px] text-ink-2">BMI {s.bmi}</p>
                           </button>
                         ))}
                       </div>
@@ -336,7 +336,7 @@ export function OnboardingForm() {
               })()}
             </div>
             <div>
-              <label className="block text-body font-semibold text-ink mb-1">Goal</label>
+              <label className="block text-sm font-semibold text-ink mb-1">Goal</label>
               <div className="grid grid-cols-3 gap-2">
                 {(['lose', 'maintain', 'gain'] as const).map((g) => (
                   <button
@@ -357,7 +357,7 @@ export function OnboardingForm() {
         {step === 4 && (
           <div className="space-y-4">
             <div>
-              <label className="block text-body font-semibold text-ink mb-2">Activity level</label>
+              <label className="block text-sm font-semibold text-ink mb-2">Activity level</label>
               <div className="space-y-2">
                 {([
                   { value: 'sedentary', label: 'Sedentary', desc: 'Desk job, little exercise', emoji: '🛋️' },
@@ -374,17 +374,17 @@ export function OnboardingForm() {
                       form.watch('activity_level') === a.value ? pillOn : pillOff
                     }`}
                   >
-                    <span className="text-title-sm">{a.emoji}</span>
+                    <span className="text-lg">{a.emoji}</span>
                     <div>
-                      <p className={`text-body font-semibold ${form.watch('activity_level') === a.value ? 'text-brand-ink' : 'text-ink'}`}>{a.label}</p>
-                      <p className="text-caption text-ink-2">{a.desc}</p>
+                      <p className={`text-sm font-semibold ${form.watch('activity_level') === a.value ? 'text-brand-ink' : 'text-ink'}`}>{a.label}</p>
+                      <p className="text-xs text-ink-2">{a.desc}</p>
                     </div>
                   </button>
                 ))}
               </div>
             </div>
             <div>
-              <label className="block text-body font-semibold text-ink mb-1">Goal pace (kg/week)</label>
+              <label className="block text-sm font-semibold text-ink mb-1">Goal pace (kg/week)</label>
               <select {...form.register('pace_kg_per_week', { valueAsNumber: true })} className={selectClass}>
                 <option value="0.25">0.25 kg/week — Slow &amp; steady</option>
                 <option value="0.5">0.5 kg/week — Recommended</option>
@@ -398,33 +398,33 @@ export function OnboardingForm() {
         {/* Live TDEE preview — the payoff moment, marigold because it's your data */}
         {step === 4 && tdeePreview && (
           <div className="rounded-card border border-hairline bg-energy-soft p-4">
-            <p className="text-caption font-semibold uppercase tracking-caps text-energy-ink mb-2">Your personalised targets</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-energy-ink mb-2">Your personalised targets</p>
             <div className="flex items-baseline gap-1.5 mb-3">
-              <span className="font-display text-title-lg font-bold text-ink tabular-nums">{tdeePreview.daily_calorie_target.toLocaleString()}</span>
-              <span className="text-body text-energy-ink font-semibold">kcal / day</span>
+              <span className="font-display text-3xl font-bold text-ink tabular-nums">{tdeePreview.daily_calorie_target.toLocaleString()}</span>
+              <span className="text-sm text-energy-ink font-semibold">kcal / day</span>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-control bg-surface py-2 text-center">
-                <p className="text-body font-bold tabular-nums" style={{ color: 'var(--protein)' }}>{tdeePreview.protein_g_target}g</p>
-                <p className="text-micro font-semibold text-ink-2">Protein</p>
+                <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--protein)' }}>{tdeePreview.protein_g_target}g</p>
+                <p className="text-[10px] font-semibold text-ink-2">Protein</p>
               </div>
               <div className="rounded-control bg-surface py-2 text-center">
-                <p className="text-body font-bold tabular-nums" style={{ color: 'var(--carbs)' }}>{tdeePreview.carbs_g_target}g</p>
-                <p className="text-micro font-semibold text-ink-2">Carbs</p>
+                <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--carbs)' }}>{tdeePreview.carbs_g_target}g</p>
+                <p className="text-[10px] font-semibold text-ink-2">Carbs</p>
               </div>
               <div className="rounded-control bg-surface py-2 text-center">
-                <p className="text-body font-bold tabular-nums" style={{ color: 'var(--fat)' }}>{tdeePreview.fat_g_target}g</p>
-                <p className="text-micro font-semibold text-ink-2">Fat</p>
+                <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--fat)' }}>{tdeePreview.fat_g_target}g</p>
+                <p className="text-[10px] font-semibold text-ink-2">Fat</p>
               </div>
             </div>
             {goalProjection && (
               <div className="mt-3 rounded-control bg-surface p-3 text-center">
-                <p className="text-caption font-bold text-brand-ink">
+                <p className="text-[13px] font-bold text-brand-ink">
                   🎯 At this pace, you&apos;ll reach {watchedValues.target_weight_kg} kg by ~{formatGoalDate(goalProjection.date)}
                 </p>
               </div>
             )}
-            <p className="mt-2 text-micro text-energy-ink">
+            <p className="mt-2 text-[11px] text-energy-ink">
               Mifflin-St Jeor formula, protein at {PROTEIN_G_PER_KG} g per kg of bodyweight.
               You can adjust this anytime in settings.
             </p>
@@ -437,7 +437,7 @@ export function OnboardingForm() {
             type="button"
             onClick={prevStep}
             disabled={step === 1}
-            className="flex items-center gap-1 rounded-control px-4 py-2.5 text-body font-semibold text-ink-2 hover:bg-surface-2 disabled:opacity-0 transition-all"
+            className="flex items-center gap-1 rounded-control px-4 py-2.5 text-sm font-semibold text-ink-2 hover:bg-surface-2 disabled:opacity-0 transition-all"
           >
             <ChevronLeft className="h-4 w-4" />
             Back
@@ -447,7 +447,7 @@ export function OnboardingForm() {
               type="button"
               onClick={nextStep}
               disabled={isNavigating}
-              className="rounded-control px-4 py-2.5 text-body font-semibold text-ink-2 hover:bg-surface-2 transition-all disabled:opacity-50"
+              className="rounded-control px-4 py-2.5 text-sm font-semibold text-ink-2 hover:bg-surface-2 transition-all disabled:opacity-50"
             >
               Skip for now
             </button>

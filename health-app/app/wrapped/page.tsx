@@ -4,7 +4,6 @@ import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import { isProStatus } from '../../lib/subscription'
 import { buildMonthlyWrappedCards } from '../../lib/monthlyWrapped'
 import { StorySurface } from '../../components/story/StorySurface'
-import { buildShareCardOptions } from '../../lib/shareCard'
 import type { WrappedStats } from '../../lib/wrappedStats'
 
 export const metadata: Metadata = {
@@ -47,43 +46,23 @@ export default async function WrappedPage() {
   const isPro = isProStatus(subResult.data?.status)
   const unlocked = isPro || wrapResult.data.was_pro === true
 
-  const stats = wrapResult.data.stats as unknown as WrappedStats
-  const monthStart = wrapResult.data.month_start as string
-
   const cards = buildMonthlyWrappedCards({
-    stats,
-    monthStart,
+    stats: wrapResult.data.stats as unknown as WrappedStats,
+    monthStart: wrapResult.data.month_start as string,
     message: wrapResult.data.message as string,
     isPro: unlocked,
   })
-
-  // The card "Share my month" actually shares. Built here, from the frozen
-  // snapshot rather than a recomputation, and scoped to the month it describes:
-  // `weightDeltaKg` is last − first *inside the window*, so it is a month's
-  // loss, not a lifetime one, and the copy has to say so.
-  const monthName = new Date(monthStart + 'T00:00:00Z')
-    .toLocaleDateString('en-IN', { month: 'long', timeZone: 'UTC' })
-  const shareCard = unlocked
-    ? buildShareCardOptions({
-        streakDays: stats.longestStreakDays,
-        kgLost: stats.weightDeltaKg != null ? -stats.weightDeltaKg : null,
-        deficit: null,
-        sinceLabel: `in ${monthName}`,
-      })[0] ?? null
-    : null
 
   return (
     <StorySurface
       surface="monthly_wrapped"
       cards={cards}
       // A free user's last card is the wall, so the action is the upgrade;
-      // a Pro user's is the share card — unless the month held nothing worth
-      // posting, in which case the CTA goes back to being a link.
-      ctaLabel={unlocked ? (shareCard ? 'Share my month' : 'See the whole story') : 'See the whole story'}
+      // a Pro user's is the share card.
+      ctaLabel={unlocked ? 'Share my month' : 'See the whole story'}
       ctaHref={unlocked ? '/progress' : '/upgrade?reason=wrapped'}
       exitHref="/dashboard"
-      shareCard={shareCard}
-      meta={{ month: monthStart, is_pro: isPro, unlocked }}
+      meta={{ month: wrapResult.data.month_start, is_pro: isPro, unlocked }}
     />
   )
 }

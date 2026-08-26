@@ -39,7 +39,7 @@ const ToastTitle = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Title>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Title>
 >(({ className, ...props }, ref) => (
-  <ToastPrimitives.Title ref={ref} className={cn('text-body font-semibold text-ink', className)} {...props} />
+  <ToastPrimitives.Title ref={ref} className={cn('text-sm font-semibold text-ink', className)} {...props} />
 ))
 ToastTitle.displayName = ToastPrimitives.Title.displayName
 
@@ -49,7 +49,7 @@ const ToastDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Description
     ref={ref}
-    className={cn('text-body text-ink-2', className)}
+    className={cn('text-sm text-ink-2', className)}
     {...props}
   />
 ))
@@ -62,7 +62,7 @@ const ToastAction = React.forwardRef<
   <ToastPrimitives.Action
     ref={ref}
     className={cn(
-      'inline-flex h-8 shrink-0 items-center justify-center rounded-control bg-brand-soft px-3 text-caption font-semibold text-brand-ink tap-scale transition-colors hover:brightness-95',
+      'inline-flex h-8 shrink-0 items-center justify-center rounded-control bg-brand-soft px-3 text-xs font-semibold text-brand-ink tap-scale transition-colors hover:brightness-95',
       className
     )}
     {...props}

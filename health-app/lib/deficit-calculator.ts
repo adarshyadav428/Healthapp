@@ -9,17 +9,11 @@
  *   Daily deficit = maintenance (TDEE) - calories eaten
  *   Period target deficit = pace_kg_per_week × 7,700 × (periodDays / 7)
  *
- * Periods default to *calendar* windows — Mon–Sun, or the 1st to the end of the
- * month. A calendar total only ever grows and then resets, so it cannot fall for
- * a reason the user did not cause. A rolling total drops whenever a good day ages
- * out of the back of the window, which reads as punishment for nothing — that's
- * why `/deficit`'s week-by-week history stays calendar-only.
- *
- * `buildPeriodWindow`'s `rolling` flag is a deliberate, narrow exception: the
- * Progress page's "Week"/"Month" trend card (`buildDeficitView` in
- * `app/progress/page.tsx`) trades that guarantee on purpose, because its ask is
- * "the last 7/30 days" rather than "this calendar period." Callers that opt in
- * accept the trade-off above; nothing else in the app should.
+ * Periods are always *calendar* windows — Mon–Sun, or the 1st to the end of the
+ * month — never a rolling trailing window. A calendar total only ever grows and
+ * then resets, so it cannot fall for a reason the user did not cause. A rolling
+ * total drops whenever a good day ages out of the back of the window, which reads
+ * as punishment for nothing.
  *
  * Two rules the callers must honour, both learned from bugs:
  *
@@ -110,31 +104,17 @@ export type WeekWindow = PeriodWindow
  *
  * `back` walks whole periods into the past — `1` is last week / last month. That
  * is what the card falls back to on a Monday, when nothing has finished yet.
- *
- * `rolling` swaps the calendar anchor for a trailing N-day window ending today
- * (7 days for 'week', 30 for 'month'), sliding by its own length for `back` —
- * see the file header for why this is opt-in and narrow.
  */
 export function buildPeriodWindow(
   byDate: Map<string, number>,
   todayStr: string,
   kind: PeriodKind = 'week',
-  back = 0,
-  rolling = false
+  back = 0
 ): PeriodWindow {
-  let periodStart: string
-  let periodDays: number
-
-  if (rolling) {
-    periodDays = kind === 'month' ? 30 : 7
-    const windowEnd = addDayKey(todayStr, -periodDays * back)
-    periodStart = addDayKey(windowEnd, -(periodDays - 1))
-  } else {
-    periodStart = kind === 'month'
-      ? addMonthKey(monthStartOf(todayStr), -back)
-      : addDayKey(weekStartOf(todayStr), -back * 7)
-    periodDays = kind === 'month' ? daysInMonth(periodStart) : 7
-  }
+  const periodStart = kind === 'month'
+    ? addMonthKey(monthStartOf(todayStr), -back)
+    : addDayKey(weekStartOf(todayStr), -back * 7)
+  const periodDays = kind === 'month' ? daysInMonth(periodStart) : 7
 
   const dates = Array.from({ length: periodDays }, (_, i) => addDayKey(periodStart, i))
   const finished = dates.filter((d) => d < todayStr)

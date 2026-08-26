@@ -93,8 +93,8 @@ export function WeightLogModal({ onClose, defaultWeightKg }: { onClose: () => vo
               <Scale className="h-5 w-5 text-good" />
             </div>
             <div>
-              <h2 className="font-display text-body-lg font-bold text-ink">Log weight</h2>
-              <p className="text-caption text-ink-2">Track your progress</p>
+              <h2 className="font-display text-base font-bold text-ink">Log weight</h2>
+              <p className="text-xs text-ink-2">Track your progress</p>
             </div>
           </div>
           <button type="button" onClick={onClose} className="rounded-full p-1.5 hover:bg-surface-2 transition-colors">
@@ -105,14 +105,14 @@ export function WeightLogModal({ onClose, defaultWeightKg }: { onClose: () => vo
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           {/* Weight input - big hero number */}
           <div className="text-center">
-            <label className="block text-caption font-semibold uppercase tracking-caps text-ink-2 mb-2">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-ink-2 mb-2">
               Weight ({unit})
             </label>
             <div className="flex items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={() => form.setValue('weight_kg', Math.max(1, weight - 0.1), { shouldValidate: true })}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 text-title-sm font-bold text-ink hover:bg-hairline active:scale-90 transition-all"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 text-lg font-bold text-ink hover:bg-hairline active:scale-90 transition-all"
               >
                 −
               </button>
@@ -121,18 +121,18 @@ export function WeightLogModal({ onClose, defaultWeightKg }: { onClose: () => vo
                 step="0.1"
                 min="1"
                 {...form.register('weight_kg', { valueAsNumber: true })}
-                className="w-28 text-center font-display text-display font-bold text-ink outline-none border-b-2 border-good bg-transparent pb-1 tabular-nums"
+                className="w-28 text-center font-display text-4xl font-bold text-ink outline-none border-b-2 border-good bg-transparent pb-1 tabular-nums"
               />
               <button
                 type="button"
                 onClick={() => form.setValue('weight_kg', weight + 0.1, { shouldValidate: true })}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 text-title-sm font-bold text-ink hover:bg-hairline active:scale-90 transition-all"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 text-lg font-bold text-ink hover:bg-hairline active:scale-90 transition-all"
               >
                 +
               </button>
             </div>
             {form.formState.errors.weight_kg && (
-              <p className="mt-1 text-caption text-danger">{form.formState.errors.weight_kg.message}</p>
+              <p className="mt-1 text-xs text-danger">{form.formState.errors.weight_kg.message}</p>
             )}
 
             {/* Quick adjustments */}
@@ -142,7 +142,7 @@ export function WeightLogModal({ onClose, defaultWeightKg }: { onClose: () => vo
                   key={adj}
                   type="button"
                   onClick={() => form.setValue('weight_kg', Math.max(1, +(weight + adj).toFixed(1)), { shouldValidate: true })}
-                  className="rounded-control border border-hairline bg-surface-2 px-3 py-1 text-caption font-semibold text-ink hover:border-brand-ring hover:bg-brand-soft hover:text-brand-ink active:scale-95 transition-all"
+                  className="rounded-control border border-hairline bg-surface-2 px-3 py-1 text-xs font-semibold text-ink hover:border-brand-ring hover:bg-brand-soft hover:text-brand-ink active:scale-95 transition-all"
                 >
                   {adj > 0 ? `+${adj}` : adj}
                 </button>
@@ -152,7 +152,7 @@ export function WeightLogModal({ onClose, defaultWeightKg }: { onClose: () => vo
 
           {/* Date */}
           <div>
-            <label className="block text-caption font-semibold uppercase tracking-caps text-ink-2 mb-1">Date</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-ink-2 mb-1">Date</label>
             <Input
               type="date"
               value={date}
@@ -168,7 +168,7 @@ export function WeightLogModal({ onClose, defaultWeightKg }: { onClose: () => vo
 
           {/* Notes */}
           <div>
-            <label className="block text-caption font-semibold uppercase tracking-caps text-ink-2 mb-1">Notes (optional)</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-ink-2 mb-1">Notes (optional)</label>
             <Input {...form.register('notes')} placeholder="e.g. Morning, after workout..." />
           </div>
 

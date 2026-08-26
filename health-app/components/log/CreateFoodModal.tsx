@@ -88,8 +88,8 @@ export function CreateFoodModal({
               <ChefHat className="h-5 w-5 text-brand" />
             </div>
             <div>
-              <h2 className="font-display text-body-lg font-bold text-ink">Create custom food</h2>
-              <p className="text-caption text-ink-2">Add your own recipe or meal</p>
+              <h2 className="font-display text-base font-bold text-ink">Create custom food</h2>
+              <p className="text-xs text-ink-2">Add your own recipe or meal</p>
             </div>
           </div>
           <button type="button" onClick={onClose} className="rounded-full p-1.5 hover:bg-surface-2 transition-colors">
@@ -101,14 +101,14 @@ export function CreateFoodModal({
           {/* Name + brand */}
           <div className="space-y-3">
             <div>
-              <label className="block text-caption font-semibold text-ink-2 mb-1 uppercase tracking-caps">Food name *</label>
+              <label className="block text-xs font-semibold text-ink-2 mb-1 uppercase tracking-wide">Food name *</label>
               <Input {...form.register('name')} placeholder="e.g. Dal Makhani" />
               {form.formState.errors.name && (
-                <p className="mt-1 text-caption text-danger">{form.formState.errors.name.message}</p>
+                <p className="mt-1 text-xs text-danger">{form.formState.errors.name.message}</p>
               )}
             </div>
             <div>
-              <label className="block text-caption font-semibold text-ink-2 mb-1 uppercase tracking-caps">Brand / Restaurant (optional)</label>
+              <label className="block text-xs font-semibold text-ink-2 mb-1 uppercase tracking-wide">Brand / Restaurant (optional)</label>
               <Input {...form.register('brand')} placeholder="e.g. Home cooked" />
             </div>
           </div>
@@ -116,21 +116,21 @@ export function CreateFoodModal({
           {/* Serving */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-caption font-semibold text-ink-2 mb-1 uppercase tracking-caps">Serving size (g) *</label>
+              <label className="block text-xs font-semibold text-ink-2 mb-1 uppercase tracking-wide">Serving size (g) *</label>
               <Input type="number" step="1" {...form.register('serving_size_g', { valueAsNumber: true })} placeholder="100" />
               {form.formState.errors.serving_size_g && (
-                <p className="mt-1 text-caption text-danger">{form.formState.errors.serving_size_g.message}</p>
+                <p className="mt-1 text-xs text-danger">{form.formState.errors.serving_size_g.message}</p>
               )}
             </div>
             <div>
-              <label className="block text-caption font-semibold text-ink-2 mb-1 uppercase tracking-caps">Serving label</label>
+              <label className="block text-xs font-semibold text-ink-2 mb-1 uppercase tracking-wide">Serving label</label>
               <Input {...form.register('serving_description')} placeholder="1 bowl" />
             </div>
           </div>
 
           {/* Macros per 100g */}
           <div>
-            <p className="text-caption font-semibold text-ink-2 uppercase tracking-caps mb-2">Nutrition per 100g *</p>
+            <p className="text-xs font-semibold text-ink-2 uppercase tracking-wide mb-2">Nutrition per 100g *</p>
             <div className="grid grid-cols-2 gap-3">
               <NutrientField label="Calories (kcal)" placeholder="250" {...form.register('kcal_per_100g', { valueAsNumber: true })} error={form.formState.errors.kcal_per_100g?.message} />
               <NutrientField label="Protein (g)" placeholder="15" {...form.register('protein_g_per_100g', { valueAsNumber: true })} error={form.formState.errors.protein_g_per_100g?.message} />
@@ -145,9 +145,9 @@ export function CreateFoodModal({
           {/* Per-serving preview */}
           {kcal > 0 && (
             <div className="rounded-card border border-hairline bg-energy-soft p-3">
-              <p className="text-micro font-semibold uppercase tracking-caps text-energy-ink mb-2">Per serving ({serving}g)</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-energy-ink mb-2">Per serving ({serving}g)</p>
               <div className="flex gap-4">
-                <MiniStat value={perServing.kcal} label="kcal" className="font-bold text-title-sm text-energy-ink" />
+                <MiniStat value={perServing.kcal} label="kcal" className="font-bold text-lg text-energy-ink" />
                 <MiniStat value={perServing.protein} label="P" className="font-bold" style={{ color: 'var(--protein)' }} />
                 <MiniStat value={perServing.carbs} label="C" className="font-bold" style={{ color: 'var(--carbs)' }} />
                 <MiniStat value={perServing.fat} label="F" className="font-bold" style={{ color: 'var(--fat)' }} />
@@ -173,9 +173,9 @@ function NutrientField({
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div>
-      <label className="block text-caption text-ink-2 mb-1">{label}</label>
+      <label className="block text-xs text-ink-2 mb-1">{label}</label>
       <Input type="number" step="0.1" min="0" placeholder={placeholder} {...props} />
-      {error && <p className="mt-0.5 text-micro text-danger">{error}</p>}
+      {error && <p className="mt-0.5 text-[10px] text-danger">{error}</p>}
     </div>
   )
 }
@@ -184,7 +184,7 @@ function MiniStat({ value, label, className, style }: { value: number; label: st
   return (
     <div className="text-center">
       <p className={className} style={style}>{value}</p>
-      <p className="text-micro text-energy-ink">{label}</p>
+      <p className="text-[10px] text-energy-ink">{label}</p>
     </div>
   )
 }

@@ -9,7 +9,6 @@ import { toast } from '../ui/use-toast'
 import { Button } from '../ui/button'
 import { captureEvent } from '../../lib/posthog/client'
 import type { AdaptiveSuggestion } from '../../lib/adaptiveTarget'
-import { useHomeSlot } from './HomeSlot'
 
 const AIR = { boxShadow: 'var(--shadow-air)' } as const
 
@@ -49,10 +48,7 @@ export function AdaptiveTargetCard({ profile }: { profile: Profile }) {
   })
 
   const suggestion = data?.suggestion ?? null
-  // See components/dashboard/HomeSlot.tsx — one attention card on Home.
-  const wins = useHomeSlot('adaptive-target', Boolean(suggestion) && !dismissed)
-  // `!suggestion` stays in the guard so TypeScript keeps narrowing it below.
-  if (!wins || !suggestion) return null
+  if (!suggestion || dismissed) return null
 
   const isIncrease = suggestion.deltaKcal > 0
 
@@ -105,21 +101,21 @@ export function AdaptiveTargetCard({ profile }: { profile: Profile }) {
   }
 
   return (
-    <div className="mt-4 rounded-card-lg bg-surface p-5" style={AIR}>
+    <div className="mt-4 rounded-[24px] bg-surface p-5" style={AIR}>
       <div className="flex items-center gap-2">
         {isIncrease
           ? <TrendingUp className="h-4 w-4 text-brand" strokeWidth={2} />
           : <TrendingDown className="h-4 w-4 text-brand" strokeWidth={2} />}
-        <p className="text-body font-bold text-ink">A suggested adjustment</p>
+        <p className="text-[14px] font-bold text-ink">A suggested adjustment</p>
       </div>
 
-      <p className="mt-1.5 text-caption text-ink-2">{suggestion.reason}</p>
+      <p className="mt-1.5 text-[13px] text-ink-2">{suggestion.reason}</p>
 
       <div className="mt-3 flex items-baseline gap-2">
-        <span className="font-display text-title font-bold tabular-nums text-ink">
+        <span className="font-display text-[22px] font-bold tabular-nums text-ink" style={{ letterSpacing: '-0.02em' }}>
           {suggestion.newTarget.toLocaleString()}
         </span>
-        <span className="text-caption font-semibold text-ink-3">
+        <span className="text-[12px] font-semibold text-ink-3">
           kcal/day ({isIncrease ? '+' : ''}{suggestion.deltaKcal})
         </span>
       </div>
@@ -132,7 +128,7 @@ export function AdaptiveTargetCard({ profile }: { profile: Profile }) {
         <button
           type="button"
           onClick={dismiss}
-          className="rounded-control px-4 text-caption font-semibold text-ink-3 tap-scale"
+          className="rounded-control px-4 text-[13px] font-semibold text-ink-3 tap-scale"
         >
           Not now
         </button>
