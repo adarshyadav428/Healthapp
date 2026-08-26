@@ -144,7 +144,7 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
       <SheetContent title="Edit food entry" className="sm:max-w-sm space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-base font-bold text-ink">Edit entry</h2>
+          <h2 className="font-display text-body-lg font-bold text-ink">Edit entry</h2>
           <button
             type="button"
             onClick={onClose}
@@ -156,13 +156,13 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
 
         {/* Food name */}
         <div className="rounded-card bg-brand-soft border border-hairline px-3 py-2.5">
-          <p className="text-sm font-semibold text-ink truncate">{food?.name ?? 'Food item'}</p>
-          {food?.brand && <p className="text-xs text-ink-2">{food.brand}</p>}
+          <p className="text-body font-semibold text-ink truncate">{food?.name ?? 'Food item'}</p>
+          {food?.brand && <p className="text-caption text-ink-2">{food.brand}</p>}
         </div>
 
         {/* Quantity + Measure */}
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wide text-ink-2 mb-1.5">
+          <label className="block text-caption font-semibold uppercase tracking-caps text-ink-2 mb-1.5">
             Amount
           </label>
           <div className="flex items-center gap-2">
@@ -185,7 +185,7 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
               onChange={(e) => onQuantityChange(e.target.value)}
               onBlur={onQuantityBlur}
               onFocus={(e) => e.target.select()}
-              className="w-20 flex-shrink-0 rounded-control border border-hairline bg-surface text-ink px-2 py-2.5 text-sm text-center tabular-nums outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
+              className="w-20 flex-shrink-0 rounded-control border border-hairline bg-surface text-ink px-2 py-2.5 text-body text-center tabular-nums outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
             />
             <button
               type="button"
@@ -201,25 +201,25 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
               onClick={() => setShowUnitPicker(true)}
               className="flex-1 min-w-0 h-10 rounded-control border border-hairline bg-surface-2 px-3 flex items-center justify-between text-left hover:bg-hairline transition-colors"
             >
-              <span className="text-sm font-semibold text-ink truncate">{unit.label}</span>
+              <span className="text-body font-semibold text-ink truncate">{unit.label}</span>
               <ChevronDown className="h-4 w-4 text-ink-2 flex-shrink-0 ml-1" />
             </button>
           </div>
           {unit.key !== 'g' && (
-            <p className="mt-1 text-xs text-ink-2 tabular-nums">= {Math.round(grams)}g total</p>
+            <p className="mt-1 text-caption text-ink-2 tabular-nums">= {Math.round(grams)}g total</p>
           )}
         </div>
 
         {/* Meal selector */}
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wide text-ink-2 mb-1.5">Meal</label>
+          <label className="block text-caption font-semibold uppercase tracking-caps text-ink-2 mb-1.5">Meal</label>
           <div className="grid grid-cols-4 gap-1.5">
             {MEAL_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
                 onClick={() => setMeal(opt.value)}
-                className={`rounded-control border py-2 text-xs font-semibold transition-all active:scale-95 ${
+                className={`rounded-control border py-2 text-caption font-semibold transition-all active:scale-95 ${
                   meal === opt.value
                     ? 'border-brand bg-brand-soft text-brand-ink'
                     : 'border-hairline bg-surface-2 text-ink-2 hover:border-brand-ring'
@@ -234,7 +234,7 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
         {/* Where — optional. Not a tracker, one field: it's what turns "some
             weeks are worse" into "restaurant days cost you 480 kcal". */}
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wide text-ink-2 mb-1.5">
+          <label className="block text-caption font-semibold uppercase tracking-caps text-ink-2 mb-1.5">
             Where <span className="font-medium normal-case tracking-normal text-ink-3">· optional</span>
           </label>
           <div className="grid grid-cols-4 gap-1.5">
@@ -244,7 +244,7 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
                 type="button"
                 onClick={() => setContext((c) => (c === value ? null : value))}
                 aria-pressed={context === value}
-                className={`rounded-control border py-2 text-[11px] font-semibold transition-all active:scale-95 ${
+                className={`rounded-control border py-2 text-micro font-semibold transition-all active:scale-95 ${
                   context === value
                     ? 'border-brand bg-brand-soft text-brand-ink'
                     : 'border-hairline bg-surface-2 text-ink-2 hover:border-brand-ring'
@@ -261,20 +261,20 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
         {(hasFood || baseGrams > 0) && (
           <div className="grid grid-cols-4 gap-2 rounded-card border border-hairline bg-energy-soft px-3 py-2.5">
             <div className="text-center">
-              <p className="text-sm font-bold text-energy-ink tabular-nums">{Math.round(nutrition.kcal)}</p>
-              <p className="text-[10px] text-energy-ink">kcal</p>
+              <p className="text-body font-bold text-energy-ink tabular-nums">{Math.round(nutrition.kcal)}</p>
+              <p className="text-micro text-energy-ink">kcal</p>
             </div>
             <div className="text-center">
-              <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--protein)' }}>{Math.round(nutrition.protein)}g</p>
-              <p className="text-[10px] text-ink-2">P</p>
+              <p className="text-body font-bold tabular-nums" style={{ color: 'var(--protein)' }}>{Math.round(nutrition.protein)}g</p>
+              <p className="text-micro text-ink-2">P</p>
             </div>
             <div className="text-center">
-              <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--carbs)' }}>{Math.round(nutrition.carbs)}g</p>
-              <p className="text-[10px] text-ink-2">C</p>
+              <p className="text-body font-bold tabular-nums" style={{ color: 'var(--carbs)' }}>{Math.round(nutrition.carbs)}g</p>
+              <p className="text-micro text-ink-2">C</p>
             </div>
             <div className="text-center">
-              <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--fat)' }}>{Math.round(nutrition.fat)}g</p>
-              <p className="text-[10px] text-ink-2">F</p>
+              <p className="text-body font-bold tabular-nums" style={{ color: 'var(--fat)' }}>{Math.round(nutrition.fat)}g</p>
+              <p className="text-micro text-ink-2">F</p>
             </div>
           </div>
         )}

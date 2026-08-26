@@ -5,6 +5,7 @@ import { Bell, X } from 'lucide-react'
 import { toast } from '../ui/use-toast'
 import { captureEvent } from '../../lib/posthog/client'
 import { isPushSupported, getCurrentPushSubscription, subscribeToPush } from '../../lib/push/client'
+import { useHomeSlot } from './HomeSlot'
 
 const DISMISS_KEY = 'gis.notifPrimeDismissed'
 
@@ -34,7 +35,9 @@ export function NotificationPrimeCard() {
     return () => { active = false }
   }, [])
 
-  if (!visible) return null
+  // See components/dashboard/HomeSlot.tsx — one attention card on Home.
+  const wins = useHomeSlot('notification-prime', visible)
+  if (!wins) return null
 
   const enable = async () => {
     if (busy) return
@@ -58,24 +61,24 @@ export function NotificationPrimeCard() {
   }
 
   return (
-    <div className="mt-4 flex items-start gap-3 rounded-[20px] bg-surface p-4" style={{ boxShadow: 'var(--shadow-air)' }}>
+    <div className="mt-4 flex items-start gap-3 rounded-card bg-surface p-4" style={{ boxShadow: 'var(--shadow-air)' }}>
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft">
         <Bell className="h-[18px] w-[18px] text-brand" strokeWidth={2} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[14px] font-semibold text-ink">Never break your streak</p>
-        <p className="mt-0.5 text-[12.5px] text-ink-2">Get a friendly reminder if you haven&apos;t logged by evening.</p>
+        <p className="text-body font-semibold text-ink">Never break your streak</p>
+        <p className="mt-0.5 text-caption text-ink-2">Get a friendly reminder if you haven&apos;t logged by evening.</p>
         <div className="mt-2.5 flex items-center gap-2">
           <button
             type="button"
             onClick={enable}
             disabled={busy}
-            className="rounded-full bg-cta-grad px-4 py-1.5 text-[13px] font-semibold text-white tap-scale disabled:opacity-50"
+            className="rounded-full bg-ink px-4 py-1.5 text-caption font-semibold text-canvas tap-scale disabled:opacity-50"
             style={{ boxShadow: 'var(--cta-shadow)' }}
           >
             {busy ? 'Enabling…' : 'Turn on reminders'}
           </button>
-          <button type="button" onClick={close} className="text-[13px] font-medium text-ink-3 tap-scale">Not now</button>
+          <button type="button" onClick={close} className="text-caption font-medium text-ink-3 tap-scale">Not now</button>
         </div>
       </div>
       <button type="button" onClick={close} aria-label="Dismiss" className="shrink-0 rounded-full p-1 text-ink-3 tap-scale">

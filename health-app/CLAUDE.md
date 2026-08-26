@@ -17,7 +17,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **71 files / 1,026 tests**. There is no `vitest.config.ts`; defaults apply.
+- **Tests:** Vitest 4.1 — **72 files / 1,042 tests**. There is no `vitest.config.ts`; defaults apply.
 - **Deploy:** Vercel **Hobby** plan, region `bom1`. The Hobby limits are load-bearing (see Hard rules).
 
 ## Architecture / directory map
@@ -77,10 +77,10 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (71 files / 1,026 tests)
+npm test                 # vitest run — the whole suite (72 files / 1,042 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
-npm run check:tokens     # design-token guard: no raw hex, no broken opacity modifiers
+npm run check:tokens     # design guard: no raw hex, broken opacity modifiers, off-scale type/radius/tracking
 npx tsc --noEmit         # typecheck (there is no `typecheck` script)
 ```
 
@@ -125,6 +125,12 @@ actively seeding.
   re-run it; keep `tests/curatedFoods.test.ts` green — it's what stops a meat dish shipping with a
   carb dish's protein.
 - **Never write a raw hex color** in `app/` or `components/` — reference a token (`bg-brand`, `text-ink`, …).
+- **Never write an off-scale font size, radius or tracking.** Type is ten named steps (`text-micro`
+  … `text-hero-lg`), radius is four (`rounded-control/card/card-lg/sheet`), tracking is `tracking-caps`
+  or nothing. **`text-[13px]` and Tailwind's `text-sm` are both violations** — the defaults are a
+  second parallel scale, and having two is how the app reached ~35 sizes with eight of them spelled
+  two ways at once. Each step owns its line-height and tracking; overriding them replaces a considered
+  value with a flat one. `npm run check:tokens` fails the build on all of it. → `docs/design-system.md`
 - **Never use Tailwind's `/NN` opacity modifier on a token color.** Our tokens are plain `var(--x)`
   strings, so `bg-brand/40` is a **silent no-op** that renders full strength. Use a pre-mixed alpha
   token (`--brand-soft`, `--scrim`, …) or an inline `color-mix()`.
@@ -159,13 +165,22 @@ actively seeding.
   `istDateStr`; there is no UTC day helper left and none may come back. When the page resolved the day
   in IST and the header in UTC, everything between 00:00 and 05:30 IST — the late-dinner window — was
   off by one: the "Today" pill sat on the wrong day and the next-day chevron unlocked.
-- **Home leads with one attention card, never two.** `pickDashboardMoment` (`lib/dashboardMoments.ts`)
-  holds the frozen order `streak-rescue > streak-restart > plateau`, the same shape as `lib/pushBudget.ts`
-  one screen further in. At a streak of zero a Pro user inside the rescue window qualifies for two cards
-  that argue: "repair it and it goes back to 12" above "your best run was 12 days, start again". Both are
-  true; only one can be the next action. Cards that probe the browser for themselves (install, rate,
-  notification priming, email verification) still self-gate — folding them in needs their checks lifted
-  out first.
+- **Home leads with one attention card, never two.** `DASHBOARD_MOMENTS` (`lib/dashboardMoments.ts`)
+  holds the frozen order for **all ten**, the same shape as `lib/pushBudget.ts` one screen further in.
+  At a streak of zero a Pro user inside the rescue window qualifies for two cards that argue: "repair it
+  and it goes back to 12" above "your best run was 12 days, start again". Both are true; only one can be
+  the next action.
+  - The six cards that decide eligibility by probing the browser (install, rate, notification priming,
+    email verification, plateau dismissal, target suggestion) **keep their probes** and call
+    `useHomeSlot(moment, eligible)` (`components/dashboard/HomeSlot.tsx`) to claim the slot instead of
+    rendering on it. Their checks were deliberately *not* lifted into a central hook: that would put six
+    components' gating logic in a second place, and the copies drift the first time one is fixed.
+  - **Adding a card to Home means adding it to `DASHBOARD_MOMENTS` in the same pass** — a card with no
+    slot renders *alongside* the winner instead of competing with it, which is the failure the module
+    exists to prevent. `tests/dashboardMoments.test.ts` pins the full list, so forgetting fails the suite.
+  - `HomeSlotProvider` wraps `DashboardClient` from `app/dashboard/page.tsx`, not inside it, because
+    DashboardClient itself claims three of the slots. Outside a provider `useHomeSlot` returns `eligible`
+    unchanged, so these cards still work anywhere else.
 - **"Deficit" has exactly one definition: `maintenance − eaten`**, and it comes from
   `lib/deficit-calculator.ts`. Never re-derive it, and never compute `daily_calorie_target − eaten` —
   that is "did you hit your eat-goal", a different question with a different answer. Trends and
@@ -179,10 +194,15 @@ actively seeding.
   eat) and maintenance (TDEE) are both live in this app and point opposite ways: 819 kcal is a *miss*
   against a 1,600 goal and the *best day of the week* against 2,602 maintenance. Deficit surfaces use
   maintenance.
-- **Deficit periods are calendar windows, never rolling.** Mon–Sun, or the 1st to month end. A calendar
+- **Deficit periods are calendar windows by default — Mon–Sun, or the 1st to month end.** A calendar
   total only grows and then resets; a trailing window drops whenever a good day ages out of the back,
-  which reads as punishment for nothing. Week is free, month is Pro — and the month is withheld
-  **server-side**, so a free client never receives numbers a padlock is merely covering.
+  which reads as punishment for nothing. `/deficit`'s week-by-week history always uses this default.
+  The one deliberate exception: the Progress page's "Week"/"Month" trend card (`buildDeficitView` in
+  `app/progress/page.tsx`) opts into `buildPeriodWindow`'s `rolling` flag, because that card answers
+  "how have the last 7/30 days gone" rather than "how has this calendar period gone" — added 2026-08-26
+  at Adarsh's request, accepting the punishment-for-nothing trade-off there on purpose. Don't spread
+  `rolling` to other surfaces without the same explicit call. Week is free, month is Pro — and the
+  month is withheld **server-side**, so a free client never receives numbers a padlock is merely covering.
 - **Streak freezes are never paywalled.** The free auto-*freeze* prevents a break; the Pro *rescue*
   repairs one. Do not merge or gate the two.
 - **If you move the reminder cron, move `CATCH_ALL_IST_HOUR` with it.** They are coupled, and
@@ -254,6 +274,8 @@ actively seeding.
   message (it was written for a person), swallow a 5xx (it's a Postgres or provider string written for
   us). `lib/checkoutErrors.ts` does the same job on the checkout path.
 - **Numerals use `tabular-nums`.** Type is Inter (body) + Inter Tight (display); keep weights restrained.
+  A numeral sitting beside an animating ring or bar counts up with it (`hooks/useCountUp`) — a number
+  that snaps next to one that glides reads as a glitch. Animate the value, never the target.
 - **Sentry is runtime capture only** — `instrumentation.ts`, deliberately *not* `withSentryConfig`, so
   the build pipeline stays untouched when a DSN or auth token is missing. Don't add the webpack plugin.
 
@@ -270,6 +292,8 @@ These are deep dives, kept out of this file on purpose. Read the relevant one **
 | `docs/refactor-safety-contract.md` | Any refactor — it maps each covered behavior to the test that pins it, and lists the accepted residual gaps |
 | `TESTING.md` | Shipping. The manual script for everything tests can't reach (auth, real phones, the day boundary) |
 | `docs/deep-dive-audit-2026-07-31.md` | Investigating a suspected systemic issue — the last full audit |
+| `docs/growth-advice-audit-2026-08-25.md` | Anything about attribution, the paywall's placement, trial length, or adding an A/B mechanism — it scores the app against an external growth playbook, and §7 records where we disagree with it on purpose |
+| `docs/prompts/growth-advice-apply.md` | Re-running that audit, or holding any new growth book against the app |
 
 ### Growth mechanics — the load-bearing rules
 

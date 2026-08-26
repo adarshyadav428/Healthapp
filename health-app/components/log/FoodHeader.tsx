@@ -25,15 +25,15 @@ export function FoodHeader({ dateStr }: Props) {
   return (
     <div className="flex items-center justify-between pt-2">
       <div>
-        <p className="text-[13px] font-medium text-ink-3">{formatDisplay(dateStr)}</p>
-        <h1 className="font-display mt-[3px] text-[24px] font-bold tracking-[-0.02em] text-ink">Food</h1>
+        <p className="text-caption font-medium text-ink-3">{formatDisplay(dateStr)}</p>
+        <h1 className="font-display mt-[3px] text-title font-bold text-ink">Food</h1>
       </div>
       <div className="flex items-center gap-1">
         {!isToday && (
           <button
             type="button"
             onClick={() => go(todayStr)}
-            className="tap-scale mr-1 flex h-9 items-center rounded-full bg-surface px-3.5 text-[12.5px] font-semibold text-ink"
+            className="tap-scale mr-1 flex h-9 items-center rounded-full bg-surface px-3.5 text-caption font-semibold text-ink"
             style={{ boxShadow: 'var(--shadow-air)' }}
           >
             Today

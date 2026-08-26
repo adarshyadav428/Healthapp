@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { Sparkles } from 'lucide-react'
 import { captureEvent } from '../../lib/posthog/client'
+import { useHomeSlot } from './HomeSlot'
 
 export type WeeklyRecap = {
   daysLogged: number
@@ -32,16 +33,18 @@ export function WeeklyRecapCard({ recap, isPro, dailyTarget, streakDays }: {
     if (hasRecap) captureEvent('weekly_recap_viewed')
   }, [hasRecap])
 
-  if (!isPro) return null
+  // See components/dashboard/HomeSlot.tsx — one attention card on Home.
+  const wins = useHomeSlot('weekly-recap', isPro)
+  if (!wins) return null
 
   if (!recap) {
     return (
-      <div className="mt-4 rounded-[24px] bg-surface p-5" style={AIR}>
+      <div className="mt-4 rounded-card-lg bg-surface p-5" style={AIR}>
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-brand" strokeWidth={2} />
-          <p className="text-[14px] font-bold text-ink">Your weekly recap</p>
+          <p className="text-body font-bold text-ink">Your weekly recap</p>
         </div>
-        <p className="mt-1.5 text-[13px] text-ink-3">Your first recap lands this Sunday — keep logging through the week.</p>
+        <p className="mt-1.5 text-caption text-ink-3">Your first recap lands this Sunday — keep logging through the week.</p>
       </div>
     )
   }
@@ -78,10 +81,10 @@ export function WeeklyRecapCard({ recap, isPro, dailyTarget, streakDays }: {
   }
 
   return (
-    <div className="mt-4 rounded-[24px] bg-surface p-5" style={AIR}>
+    <div className="mt-4 rounded-card-lg bg-surface p-5" style={AIR}>
       <div className="flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-brand" strokeWidth={2} />
-        <p className="text-[14px] font-bold text-ink">Your week</p>
+        <p className="text-body font-bold text-ink">Your week</p>
       </div>
 
       {/* Wraps rather than scrolls — a card that needs a swipe to discover
@@ -90,17 +93,17 @@ export function WeeklyRecapCard({ recap, isPro, dailyTarget, streakDays }: {
         {cards.map((card) => (
           <div key={card.label}>
             <p
-              className="font-display text-[22px] font-bold tabular-nums text-ink"
-              style={{ letterSpacing: '-0.02em', ...(card.color ? { color: card.color } : {}) }}
+              className="font-display text-title font-bold tabular-nums text-ink"
+              style={{ ...(card.color ? { color: card.color } : {}) }}
             >
               {card.value}
             </p>
-            <p className="text-[11px] text-ink-3">{card.label}</p>
+            <p className="text-micro text-ink-3">{card.label}</p>
           </div>
         ))}
       </div>
 
-      <p className="mt-3.5 text-[13px] leading-relaxed text-ink-2">{recap.message}</p>
+      <p className="mt-3.5 text-caption leading-relaxed text-ink-2">{recap.message}</p>
     </div>
   )
 }

@@ -2,10 +2,10 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import { isProStatus } from '../../lib/subscription'
-import { checkAiTrial } from '../../lib/aiTrialServer'
 import type { FoodLog } from '../../types/index'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { DashboardClient } from '../../components/dashboard/DashboardClient'
+import { HomeSlotProvider } from '../../components/dashboard/HomeSlot'
 import { getIstDayRange, istDateStr } from '../../lib/dateUtils'
 import { calculateStreakState, findStreakRescue, longestStreak } from '../../lib/streak'
 import { rescuesRemaining } from '../../lib/streakRescue'
@@ -96,9 +96,10 @@ export default async function DashboardPage() {
   )
   const streakDays = streakState.streak
 
-  // Feeds the "next badge" nudge. Free — it reuses the 60-day window already
-  // fetched for the streak, and is the same window the badge shelf on Trends
-  // derives from, so the two can't disagree about what's been earned.
+  // Feeds the comeback card ("your best run was N days"). Free — it reuses the
+  // 60-day window already fetched for the streak, and is the same window the
+  // badge shelf on Trends derives from, so the two can't disagree about what's
+  // been earned.
   const bestStreak = longestStreak((recentLogs ?? []) as unknown as FoodLog[])
 
   // IST date keys with at least one log — feeds the week strip's dots, matching
@@ -112,11 +113,12 @@ export default async function DashboardPage() {
   const sub = subResult.data
   const isPro = isProStatus(sub?.status)
 
-  // Free users get a small lifetime AI trial once their email is verified. The
-  // FAB needs this so it doesn't bounce someone to the paywall who still has
-  // scans left. Pro skips the query entirely — it can't be gated.
-  const aiTrial = isPro ? null : await checkAiTrial(supabase, user.id)
-  const aiTrialRemaining = aiTrial?.allowed ? aiTrial.remaining : 0
+  // The AI-trial query used to run here, purely so Home's floating chat FAB
+  // could route a blocked user to the paywall instead of into a dead end. That
+  // FAB is gone — chat lives on the Food tab (components/log/FoodSearch.tsx),
+  // which does its own gating — so this was a Supabase round trip on every
+  // dashboard render feeding a prop nothing read. Phase 1's LogSheet will need
+  // the same answer; it can fetch it then, for a surface that exists.
 
   // The rescue offer. Only computed for Pro — showing a free user a repairable
   // break they can't act on is an advert dressed as a feature, and the streak
@@ -179,26 +181,31 @@ export default async function DashboardPage() {
     // Transparent: the body paints canvas + the ambient light field
     <div className="min-h-screen">
       <main
-        className="relative mx-auto w-full max-w-md px-6"
+        className="relative mx-auto w-full max-w-md px-edge"
         style={{
           paddingTop: 'calc(20px + env(safe-area-inset-top))',
           paddingBottom: 'calc(120px + env(safe-area-inset-bottom))',
         }}
       >
-        <DashboardClient
-          profile={profile}
-          initialLogs={foodLogs}
-          streakDays={streakDays}
-          longestStreakDays={bestStreak}
-          freezesBanked={streakState.freezesBanked}
-          loggedDates={loggedDates}
-          isPro={isPro}
-          aiTrialRemaining={aiTrialRemaining}
-          weeklyRecap={weeklyRecap}
-          rescueOffer={rescueOffer}
-          projection={projection}
-          plateau={plateau}
-        />
+        {/* Every card that asks for the user's attention claims one slot, and
+            only the highest-priority claimant renders. The provider has to sit
+            outside DashboardClient because DashboardClient itself claims three
+            of them. See components/dashboard/HomeSlot.tsx. */}
+        <HomeSlotProvider>
+          <DashboardClient
+            profile={profile}
+            initialLogs={foodLogs}
+            streakDays={streakDays}
+            longestStreakDays={bestStreak}
+            freezesBanked={streakState.freezesBanked}
+            loggedDates={loggedDates}
+            isPro={isPro}
+            weeklyRecap={weeklyRecap}
+            rescueOffer={rescueOffer}
+            projection={projection}
+            plateau={plateau}
+          />
+        </HomeSlotProvider>
       </main>
       <BottomNav />
     </div>

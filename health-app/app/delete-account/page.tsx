@@ -16,11 +16,11 @@ export default function DeleteAccountPage() {
       <div className="mx-auto w-full max-w-2xl">
         <div className="mb-6">
           <Link href="/" className="flex items-center gap-2 mb-8">
-            <span className="text-2xl">🥗</span>
-            <span className="font-display text-xl font-bold text-brand-ink">GetInShape</span>
+            <span className="text-title">🥗</span>
+            <span className="font-display text-title-sm font-bold text-brand-ink">GetInShape</span>
           </Link>
-          <h1 className="font-display text-3xl font-bold text-ink">Delete your account</h1>
-          <p className="text-sm text-ink-2 mt-1">
+          <h1 className="font-display text-title-lg font-bold text-ink">Delete your account</h1>
+          <p className="text-body text-ink-2 mt-1">
             You can permanently delete your GetInShape account and all associated data at any time.
           </p>
         </div>
@@ -111,8 +111,8 @@ export default function DeleteAccountPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="font-display text-base font-bold text-ink mb-2">{title}</h2>
-      <div className="text-sm text-ink-2 leading-relaxed">{children}</div>
+      <h2 className="font-display text-body-lg font-bold text-ink mb-2">{title}</h2>
+      <div className="text-body text-ink-2 leading-relaxed">{children}</div>
     </div>
   )
 }

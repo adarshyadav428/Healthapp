@@ -94,12 +94,12 @@ export function QuickAddModal({ onClose, logDate }: { onClose: () => void; logDa
               value={kcal}
               onChange={(e) => setKcal(e.target.value)}
               autoFocus
-              className="font-display w-40 bg-transparent text-center text-7xl font-bold tabular-nums text-ink outline-none placeholder:text-hairline"
+              className="font-display w-40 bg-transparent text-center text-hero-lg font-bold tabular-nums text-ink outline-none placeholder:text-hairline"
             />
-            <span className="text-xl font-bold text-ink-2">kcal</span>
+            <span className="text-title-sm font-bold text-ink-2">kcal</span>
           </div>
           {kcalNum > 5000 && (
-            <p className="text-xs text-danger mt-1">Max 5,000 kcal</p>
+            <p className="text-caption text-danger mt-1">Max 5,000 kcal</p>
           )}
         </div>
 
@@ -111,7 +111,7 @@ export function QuickAddModal({ onClose, logDate }: { onClose: () => void; logDa
               type="button"
               onClick={() => setMeal(m.value)}
               className={cn(
-                'rounded-control py-2 text-xs font-semibold transition-all border',
+                'rounded-control py-2 text-caption font-semibold transition-all border',
                 meal === m.value
                   ? 'bg-brand-soft text-brand-ink border-brand'
                   : 'bg-surface-2 text-ink-2 border-hairline'
@@ -126,7 +126,7 @@ export function QuickAddModal({ onClose, logDate }: { onClose: () => void; logDa
         <button
           type="button"
           onClick={() => setShowMacros((v) => !v)}
-          className="flex items-center gap-1 text-xs font-semibold text-ink-2 mb-3"
+          className="flex items-center gap-1 text-caption font-semibold text-ink-2 mb-3"
         >
           <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', showMacros && 'rotate-180')} />
           {showMacros ? 'Hide macros' : 'Add macros (optional)'}
@@ -140,14 +140,14 @@ export function QuickAddModal({ onClose, logDate }: { onClose: () => void; logDa
               { label: 'Fat (g)',     value: fat,     set: setFat },
             ].map(({ label, value, set }) => (
               <div key={label}>
-                <label className="block text-[10px] font-semibold text-ink-2 uppercase tracking-wide mb-1">{label}</label>
+                <label className="block text-micro font-semibold text-ink-2 uppercase tracking-caps mb-1">{label}</label>
                 <input
                   type="number"
                   inputMode="decimal"
                   value={value}
                   onChange={(e) => set(e.target.value)}
                   placeholder="0"
-                  className="w-full rounded-control border border-hairline bg-surface-2 px-3 py-2.5 text-sm font-bold text-center text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
+                  className="w-full rounded-control border border-hairline bg-surface-2 px-3 py-2.5 text-body font-bold text-center text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
                 />
               </div>
             ))}

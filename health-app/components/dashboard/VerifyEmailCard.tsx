@@ -10,6 +10,7 @@ import {
 } from '../../lib/emailVerification'
 import { captureEvent } from '../../lib/posthog/client'
 import { AI_TRIAL_SCANS } from '../../lib/aiTrial'
+import { useHomeSlot } from './HomeSlot'
 
 const storageKey = (uid: string) => `gis.verifyEmail.${uid}`
 
@@ -62,19 +63,21 @@ export function VerifyEmailCard() {
     )
   }, [user?.id, profile])
 
-  if (!visible || !user?.id || !user.email) return null
+  // See components/dashboard/HomeSlot.tsx — one attention card on Home.
+  const wins = useHomeSlot('verify-email', visible && Boolean(user?.id) && Boolean(user?.email))
+  if (!wins || !user?.id || !user.email) return null
 
   return (
-    <div className="mt-4 rounded-[20px] bg-surface p-4" style={{ boxShadow: 'var(--shadow-air)' }}>
+    <div className="mt-4 rounded-card bg-surface p-4" style={{ boxShadow: 'var(--shadow-air)' }}>
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
           <MailCheck size={18} strokeWidth={2} />
         </div>
         <div className="min-w-0">
-          <p className="text-[14.5px] font-semibold text-ink">
+          <p className="text-body font-semibold text-ink">
             Confirm your email for {AI_TRIAL_SCANS} free AI scans
           </p>
-          <p className="mt-0.5 text-[13px] leading-snug text-ink-2">
+          <p className="mt-0.5 text-caption leading-snug text-ink-2">
             {sent ? (
               <>Check {user.email} and tap the link. It may take a minute to arrive.</>
             ) : (
@@ -92,7 +95,7 @@ export function VerifyEmailCard() {
           type="button"
           onClick={() => send('dashboard_card')}
           disabled={sending}
-          className="tap-scale flex h-10 flex-1 items-center justify-center rounded-control bg-brand-soft text-sm font-semibold text-brand-ink disabled:opacity-60"
+          className="tap-scale flex h-10 flex-1 items-center justify-center rounded-control bg-brand-soft text-body font-semibold text-brand-ink disabled:opacity-60"
         >
           {sending ? 'Sending…' : sent ? 'Resend link' : 'Send link'}
         </button>
@@ -103,7 +106,7 @@ export function VerifyEmailCard() {
             captureEvent('email_verify_prompt_dismissed')
             setVisible(false)
           }}
-          className="tap-scale flex h-10 flex-1 items-center justify-center rounded-control bg-surface-2 text-sm font-semibold text-ink-2"
+          className="tap-scale flex h-10 flex-1 items-center justify-center rounded-control bg-surface-2 text-body font-semibold text-ink-2"
         >
           Not now
         </button>

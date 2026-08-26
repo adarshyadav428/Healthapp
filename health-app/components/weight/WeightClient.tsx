@@ -63,10 +63,10 @@ export function WeightClient({ logs, profile }: { logs: WeightLog[]; profile: Pr
       {/* Projected goal date — the "you'll reach X kg by ~date" moment */}
       {projection && (
         <div className="rounded-sheet border border-hairline bg-brand-soft p-4 shadow-rest">
-          <p className="text-[14px] font-bold text-brand-ink">
+          <p className="text-body font-bold text-brand-ink">
             🎯 On track for {formatKg(profile.target_weight_kg)} kg by ~{formatGoalDate(projection.date)}
           </p>
-          <p className="mt-0.5 text-xs text-ink-2">
+          <p className="mt-0.5 text-caption text-ink-2">
             At {profile.pace_kg_per_week ?? 0.5} kg/week · about {Math.round(projection.weeks)} weeks to go
           </p>
         </div>
@@ -78,7 +78,7 @@ export function WeightClient({ logs, profile }: { logs: WeightLog[]; profile: Pr
       {/* Chart */}
       {sorted.length > 1 && (
         <div className="rounded-sheet border border-hairline bg-surface p-4 shadow-rest">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-2 mb-3">Trend</p>
+          <p className="text-caption font-semibold uppercase tracking-caps text-ink-2 mb-3">Trend</p>
           <WeightChart logs={sorted} />
         </div>
       )}
@@ -97,15 +97,15 @@ export function WeightClient({ logs, profile }: { logs: WeightLog[]; profile: Pr
       {/* Recent entries */}
       {recentEntries.length > 0 && (
         <div className="rounded-sheet border border-hairline bg-surface p-4 shadow-rest space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-2">Recent entries</p>
+          <p className="text-caption font-semibold uppercase tracking-caps text-ink-2">Recent entries</p>
           {recentEntries.map((log) => {
             const date = new Date(log.measured_at)
             const label = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', weekday: 'short' })
             return (
               <div key={log.id} className="flex items-center justify-between rounded-control bg-surface-2 px-4 py-2.5">
-                <span className="text-sm text-ink-2">{label}</span>
+                <span className="text-body text-ink-2">{label}</span>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-ink tabular-nums">{formatKg(log.weight_kg)} kg</span>
+                  <span className="text-body font-bold text-ink tabular-nums">{formatKg(log.weight_kg)} kg</span>
                   <button
                     type="button"
                     onClick={() => deleteLog(log.id)}

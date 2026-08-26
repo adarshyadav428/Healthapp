@@ -1,21 +1,39 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { Drumstick, Wheat, Droplet } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useCountUp } from '../../hooks/useCountUp'
 
-// Ember Air hero (v2): a 132px calorie ring (ember, always — no red over-goal
-// state) with the eaten total centred, the three macros as icon-rings down the
-// right, and a "kcal left / goal" strip below a hairline.
+/**
+ * The calorie hero.
+ *
+ * Restructured against docs/design-teardown-2026-08-25.md. Two findings drove it:
+ *
+ * §8.2 — the number-to-label gap IS the hierarchy. Every reference app runs its
+ * hero numeral at 44-56px against a 13px muted label, roughly 4:1. This card was
+ * 36px against 13px (2.8:1), which is the ratio that reads as "competent" rather
+ * than as "designed". The numeral is now 48px.
+ *
+ * §6 — macros are a three-column row of value/target pairs under the ring, not a
+ * stack of icon-rings beside it. That is what freed the width: at 132px the ring
+ * had to share the row, and a 48px numeral does not fit inside a 112px hole. Full
+ * width, the ring goes to 160px and the numeral fits with room to spare.
+ *
+ * The pair itself (`37 / 95g`, eaten bold in ink, target muted) is the single
+ * most repeated component across all five references, and it says something the
+ * old bare "37g" could not: how far through the day this macro is.
+ *
+ * Accent rules unchanged: the arc is the only accented thing here. The macro
+ * triad is deliberately NOT the accent, so "which macro" and "how am I doing"
+ * never encode in the same colour.
+ */
 
-const RING = 132
-const RING_R = 58
+const RING = 160
+const RING_STROKE = 12
+const RING_R = (RING - RING_STROKE) / 2
 const RING_C = RING / 2
 const RING_CIRC = 2 * Math.PI * RING_R
 
-const M = 34
-const M_R = 13
-const M_C = M / 2
-const M_CIRC = 2 * Math.PI * M_R
+const EASE = 'cubic-bezier(.22,1,.36,1)'
 
 interface Props {
   eaten: number
@@ -28,73 +46,38 @@ interface Props {
   fatTarget: number
 }
 
-function useCountUp(target: number, duration = 800) {
-  const [val, setVal] = useState(0)
-  const raf = useRef<number>()
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setVal(target)
-      return
-    }
-    const start = performance.now()
-    const tick = (now: number) => {
-      const t = Math.min((now - start) / duration, 1)
-      const eased = 1 - Math.pow(1 - t, 4)
-      setVal(Math.round(target * eased))
-      if (t < 1) raf.current = requestAnimationFrame(tick)
-      else clearTimeout(safety)
-    }
-
-    // requestAnimationFrame does not always run. Battery saver, a backgrounded
-    // tab, and some embedded webviews suppress it entirely — and because this
-    // hook starts at 0, the hero then renders a permanent "0 kcal eaten" while
-    // the line right below it says "50 kcal over". Observed exactly that during
-    // the 2026-07-31 audit in a tab where rAF never fired. The animation is
-    // decoration; the number is not, so guarantee the number.
-    const safety = setTimeout(() => {
-      if (raf.current) cancelAnimationFrame(raf.current)
-      setVal(target)
-    }, duration + 300)
-
-    raf.current = requestAnimationFrame(tick)
-    return () => {
-      if (raf.current) cancelAnimationFrame(raf.current)
-      clearTimeout(safety)
-    }
-  }, [target, duration])
-  return val
-}
-
-function MacroRow({ icon: Icon, label, eaten, target, color }: {
-  icon: typeof Drumstick
+function MacroCell({ label, eaten, target, color, mounted }: {
   label: string
   eaten: number
   target: number
   color: string
+  mounted: boolean
 }) {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => { setMounted(true) }, [])
   const pct = target > 0 ? Math.min(eaten / target, 1) : 0
-  const offset = M_CIRC * (1 - (mounted ? pct : 0))
+  // The bar already glides to its value. Without this the grams beside it
+  // jumped, and a number snapping next to a bar that travels reads as a glitch
+  // rather than as two things doing different jobs.
+  const shownGrams = useCountUp(Math.round(eaten))
+
   return (
-    <div className="flex items-center gap-3">
-      <div className="relative shrink-0" style={{ width: M, height: M }}>
-        <svg width={M} height={M} viewBox={`0 0 ${M} ${M}`}>
-          <circle cx={M_C} cy={M_C} r={M_R} fill="none" stroke="var(--surface-2)" strokeWidth={4} />
-          <circle
-            cx={M_C} cy={M_C} r={M_R} fill="none" stroke={color} strokeWidth={4}
-            strokeLinecap="round" strokeDasharray={M_CIRC} strokeDashoffset={offset}
-            transform={`rotate(-90 ${M_C} ${M_C})`}
-            style={{ transition: 'stroke-dashoffset 0.9s cubic-bezier(.22,1,.36,1)' }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Icon className="h-[13px] w-[13px]" strokeWidth={2} style={{ color }} />
-        </div>
-      </div>
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-[15px] font-bold tabular-nums text-ink">{Math.round(eaten)}g</span>
-        <span className="text-[12px] text-ink-3">{label}</span>
+    <div className="min-w-0 flex-1">
+      <p className="text-micro font-semibold uppercase tracking-caps text-ink-3">{label}</p>
+      <p className="mt-1 truncate text-body font-bold tabular-nums text-ink">
+        {shownGrams}
+        <span className="font-medium text-ink-3">
+          {' / '}
+          {Math.round(target)}g
+        </span>
+      </p>
+      <div className="mt-2 h-[5px] w-full overflow-hidden rounded-full bg-track">
+        <div
+          className="h-full rounded-full"
+          style={{
+            width: `${(mounted ? pct : 0) * 100}%`,
+            backgroundColor: color,
+            transition: `width 0.9s ${EASE}`,
+          }}
+        />
       </div>
     </div>
   )
@@ -112,41 +95,50 @@ export function CalorieHeroCard({
   const kcalLeft = target - eaten
 
   return (
-    <div className="rounded-[24px] bg-surface px-6 py-[26px]" style={{ boxShadow: 'var(--shadow-air)' }}>
-      <div className="flex items-center gap-5">
-        {/* Ring */}
-        <div className="relative shrink-0" style={{ width: RING, height: RING }}>
-          <svg width={RING} height={RING} viewBox={`0 0 ${RING} ${RING}`}>
-            <circle cx={RING_C} cy={RING_C} r={RING_R} fill="none" stroke="var(--surface-2)" strokeWidth={10} />
+    <div className="rounded-card-lg bg-surface px-card py-7" style={{ boxShadow: 'var(--shadow-air)' }}>
+      {/* ── Ring ── the only accented element on this card ── */}
+      <div className="flex justify-center">
+        <div className="relative" style={{ width: RING, height: RING }}>
+          <div
+            className="pointer-events-none absolute -inset-4"
+            style={{ background: 'var(--ring-bloom)' }}
+            aria-hidden="true"
+          />
+          <svg width={RING} height={RING} viewBox={`0 0 ${RING} ${RING}`} className="relative">
             <circle
-              cx={RING_C} cy={RING_C} r={RING_R} fill="none" stroke="var(--brand)" strokeWidth={10}
+              cx={RING_C} cy={RING_C} r={RING_R} fill="none"
+              stroke="var(--track)" strokeWidth={RING_STROKE}
+            />
+            <circle
+              cx={RING_C} cy={RING_C} r={RING_R} fill="none"
+              stroke="var(--brand)" strokeWidth={RING_STROKE}
               strokeLinecap="round" strokeDasharray={RING_CIRC} strokeDashoffset={offset}
               transform={`rotate(-90 ${RING_C} ${RING_C})`}
-              style={{ transition: 'stroke-dashoffset 0.9s cubic-bezier(.22,1,.36,1)' }}
+              style={{ transition: `stroke-dashoffset 0.9s ${EASE}` }}
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="font-display text-[32px] font-bold tabular-nums leading-none text-ink" style={{ letterSpacing: '-0.03em' }}>
+            <span className="font-display text-hero font-bold tabular-nums leading-none text-ink">
               {shown.toLocaleString('en-IN')}
             </span>
-            <span className="mt-1 text-[11.5px] text-ink-3">kcal eaten</span>
+            <span className="mt-1.5 text-caption text-ink-3">kcal eaten</span>
           </div>
-        </div>
-
-        {/* Macros down the right */}
-        <div className="flex flex-1 flex-col gap-3.5">
-          <MacroRow icon={Drumstick} label="Protein" eaten={proteinEaten} target={proteinTarget} color="var(--protein)" />
-          <MacroRow icon={Wheat} label="Carbs" eaten={carbsEaten} target={carbsTarget} color="var(--carbs)" />
-          <MacroRow icon={Droplet} label="Fat" eaten={fatEaten} target={fatTarget} color="var(--fat)" />
         </div>
       </div>
 
-      {/* kcal left / goal strip */}
-      <div className="mt-5 flex items-baseline justify-between border-t border-hairline pt-4">
-        <span className="text-[12.5px] text-ink-3">
+      {/* ── Macros ── three value/target pairs, full width under the ring ── */}
+      <div className="mt-7 flex gap-4">
+        <MacroCell label="Protein" eaten={proteinEaten} target={proteinTarget} color="var(--protein)" mounted={mounted} />
+        <MacroCell label="Carbs"   eaten={carbsEaten}   target={carbsTarget}   color="var(--carbs)"   mounted={mounted} />
+        <MacroCell label="Fat"     eaten={fatEaten}     target={fatTarget}     color="var(--fat)"     mounted={mounted} />
+      </div>
+
+      {/* ── kcal left / goal strip ── */}
+      <div className="mt-6 flex items-baseline justify-between border-t border-hairline pt-4">
+        <span className="text-caption text-ink-3">
           <b className="font-bold tabular-nums text-ink">{Math.abs(kcalLeft).toLocaleString('en-IN')}</b> kcal {kcalLeft >= 0 ? 'left' : 'over'}
         </span>
-        <span className="text-[12.5px] text-ink-3">
+        <span className="text-caption text-ink-3">
           Goal <b className="font-bold tabular-nums text-ink">{target.toLocaleString('en-IN')}</b> kcal
         </span>
       </div>

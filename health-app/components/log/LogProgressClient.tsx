@@ -40,13 +40,13 @@ export function LogProgressClient({ initialLogs, kcalTarget, date = new Date() }
   const pct = kcalTarget > 0 ? Math.min((eaten / kcalTarget) * 100, 100) : 0
 
   return (
-    <div className="rounded-[24px] bg-surface px-[22px] py-5" style={{ boxShadow: 'var(--shadow-air)' }}>
+    <div className="rounded-card-lg bg-surface px-[22px] py-5" style={{ boxShadow: 'var(--shadow-air)' }}>
       <div className="flex items-baseline justify-between">
-        <p className="font-display text-[28px] font-bold tabular-nums tracking-[-0.02em] text-ink">
+        <p className="font-display text-title-lg font-bold tabular-nums text-ink">
           {eaten.toLocaleString('en-IN')}{' '}
-          <span className="text-[14px] font-medium tracking-normal text-ink-3">/ {kcalTarget.toLocaleString('en-IN')} kcal</span>
+          <span className="text-body font-medium tracking-normal text-ink-3">/ {kcalTarget.toLocaleString('en-IN')} kcal</span>
         </p>
-        <span className="text-[12.5px] font-semibold text-brand">
+        <span className="text-caption font-semibold text-brand">
           {over >= 0 ? `${over.toLocaleString('en-IN')} over` : `${Math.abs(over).toLocaleString('en-IN')} left`}
         </span>
       </div>
@@ -54,9 +54,9 @@ export function LogProgressClient({ initialLogs, kcalTarget, date = new Date() }
         <div className="h-full rounded-full bg-brand transition-[width] duration-700" style={{ width: `${pct}%` }} />
       </div>
       <div className="mt-3.5 flex gap-5">
-        <span className="text-[12px] text-ink-3">P <b className="font-bold tabular-nums text-ink">{Math.round(totals.protein)}g</b></span>
-        <span className="text-[12px] text-ink-3">C <b className="font-bold tabular-nums text-ink">{Math.round(totals.carbs)}g</b></span>
-        <span className="text-[12px] text-ink-3">F <b className="font-bold tabular-nums text-ink">{Math.round(totals.fat)}g</b></span>
+        <span className="text-caption text-ink-3">P <b className="font-bold tabular-nums text-ink">{Math.round(totals.protein)}g</b></span>
+        <span className="text-caption text-ink-3">C <b className="font-bold tabular-nums text-ink">{Math.round(totals.carbs)}g</b></span>
+        <span className="text-caption text-ink-3">F <b className="font-bold tabular-nums text-ink">{Math.round(totals.fat)}g</b></span>
       </div>
     </div>
   )

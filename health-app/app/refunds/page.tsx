@@ -15,15 +15,15 @@ export default function RefundsPage() {
       <div className="mx-auto w-full max-w-2xl">
         <div className="mb-6">
           <Link href="/" className="mb-8 flex items-center gap-2">
-            <span className="text-2xl">🥗</span>
-            <span className="font-display text-xl font-bold text-brand-ink">
+            <span className="text-title">🥗</span>
+            <span className="font-display text-title-sm font-bold text-brand-ink">
               GetInShape
             </span>
           </Link>
-          <h1 className="font-display text-3xl font-bold text-ink">
+          <h1 className="font-display text-title-lg font-bold text-ink">
             Refund &amp; Cancellation Policy
           </h1>
-          <p className="mt-1 text-sm text-ink-2">
+          <p className="mt-1 text-body text-ink-2">
             Last updated: August 22, 2026
           </p>
         </div>
@@ -102,7 +102,7 @@ export default function RefundsPage() {
           </Section>
         </div>
 
-        <p className="mt-6 text-center text-xs text-ink-2">
+        <p className="mt-6 text-center text-caption text-ink-2">
           <Link href="/terms" className="hover:text-ink">
             Terms
           </Link>
@@ -129,10 +129,10 @@ function Section({
 }) {
   return (
     <div>
-      <h2 className="font-display mb-2 text-base font-bold text-ink">
+      <h2 className="font-display mb-2 text-body-lg font-bold text-ink">
         {title}
       </h2>
-      <p className="text-sm leading-relaxed text-ink-2">{children}</p>
+      <p className="text-body leading-relaxed text-ink-2">{children}</p>
     </div>
   );
 }

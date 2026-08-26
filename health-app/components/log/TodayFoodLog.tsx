@@ -9,6 +9,7 @@ import { toast } from '../ui/use-toast'
 import { getIstDayRange, istDateStr } from '../../lib/dateUtils'
 import { Trash2, ChevronDown, Pencil, BookmarkPlus, Check, X } from 'lucide-react'
 import { EditFoodLogModal } from './EditFoodLogModal'
+import { ShareDayButton } from './ShareDayButton'
 
 const MEAL_CONFIG: Record<string, { label: string; emoji: string; dot: string }> = {
   breakfast: { label: 'Breakfast', emoji: '🥣', dot: 'var(--brand)' },
@@ -56,7 +57,7 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
   }
 
   return (
-    <div className="rounded-card overflow-hidden bg-surface shadow-rest">
+    <div className="rounded-card overflow-hidden bg-surface shadow-air">
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
@@ -64,12 +65,12 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
       >
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: cfg.dot }} />
-          <span className="text-sm">{cfg.emoji}</span>
-          <span className="text-[13px] font-semibold text-ink">{cfg.label}</span>
-          <span className="text-[12px] text-ink-3">· {logs.length} item{logs.length !== 1 ? 's' : ''}</span>
+          <span className="text-body">{cfg.emoji}</span>
+          <span className="text-caption font-semibold text-ink">{cfg.label}</span>
+          <span className="text-caption text-ink-3">· {logs.length} item{logs.length !== 1 ? 's' : ''}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[12px] font-medium text-ink-3 tabular-nums">{Math.round(totalKcal)} kcal</span>
+          <span className="text-caption font-medium text-ink-3 tabular-nums">{Math.round(totalKcal)} kcal</span>
           <ChevronDown
             className="h-3.5 w-3.5 text-ink-3 transition-transform"
             style={{ transform: open ? 'rotate(180deg)' : 'none' }}
@@ -82,16 +83,16 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
           {logs.map((log) => (
             <div key={log.id} className="flex items-center justify-between rounded-control px-3 py-2 bg-surface-2">
               <div className="min-w-0 flex-1 mr-2">
-                <p className="text-xs font-medium truncate text-ink">
+                <p className="text-caption font-medium truncate text-ink">
                   {log.food?.name ?? (log.food_id == null ? 'Quick Add' : 'Food item')}
                 </p>
                 <div className="flex gap-2 mt-0.5 flex-wrap tabular-nums">
-                  <span className="text-[10px] font-semibold text-ink">{Math.round(log.kcal)} kcal</span>
-                  <span className="text-[10px] font-medium" style={{ color: 'var(--protein)' }}>P{Math.round(log.protein_g)}g</span>
-                  <span className="text-[10px] font-medium" style={{ color: 'var(--carbs)' }}>C{Math.round(log.carbs_g)}g</span>
-                  <span className="text-[10px] font-medium" style={{ color: 'var(--fat)' }}>F{Math.round(log.fat_g)}g</span>
+                  <span className="text-micro font-semibold text-ink">{Math.round(log.kcal)} kcal</span>
+                  <span className="text-micro font-medium" style={{ color: 'var(--protein)' }}>P{Math.round(log.protein_g)}g</span>
+                  <span className="text-micro font-medium" style={{ color: 'var(--carbs)' }}>C{Math.round(log.carbs_g)}g</span>
+                  <span className="text-micro font-medium" style={{ color: 'var(--fat)' }}>F{Math.round(log.fat_g)}g</span>
                   {log.food?.fiber_g_per_100g != null && log.food.fiber_g_per_100g > 0 && (
-                    <span className="text-[10px] font-medium text-good">
+                    <span className="text-micro font-medium text-good">
                       Fi{Math.round(log.food.fiber_g_per_100g * log.grams / 100)}g
                     </span>
                   )}
@@ -127,7 +128,7 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
                 value={mealName}
                 onChange={(e) => setMealName(e.target.value)}
                 placeholder={`Name (e.g. "${cfg.label} usual")`}
-                className="flex-1 rounded-control px-3 py-1.5 text-xs text-ink outline-none transition-all bg-surface-2 border border-hairline focus:border-brand"
+                className="flex-1 rounded-control px-3 py-1.5 text-caption text-ink outline-none transition-all bg-surface-2 border border-hairline focus:border-brand"
                 onKeyDown={(e) => e.key === 'Enter' && saveMeal()}
                 autoFocus
               />
@@ -151,7 +152,7 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
             <button
               type="button"
               onClick={() => setSavingName(true)}
-              className="flex w-full items-center gap-1.5 rounded-control px-3 py-1.5 text-[11px] font-semibold text-ink-3 transition-colors"
+              className="flex w-full items-center gap-1.5 rounded-control px-3 py-1.5 text-micro font-semibold text-ink-3 transition-colors"
             >
               <BookmarkPlus className="h-3.5 w-3.5" strokeWidth={1.75} />
               Save as meal template
@@ -264,8 +265,8 @@ export function TodayFoodLog({ initialLogs, date = new Date() }: { initialLogs: 
     <div className="space-y-2">
       {/* Summary row */}
       <div className="flex items-center justify-between">
-        <p className="text-[10.5px] font-medium uppercase tracking-[.1em] text-ink-3">{isToday ? "Today's log" : 'Log'}</p>
-        <div className="flex gap-3 text-[11px] tabular-nums">
+        <p className="text-micro font-medium uppercase tracking-caps text-ink-3">{isToday ? "Today's log" : 'Log'}</p>
+        <div className="flex gap-3 text-micro tabular-nums">
           <span className="font-semibold text-ink">{Math.round(totals.kcal)} kcal</span>
           <span className="font-medium" style={{ color: 'var(--protein)' }}>P{Math.round(totals.protein)}g</span>
           <span className="font-medium" style={{ color: 'var(--carbs)' }}>C{Math.round(totals.carbs)}g</span>
@@ -282,6 +283,8 @@ export function TodayFoodLog({ initialLogs, date = new Date() }: { initialLogs: 
           onEdit={setEditingLog}
         />
       ))}
+
+      <ShareDayButton logs={logs} date={date} />
 
       {editingLog && (
         <EditFoodLogModal

@@ -66,8 +66,8 @@ export function ReminderHourPicker({ initialHour }: { initialHour: number }) {
           <Clock className="h-4 w-4 text-brand" strokeWidth={1.75} />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-ink">Remind me at</p>
-          <p className="text-xs text-ink-2">Only if you haven&apos;t logged by then</p>
+          <p className="text-body font-semibold text-ink">Remind me at</p>
+          <p className="text-caption text-ink-2">Only if you haven&apos;t logged by then</p>
         </div>
       </div>
 
@@ -76,7 +76,7 @@ export function ReminderHourPicker({ initialHour }: { initialHour: number }) {
         disabled={saving}
         onChange={(e) => save(Number(e.target.value))}
         aria-label="Reminder time"
-        className="flex-shrink-0 rounded-control border border-hairline bg-surface px-3 py-2 text-sm font-medium text-ink disabled:opacity-50"
+        className="flex-shrink-0 rounded-control border border-hairline bg-surface px-3 py-2 text-body font-medium text-ink disabled:opacity-50"
       >
         {REMINDER_HOURS.map((h) => (
           <option key={h} value={h}>

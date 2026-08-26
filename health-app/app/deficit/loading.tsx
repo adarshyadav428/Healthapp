@@ -11,7 +11,7 @@ export default function DeficitLoading() {
         {/* PageHeader: label + title + back chevron */}
         <div className="pt-2 space-y-2">
           <div className="h-4 w-40 rounded bg-surface-2 animate-shimmer" />
-          <div className="h-7 w-24 rounded-lg bg-surface-2 animate-shimmer" />
+          <div className="h-7 w-24 rounded-full bg-surface-2 animate-shimmer" />
         </div>
 
         {/* Deficit summary card */}

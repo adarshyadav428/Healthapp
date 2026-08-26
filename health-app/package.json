@@ -9,7 +9,8 @@
     "lint": "next lint",
     "test": "vitest run",
     "format": "prettier --write .",
-    "check:tokens": "node scripts/check-tokens.mjs"
+    "check:tokens": "node scripts/check-tokens.mjs",
+    "check:contrast": "node scripts/check-contrast.mjs"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",

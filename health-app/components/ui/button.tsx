@@ -15,11 +15,16 @@ const buttonVariants = cva(
         subtle:  'bg-transparent text-ink hover:bg-surface-2',
         danger:  'bg-danger-soft text-danger hover:brightness-95',
       },
+      // `default` and `lg` already clear the 44px minimum touch target on their
+      // own. `sm` (36px) and `icon` (40px) do not — so they keep their drawn
+      // size and grow an invisible pseudo-element out to 44px instead. Padding
+      // the button itself would have made a "small" button not small, which is
+      // the whole reason these variants exist; a hit area is not a look.
       size: {
-        default: 'h-11 px-5 text-sm',
-        sm:      'h-9 px-3.5 text-sm',
-        lg:      'h-12 px-6 text-base',
-        icon:    'h-10 w-10',
+        default: 'h-11 px-5 text-body',
+        sm:      "h-9 px-3.5 text-body relative after:absolute after:inset-x-0 after:-inset-y-1 after:content-['']",
+        lg:      'h-12 px-6 text-body-lg',
+        icon:    "h-10 w-10 relative after:absolute after:-inset-0.5 after:content-['']",
       },
     },
     defaultVariants: {

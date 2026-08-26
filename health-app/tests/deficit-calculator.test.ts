@@ -321,6 +321,58 @@ describe('buildPeriodWindow — month', () => {
   })
 })
 
+// The Progress page's trend card opts into this on purpose — see the note atop
+// lib/deficit-calculator.ts. `/deficit`'s week-by-week history never sets it.
+describe('buildPeriodWindow — rolling', () => {
+  const today = '2026-08-22' // a Saturday; the calendar week starts Mon 08-17
+  const byDate = new Map([
+    ['2026-07-24', 2100], // first day of the rolling 30-day window
+    ['2026-08-09', 1900], // inside the rolling month, outside the rolling week
+    ['2026-08-16', 2000], // first day of the rolling 7-day window
+    ['2026-08-21', 1850],
+    ['2026-08-22', 500],  // today, half-eaten
+    ['2026-08-23', 1700], // future: impossible, but must not count if present
+  ])
+
+  it('week: trails 7 days ending today, not the calendar Mon–Sun window', () => {
+    const w = buildPeriodWindow(byDate, today, 'week', 0, true)
+    expect(w.periodStart).toBe('2026-08-16') // today − 6, not the Monday (08-17)
+    expect(w.periodDays).toBe(7)
+    expect(w.dates).toEqual([
+      '2026-08-16', '2026-08-17', '2026-08-18', '2026-08-19',
+      '2026-08-20', '2026-08-21', '2026-08-22',
+    ])
+    expect(w.daysElapsed).toBe(6) // today still excluded, same rule as the calendar path
+    expect(w.completed.map((d) => d.date)).toEqual(['2026-08-16', '2026-08-21'])
+    expect(w.todayKcal).toBe(500)
+  })
+
+  it('week: back = 1 slides a full window earlier, not to the calendar-previous week', () => {
+    const w = buildPeriodWindow(byDate, today, 'week', 1, true)
+    expect(w.periodStart).toBe('2026-08-09')
+    expect(w.daysElapsed).toBe(7)
+    expect(w.completed.map((d) => d.date)).toEqual(['2026-08-09'])
+    expect(w.todayKcal).toBeNull()
+  })
+
+  it('month: trails 30 days ending today, ignoring calendar month boundaries', () => {
+    const w = buildPeriodWindow(byDate, today, 'month', 0, true)
+    expect(w.periodStart).toBe('2026-07-24')
+    expect(w.periodDays).toBe(30)
+    expect(w.dates).toHaveLength(30)
+    expect(w.daysElapsed).toBe(29)
+    expect(w.completed.map((d) => d.date)).toEqual([
+      '2026-07-24', '2026-08-09', '2026-08-16', '2026-08-21',
+    ])
+    expect(w.todayKcal).toBe(500)
+  })
+
+  it('leaves the default calendar path untouched', () => {
+    const w = buildPeriodWindow(byDate, today, 'week')
+    expect(w.periodStart).toBe('2026-08-17') // the Monday, not today − 6
+  })
+})
+
 describe('calculatePeriodDeficit — month', () => {
   const tdee = 2500
 
