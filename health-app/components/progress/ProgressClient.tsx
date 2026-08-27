@@ -9,6 +9,7 @@ import { useUser } from '../../hooks/useUser'
 import { DayDiary } from './DayDiary'
 import { dateStrToUtcMidnight } from '../../lib/dateUtils'
 import { ShareProgressButton } from './ShareProgressButton'
+import { firstNameFrom } from '../../lib/shareCard'
 import { computeWeightTrend } from '../../lib/weightTrend'
 import { contextInsight, contextInsightLine } from '../../lib/mealContext'
 import { BadgeShelf } from './BadgeShelf'
@@ -148,15 +149,25 @@ export function ProgressClient({
   // ignore its patterns.
   const contextLine = useMemo(() => contextInsightLine(contextInsight(logs)), [logs])
 
-  // The katoris on the share card. Averages rather than window totals, because
-  // the thali is meant to read as "a typical day of mine" — which is what
-  // someone sharing it is actually claiming.
-  const shareMacros = useMemo(
+  // Deficit rows for the share chooser. `monthView` is null for free accounts —
+  // the gate is server-side (app/progress/page.tsx), so nothing here decides it.
+  // A fallback period is dropped rather than shared: the card says "This week",
+  // and a card that says "This week" about last week is a lie, not a rounding.
+  // The card's byline. Null for an anonymous account (display_name is
+  // nullable), and the card then omits the line rather than drawing a blank.
+  const firstName = firstNameFrom(profile.display_name)
+
+  const shareDeficits = useMemo(
     () =>
-      avgProtein + avgCarbs + avgFat > 0
-        ? { proteinG: avgProtein, carbsG: avgCarbs, fatG: avgFat }
-        : null,
-    [avgProtein, avgCarbs, avgFat]
+      [weekView, monthView]
+        .filter((v): v is DeficitPeriodView => v != null && !v.isFallback)
+        .map((v) => ({
+          kcal: v.summary.total_deficit,
+          period: v.kind,
+          daysLogged: v.summary.days_logged,
+          fatKg: v.summary.fat_loss_achieved_kg,
+        })),
+    [weekView, monthView]
   )
   const cfg = METRIC_CONFIG[metric]
 
@@ -299,7 +310,8 @@ export function ProgressClient({
         streakDays={streak}
         startWeightKg={startWeight}
         currentWeightKg={currentWeight}
-        macros={shareMacros}
+        deficits={shareDeficits}
+        firstName={firstName}
       />
 
       {/* The "avg kcal · goal" and "N of 7 days logged" tiles used to sit here.
@@ -391,7 +403,7 @@ export function ProgressClient({
               <X className="h-4 w-4 text-ink-2" />
             </button>
           </div>
-          <DayDiary userId={user.id} date={dateStrToUtcMidnight(selectedDate)} />
+          <DayDiary firstName={firstName} userId={user.id} date={dateStrToUtcMidnight(selectedDate)} />
         </div>
       )}
 

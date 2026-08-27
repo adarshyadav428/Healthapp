@@ -9,6 +9,8 @@ import { toast } from '../ui/use-toast'
 import { getIstDayRange, istDateStr } from '../../lib/dateUtils'
 import { Trash2, ChevronDown, Pencil, BookmarkPlus, Check, X } from 'lucide-react'
 import { EditFoodLogModal } from './EditFoodLogModal'
+import { ShareDayButton } from './ShareDayButton'
+import { firstNameFrom } from '../../lib/shareCard'
 
 const MEAL_CONFIG: Record<string, { label: string; emoji: string; dot: string }> = {
   breakfast: { label: 'Breakfast', emoji: '🥣', dot: 'var(--brand)' },
@@ -163,7 +165,10 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
   )
 }
 
-export function TodayFoodLog({ initialLogs, date = new Date() }: { initialLogs: FoodLog[]; date?: Date }) {
+export function TodayFoodLog(
+  { initialLogs, date = new Date(), displayName }:
+  { initialLogs: FoodLog[]; date?: Date; displayName?: string | null }
+) {
   const { user } = useUser()
   const queryClient = useQueryClient()
   const { data: logs = initialLogs } = useFoodLogs(user?.id ?? null, date, initialLogs)
@@ -282,6 +287,8 @@ export function TodayFoodLog({ initialLogs, date = new Date() }: { initialLogs: 
           onEdit={setEditingLog}
         />
       ))}
+
+      <ShareDayButton logs={logs} date={date} firstName={firstNameFrom(displayName)} />
 
       {editingLog && (
         <EditFoodLogModal

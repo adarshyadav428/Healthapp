@@ -12,7 +12,8 @@ import { isPlayBillingAvailable } from '../../lib/play/billing'
 import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { formatKg } from '../../lib/formatWeight'
 import { captureEvent } from '../../lib/posthog/client'
-import { buildShareCardData, shareProgressCard } from '../../lib/shareCard'
+import { EVENTS } from '../../lib/posthog/events'
+import { buildShareCardOptions, shareProgressCard, type ShareTopic } from '../../lib/shareCard'
 import { toast } from '../ui/use-toast'
 
 const celebrationKey = (uid: string) => `gis.firstLogCelebrated.${uid}`
@@ -134,34 +135,58 @@ export function LogMilestones() {
     setStreakDays(pendingStreak)
   }, [pendingStreak])
 
-  // The three big streak rungs offer a share card, which needs more than 2.6s
-  // of decision time — those wait for a tap instead of vanishing mid-thought.
+  // The three big streak rungs offer a share card, and so does every whole-kg
+  // weight milestone — "3 kg down" is the single most postable thing this app
+  // ever tells anyone, and it used to celebrate and vanish with no way to keep
+  // it. Both need more than 2.6s of decision time, so they wait for a tap
+  // instead of disappearing mid-thought.
   const canShareStreak = streakDays != null && isShareableStreakMilestone(streakDays)
+  const canShare = canShareStreak || weightKg != null
 
   // Celebrations auto-dismiss; the paywall waits for an explicit choice.
   useEffect(() => {
     if (active !== 'first_log_celebration' && weightKg == null && streakDays == null) return
-    if (canShareStreak) return
+    if (canShare) return
     const t = setTimeout(() => {
       setActive(null)
       setWeightKg(null)
       setStreakDays(null)
     }, 2600)
     return () => clearTimeout(t)
-  }, [active, weightKg, streakDays, canShareStreak])
+  }, [active, weightKg, streakDays, canShare])
 
-  const shareStreak = async () => {
-    if (sharing || streakDays == null) return
+  /**
+   * Share the milestone that is on screen.
+   *
+   * A milestone card is always about the thing just celebrated, so the topic is
+   * picked rather than chosen — this is not the /progress chooser. Status
+   * format, because the moment goes to a status.
+   */
+  const shareMilestone = async () => {
+    if (sharing) return
+    const topic: ShareTopic = weightKg != null ? 'weight' : 'streak'
+    const option = buildShareCardOptions({
+      streakDays: streakDays ?? 0,
+      kgLost: weightKg,
+      deficit: null,
+    }).find((o) => o.topic === topic)
+    if (!option) return
+
     setSharing(true)
     try {
-      const data = buildShareCardData({ streakDays, startWeightKg: null, currentWeightKg: null })
-      if (!data) return
-      const method = await shareProgressCard(data)
-      captureEvent('progress_card_shared', { method, streak: streakDays, source: 'streak_milestone' })
+      const method = await shareProgressCard(option.data, { format: 'story' })
+      captureEvent(EVENTS.PROGRESS_CARD_SHARED, {
+        method,
+        topic,
+        format: 'story',
+        streak: streakDays,
+        source: weightKg != null ? 'weight_milestone' : 'streak_milestone',
+      })
       if (method === 'downloaded') {
         toast({ title: 'Card saved', description: 'Image downloaded — share it anywhere.', duration: 3000 })
       }
       setStreakDays(null)
+      setWeightKg(null)
     } catch (err) {
       toast({ title: 'Could not create the card', description: (err as Error).message, variant: 'error' })
     } finally {
@@ -199,11 +224,11 @@ export function LogMilestones() {
               : "That's the hardest part done. Log every meal today and your streak begins."}
           </p>
 
-          {canShareStreak && (
+          {canShare && (
             <div className="mt-5 space-y-2" onClick={(e) => e.stopPropagation()}>
               <Button
                 type="button"
-                onClick={shareStreak}
+                onClick={shareMilestone}
                 disabled={sharing}
                 className="w-full gap-2 tap-scale"
               >
@@ -214,7 +239,10 @@ export function LogMilestones() {
               </Button>
               <button
                 type="button"
-                onClick={() => setStreakDays(null)}
+                onClick={() => {
+                  setStreakDays(null)
+                  setWeightKg(null)
+                }}
                 className="w-full py-1.5 text-[13px] font-semibold text-ink-3 tap-scale"
               >
                 Not now

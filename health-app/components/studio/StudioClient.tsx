@@ -10,7 +10,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Story } from '../story/Story'
 import type { StoryCard } from '../story/types'
-import { buildShareCardData, buildPlateSplit, drawShareCard } from '../../lib/shareCard'
+import {
+  buildShareCardOptions, buildDayCardData, drawShareCard, drawDayCard, MAX_ITEM_LINES,
+  resolveFonts, ensureNumeralFont,
+  type ShareTopic, type ShareFormat, type DayCardLog,
+} from '../../lib/shareCard'
 import {
   Flame, Home, UtensilsCrossed, TrendingUp, User, Plus, X, Check,
   ChevronLeft, Camera, Sparkles,
@@ -20,37 +24,97 @@ type Direction = 'onyx' | 'porcelain'
 type Screen = 'dashboard' | 'paywall' | 'quickadd' | 'story' | 'card'
 
 /**
- * The share card, drawn at full size and scaled down for review.
+ * One canvas. Kept as its own component so each cell of the grid below owns a
+ * ref — a single effect writing into many canvases would have to re-find them.
+ */
+function ShareCardCell({ topic, format }: { topic: ShareTopic | 'day'; format: ShareFormat }) {
+  const ref = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    if (!ref.current) return
+    let cancelled = false
+    document.fonts.ready.then(async () => {
+      if (cancelled || !ref.current) return
+      const fonts = resolveFonts()
+      const numeralFamily = await ensureNumeralFont(fonts.numeral)
+      if (cancelled || !ref.current) return
+      if (topic === 'day') {
+        const day = buildDayCardData({ ...SAMPLE_DAY_INPUT, maxItemLines: MAX_ITEM_LINES[format] })
+        if (day) drawDayCard(ref.current, day, fonts, { format, numeralFamily, firstName: 'Adarsh' })
+        return
+      }
+      const option = SAMPLE_OPTIONS.find((o) => o.topic === topic)
+      if (option) {
+        drawShareCard(ref.current, option.data, fonts, { format, numeralFamily, firstName: 'Adarsh' })
+      }
+    })
+    return () => { cancelled = true }
+  }, [topic, format])
+
+  return (
+    <figure style={{ margin: 0 }}>
+      <canvas ref={ref} style={{ width: '100%', height: 'auto', borderRadius: 14, display: 'block' }} />
+      <figcaption style={{ marginTop: 6, fontSize: 12, opacity: 0.6, textAlign: 'center' }}>
+        {topic} · {format}
+      </figcaption>
+    </figure>
+  )
+}
+
+/**
+ * Hard-coded sample numbers, never a real user's: /studio is a public route.
+ * The deficit sample is deliberately five glyphs wide — that is the hero most
+ * likely to overrun the plate's rim, and this grid is where that gets caught.
+ */
+const SAMPLE_OPTIONS = buildShareCardOptions({
+  streakDays: 12,
+  kgLost: 2.4,
+  deficit: { kcal: 3240, period: 'week', daysLogged: 6, fatKg: 0.42 },
+})
+
+/** A real-shaped Indian day: four meals, a long dish name, an unnamed quick add. */
+const SAMPLE_DAY_INPUT: { dateLabel: string; logs: DayCardLog[] } = {
+  dateLabel: 'Tuesday, 26 August',
+  logs: [
+    { meal: 'breakfast', name: 'Poha', kcal: 270, proteinG: 6, carbsG: 44, fatG: 7 },
+    { meal: 'breakfast', name: 'Masala Chai', kcal: 90, proteinG: 3, carbsG: 10, fatG: 4 },
+    { meal: 'lunch', name: 'Dal Tadka', kcal: 180, proteinG: 9, carbsG: 24, fatG: 5 },
+    { meal: 'lunch', name: 'Jeera Rice', kcal: 240, proteinG: 5, carbsG: 46, fatG: 4 },
+    { meal: 'lunch', name: 'Roti (2)', kcal: 200, proteinG: 6, carbsG: 38, fatG: 3 },
+    { meal: 'snack', name: null, kcal: 150, proteinG: 2, carbsG: 18, fatG: 8 },
+    { meal: 'dinner', name: 'Paneer Butter Masala', kcal: 420, proteinG: 18, carbsG: 22, fatG: 30 },
+    { meal: 'dinner', name: 'Tandoori Roti', kcal: 120, proteinG: 4, carbsG: 22, fatG: 2 },
+  ],
+}
+
+const CARD_KINDS: (ShareTopic | 'day')[] = [...SAMPLE_OPTIONS.map((o) => o.topic), 'day']
+
+/**
+ * Every topic in both formats, side by side.
  *
  * It deliberately ignores the studio's light/dark switch: a share card is a
- * brand asset that leaves the app, so lib/shareCard pins it to the Porcelain
+ * brand asset that leaves the app, so lib/shareCard pins it to the Kelp Shore
  * palette and it must look identical for every user. Seeing that it *doesn't*
  * react to the toggle is part of what this preview is for.
  */
 function ShareCardScreen() {
-  const ref = useRef<HTMLCanvasElement>(null)
-
-  useEffect(() => {
-    const canvas = ref.current
-    if (!canvas) return
-    let cancelled = false
-    document.fonts.ready.then(() => {
-      if (cancelled || !ref.current) return
-      const data = buildShareCardData({ streakDays: 12, startWeightKg: 82, currentWeightKg: 79.6 })
-      if (!data) return
-      const plate = buildPlateSplit({ proteinG: 96, carbsG: 210, fatG: 58 })
-      const root = getComputedStyle(document.documentElement)
-      drawShareCard(ref.current, data, {
-        display: root.getPropertyValue('--font-display').trim() || 'Inter Tight, sans-serif',
-        sans: root.getPropertyValue('--font-sans').trim() || 'Inter, sans-serif',
-      }, plate)
-    })
-    return () => { cancelled = true }
-  }, [])
-
   return (
-    <div className="st-page" style={{ display: 'grid', placeItems: 'center', padding: 18 }}>
-      <canvas ref={ref} style={{ width: '100%', maxWidth: 340, height: 'auto', borderRadius: 18 }} />
+    <div className="st-page" style={{ padding: 18, overflowY: 'auto' }}>
+      {(['story', 'square'] as ShareFormat[]).map((format) => (
+        <div
+          key={format}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${CARD_KINDS.length}, 1fr)`,
+            gap: 10,
+            marginBottom: 18,
+          }}
+        >
+          {CARD_KINDS.map((kind) => (
+            <ShareCardCell key={kind + format} topic={kind} format={format} />
+          ))}
+        </div>
+      ))}
     </div>
   )
 }

@@ -197,7 +197,7 @@ export default async function LogPage({
 
         {/* Editable day log for the selected day (kept below the landing) */}
         <div className="mt-6">
-          <TodayFoodLog initialLogs={dayFoodLogs} date={viewDate} />
+          <TodayFoodLog initialLogs={dayFoodLogs} date={viewDate} displayName={profile.display_name} />
         </div>
 
         {/* Exercise — always today-specific */}
