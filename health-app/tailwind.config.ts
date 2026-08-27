@@ -65,6 +65,17 @@ const config: Config = {
         sans:    ['var(--font-sans)'],
         display: ['var(--font-display)'],
       },
+      // Two named steps, not a scale. The share-card chooser sheet
+      // (components/progress/ShareProgressButton.tsx, ShareDayButton.tsx) was
+      // built against a named type scale from an unrelated branch that never
+      // landed here — without these, `text-body`/`text-caption` are unknown
+      // Tailwind classes and silently apply no font size at all. Only the two
+      // sizes those components actually use are added; this is not an attempt
+      // to introduce the fuller scale.
+      fontSize: {
+        caption: ['0.8125rem', { lineHeight: '1.125rem' }], // 13px
+        body:    ['0.9375rem', { lineHeight: '1.25rem'  }], // 15px
+      },
       borderRadius: {
         // Four steps: controls · cards · sheets (full pill is built-in)
         control: '0.75rem',  // 12px
