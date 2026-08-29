@@ -121,6 +121,15 @@ export function RecipeBuilder() {
         }),
       })
 
+      // Creating a custom food is Pro-gated server-side (402). Without this
+      // branch the recipe builder fell through to the generic throw and showed
+      // the raw "Pro required" string in a failure toast — an error, not an
+      // upgrade path. Mirror CreateFoodModal: send them to the paywall.
+      if (res.status === 402) {
+        window.location.href = '/upgrade?reason=custom_foods'
+        return
+      }
+
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Failed to save')
 

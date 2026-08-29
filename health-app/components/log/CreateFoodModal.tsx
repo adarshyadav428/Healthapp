@@ -9,16 +9,21 @@ import { toast } from '../ui/use-toast'
 import { Sheet, SheetContent } from '../ui/sheet'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
+import { ProLock } from '../ui/ProLock'
 import { X, ChefHat } from 'lucide-react'
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
 export function CreateFoodModal({
   initialName = '',
+  isPro = true,
   onClose,
   onCreated,
 }: {
   initialName?: string
+  /** When false, the form is replaced by a lock — the gate is server-side (402),
+   *  but a free user used to fill nine fields before finding that out (QA P2-13). */
+  isPro?: boolean
   onClose: () => void
   onCreated: (food: Food) => void
 }) {
@@ -97,6 +102,15 @@ export function CreateFoodModal({
           </button>
         </div>
 
+        {!isPro ? (
+          <ProLock.Card
+            reason="custom_foods"
+            track="custom_foods"
+            title="Custom foods are a Pro feature"
+            body="Add your home-cooked dishes and family recipes with exact macros, then log them in one tap. Everything else about logging stays free."
+            cta="See what Pro adds"
+          />
+        ) : (
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {/* Name + brand */}
           <div className="space-y-3">
@@ -159,6 +173,7 @@ export function CreateFoodModal({
             {isSubmitting ? 'Creating...' : 'Create food & log it'}
           </Button>
         </form>
+        )}
       </SheetContent>
     </Sheet>
   )

@@ -403,6 +403,9 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
         <Link href="/recipes" className="flex w-full items-center gap-3.5 px-[18px] py-4 tap-scale">
           <BookOpen className="h-[19px] w-[19px] shrink-0 text-ink" strokeWidth={1.9} />
           <span className="flex-1 text-[15px] font-medium text-ink">Custom foods &amp; recipes</span>
+          {!isPro && (
+            <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-bold text-brand-ink">PRO</span>
+          )}
           <RowChevron />
         </Link>
 

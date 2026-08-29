@@ -26,9 +26,11 @@ type Props = {
   logDate?: string
   /** Whether the viewed day is today — gates today-only surfaces. */
   isToday?: boolean
+  /** Pro entitlement — drives whether "create custom food" opens a form or a lock. */
+  isPro?: boolean
 }
 
-export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, hasYesterdayLogs, logDate, isToday = true }: Props) {
+export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, hasYesterdayLogs, logDate, isToday = true, isPro = true }: Props) {
   // Start the clock for `seconds_to_log`: this surface opening is the moment
   // the user set out to log something. See markLogStart in lib/posthog/client.
   useEffect(() => { markLogStart() }, [])
@@ -285,6 +287,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
       {showCreateFood ? (
         <CreateFoodModal
           initialName={debounced}
+          isPro={isPro}
           onClose={() => setShowCreateFood(false)}
           onCreated={(food) => {
             setShowCreateFood(false)

@@ -11,6 +11,7 @@ import { isProStatus } from '../../lib/subscription'
 import type { Food, FoodLog } from '../../types/index'
 import { getIstDayRange, istDateStr, dateStrToUtcMidnight } from '../../lib/dateUtils'
 import { isWithinFreeLogWindow } from '../../lib/backfill'
+import { shiftDateStr } from '../../lib/logDates'
 
 // Below-fold widgets — split into separate chunks so they don't block initial JS parse.
 const SkeletonCard = () => <div className="h-32 rounded-2xl bg-card border border-border animate-pulse" />
@@ -106,6 +107,11 @@ export default async function LogPage({
   // for any past day when Pro. Drives whether the logging surface renders.
   const isEditable = isPro || isWithinFreeLogWindow(dateStr)
 
+  // Would stepping one day earlier leave the free history window? Drives the
+  // header's back-chevron: a free user at the boundary sees a lock, not a
+  // control that silently teleports them to the paywall.
+  const prevDayLocked = !isPro && !isWithinFreeLogWindow(shiftDateStr(dateStr, -1))
+
   // Free-tier history gate: clamp dates older than 7 IST days
   if (!isPro && searchParams?.date) {
     const cutoffStr = istDateStr(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
@@ -163,10 +169,10 @@ export default async function LogPage({
         }}
       >
         {/* Header — date + Food title + Today pill + prev/next day chips */}
-        <FoodHeader dateStr={dateStr} />
+        <FoodHeader dateStr={dateStr} prevDayLocked={prevDayLocked} />
 
         {/* Swipe left/right anywhere below the header to change days */}
-        <SwipeDayNav dateStr={dateStr}>
+        <SwipeDayNav dateStr={dateStr} prevDayLocked={prevDayLocked}>
 
         {/* Calorie summary — live for today, static for past */}
         <div className="mt-4">
@@ -191,6 +197,7 @@ export default async function LogPage({
               hasYesterdayLogs={hasYesterdayLogs}
               logDate={dateStr}
               isToday={isToday}
+              isPro={isPro}
             />
           </div>
         )}

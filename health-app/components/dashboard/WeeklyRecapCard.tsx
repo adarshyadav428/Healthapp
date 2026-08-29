@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { Sparkles } from 'lucide-react'
 import { captureEvent } from '../../lib/posthog/client'
+import { ProLock } from '../ui/ProLock'
 
 export type WeeklyRecap = {
   daysLogged: number
@@ -14,9 +15,11 @@ export type WeeklyRecap = {
 const AIR = { boxShadow: 'var(--shadow-air)' } as const
 
 /**
- * Pro-only "Your week" card. Renders the latest stored weekly recap; for a Pro
- * user who hasn't had their first Sunday yet, a gentle placeholder so the
- * feature is discoverable. Non-Pro users see nothing (the paywall sells it).
+ * "Your week" card. Renders the latest stored weekly recap for Pro; a gentle
+ * placeholder for a Pro user still waiting on their first Sunday; and — for a
+ * free user — a locked card that NAMES the feature. It used to render nothing
+ * at all for free users, so the single best recurring-desire surface in the app
+ * was invisible to the people it's meant to convert.
  */
 export function WeeklyRecapCard({ recap, isPro, dailyTarget, streakDays }: {
   recap: WeeklyRecap | null
@@ -32,7 +35,18 @@ export function WeeklyRecapCard({ recap, isPro, dailyTarget, streakDays }: {
     if (hasRecap) captureEvent('weekly_recap_viewed')
   }, [hasRecap])
 
-  if (!isPro) return null
+  if (!isPro) {
+    return (
+      <ProLock.Card
+        className="mt-4"
+        reason="ai_insights"
+        track="recap_card"
+        title="Your weekly recap"
+        body="Every Sunday, Pro writes up your week — average calories, days logged and weight change — in a short paragraph you can read in ten seconds."
+        cta="See what Pro adds"
+      />
+    )
+  }
 
   if (!recap) {
     return (

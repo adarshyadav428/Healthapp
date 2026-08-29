@@ -1,11 +1,17 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Lock } from 'lucide-react'
 import { logHref, shiftDateStr } from '../../lib/logDates'
 import { istDateStr } from '../../lib/dateUtils'
 
-type Props = { dateStr: string /* YYYY-MM-DD in IST */ }
+type Props = {
+  dateStr: string /* YYYY-MM-DD in IST */
+  /** Free user at the edge of the history window — the back chevron becomes a
+   *  lock instead of teleporting them to the paywall with no warning. */
+  prevDayLocked?: boolean
+}
 
 function formatDisplay(dateStr: string): string {
   const [year, month, day] = dateStr.split('-').map(Number)
@@ -15,7 +21,7 @@ function formatDisplay(dateStr: string): string {
   return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
-export function FoodHeader({ dateStr }: Props) {
+export function FoodHeader({ dateStr, prevDayLocked = false }: Props) {
   const router = useRouter()
   const todayStr = istDateStr()
   const isToday = dateStr === todayStr
@@ -39,15 +45,27 @@ export function FoodHeader({ dateStr }: Props) {
             Today
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => go(shiftDateStr(dateStr, -1))}
-          aria-label="Previous day"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-surface tap-scale"
-          style={{ boxShadow: 'var(--shadow-air)' }}
-        >
-          <ChevronLeft className="h-[15px] w-[15px] text-ink" strokeWidth={2} />
-        </button>
+        {prevDayLocked ? (
+          <Link
+            href="/upgrade?reason=history"
+            aria-label="Older days are a Pro feature — upgrade to Pro"
+            className="relative flex h-9 w-9 items-center justify-center rounded-full bg-surface tap-scale"
+            style={{ boxShadow: 'var(--shadow-air)' }}
+          >
+            <ChevronLeft className="h-[15px] w-[15px] text-ink-3" strokeWidth={2} />
+            <Lock className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 text-brand-ink" strokeWidth={2.5} />
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={() => go(shiftDateStr(dateStr, -1))}
+            aria-label="Previous day"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-surface tap-scale"
+            style={{ boxShadow: 'var(--shadow-air)' }}
+          >
+            <ChevronLeft className="h-[15px] w-[15px] text-ink" strokeWidth={2} />
+          </button>
+        )}
         <button
           type="button"
           onClick={() => !isToday && go(shiftDateStr(dateStr, 1))}

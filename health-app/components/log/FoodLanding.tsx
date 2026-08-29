@@ -19,6 +19,7 @@ import { useFoodFavourites } from '../../hooks/useFoodFavourites'
 import {
   ComboTile, CopyYesterdayButton, EmojiTile, ShortcutHeading, ShortcutRow,
 } from './shortcuts'
+import { ProLock } from '../ui/ProLock'
 
 // Modals + the full search are only opened on demand — defer their JS.
 const FoodSearch    = dynamic(() => import('./FoodSearch').then(m => m.FoodSearch),        { ssr: false })
@@ -56,11 +57,14 @@ type Props = {
   logDate?: string
   /** Whether the viewed day is today — gates today-only surfaces (copy-yesterday). */
   isToday?: boolean
+  /** Pro entitlement — threaded through to search's custom-food gate and the
+   *  suggestion row's free daily cap. */
+  isPro?: boolean
 }
 
 const AIR = { boxShadow: 'var(--shadow-air)' } as const
 
-export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYesterdayLogs, logDate, isToday = true }: Props) {
+export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYesterdayLogs, logDate, isToday = true, isPro = true }: Props) {
   const searchParams = useSearchParams()
   // Home's "Add food manually" links here with ?search=1 to jump straight
   // into the search box instead of landing on this page first.
@@ -90,11 +94,16 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
     enabled: isToday,
     queryFn: async () => {
       const res = await fetch('/api/foods/suggest')
-      if (!res.ok) return { suggestions: [] as Suggestion[] }
-      return res.json() as Promise<{ suggestions: Suggestion[] }>
+      if (!res.ok) return { suggestions: [] as Suggestion[], limited: false }
+      return res.json() as Promise<{ suggestions: Suggestion[]; limited?: boolean }>
     },
   })
   const suggestion = suggestData?.suggestions?.[suggestIndex] ?? null
+  // The server caps free users at FREE_SUGGESTIONS_PER_DAY and returns `limited`
+  // so the run-out reads as a gate, not a bug. Once the day's suggestions are
+  // spent, a free user sees the lock rather than the row silently vanishing.
+  const suggestionsSpent =
+    isToday && !isPro && !!suggestData?.limited && !suggestion && (suggestData?.suggestions?.length ?? 0) > 0
 
   // Saved meal templates: the genuine two-tap path (open Food -> tap combo).
   const { data: savedMeals = [] } = useQuery({
@@ -166,6 +175,7 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
           hasYesterdayLogs={hasYesterdayLogs}
           logDate={logDate}
           isToday={isToday}
+          isPro={isPro}
         />
       </div>
     )
@@ -334,6 +344,16 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
             <Plus className="h-[18px] w-[18px] text-white" strokeWidth={2.2} />
           </button>
         </div>
+      )}
+
+      {suggestionsSpent && (
+        <ProLock.Card
+          reason="meal_suggestions"
+          track="meal_suggestions"
+          title="That's today's meal ideas"
+          body="Free gives you three suggestions a day. Pro keeps them coming — right through the evening, always tuned to the calories you have left."
+          cta="See what Pro adds"
+        />
       )}
 
       {/* Your combos — saved templates, the fastest path to a full meal */}
