@@ -5,6 +5,7 @@ import { isProStatus } from '../../lib/subscription'
 import { buildMonthlyWrappedCards } from '../../lib/monthlyWrapped'
 import { StorySurface } from '../../components/story/StorySurface'
 import { buildShareCardOptions } from '../../lib/shareCard'
+import { captureServerEvent } from '../../lib/posthog/server'
 import type { WrappedStats } from '../../lib/wrappedStats'
 
 export const metadata: Metadata = {
@@ -46,6 +47,14 @@ export default async function WrappedPage() {
   // user's own month.
   const isPro = isProStatus(subResult.data?.status)
   const unlocked = isPro || wrapResult.data.was_pro === true
+
+  // A free user's Wrapped ends on the locked card — that's a paywall impression,
+  // and `source: 'wrapped'` had been declared with no emit site. Unlike the
+  // other walls this one withholds something about the user they can already
+  // see exists, which is why it's tracked separately.
+  if (!unlocked) {
+    captureServerEvent(user.id, 'paywall_viewed', { source: 'wrapped' })
+  }
 
   const stats = wrapResult.data.stats as unknown as WrappedStats
   const monthStart = wrapResult.data.month_start as string

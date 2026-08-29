@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '../../../../lib/supabase/server'
 import { getPlaySubscription } from '../../../../lib/play/verify'
+import { captureServerEvent } from '../../../../lib/posthog/server'
+
+// Google Play RTDN notificationType values we act on for analytics.
+// 4 = SUBSCRIPTION_PURCHASED, 12 = SUBSCRIPTION_REVOKED (refund / chargeback).
+const NOTIFICATION_REVOKED = 12
 
 export const runtime = 'nodejs'
 
@@ -28,11 +33,12 @@ export async function POST(req: Request) {
     if (!dataB64) return NextResponse.json({ received: true })
 
     const decoded = JSON.parse(Buffer.from(dataB64, 'base64').toString('utf8')) as {
-      subscriptionNotification?: { purchaseToken?: string }
+      subscriptionNotification?: { purchaseToken?: string; notificationType?: number }
       testNotification?: unknown
     }
 
     const purchaseToken = decoded.subscriptionNotification?.purchaseToken
+    const notificationType = decoded.subscriptionNotification?.notificationType
     if (!purchaseToken) {
       // testNotification or a one-time-product notification — nothing to sync.
       return NextResponse.json({ received: true })
@@ -49,12 +55,15 @@ export async function POST(req: Request) {
     // the catch, which reports it and still returns 200.
     const { data: existing, error: lookupError } = await admin
       .from('subscriptions')
-      .select('user_id')
+      .select('user_id, status')
       .eq('play_purchase_token', purchaseToken)
       .maybeSingle()
 
     if (lookupError) throw new Error(`subscription lookup failed: ${lookupError.message}`)
     if (!existing) return NextResponse.json({ received: true })
+
+    const prevStatus = (existing as { status?: string }).status ?? null
+    const userId = (existing as { user_id?: string }).user_id ?? null
 
     const sub = await getPlaySubscription(purchaseToken)
     const { error: updateError } = await admin
@@ -63,6 +72,24 @@ export async function POST(req: Request) {
       .eq('play_purchase_token', purchaseToken)
 
     if (updateError) throw new Error(`subscription update failed: ${updateError.message}`)
+
+    // Lifecycle analytics — emitted only after the write lands. Fire-and-forget;
+    // a missing PostHog key no-ops. The status transitions the funnel could
+    // never see before: trial → paid, and any → cancelled/revoked.
+    if (userId) {
+      if (prevStatus === 'trialing' && sub.status === 'active') {
+        captureServerEvent(userId, 'trial_converted', { provider: 'google_play' })
+      }
+      if (sub.status === 'canceled' && prevStatus !== 'canceled') {
+        captureServerEvent(userId, 'subscription_cancelled', {
+          provider: 'google_play',
+          reason: 'rtdn',
+        })
+      }
+      if (notificationType === NOTIFICATION_REVOKED) {
+        captureServerEvent(userId, 'subscription_refunded', { provider: 'google_play' })
+      }
+    }
 
     return NextResponse.json({ received: true })
   } catch (err) {

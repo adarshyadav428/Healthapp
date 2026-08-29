@@ -8,6 +8,7 @@ import { getBrowserSupabaseClient } from '../../../lib/supabase/client'
 import { toast } from '../../../components/ui/use-toast'
 import { useState } from 'react'
 import { captureEvent, identifyUser } from '../../../lib/posthog/client'
+import { readFirstTouch, firstTouchPersonProps } from '../../../lib/attribution'
 import { Input } from '../../../components/ui/input'
 import { Button } from '../../../components/ui/button'
 import { Mail, Flame, Eye, EyeOff } from 'lucide-react'
@@ -41,7 +42,11 @@ export default function SignUpPage() {
       }
 
       if (auth.user) {
-        identifyUser(auth.user.id, { email: auth.user.email })
+        identifyUser(
+          auth.user.id,
+          { email: auth.user.email },
+          firstTouchPersonProps(readFirstTouch()),
+        )
         captureEvent('signup_completed', { method: 'email' })
       }
 

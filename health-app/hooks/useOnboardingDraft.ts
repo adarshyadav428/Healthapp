@@ -69,13 +69,20 @@ export function useOnboardingDraft(form: UseFormReturn<OnboardingData>) {
     } catch { /* ignore */ }
   }, [step, watchedValues, heightFt, heightIn])
 
-  const nextStep = async () => {
+  const nextStep = async (opts?: { skipped?: boolean }) => {
     if (isNavigating) return
     setIsNavigating(true)
     try {
       const ok = await form.trigger(fieldsByStep[step])
       if (ok) {
-        captureEvent(EVENTS.ONBOARDING_STEP_COMPLETED, { step, label: STEP_LABELS[step - 1] })
+        captureEvent(EVENTS.ONBOARDING_STEP_COMPLETED, {
+          step,
+          label: STEP_LABELS[step - 1],
+          // Step 1 is the activation log; "Skip for now" fires the same event as
+          // a real log, so the redesign can't measure its own effect without
+          // this. Only meaningful for step 1.
+          ...(step === 1 ? { skipped: opts?.skipped ?? false } : {}),
+        })
         setStep((s) => Math.min(TOTAL_STEPS, s + 1))
       }
     } finally {

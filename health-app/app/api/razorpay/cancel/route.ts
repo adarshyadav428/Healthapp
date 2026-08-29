@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
 import { getRazorpayClient } from '../../../../lib/razorpay/client'
+import { captureServerEvent } from '../../../../lib/posthog/server'
 
 export const runtime = 'nodejs'
 
@@ -40,6 +41,11 @@ export async function POST() {
       .update({ cancel_at_period_end: true })
       .eq('user_id', user.id)
     if (updateError) throw new Error(updateError.message)
+
+    captureServerEvent(user.id, 'subscription_cancelled', {
+      provider: 'razorpay',
+      when: 'period_end',
+    })
 
     return NextResponse.json({ ok: true })
   } catch (err) {

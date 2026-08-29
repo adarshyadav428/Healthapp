@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { validateWebhookSignature } from 'razorpay/dist/utils/razorpay-utils'
 import { createAdminClient } from '../../../../lib/supabase/server'
+import { captureServerEvent } from '../../../../lib/posthog/server'
 
 export const runtime = 'nodejs'
 
@@ -48,15 +49,18 @@ export async function POST(req: Request) {
    *
    * Pinned by tests/webhookSignatures.test.ts.
    */
-  async function applyStatus(fields: Record<string, unknown>) {
-    if (!sub) return
-    const { error } = await admin
+  async function applyStatus(fields: Record<string, unknown>): Promise<string | null> {
+    if (!sub) return null
+    const { data, error } = await admin
       .from('subscriptions')
       .update(fields)
       .eq('razorpay_subscription_id', sub.id)
+      .select('user_id')
+      .maybeSingle()
     if (error) {
       throw new Error(`subscription update failed for ${sub.id}: ${error.message}`)
     }
+    return (data as { user_id?: string } | null)?.user_id ?? null
   }
 
   try {
@@ -79,9 +83,20 @@ export async function POST(req: Request) {
       }
       case 'subscription.cancelled':
       case 'subscription.completed': {
-        await applyStatus({ status: 'canceled' })
+        const userId = await applyStatus({ status: 'canceled' })
+        if (userId) {
+          captureServerEvent(userId, 'subscription_cancelled', {
+            provider: 'razorpay',
+            reason: event.event,
+          })
+        }
         break
       }
+      // Razorpay refunds arrive as `refund.created`, which carries a payment id
+      // but no subscription id — resolving it to a subscriber needs a lookup
+      // that isn't worth the surface area yet. Google Play's SUBSCRIPTION_REVOKED
+      // covers `subscription_refunded` for now (see app/api/play/rtdn).
+      // TODO(growth-audit): wire `subscription_refunded` for Razorpay.
       default:
         break
     }

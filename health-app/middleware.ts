@@ -1,5 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import {
+  FIRST_TOUCH_COOKIE,
+  FIRST_TOUCH_MAX_AGE_S,
+  buildFirstTouch,
+  serializeFirstTouch,
+} from './lib/attribution'
 
 // How long we'll wait for Supabase to revalidate the session before treating
 // it as a network failure rather than an auth failure. On a healthy connection
@@ -87,6 +93,30 @@ export async function middleware(request: NextRequest) {
     // own session read, and every data query is still enforced by Postgres
     // RLS regardless — this only affects whether we redirect on a guess.
     networkFailure = true
+  }
+
+  // First-touch attribution — stamp `gis_attr` once and never overwrite it, so
+  // a later visit through a different campaign can't rewrite where this visitor
+  // originally came from. The client reads it at identify() time and sends it
+  // to PostHog as $set_once person properties (see lib/attribution.ts).
+  // Set here, after the Supabase client's setAll may have rebuilt `response`,
+  // so the cookie survives to the return.
+  if (!request.cookies.get(FIRST_TOUCH_COOKIE)) {
+    const firstTouch = buildFirstTouch({
+      searchParams: request.nextUrl.searchParams,
+      referer: request.headers.get('referer'),
+      pathname,
+      selfHost: request.nextUrl.host || null,
+    })
+    if (firstTouch) {
+      response.cookies.set(FIRST_TOUCH_COOKIE, serializeFirstTouch(firstTouch), {
+        maxAge: FIRST_TOUCH_MAX_AGE_S,
+        sameSite: 'lax',
+        secure: true,
+        path: '/',
+        httpOnly: false,
+      })
+    }
   }
 
   if (!user) {

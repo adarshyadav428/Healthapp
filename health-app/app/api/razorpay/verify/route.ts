@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { validatePaymentVerification } from 'razorpay/dist/utils/razorpay-utils'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
 import { captureServerEvent } from '../../../../lib/posthog/server'
+import { daysSinceSignup } from '../../../../lib/signupAge'
 
 export const runtime = 'nodejs'
 
@@ -57,7 +58,11 @@ export async function POST(req: Request) {
     })
     if (error) throw new Error(error.message)
 
-    captureServerEvent(user.id, 'upgrade_completed', { provider: 'razorpay', plan })
+    captureServerEvent(user.id, 'upgrade_completed', {
+      provider: 'razorpay',
+      plan,
+      days_since_signup: await daysSinceSignup(supabase, user.id),
+    })
 
     return NextResponse.json({ ok: true })
   } catch (err) {
