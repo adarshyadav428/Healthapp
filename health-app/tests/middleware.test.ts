@@ -67,6 +67,7 @@ describe('paths that skip auth entirely', () => {
     '/manifest.webmanifest',
     '/robots.txt',
     '/sitemap.xml',
+    '/opengraph-image',
     '/icons/icon-192.png',
     '/.well-known/assetlinks.json',
     '/workbox-abc123.js',

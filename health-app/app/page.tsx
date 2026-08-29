@@ -1,7 +1,22 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { CheckCircle, Flame } from 'lucide-react'
 import { LEGAL_NAME } from '@/lib/merchant'
 import { FREE_FEATURES, PRO_FEATURES } from '@/lib/planFeatures'
+
+export const metadata: Metadata = {
+  title: 'GetInShape — Calorie & Weight Tracker Built for Indian Food',
+  description:
+    'Log meals by photo, chat, search or barcode. Calorie and macro targets, weight trends and AI coaching — tuned for Indian food and priced in ₹. Free forever, no credit card.',
+  alternates: { canonical: '/' },
+  openGraph: {
+    title: 'GetInShape — Calorie & Weight Tracker Built for Indian Food',
+    description:
+      'Log meals by photo, chat, search or barcode. Built for Indian food, priced in ₹. Free forever, no credit card.',
+    type: 'website',
+    url: '/',
+  },
+}
 
 export default function Home() {
   return (

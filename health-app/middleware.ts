@@ -14,7 +14,7 @@ const AUTH_TIMEOUT_MS = 5000
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
-  const publicFiles = ['/sw.js', '/manifest.webmanifest', '/robots.txt', '/sitemap.xml']
+  const publicFiles = ['/sw.js', '/manifest.webmanifest', '/robots.txt', '/sitemap.xml', '/opengraph-image']
   const publicPrefixes = ['/icons/', '/.well-known/', '/workbox-', '/fallback-']
 
   if (
@@ -141,5 +141,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|sw\\.js|workbox-.*|manifest\\.webmanifest|robots\\.txt|sitemap\\.xml|icons/.*|\\.well-known/.*).*)',],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|sw\\.js|workbox-.*|manifest\\.webmanifest|robots\\.txt|sitemap\\.xml|opengraph-image|icons/.*|\\.well-known/.*).*)',],
 }
