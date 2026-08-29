@@ -17,8 +17,17 @@ under `health-app/`. This file covers only the root-level Android wrapper and th
 
 ## Directory map (root only)
 
-- **`twa-manifest.json`** — the **source of truth** for the Android build: package id, host, start URL,
-  theme colors, `appVersionCode`/`appVersionName`, and the Play Billing feature flag.
+- **`twa-manifest.json`** — the **source of truth** for the Android build: package id
+  (`in.co.getinshape.app`), host (`www.getinshape.co.in`), start URL (`/dashboard`), theme colors,
+  `appVersionCode`/`appVersionName`/`appVersion`, and the Play Billing feature flag (`playBilling.enabled`).
+  Keep `appVersionCode`, `appVersionName` and `appVersion` in sync (all `3` today).
+- **`.claude/skills/`** — checked in on purpose (the `!.claude/skills/` negation in `.gitignore`);
+  the rest of `.claude/` is ignored. Shared skills such as the deep-dive audit live here and apply
+  to `health-app/` work.
+- **`package-lock.json`** (root) — a 15-byte stub with no accompanying `package.json`. It is not a
+  real Node project; see the Hard rule below.
+- **`GetInShape-Roadmap.pdf`, `.vercel/`** — personal planning artifact and Vercel link data,
+  both gitignored.
 - **`app/`, `gradle/`, `.gradle/`, `build.gradle`, `settings.gradle`, `gradle.properties`, `gradlew*`,
   `manifest-checksum.txt`, `store_icon.png`** — **generated output**, regenerated from
   `twa-manifest.json`. All gitignored. Note the root `.gitignore` anchors these paths with a leading
@@ -46,6 +55,10 @@ Rebuilding the Android wrapper (rarely needed — only for a new Play release):
 bubblewrap update && bubblewrap build
 ```
 
+`bubblewrap` is a **global CLI** (`@bubblewrap/cli`), not a dependency of either project — it is not
+in any `package.json`. It needs a JDK and the Android SDK; its own config lives in `~/.bubblewrap/`.
+`bubblewrap build` writes the `.aab`/`.apk` to the repo root and signs with `android.keystore`.
+
 ## Hard rules — never violate
 
 - **Never hand-edit the generated Android project** (`app/`, `gradle/`, `build.gradle`, …). Change
@@ -55,6 +68,7 @@ bubblewrap update && bubblewrap build
 - **Bump `appVersionCode` in `twa-manifest.json`** for every Play upload — Play rejects a duplicate.
 - **Don't run npm commands from the repo root.** There is no meaningful `package.json` here; a
   root-level `npm install` does nothing useful.
-- **Changing the host, start URL or package id breaks Digital Asset Links.** `assetlinks.json` is served
-  by the web app and must keep matching the signing certificate, or the TWA falls back to a browser tab
-  with visible Chrome UI — and Play Billing stops working.
+- **Changing the host, start URL or package id breaks Digital Asset Links.**
+  `health-app/public/.well-known/assetlinks.json` is served by the web app and must keep matching the
+  signing certificate, or the TWA falls back to a browser tab with visible Chrome UI — and Play Billing
+  stops working.
