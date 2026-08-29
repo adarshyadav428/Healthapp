@@ -1,0 +1,28 @@
+-- 039_drop_weekly_calorie_summary_view.sql
+--
+-- Drop the `weekly_calorie_summary` view from 011_weekly_calorie_view.sql.
+--
+-- Why it has to go:
+--
+--   * SECURITY RISK (Supabase advisor, CRITICAL). A view runs with the
+--     privileges of its owner, and migrations run as `postgres`, which bypasses
+--     RLS. So this view reads `food_logs` with RLS switched off and exposes the
+--     result to whoever queries it — any authenticated user could read
+--     `SELECT * FROM weekly_calorie_summary` and get every user's calorie
+--     totals. The comment in 011 ("the view inherits it automatically") is
+--     wrong: a plain view does NOT re-apply the base table's RLS to the caller.
+--
+--   * DEAD CODE. Nothing reads it. It was built in 011 for "fast deficit
+--     queries", but deficit maths now lives in `lib/deficit-calculator.ts` and
+--     reads `food_logs` directly through the user's own RLS-scoped client.
+--     `grep -r weekly_calorie_summary` outside this migrations folder returns
+--     nothing.
+--
+-- Dropping (not converting to security_invoker) because the safe fix and the
+-- tidy fix are the same here — there is no caller to keep working. A view
+-- carries no data, and the full definition is preserved in 011 if it is ever
+-- needed again (recreate it there WITH (security_invoker = true)).
+--
+-- Idempotent: applied by hand in the Supabase SQL editor.
+
+DROP VIEW IF EXISTS public.weekly_calorie_summary;
