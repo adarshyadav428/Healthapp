@@ -7,6 +7,7 @@ import { toast } from '../ui/use-toast'
 import { useUser } from '../../hooks/useUser'
 import { useQueryClient } from '@tanstack/react-query'
 import { weightLogSchema, type WeightLogData } from '../../lib/validations'
+import { istDateStr } from '../../lib/dateUtils'
 import type { WeightLog } from '../../types/index'
 import { Sheet, SheetContent } from '../ui/sheet'
 import { Button } from '../ui/button'
@@ -38,7 +39,11 @@ export function WeightLogModal({ onClose, defaultWeightKg }: { onClose: () => vo
       notes: '',
     },
   })
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  // IST calendar day — matching the diary's day boundary everywhere else. The
+  // unshifted UTC date rolls over at 5:30am IST, so between midnight and then
+  // this used to default the picker to yesterday and silently misfile a
+  // late-night weigh-in a day early.
+  const [date, setDate] = useState(istDateStr())
   const [isSubmitting, setIsSubmitting] = useState(false)
   const queryClient = useQueryClient()
 
