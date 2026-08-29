@@ -15,6 +15,7 @@ import { useCheckout, PLAY_PRODUCT_FOR_PLAN } from '../../hooks/useCheckout'
 import { useSendVerificationLink } from '../../hooks/useSendVerificationLink'
 import { AI_TRIAL_SCANS } from '../../lib/aiTrial'
 import { PRICE_MONTHLY, PRICE_ANNUAL, FREE_TRIAL_DAYS } from '../../lib/pricing'
+import { PRO_FEATURES } from '../../lib/planFeatures'
 
 const REASON_COPY: Record<string, { title: string; description: string }> = {
   history:            { title: 'Unlock your full history', description: 'Free users can view the last 7 days. Pro shows everything.' },
@@ -77,15 +78,7 @@ const plans = [
   },
 ]
 
-const FEATURES = [
-  'Unlimited AI photo & chat logging',
-  'Weekly AI recap — your week summarised every Sunday',
-  'Full history — beyond the last 7 days',
-  'Custom foods & recipes — log your home-cooked dishes',
-  'Advanced trends — full weight history, macro breakdown charts',
-  'Priority email support',
-  'No ads, ever',
-]
+const FEATURES = PRO_FEATURES
 
 /**
  * Funnel events for this page. Split out (and Suspense-wrapped) because it

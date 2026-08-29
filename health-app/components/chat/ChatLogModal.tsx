@@ -15,12 +15,21 @@ const MEAL_OPTIONS: { value: Meal; label: string }[] = [
 
 function round1(n: number) { return Math.round(n * 10) / 10 }
 
-export function ChatLogModal({ onClose, logDate }: { onClose: () => void; logDate?: string }) {
+export function ChatLogModal({
+  onClose,
+  logDate,
+  context,
+}: {
+  onClose: () => void
+  logDate?: string
+  /** `'onboarding'` keeps a gated AI scan in the wizard — see useChatLog. */
+  context?: 'standalone' | 'onboarding'
+}) {
   const {
     state, setState, input, setInput,
     handleSend, updateGrams, removeItem, handleLog,
     totalKcal, coaching,
-  } = useChatLog({ onClose, logDate })
+  } = useChatLog({ onClose, logDate, context })
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   return (

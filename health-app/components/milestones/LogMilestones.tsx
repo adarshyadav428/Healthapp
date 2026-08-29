@@ -8,6 +8,7 @@ import { ConfettiBurst } from '../ui/ConfettiBurst'
 import { useMilestoneStore, clearPendingMilestone, clearWeightMilestone, clearStreakMilestone } from '../../store/milestoneStore'
 import { getLogMilestoneAction, isShareableStreakMilestone, type MilestoneAction } from '../../lib/logMilestones'
 import { paywallPriceLine } from '../../lib/pricing'
+import { PRO_FEATURES_INTERSTITIAL } from '../../lib/planFeatures'
 import { isPlayBillingAvailable } from '../../lib/play/billing'
 import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 import { formatKg } from '../../lib/formatWeight'
@@ -35,12 +36,6 @@ function writeFlag(key: string): void {
     /* noop */
   }
 }
-
-const PRO_FEATURES = [
-  ['Full history', ' — beyond the last 7 days'],
-  ['Unlimited', ' AI photo & chat logging'],
-  ['Custom foods', ' & family recipes'],
-] as const
 
 /**
  * The single overlay behind every post-log milestone (mounted once in
@@ -286,15 +281,12 @@ export function LogMilestones() {
           </p>
 
           <div className="mt-7 space-y-3.5">
-            {PRO_FEATURES.map(([bold, rest]) => (
-              <div key={bold} className="flex items-center gap-3">
+            {PRO_FEATURES_INTERSTITIAL.map((feature) => (
+              <div key={feature} className="flex items-center gap-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
                   <Check size={12} strokeWidth={3} />
                 </span>
-                <span className="text-sm text-ink">
-                  <b>{bold}</b>
-                  {rest}
-                </span>
+                <span className="text-sm text-ink">{feature}</span>
               </div>
             ))}
           </div>

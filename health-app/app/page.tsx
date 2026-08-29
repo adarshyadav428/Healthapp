@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { CheckCircle, Flame } from 'lucide-react'
 import { LEGAL_NAME } from '@/lib/merchant'
+import { FREE_FEATURES, PRO_FEATURES } from '@/lib/planFeatures'
 
 export default function Home() {
   return (
@@ -178,15 +179,7 @@ export default function Home() {
               <p className="font-display text-3xl font-bold text-ink">₹0</p>
               <p className="text-sm text-ink-2 mt-1 mb-5">No credit card required</p>
               <ul className="space-y-2.5">
-                {[
-                  'Full calorie & macro tracking',
-                  'Weight tracking',
-                  'Exercise logging',
-                  'Barcode scanning',
-                  '3 free AI scans when you confirm your email',
-                  'Calorie + macro goals',
-                  '850+ Indian foods database',
-                ].map((item) => (
+                {FREE_FEATURES.map((item) => (
                   <li key={item} className="flex items-center gap-2 text-sm text-ink-2">
                     <CheckCircle className="h-4 w-4 text-good flex-shrink-0" />
                     {item}
@@ -207,14 +200,7 @@ export default function Home() {
               <p className="font-display text-3xl font-bold text-ink">₹299<span className="text-base font-semibold text-ink-2">/mo</span></p>
               <p className="text-sm text-ink-2 mt-1 mb-5">or ₹1,999/year · save 44%</p>
               <ul className="space-y-2.5">
-                {[
-                  'Everything in Free',
-                  'Unlimited AI photo & chat logging',
-                  'Custom food & recipe builder',
-                  'Full nutrition history (30+ days)',
-                  'Weekly AI recap',
-                  'Priority email support',
-                ].map((item) => (
+                {['Everything in Free', ...PRO_FEATURES].map((item) => (
                   <li key={item} className="flex items-center gap-2 text-sm text-ink-2">
                     <CheckCircle className="h-4 w-4 text-brand flex-shrink-0" />
                     {item}
