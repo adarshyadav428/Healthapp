@@ -14,6 +14,8 @@ type Props = {
   onFoodFound: (food: Food) => void
   /** The IST day to log to. Omitted means today — see useCameraScan. */
   logDate?: string
+  /** `'onboarding'` keeps a gated AI scan in the wizard — see useCameraScan. */
+  context?: 'standalone' | 'onboarding'
 }
 
 const MEAL_OPTIONS = [
@@ -23,7 +25,7 @@ const MEAL_OPTIONS = [
   { value: 'snack',     label: '🥜 Snack' },
 ] as const
 
-export function CameraModal({ onClose, onFoodFound, logDate }: Props) {
+export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
   const {
     videoRef, canvasRef, galleryRef,
     barcodeSupport, mode, camError, barcodeLoading, captured, analyzing,
@@ -34,7 +36,7 @@ export function CameraModal({ onClose, onFoodFound, logDate }: Props) {
     onGallerySelect, capturePhoto, analyzePhoto, submitManualBarcode,
     retake, switchMode, selectResult, logFood,
     kcal, protein, carbs, fat, coaching, amountMin, amountMax, amountStep,
-  } = useCameraScan({ onClose, onFoodFound, logDate })
+  } = useCameraScan({ onClose, onFoodFound, logDate, context })
 
   const nameInputRef = useRef<HTMLInputElement>(null)
 

@@ -43,6 +43,12 @@ export async function POST(req: Request) {
         target_weight_kg: data.target_weight_kg,
         goal: data.goal,
         activity_level: data.activity_level,
+        // The picked weekly pace drives the macro maths above AND the projected
+        // goal date every downstream screen shows — but it was never written
+        // back here, so `/onboarding/plan` and the dashboard read the column
+        // default (0.5) instead, and a user who chose 0.25 or 1.0 saw one goal
+        // date in the wizard and a different one the moment they finished.
+        pace_kg_per_week: data.pace_kg_per_week,
         daily_calorie_target: macros.daily_calorie_target,
         protein_g_target: macros.protein_g_target,
         carbs_g_target: macros.carbs_g_target,

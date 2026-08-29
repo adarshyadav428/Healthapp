@@ -10,6 +10,7 @@ import { coachingLine, dayContextFor } from '../lib/coaching'
 import { dateStrToUtcMidnight } from '../lib/dateUtils'
 import { useUser } from './useUser'
 import { useDailyTotals } from './useDailyTotals'
+import { resolveAiGateAction } from '../lib/aiGateRedirect'
 
 export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
@@ -46,7 +47,12 @@ function inferMeal(): Meal {
   return 'snack'
 }
 
-type Params = { onClose: () => void; logDate?: string }
+type Params = {
+  onClose: () => void
+  logDate?: string
+  /** See useCameraScan — `'onboarding'` keeps a gated scan in the wizard. */
+  context?: 'standalone' | 'onboarding'
+}
 
 /**
  * Chat meal-logging orchestration: the analyze→confirm→log state machine and
@@ -54,7 +60,7 @@ type Params = { onClose: () => void; logDate?: string }
  * log write incl. per-item correction analytics). Extracted from ChatLogModal
  * so the component is pure presentation. Behaviour is intentionally identical.
  */
-export function useChatLog({ onClose, logDate }: Params) {
+export function useChatLog({ onClose, logDate, context = 'standalone' }: Params) {
   // Start the clock for `seconds_to_log`: this surface opening is the moment
   // the user set out to log something. See markLogStart in lib/posthog/client.
   useEffect(() => { markLogStart() }, [])
@@ -87,14 +93,16 @@ export function useChatLog({ onClose, logDate }: Params) {
       })
       const data = await res.json()
       if (!res.ok) {
-        // Gated — straight to the paywall, no intermediate toast. An unverified
-        // user gets the verification framing instead of the Pro pitch: their
-        // next step is confirming an email, not paying us.
+        // Gated. Standalone: straight to the paywall, no intermediate toast.
+        // Onboarding: stay in the wizard with an inline note — redirecting here
+        // ejects every new, unverified user off the flow they signed up for.
         if (res.status === 403 && data.upgrade) {
           setState({ type: 'idle' })
           setInput(message)
+          const action = resolveAiGateAction({ block: data.block, scan: 'chat', context })
           onClose()
-          router.push(data.block === 'unverified' ? '/upgrade?reason=verify_ai' : '/upgrade?reason=chat_scan_pro')
+          if (action.kind === 'redirect') router.push(action.href)
+          else toast({ title: action.message, duration: 5000 })
           return
         }
         {

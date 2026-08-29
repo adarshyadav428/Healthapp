@@ -466,6 +466,7 @@ export function OnboardingForm() {
 
       {showCamera && (
         <CameraModal
+          context="onboarding"
           onClose={() => {
             setShowCamera(false)
             if (barcodeHandoffRef.current) { barcodeHandoffRef.current = false; return }
@@ -474,7 +475,7 @@ export function OnboardingForm() {
           onFoodFound={(food) => { barcodeHandoffRef.current = true; setBarcodeFood(food) }}
         />
       )}
-      {showChat && <ChatLogModal onClose={() => { setShowChat(false); nextStep() }} />}
+      {showChat && <ChatLogModal context="onboarding" onClose={() => { setShowChat(false); nextStep() }} />}
       {barcodeFood && (
         <AddFoodModal food={barcodeFood} onClose={() => { setBarcodeFood(null); nextStep() }} />
       )}

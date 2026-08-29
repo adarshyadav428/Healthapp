@@ -15,6 +15,7 @@ import { scaleMacrosRaw } from '../lib/nutrition'
 import { portionRange } from '../lib/portion-units'
 import { useUser } from './useUser'
 import { useDailyTotals } from './useDailyTotals'
+import { resolveAiGateAction } from '../lib/aiGateRedirect'
 
 export type Mode = 'barcode' | 'photo' | 'manual'
 export type PhotoResult = { food: Food; estimated_grams: number; unit: string }
@@ -28,6 +29,12 @@ type Params = {
    * tab, where the user may be filling in an earlier day.
    */
   logDate?: string
+  /**
+   * Where this scan is happening. In `'onboarding'` a gated scan keeps the user
+   * in the wizard with an inline message instead of redirecting to /upgrade —
+   * see lib/aiGateRedirect. Defaults to `'standalone'` (redirect, unchanged).
+   */
+  context?: 'standalone' | 'onboarding'
 }
 
 /**
@@ -38,7 +45,7 @@ type Params = {
  * reusable across UI rewrites. Behaviour is intentionally identical to the
  * previous in-component implementation.
  */
-export function useCameraScan({ onClose, onFoodFound, logDate }: Params) {
+export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standalone' }: Params) {
   const router = useRouter()
   const { user, profile } = useUser()
   // Totals for the day being logged to, not always today: the coaching line
@@ -225,14 +232,16 @@ export function useCameraScan({ onClose, onFoodFound, logDate }: Params) {
     })
       .then(async (res) => {
         const json = await res.json()
-        // Gated. Go straight to the paywall rather than showing a toast the
-        // user has to act on — they've already taken the photo, so making them
-        // tap again to find out why it didn't work is a poor trade. An
-        // unverified user gets the verification framing, not the Pro pitch.
+        // Gated. Standalone: straight to the paywall rather than a toast the
+        // user has to act on — they've already taken the photo. In onboarding:
+        // stay in the wizard with an inline note (a redirect here ejects every
+        // new, unverified user off the flow they signed up for).
         if (res.status === 403 && json.upgrade) {
           setCaptured(null)
+          const action = resolveAiGateAction({ block: json.block, scan: 'camera', context })
           onClose()
-          router.push(json.block === 'unverified' ? '/upgrade?reason=verify_ai' : '/upgrade?reason=camera_scan_pro')
+          if (action.kind === 'redirect') router.push(action.href)
+          else toast({ title: action.message, duration: 5000 })
           return
         }
         if (!res.ok) throw new Error(json.error ?? 'Analysis failed')
@@ -250,7 +259,7 @@ export function useCameraScan({ onClose, onFoodFound, logDate }: Params) {
         setCaptured(null)
       })
       .finally(() => setAnalyzing(false))
-  }, [captured, photoContext, onClose, router])
+  }, [captured, photoContext, onClose, router, context])
 
   const retake = useCallback(() => {
     setCaptured(null); setResults(null); setSelected(null); setConfidence(null)
