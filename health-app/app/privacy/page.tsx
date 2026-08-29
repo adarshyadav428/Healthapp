@@ -1,4 +1,11 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy — GetInShape',
+  description: 'How GetInShape collects, uses and protects your data.',
+  alternates: { canonical: '/privacy' },
+}
 
 export default function PrivacyPage() {
   return (

@@ -35,6 +35,7 @@ const IGNORE_DIRS = new Set(['node_modules', '.next', 'dist'])
 const ALLOWLIST_FILES = new Set([
   'app/layout.tsx',      // themeColor media-query pair — <meta> needs literal colors
   'app/manifest.ts',     // PWA manifest colors — no CSS vars in manifest.json
+  'app/opengraph-image.tsx', // Satori can't read CSS tokens — Ember palette inlined
   'components/studio/StudioClient.tsx', // WORLDS = the token source of truth itself
 ])
 
@@ -56,6 +57,15 @@ const OPACITY_MODIFIER = new RegExp(
   `\\b(?:bg|text|border|ring|stroke|fill|from|to|via|divide|outline|decoration)-(?:${TOKEN_NAMES.join('|')})/\\d{1,3}\\b`,
   'g'
 )
+
+// Arbitrary spacing values — `mt-[3px]`, `px-[18px]`, `gap-[18px]`, `p-[22px]`.
+// The Ember system has a 4px/8px scale; a hardcoded value opts out of it and
+// drifts. Deliberately margin / padding / gap only — NOT h-/w-/max-w-, where
+// an arbitrary value is often the only option. This is ADVISORY + a ratchet:
+// it prints violations and fails only if the count rises above the baseline
+// below, so it ships green today and stops new ones without forcing a sweep.
+const ARB_SPACING = /\b(?:m[trblxy]?|p[trblxy]?|gap(?:-[xy])?|space-[xy])-\[[^\]]+\]/g
+const SPACING_BASELINE = 53
 
 function walk(dir) {
   const out = []
@@ -89,26 +99,36 @@ function scanFile(file) {
   const skip = ignoredLines(lines)
   const hexHits = []
   const opacityHits = []
+  const spacingHits = []
   lines.forEach((line, i) => {
     if (skip.has(i)) return
     const hex = line.match(HEX)
     if (hex) hexHits.push({ line: i + 1, count: hex.length, sample: hex.slice(0, 3).join(' ') })
     const opacity = line.match(OPACITY_MODIFIER)
     if (opacity) opacityHits.push({ line: i + 1, count: opacity.length, sample: opacity.slice(0, 3).join(' ') })
+    const spacing = line.match(ARB_SPACING)
+    if (spacing) spacingHits.push({ line: i + 1, count: spacing.length, sample: spacing.slice(0, 3).join(' ') })
   })
-  return { hexHits, opacityHits }
+  return { hexHits, opacityHits, spacingHits }
 }
 
 const report = process.argv.includes('--report')
 const files = SCAN.flatMap(walk)
 
 let violations = 0
+let spacingTotal = 0
 const perFile = []
+const spacingPerFile = []
 
 for (const f of files) {
   const rel = relative(ROOT, join(ROOT, f)).replace(/\\/g, '/')
   if (ALLOWLIST_FILES.has(rel)) continue
-  const { hexHits, opacityHits } = scanFile(f)
+  const { hexHits, opacityHits, spacingHits } = scanFile(f)
+  const spacingCount = spacingHits.reduce((n, h) => n + h.count, 0)
+  if (spacingCount > 0) {
+    spacingTotal += spacingCount
+    spacingPerFile.push({ rel, count: spacingCount, spacingHits })
+  }
   const count = hexHits.reduce((n, h) => n + h.count, 0) + opacityHits.reduce((n, h) => n + h.count, 0)
   if (count === 0) continue
   perFile.push({ rel, count, hexHits, opacityHits })
@@ -132,8 +152,30 @@ if (report) {
 
 console.log(`\nToken check: ${violations} violation(s) across ${perFile.length} file(s).`)
 
+// ── Spacing (advisory + ratchet) ────────────────────────────────────────────
+if (spacingTotal > 0 || report) {
+  console.log(
+    `\nSpacing (advisory): ${spacingTotal} arbitrary m/p/gap value(s) across ${spacingPerFile.length} file(s); baseline ${SPACING_BASELINE}.`
+  )
+  if (report) {
+    for (const { rel, spacingHits } of spacingPerFile.sort((a, b) => b.count - a.count)) {
+      console.log(`  ${rel}`)
+      for (const h of spacingHits) console.log(`    line ${h.line}: ${h.sample}`)
+    }
+  }
+}
+const spacingRegressed = spacingTotal > SPACING_BASELINE
+
 if (violations > 0) {
   console.error('\n\x1b[31mFAIL\x1b[0m — use design tokens, not raw hex; and no opacity modifiers on token colors.')
+  process.exit(1)
+}
+if (spacingRegressed) {
+  console.error(
+    `\n\x1b[31mFAIL\x1b[0m — arbitrary spacing values rose to ${spacingTotal} (baseline ${SPACING_BASELINE}). ` +
+      `Use the 4px/8px scale, or run with --report to see the new ones. ` +
+      `If a new arbitrary value is genuinely unavoidable, add a '// token-check-ignore' and bump SPACING_BASELINE.`
+  )
   process.exit(1)
 }
 console.log('\x1b[32mPASS\x1b[0m — token-clean.')

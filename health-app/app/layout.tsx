@@ -40,6 +40,9 @@ const instrumentSerif = Instrument_Serif({
 })
 
 export const metadata: Metadata = {
+  // Mirrors robots.ts / sitemap.ts so relative OG/canonical URLs resolve to the
+  // real host in prod and the preview host otherwise.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'https://healthapp-dun.vercel.app'),
   title: 'GetInShape — Weight Loss & Calorie Tracker',
   description: 'Lose weight the Indian way. Track food, monitor progress, get AI insights.',
   manifest: '/manifest.webmanifest',
@@ -57,6 +60,13 @@ export const metadata: Metadata = {
     title: 'GetInShape — Weight Loss & Calorie Tracker',
     description: 'Lose weight the Indian way. Track food, monitor progress, get AI insights.',
     siteName: 'GetInShape',
+  },
+  // The opengraph-image (app/opengraph-image.tsx) is auto-associated with both
+  // og:image and twitter:image; this just sets the card type.
+  twitter: {
+    card: 'summary_large_image',
+    title: 'GetInShape — Weight Loss & Calorie Tracker',
+    description: 'Lose weight the Indian way. Track food, monitor progress, get AI insights.',
   },
 }
 

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Flame, ArrowLeft } from 'lucide-react'
 import { createAdminClient } from '../../../lib/supabase/server'
-import { generateFoodSummary, generateWeightLossVerdict } from '../../../lib/foodPageCopy'
+import { generateFoodSummary, generateWeightLossVerdict, buildFoodJsonLd } from '../../../lib/foodPageCopy'
 import type { Food, FoodPortion } from '../../../types/index'
 
 // Public, indexable, statically generated — only the curated IFCT subset.
@@ -73,6 +73,11 @@ export default async function FoodPage({ params }: { params: { slug: string } })
 
   return (
     <div className="min-h-screen">
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildFoodJsonLd(food)) }}
+      />
       <header className="mx-auto flex w-full max-w-2xl items-center justify-between px-5 py-5">
         <Link href="/" className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-control bg-brand-soft">
@@ -81,7 +86,7 @@ export default async function FoodPage({ params }: { params: { slug: string } })
           <span className="font-display text-xl font-bold text-ink tracking-tight">GetInShape</span>
         </Link>
         <Link
-          href="/auth/sign-up"
+          href="/auth/sign-up?ref=foods_seo"
           className="rounded-full bg-brand px-4 py-2 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-rest"
         >
           Start free
@@ -156,7 +161,7 @@ export default async function FoodPage({ params }: { params: { slug: string } })
           <p className="font-display text-lg font-bold text-ink">Track {food.name} in 5 seconds</p>
           <p className="mt-1 text-sm text-ink-2">Snap a photo or type what you ate — GetInShape logs the macros for you.</p>
           <Link
-            href="/auth/sign-up"
+            href="/auth/sign-up?ref=foods_seo"
             className="mt-4 inline-block rounded-full bg-brand px-8 py-3 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-float"
           >
             Start for free →

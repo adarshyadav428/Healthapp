@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useExerciseLogs } from '../../hooks/useExerciseLogs'
 import { useUser } from '../../hooks/useUser'
 import { Button } from '../ui/button'
+import { IconButton } from '../ui/IconButton'
 import { Flame, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 
 // Common activities with MET values for calorie estimation
@@ -100,13 +101,13 @@ export function ExerciseLogger({ weightKg = 70 }: Props) {
                     <p className="text-xs font-semibold text-ink">{log.activity}</p>
                     <p className="text-[10px] text-ink-2">{log.duration_min} min · {log.calories} kcal burned</p>
                   </div>
-                  <button
-                    type="button"
+                  <IconButton
                     onClick={() => remove(log.id)}
-                    className="rounded-full p-1 text-ink-2 hover:text-danger hover:bg-surface transition-colors"
+                    label={`Delete ${log.activity}`}
+                    className="text-ink-2 hover:text-danger hover:bg-surface"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  </IconButton>
                 </div>
               ))}
             </div>

@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
 import { getIstDayRange, istDateStr } from '../../lib/dateUtils'
 import { Trash2, ChevronDown, Pencil, BookmarkPlus, Check, X } from 'lucide-react'
+import { IconButton } from '../ui/IconButton'
 import { EditFoodLogModal } from './EditFoodLogModal'
 import { ShareDayButton } from './ShareDayButton'
 import { firstNameFrom } from '../../lib/shareCard'
@@ -99,24 +100,22 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <button
-                  type="button"
+              <div className="flex items-center gap-0.5 flex-shrink-0">
+                <IconButton
                   onClick={() => onEdit(log)}
-                  className="rounded-full p-1 text-ink-3 hover:text-brand transition-colors"
-                  aria-label="Edit"
+                  className="text-ink-3 hover:text-brand"
+                  label="Edit"
                 >
                   <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} />
-                </button>
-                <button
-                  type="button"
+                </IconButton>
+                <IconButton
                   onClick={() => onDelete(log.id)}
                   disabled={deletingId === log.id}
-                  className="rounded-full p-1 text-ink-3 hover:text-danger disabled:opacity-40 transition-colors"
-                  aria-label="Delete"
+                  className="text-ink-3 hover:text-danger disabled:opacity-40"
+                  label="Delete"
                 >
                   <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
-                </button>
+                </IconButton>
               </div>
             </div>
           ))}
@@ -137,14 +136,16 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
                 type="button"
                 onClick={saveMeal}
                 disabled={saving}
-                className="rounded-control px-2.5 py-1.5 text-white disabled:opacity-50 transition-colors bg-brand"
+                aria-label="Save meal name"
+                className="grid h-9 w-9 place-items-center rounded-control text-white disabled:opacity-50 transition-colors bg-brand"
               >
                 <Check className="h-3.5 w-3.5" />
               </button>
               <button
                 type="button"
                 onClick={() => setSavingName(false)}
-                className="rounded-control px-2.5 py-1.5 text-ink-3 transition-colors"
+                aria-label="Cancel"
+                className="grid h-9 w-9 place-items-center rounded-control text-ink-3 transition-colors"
               >
                 <X className="h-3.5 w-3.5" />
               </button>

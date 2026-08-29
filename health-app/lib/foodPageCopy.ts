@@ -8,6 +8,40 @@ type MacroProfile = {
 }
 
 /**
+ * schema.org structured data for a /foods/[slug] page.
+ *
+ * Modelled as a `Product` with a `nutrition` block, NOT `Recipe` — Google's
+ * `NutritionInformation` rich result is only supported nested inside `Recipe`,
+ * and an IFCT food row is not a recipe. Claiming it is would be a false type
+ * for a rich result that may not even render. `Product` + a `nutrition`
+ * `NutritionInformation` is valid, honest, and still machine-readable.
+ */
+export function buildFoodJsonLd(
+  food: MacroProfile & { brand?: string | null },
+): Record<string, unknown> {
+  const round = (n: number) => Math.round(n)
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: food.name,
+    category: 'Food',
+    ...(food.brand ? { brand: { '@type': 'Brand', name: food.brand } } : {}),
+    description: generateFoodSummary(food),
+    nutrition: {
+      '@type': 'NutritionInformation',
+      servingSize: '100 g',
+      calories: `${round(food.kcal_per_100g)} kcal`,
+      proteinContent: `${round(food.protein_g_per_100g)} g`,
+      carbohydrateContent: `${round(food.carbs_g_per_100g)} g`,
+      fatContent: `${round(food.fat_g_per_100g)} g`,
+      ...(food.fiber_g_per_100g != null
+        ? { fiberContent: `${round(food.fiber_g_per_100g)} g` }
+        : {}),
+    },
+  }
+}
+
+/**
  * Templated (not hand-written) summary paragraph — genuinely differentiated
  * per food since it's driven by that food's actual macro numbers, not a
  * fixed sentence. Feasible at 400+ pages without either duplicate-feeling
