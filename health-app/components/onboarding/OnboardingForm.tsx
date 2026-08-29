@@ -445,14 +445,14 @@ export function OnboardingForm() {
           {step === 1 ? (
             <button
               type="button"
-              onClick={nextStep}
+              onClick={() => nextStep({ skipped: true })}
               disabled={isNavigating}
               className="rounded-control px-4 py-2.5 text-sm font-semibold text-ink-2 hover:bg-surface-2 transition-all disabled:opacity-50"
             >
               Skip for now
             </button>
           ) : step < TOTAL_STEPS ? (
-            <Button type="button" onClick={nextStep} disabled={isNavigating} className="gap-1 tap-scale">
+            <Button type="button" onClick={() => nextStep()} disabled={isNavigating} className="gap-1 tap-scale">
               {isNavigating ? 'Checking...' : 'Next'}
               <ChevronRight className="h-4 w-4" />
             </Button>

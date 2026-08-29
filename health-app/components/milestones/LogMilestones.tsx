@@ -255,12 +255,16 @@ export function LogMilestones() {
   }
 
   if (active === 'log_paywall') {
+    const dismissPaywall = () => {
+      captureEvent('paywall_dismissed', { source: 'free_logs' })
+      setActive(null)
+    }
     return (
       <div className="fixed inset-0 z-[100] overflow-y-auto bg-canvas">
         <div className="relative mx-auto flex min-h-full w-full max-w-md flex-col px-6 pb-8 pt-14">
           <button
             aria-label="Close"
-            onClick={() => setActive(null)}
+            onClick={dismissPaywall}
             className="tap-scale absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-surface-2 text-ink-2"
           >
             <X size={16} strokeWidth={2.2} />
@@ -310,7 +314,7 @@ export function LogMilestones() {
           >
             See Pro plans
           </Button>
-          <Button variant="subtle" className="mt-2 w-full" onClick={() => setActive(null)}>
+          <Button variant="subtle" className="mt-2 w-full" onClick={dismissPaywall}>
             Maybe later
           </Button>
         </div>

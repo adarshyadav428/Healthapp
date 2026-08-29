@@ -4,6 +4,7 @@ import { createServerClient, createAdminClient } from '../../../../lib/supabase/
 import { getPlaySubscription, acknowledgePlaySubscription } from '../../../../lib/play/verify'
 import { planForProductId } from '../../../../lib/play/products'
 import { captureServerEvent } from '../../../../lib/posthog/server'
+import { daysSinceSignup } from '../../../../lib/signupAge'
 
 export const runtime = 'nodejs'
 
@@ -76,7 +77,22 @@ export async function POST(req: Request) {
     })
     if (error) throw new Error(error.message)
 
-    captureServerEvent(user.id, 'upgrade_completed', { provider: 'google_play', plan })
+    const days_since_signup = await daysSinceSignup(supabase, user.id)
+    captureServerEvent(user.id, 'upgrade_completed', {
+      provider: 'google_play',
+      plan,
+      days_since_signup,
+    })
+    // A Play purchase that lands in trial state — the funnel can now see the
+    // trial start, not just the eventual paid conversion (which fires as its
+    // own `trial_converted` from the RTDN route).
+    if (sub.status === 'trialing') {
+      captureServerEvent(user.id, 'trial_started', {
+        provider: 'google_play',
+        plan,
+        days_since_signup,
+      })
+    }
 
     return NextResponse.json({ ok: true, status: sub.status })
   } catch (err) {

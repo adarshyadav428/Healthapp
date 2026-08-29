@@ -3,6 +3,7 @@ export const runtime = 'nodejs'
 import { getStripeClient } from '../../../../lib/stripe/client'
 import { createAdminClient } from '../../../../lib/supabase/server'
 import { captureServerEvent } from '../../../../lib/posthog/server'
+import { daysSinceSignup } from '../../../../lib/signupAge'
 import type Stripe from 'stripe'
 
 export async function POST(req: Request) {
@@ -53,7 +54,12 @@ export async function POST(req: Request) {
             current_period_end,
           })
 
-          captureServerEvent(userId, 'upgrade_completed', { provider: 'stripe', plan, lifetime: isLifetime })
+          captureServerEvent(userId, 'upgrade_completed', {
+            provider: 'stripe',
+            plan,
+            lifetime: isLifetime,
+            days_since_signup: await daysSinceSignup(admin, userId),
+          })
         }
         break
       }
@@ -62,6 +68,9 @@ export async function POST(req: Request) {
         const subscription = event.data.object as Stripe.Subscription
         const userId = subscription.metadata?.user_id
         if (userId) {
+          if (event.type === 'customer.subscription.deleted') {
+            captureServerEvent(userId, 'subscription_cancelled', { provider: 'stripe' })
+          }
           await admin.from('subscriptions').upsert({
             user_id: userId,
             stripe_customer_id: subscription.customer?.toString() ?? null,

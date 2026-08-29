@@ -2,8 +2,19 @@
 
 import posthog from 'posthog-js'
 import { EVENTS, type AnalyticsEvent, type FoodLogMethod } from './events'
+import { detectPlatform } from '../platform'
 
 let initialized = false
+
+/**
+ * The experiment arm this device is in. Always 'control' today — Tier 5 of the
+ * growth-advice audit (the `gis_bkt` bucketing mechanism) would make this
+ * dynamic. Registered as a super-property now so every event already carries a
+ * `variant` key and funnels authored today don't need rebuilding later.
+ */
+function readVariant(): string {
+  return 'control'
+}
 
 /**
  * User-facing analytics opt-out (Settings → Privacy). We keep our own flag
@@ -32,10 +43,29 @@ function ensureInit(): typeof posthog | null {
       capture_pageview: false, // we send $pageview manually on route change (App Router)
     })
     initialized = true
+    // Device-level super-properties — ride on every event automatically so the
+    // trial-bearing Play funnel and the no-trial web funnel are separable, and
+    // so every event is splittable by experiment arm.
+    posthog.register({ platform: detectPlatform(), variant: readVariant() })
     // Re-apply a stored opt-out on every fresh load, before anything captures.
     if (isAnalyticsOptedOut()) posthog.opt_out_capturing()
   }
   return posthog
+}
+
+/**
+ * Register the signed-in-state super-properties so `is_authenticated` / `is_pro`
+ * ride on every event, giving the audit's funnels a typed denominator. Called
+ * from Providers once the session and subscription have resolved.
+ */
+export function registerIdentitySuperProps(props: {
+  isAuthenticated: boolean
+  isPro: boolean
+}): void {
+  ensureInit()?.register({
+    is_authenticated: props.isAuthenticated,
+    is_pro: props.isPro,
+  })
 }
 
 /** Turn capture on/off and remember the choice across sessions. */
@@ -53,8 +83,12 @@ export function setAnalyticsOptOut(optOut: boolean): void {
   else ph.opt_in_capturing()
 }
 
-export function identifyUser(userId: string, properties?: Record<string, unknown>): void {
-  ensureInit()?.identify(userId, properties)
+export function identifyUser(
+  userId: string,
+  properties?: Record<string, unknown>,
+  setOnceProperties?: Record<string, unknown>,
+): void {
+  ensureInit()?.identify(userId, properties, setOnceProperties)
 }
 
 export function resetIdentity(): void {
@@ -76,11 +110,24 @@ export function capturePageview(url: string): void {
 
 let appOpenedAt: number | null = null
 
-/** Fire once per app load (from Providers). Safe to call repeatedly. */
-export function markAppOpened(): void {
+/**
+ * Fire once per app load (from Providers). Safe to call repeatedly — the first
+ * call wins, so pass the auth/Pro context once it has resolved.
+ *
+ * `app_opened` used to fire with no properties, which left it with no typed
+ * denominator (the audit's §8 #5). It now carries platform (via the
+ * super-property), whether the visitor is signed in / Pro, and the PostHog
+ * session id.
+ */
+export function markAppOpened(ctx?: { isAuthenticated?: boolean; isPro?: boolean }): void {
   if (appOpenedAt !== null) return
   appOpenedAt = Date.now()
-  captureEvent(EVENTS.APP_OPENED)
+  const ph = ensureInit()
+  captureEvent(EVENTS.APP_OPENED, {
+    is_authenticated: ctx?.isAuthenticated ?? false,
+    is_pro: ctx?.isPro ?? false,
+    session_id: ph?.get_session_id?.() ?? null,
+  })
 }
 
 /** Seconds since this app load, or null if the open wasn't recorded. */

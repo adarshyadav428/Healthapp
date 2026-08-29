@@ -45,7 +45,19 @@ export const EVENTS = {
   WEEKLY_RECAP_VIEWED: 'weekly_recap_viewed',
   // monetization
   PAYWALL_VIEWED: 'paywall_viewed',
+  // The other outcome of a paywall impression — turns `paywall_viewed` from a
+  // raw counter into a two-branch funnel. Fired on an explicit dismiss
+  // (Maybe later / ✕ / backdrop), not on a navigation-away.
+  PAYWALL_DISMISSED: 'paywall_dismissed',
   UPGRADE_COMPLETED: 'upgrade_completed',
+  // Subscription lifecycle. The funnel used to end at purchase *intent*
+  // (`upgrade_completed` fires the moment a checkout returns) — it could never
+  // see whether a Play trial converted to paid, or whether anyone stayed. These
+  // close that gap. All emitted server-side from the billing routes/webhooks.
+  TRIAL_STARTED: 'trial_started',
+  TRIAL_CONVERTED: 'trial_converted',
+  SUBSCRIPTION_CANCELLED: 'subscription_cancelled',
+  SUBSCRIPTION_REFUNDED: 'subscription_refunded',
 
   /* --- product events that predate the spec and remain useful --- */
   // checkout funnel (C15) — `upgrade_completed` is the success end of this
@@ -142,10 +154,13 @@ export type PaywallSource =
   // doesn't block an action — it withholds something about the user that they
   // can already see exists, which is a different (and better-converting) ask.
   | 'wrapped'
-  // The suggestion deck running out for a free user.
+  // Dormant: the suggestion deck (with its own end-of-deck wall) was cut to a
+  // single inline row on 2026-08-23, which renders no upgrade affordance. Kept
+  // named for when a wall returns to that surface.
   | 'meal_suggestions'
-  // Not upgrade prompts — these ask an anonymous user to create a free account
-  // before any Gemini credits are spent. Tracked here so the funnel sees them.
+  // Reserved: there is no anonymous AI entry point today (every AI route
+  // requires an authenticated user). Kept named so the funnel has a slot ready
+  // if an anonymous scan-to-signup surface is ever added.
   | 'camera_scan_anonymous'
   | 'chat_scan_anonymous'
 

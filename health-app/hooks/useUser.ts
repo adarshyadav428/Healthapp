@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { getBrowserSupabaseClient } from '../lib/supabase/client'
 import { useUserStore } from '../store/userStore'
 import { identifyUser, resetIdentity } from '../lib/posthog/client'
+import { readFirstTouch, firstTouchPersonProps } from '../lib/attribution'
 import type { Profile } from '../types/index'
 
 export function useUser() {
@@ -51,7 +52,11 @@ export function useUser() {
         }
 
         setUser({ id: sessionUser.id, email: sessionUser.email ?? '' })
-        identifyUser(sessionUser.id, { email: sessionUser.email })
+        identifyUser(
+          sessionUser.id,
+          { email: sessionUser.email },
+          firstTouchPersonProps(readFirstTouch()),
+        )
         await fetchProfile(sessionUser.id, reqId)
       } catch (err) {
         if (isMounted && reqId === reqIdRef.current) setError((err as Error).message)
@@ -76,7 +81,11 @@ export function useUser() {
       }
 
       setUser({ id: session.user.id, email: session.user.email ?? '' })
-      identifyUser(session.user.id, { email: session.user.email })
+      identifyUser(
+        session.user.id,
+        { email: session.user.email },
+        firstTouchPersonProps(readFirstTouch()),
+      )
       await fetchProfile(session.user.id, reqId)
     })
 

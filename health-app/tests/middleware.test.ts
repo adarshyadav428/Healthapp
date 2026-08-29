@@ -240,3 +240,45 @@ describe('network failure fails open', () => {
     expect(redirectTo(await middleware(request('/auth/sign-in')))).toBeNull()
   })
 })
+
+describe('first-touch attribution', () => {
+  const COOKIE = 'gis_attr'
+
+  function req(path: string, init?: { referer?: string; cookie?: string }) {
+    const headers = new Headers()
+    if (init?.referer) headers.set('referer', init.referer)
+    if (init?.cookie) headers.set('cookie', init.cookie)
+    return new NextRequest(new URL(path, ORIGIN), { headers })
+  }
+  const attr = (res: Response) => {
+    const raw = (res as unknown as { cookies: { get(n: string): { value: string } | undefined } }).cookies.get(COOKIE)
+    return raw ? JSON.parse(raw.value) : null
+  }
+
+  beforeEach(() => signedIn())
+
+  it('stamps gis_attr on a campaign landing', async () => {
+    const res = await middleware(req('/?utm_source=insta&utm_campaign=launch'))
+    expect(attr(res)).toMatchObject({ utm_source: 'insta', utm_campaign: 'launch', landing_path: '/' })
+  })
+
+  it('stamps a /foods/* SEO landing with no params', async () => {
+    expect(attr(await middleware(req('/foods/poha')))?.landing_path).toBe('/foods/poha')
+  })
+
+  it('does not stamp a bare internal visit with no signal', async () => {
+    expect(attr(await middleware(req('/dashboard')))).toBeNull()
+  })
+
+  it('never overwrites an existing gis_attr', async () => {
+    const res = await middleware(
+      req('/?utm_source=new', { cookie: `${COOKIE}=${encodeURIComponent('{"utm_source":"old"}')}` }),
+    )
+    // No Set-Cookie for gis_attr at all when it is already present.
+    expect(attr(res)).toBeNull()
+  })
+
+  it('does not run for /api/* paths', async () => {
+    expect(attr(await middleware(req('/api/logs?utm_source=x')))).toBeNull()
+  })
+})
