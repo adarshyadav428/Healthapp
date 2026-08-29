@@ -297,6 +297,8 @@ These are deep dives, kept out of this file on purpose. Read the relevant one **
 | `docs/refactor-safety-contract.md` | Any refactor — it maps each covered behavior to the test that pins it, and lists the accepted residual gaps |
 | `TESTING.md` | Shipping. The manual script for everything tests can't reach (auth, real phones, the day boundary) |
 | `docs/deep-dive-audit-2026-07-31.md` | Investigating a suspected systemic issue — the last full audit |
+| `docs/growth-advice-audit-2026-08-25.md` | Anything about attribution, the paywall's placement, trial length, or adding an A/B mechanism — it scores the app against an external growth playbook, and §7 records where we disagree with it on purpose |
+| `docs/prompts/growth-advice-apply.md` | Re-running that audit, or holding any new growth book against the app |
 
 ### Growth mechanics — the load-bearing rules
 
