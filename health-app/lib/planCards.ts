@@ -13,6 +13,7 @@
 
 import type { StoryCard } from '../components/story/types'
 import { projectGoalDate, formatGoalDate } from './projection'
+import { PRICE_MONTHLY } from './pricing'
 
 export type PlanCardArgs = {
   firstName?: string | null
@@ -86,6 +87,18 @@ export function buildPlanCards(args: PlanCardArgs): StoryCard[] {
       body: 'At your chosen pace. Log consistently and this is the date to beat.',
     })
   }
+
+  // One quiet mention that Pro exists, framed so it can't contradict the
+  // "Free forever" claim on the landing page — everything they just set up is
+  // free, always. No trial copy: this runs server-side with no Play detection,
+  // and the trial is Play-only. Cheap to reverse (a card is data).
+  cards.push({
+    id: 'plan-pro',
+    glyph: '✨',
+    eyebrow: 'Optional',
+    title: 'Free forever. Pro when you want more.',
+    body: `Everything you've set up is free, always. Pro (${PRICE_MONTHLY}/mo) adds AI photo & chat logging and your full history.`,
+  })
 
   cards.push({
     id: 'plan-go',

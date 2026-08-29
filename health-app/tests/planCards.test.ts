@@ -99,7 +99,31 @@ describe('buildPlanCards — the projected goal date', () => {
     const cards = buildPlanCards({
       ...base, dailyCalorieTarget: 0, proteinTargetG: 0, goal: 'maintain',
     })
-    expect(cards.map((c) => c.id)).toEqual(['plan-hello', 'plan-go'])
+    expect(cards.map((c) => c.id)).toEqual(['plan-hello', 'plan-pro', 'plan-go'])
+  })
+})
+
+describe('buildPlanCards — the Pro mention', () => {
+  it('sits between the goal-date card and the closer', () => {
+    const got = ids()
+    expect(got.indexOf('plan-pro')).toBeGreaterThan(got.indexOf('plan-goal-date'))
+    expect(got.indexOf('plan-pro')).toBe(got.indexOf('plan-go') - 1)
+  })
+
+  it('names the monthly price and restates that the plan is free', () => {
+    const card = buildPlanCards(base).find((c) => c.id === 'plan-pro')!
+    expect(card.body).toMatch(/₹299/)
+    expect(card.body).toMatch(/free/i)
+    expect(card.title).toMatch(/free forever/i)
+  })
+
+  it('carries no trial copy (trial is Play-only, this runs server-side)', () => {
+    const card = buildPlanCards(base).find((c) => c.id === 'plan-pro')!
+    expect(`${card.title} ${card.body}`).not.toMatch(/trial|free trial|3.day/i)
+  })
+
+  it('shows even when every number card drops out', () => {
+    expect(ids({ dailyCalorieTarget: 0, proteinTargetG: 0, goal: 'maintain' })).toContain('plan-pro')
   })
 })
 

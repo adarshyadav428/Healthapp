@@ -56,6 +56,9 @@ export function LogMilestones() {
   // Whether to show trial copy on the interstitial. Starts false so a slow
   // probe can never flash a trial promise at a web user, where no trial exists.
   const [playAvailable, setPlayAvailable] = useState(false)
+  // The self-proof line ("On track for 72 kg around 5 Dec") — null when the
+  // honest projection gate declines to give a date (off-track / no weigh-ins).
+  const [projectionHeadline, setProjectionHeadline] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -84,10 +87,22 @@ export function LogMilestones() {
         captureEvent('first_log_celebration_shown')
       } else {
         writeFlag(paywallKey(uid))
+        // Self-proof line — fetched here so `has_projection` can go on the same
+        // paywall_viewed event, letting the funnel compare conversion with and
+        // without the projection. A failure just means no line.
+        let headline: string | null = null
+        try {
+          const res = await fetch('/api/paywall/projection')
+          if (res.ok) headline = ((await res.json())?.projection?.headline as string | undefined) ?? null
+        } catch {
+          /* no line */
+        }
+        if (cancelled) return
+        setProjectionHeadline(headline)
         // Client-side deliberately: only the client knows the seen-flag, so
         // firing here (same event name + source as the server-side gates)
         // avoids over-counting paywall_viewed.
-        captureEvent('paywall_viewed', { source: 'free_logs' })
+        captureEvent('paywall_viewed', { source: 'free_logs', has_projection: !!headline })
       }
       setActive(action)
     }
@@ -251,7 +266,7 @@ export function LogMilestones() {
 
   if (active === 'log_paywall') {
     const dismissPaywall = () => {
-      captureEvent('paywall_dismissed', { source: 'free_logs' })
+      captureEvent('paywall_dismissed', { source: 'free_logs', has_projection: !!projectionHeadline })
       setActive(null)
     }
     return (
@@ -279,6 +294,9 @@ export function LogMilestones() {
           <p className="mt-2.5 text-sm text-ink-2">
             Three meals logged — that&apos;s how progress starts. Pro takes the limits off.
           </p>
+          {projectionHeadline && (
+            <p className="mt-3 text-sm font-semibold text-ink">{projectionHeadline}.</p>
+          )}
 
           <div className="mt-7 space-y-3.5">
             {PRO_FEATURES_INTERSTITIAL.map((feature) => (
