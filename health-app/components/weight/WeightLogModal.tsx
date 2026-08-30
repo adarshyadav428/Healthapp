@@ -13,6 +13,7 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Scale, X } from 'lucide-react'
 import { reportWeightMilestone } from '../../store/milestoneStore'
+import { istDateStr, dateStrToUtcMidnight } from '../../lib/dateUtils'
 
 const QUICK_ADJUSTMENTS = [-1, -0.5, +0.5, +1]
 
@@ -30,15 +31,22 @@ export function WeightLogModal({ onClose, defaultWeightKg }: { onClose: () => vo
       : baseKg
     : 70
 
+  // The day boundary is IST, not UTC: between 00:00 and 05:30 IST the UTC
+  // calendar date is still yesterday, so a UTC-derived default would pre-fill
+  // yesterday and silently file a morning weigh-in on the wrong day.
+  const today = istDateStr()
+
   const form = useForm<WeightLogData>({
     resolver: zodResolver(weightLogSchema),
     defaultValues: {
       weight_kg: defaultWeight,
-      measured_at: new Date().toISOString(),
+      // Weigh-ins are stored at UTC midnight of the chosen date — the
+      // round-trip lib/weightTrend.ts relies on to de-duplicate by day.
+      measured_at: dateStrToUtcMidnight(today).toISOString(),
       notes: '',
     },
   })
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [date, setDate] = useState(today)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const queryClient = useQueryClient()
 
@@ -49,7 +57,7 @@ export function WeightLogModal({ onClose, defaultWeightKg }: { onClose: () => vo
       if (!user) throw new Error('You must be signed in.')
       setIsSubmitting(true)
 
-      const measuredAt = new Date(`${date}T00:00:00.000Z`).toISOString()
+      const measuredAt = dateStrToUtcMidnight(date).toISOString()
       const weightKg = isImperial
         ? Math.round(values.weight_kg * 0.453592 * 10) / 10
         : values.weight_kg
@@ -159,7 +167,7 @@ export function WeightLogModal({ onClose, defaultWeightKg }: { onClose: () => vo
               onChange={(e) => {
                 const value = e.target.value
                 setDate(value)
-                form.setValue('measured_at', new Date(`${value}T00:00:00.000Z`).toISOString(), {
+                form.setValue('measured_at', dateStrToUtcMidnight(value).toISOString(), {
                   shouldValidate: true,
                 })
               }}
