@@ -27,6 +27,7 @@ import { ThemeSegmented } from '../ui/theme-toggle'
 import { PushNotificationToggle } from './PushNotificationToggle'
 import { ReminderHourPicker } from './ReminderHourPicker'
 import { userFacingApiError } from '../../lib/apiError'
+import { BODY_FOCUSES, BODY_FOCUS_META, planForFocus, focusFromProfile, type BodyFocus } from '../../lib/bodyType'
 
 function ftInToCm(ft: number, inches: number) {
   return Math.round((ft * 12 + inches) * 2.54)
@@ -84,6 +85,9 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
       target_weight_kg: profile.target_weight_kg,
       activity_level: profile.activity_level,
       goal: profile.goal,
+      // Every account that onboarded before migration 040 has body_focus NULL,
+      // so this derives the tile to light up from their existing goal.
+      body_focus: focusFromProfile(profile),
       pace_kg_per_week: profile.pace_kg_per_week ?? 0.5,
       water_target_ml: profile.water_target_ml ?? 2500,
       custom_calorie_target: profile.daily_calorie_target,
@@ -325,18 +329,29 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
                   {Object.entries(ACTIVITY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </Field>
-              <Field label="Goal" error={form.formState.errors.goal?.message}>
-                <div className="grid grid-cols-3 gap-2">
-                  {([
-                    { value: 'lose', label: 'Lose', emoji: '📉' },
-                    { value: 'maintain', label: 'Maintain', emoji: '⚖️' },
-                    { value: 'gain', label: 'Gain', emoji: '📈' },
-                  ] as const).map((g) => (
-                    <button
-                      key={g.value} type="button" onClick={() => form.setValue('goal', g.value, { shouldDirty: true })}
-                      className={`rounded-control border py-2.5 text-sm font-semibold transition-all ${form.watch('goal') === g.value ? 'border-brand bg-brand-soft text-brand-ink' : 'border-hairline bg-surface text-ink'}`}
-                    >{g.emoji} {g.label}</button>
-                  ))}
+              <Field label="Goal" error={form.formState.errors.body_focus?.message}>
+                <div className="grid grid-cols-2 gap-2">
+                  {BODY_FOCUSES.map((f) => {
+                    const on = form.watch('body_focus') === f
+                    const meta = BODY_FOCUS_META[f]
+                    return (
+                      <button
+                        key={f}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => {
+                          const { goal, pace } = planForFocus(f as BodyFocus)
+                          form.setValue('body_focus', f, { shouldDirty: true })
+                          form.setValue('goal', goal, { shouldDirty: true })
+                          if (pace !== null) form.setValue('pace_kg_per_week', pace, { shouldDirty: true })
+                        }}
+                        className={`flex flex-col items-start gap-0.5 rounded-control border px-3 py-2.5 text-left transition-all ${on ? 'border-brand bg-brand-soft text-brand-ink' : 'border-hairline bg-surface text-ink'}`}
+                      >
+                        <span className="text-sm font-semibold leading-tight">{meta.emoji} {meta.label}</span>
+                        <span className={`text-[11px] leading-tight ${on ? 'text-brand-ink' : 'text-ink-2'}`}>{meta.desc}</span>
+                      </button>
+                    )
+                  })}
                 </div>
               </Field>
               <Field label="Weekly loss goal" error={form.formState.errors.pace_kg_per_week?.message}>

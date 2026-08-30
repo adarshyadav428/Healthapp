@@ -10,6 +10,11 @@ import { useQueryClient } from '@tanstack/react-query'
 import { ChevronRight, ChevronLeft, Camera, MessageSquarePlus } from 'lucide-react'
 import { calculateTDEE, PROTEIN_G_PER_KG } from '../../lib/tdee'
 import { computeBmi, bmiCategory, healthyWeightRange, suggestedTargets } from '../../lib/bmi'
+import {
+  BODY_TYPES, BODY_TYPE_META, BODY_FOCUSES, BODY_FOCUS_META,
+  planForFocus, focusFromBodyType, type BodyFocus, type BodyType,
+} from '../../lib/bodyType'
+import { BodyTypeImage } from './BodyTypeImage'
 import { projectGoalDate, formatGoalDate } from '../../lib/projection'
 import { ftInToCm } from '../../lib/units'
 import { useOnboardingDraft, TOTAL_STEPS, STEP_LABELS } from '../../hooks/useOnboardingDraft'
@@ -53,10 +58,32 @@ export function OnboardingForm() {
       current_weight_kg: 70,
       target_weight_kg: 65,
       goal: 'lose',
+      body_focus: 'fat_loss',
       activity_level: 'moderate',
       pace_kg_per_week: 0.5,
     },
   })
+
+  // Set once the user picks a focus tile by hand. After that a body-type tap
+  // still records the type but stops rewriting goal/pace — body type is a
+  // shortcut into the focus, never an override of a deliberate choice.
+  const focusTouchedRef = useRef(false)
+
+  // The one place goal and pace are written from a focus. `goal` is derived so
+  // the three-value column and everything branching on it stay untouched; the
+  // pace is only pinned for the two muscle focuses (see lib/bodyType.ts).
+  const applyFocus = (f: BodyFocus, opts?: { byHand?: boolean }) => {
+    const { goal, pace } = planForFocus(f)
+    form.setValue('body_focus', f, { shouldValidate: true })
+    form.setValue('goal', goal)
+    if (pace !== null) form.setValue('pace_kg_per_week', pace)
+    if (opts?.byHand) focusTouchedRef.current = true
+  }
+
+  const pickBodyType = (t: BodyType) => {
+    form.setValue('body_type', t)
+    if (!focusTouchedRef.current) applyFocus(focusFromBodyType(t))
+  }
 
   const {
     step, isNavigating, heightFt, setHeightFt, heightIn, setHeightIn,
@@ -235,6 +262,38 @@ export function OnboardingForm() {
         {/* Step 3: Height + Current weight */}
         {step === 3 && (
           <div className="space-y-4">
+            {/* Which build you're starting from. Optional — it exists to
+                preselect the goal below, which the user watches happen. */}
+            <div>
+              <label className="block text-sm font-semibold text-ink mb-1.5">Which is closest to you?</label>
+              {/* Three-across, not five: the illustrations need the width to
+                  stay legible on a phone, and five 65px tiles did not give it
+                  to them. Five items over two rows leaves one gap on the
+                  second row, which is fine — a stretched last tile would read
+                  as a different kind of control. */}
+              <div className="grid grid-cols-3 gap-2">
+                {BODY_TYPES.map((t) => {
+                  const on = form.watch('body_type') === t
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => pickBodyType(t)}
+                      className={`flex flex-col items-center gap-1.5 rounded-control border px-1 py-2.5 transition-all tap-scale ${on ? pillOn : pillOff}`}
+                    >
+                      <BodyTypeImage type={t} sex={form.watch('sex')} selected={on} className="h-24 w-full" />
+                      <span className={`text-[11px] font-semibold leading-tight text-center ${on ? 'text-brand-ink' : 'text-ink-2'}`}>
+                        {BODY_TYPE_META[t].label}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="mt-1.5 text-[11px] text-ink-3">
+                Just to set your starting point — you can change anything below.
+              </p>
+            </div>
             <div>
               <label className="block text-sm font-semibold text-ink mb-1.5">Height</label>
               <div className="flex gap-2">
@@ -337,17 +396,27 @@ export function OnboardingForm() {
             </div>
             <div>
               <label className="block text-sm font-semibold text-ink mb-1">Goal</label>
-              <div className="grid grid-cols-3 gap-2">
-                {(['lose', 'maintain', 'gain'] as const).map((g) => (
-                  <button
-                    key={g}
-                    type="button"
-                    onClick={() => form.setValue('goal', g)}
-                    className={`${pillBase} ${form.watch('goal') === g ? pillOn : pillOff}`}
-                  >
-                    {g === 'lose' ? '📉 Lose' : g === 'maintain' ? '⚖️ Maintain' : '📈 Gain'}
-                  </button>
-                ))}
+              {/* Deliberately not `pillBase` below: it carries `capitalize`,
+                  which would render "Build Muscle & Lose Fat". */}
+              <div className="grid grid-cols-2 gap-2">
+                {BODY_FOCUSES.map((f) => {
+                  const on = form.watch('body_focus') === f
+                  const meta = BODY_FOCUS_META[f]
+                  return (
+                    <button
+                      key={f}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => applyFocus(f, { byHand: true })}
+                      className={`flex flex-col items-start gap-0.5 rounded-control border px-3 py-3 text-left transition-all ${on ? pillOn : pillOff}`}
+                    >
+                      <span className="text-sm font-semibold leading-tight">{meta.emoji} {meta.label}</span>
+                      <span className={`text-[11px] font-normal leading-tight ${on ? 'text-brand-ink' : 'text-ink-2'}`}>
+                        {meta.desc}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -391,6 +460,14 @@ export function OnboardingForm() {
                 <option value="0.75">0.75 kg/week — Aggressive</option>
                 <option value="1">1.0 kg/week — Maximum</option>
               </select>
+              {/* Preselected to 0.25 by the focus, not locked to it — a fast
+                  pace and "build muscle" pull against each other, and saying so
+                  is more use than taking the control away. */}
+              {(form.watch('body_focus') === 'recomp' || form.watch('body_focus') === 'muscle_gain') && (
+                <p className="mt-1.5 text-[11px] text-ink-2">
+                  A gentle pace is what keeps muscle while fat comes off — we&apos;ve set 0.25 for you.
+                </p>
+              )}
             </div>
           </div>
         )}
