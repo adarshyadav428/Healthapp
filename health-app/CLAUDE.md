@@ -150,6 +150,13 @@ actively seeding.
   difference a user forgives. A smart match also **suppresses** the DB `common_portions` from migration
   `008` — that is deliberate and pinned (a bogus `999 g` label must stay out of the picker); if measured
   IFCT portions need to surface, fix the rows, not the precedence.
+- **Switching the measure picker between two household units keeps the typed number.**
+  `quantityOnUnitSwitch` (`lib/portion-units.ts`) is the one rule, shared by `AddFoodModal` and
+  `EditFoodLogModal`: katori → plate leaves "2" as "2" (two plates), because a user who typed an
+  amount means that many of whatever they pick — not "1.2 plates" from re-expressing 2 katori by
+  weight. **Grams or ounces on either side is the exception** — there it rescales by weight, so
+  "1 katori" → Grams can't silently collapse to "1 gram" and log a single calorie.
+  `tests/portionUnits.test.ts` pins both directions.
 - **Every logging surface threads the date it is looking at.** `useChatLog`, search and quick-add all
   send `date` in the payload *and* scope `useDailyTotals` to the same day. The camera did neither, so
   scanning while viewing a past day filed the meal on today, silently.
