@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { profileUpdateSchema } from '../../../../lib/validations'
 import { createServerClient } from '../../../../lib/supabase/server'
 import { calculateTDEE } from '../../../../lib/tdee'
+import { planForFocus, focusFromProfile } from '../../../../lib/bodyType'
 
 export async function POST(req: Request) {
   try {
@@ -29,6 +30,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Profile missing age or sex' }, { status: 400 })
     }
 
+    // Same derivation as the onboarding route: `body_focus` is what the user
+    // picked, `goal` and the pace come out of `planForFocus`. A client that
+    // sends no focus falls back to its own goal, so nothing older breaks.
+    const focus = parsed.data.body_focus ?? focusFromProfile({ goal: parsed.data.goal })
+    const plan = planForFocus(focus)
+    const goal = plan.goal
+    const pace_kg_per_week = plan.pace ?? parsed.data.pace_kg_per_week
+
     const hasCustomTargets =
       parsed.data.custom_calorie_target !== undefined &&
       parsed.data.custom_protein_target !== undefined &&
@@ -49,8 +58,8 @@ export async function POST(req: Request) {
           age:             currentProfile.age,
           sex:             currentProfile.sex,
           activity_level:  parsed.data.activity_level,
-          goal:            parsed.data.goal,
-          paceKgPerWeek:   parsed.data.pace_kg_per_week,
+          goal,
+          paceKgPerWeek:   pace_kg_per_week,
         })
 
     const payload = {
@@ -59,19 +68,25 @@ export async function POST(req: Request) {
       current_weight_kg:    parsed.data.current_weight_kg,
       target_weight_kg:     parsed.data.target_weight_kg,
       activity_level:       parsed.data.activity_level,
-      goal:                 parsed.data.goal,
+      goal,
       daily_calorie_target: targets.daily_calorie_target,
       protein_g_target:     targets.protein_g_target,
       carbs_g_target:       targets.carbs_g_target,
       fat_g_target:         targets.fat_g_target,
       ...(parsed.data.water_target_ml !== undefined ? { water_target_ml: parsed.data.water_target_ml } : {}),
-      ...(parsed.data.pace_kg_per_week !== undefined ? { pace_kg_per_week: parsed.data.pace_kg_per_week } : {}),
+      ...(pace_kg_per_week !== undefined ? { pace_kg_per_week } : {}),
     }
 
-    const { error } = await supabase.from('profiles').update(payload).eq('id', user.id)
+    const { error } = await supabase
+      .from('profiles')
+      .update({ ...payload, body_focus: focus })
+      .eq('id', user.id)
 
     if (error) {
-      if (String(error.message).includes('water_target_ml')) {
+      // Two columns can be missing here for the same reason — an unapplied
+      // migration — so the retry drops both rather than only water_target_ml.
+      const msg = String(error.message)
+      if (msg.includes('water_target_ml') || msg.includes('body_focus')) {
         const { water_target_ml: _ignored, ...fallback } = payload as Record<string, unknown>
         const { error: retryError } = await supabase
           .from('profiles')

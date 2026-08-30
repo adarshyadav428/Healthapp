@@ -1,3 +1,5 @@
+import type { BodyFocus, BodyType } from '../lib/bodyType'
+
 export type Profile = {
   id: string
   email: string
@@ -18,6 +20,17 @@ export type Profile = {
   sex: 'male' | 'female' | 'other'
   activity_level: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
   goal: 'lose' | 'maintain' | 'gain'
+  /**
+   * The user-facing goal selector (migration 040). `goal` above is *derived*
+   * from this by `planForFocus` and stays three-valued on purpose — see
+   * lib/bodyType.ts. Optional until the migration is applied.
+   */
+  body_focus?: BodyFocus | null
+  /**
+   * Self-reported build; preselects `body_focus`. A preference, never a
+   * measurement — nothing derives a body-fat percentage from it.
+   */
+  body_type?: BodyType | null
   /** IST hour (0-23) for the daily reminder. See lib/reminderSchedule. */
   reminder_hour?: number | null
   daily_calorie_target: number

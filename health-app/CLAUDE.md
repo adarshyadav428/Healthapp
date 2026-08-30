@@ -188,6 +188,23 @@ actively seeding.
   at Adarsh's request, accepting the punishment-for-nothing trade-off there on purpose. Don't spread
   `rolling` to other surfaces without the same explicit call. Week is free, month is Pro — and the
   month is withheld **server-side**, so a free client never receives numbers a padlock is merely covering.
+- **`goal` has three values and gains no more.** The user-facing selector is `profiles.body_focus`
+  (`fat_loss | recomp | maintain | muscle_gain`, migration `040`); `goal` and the default pace are
+  **derived** from it by `planForFocus` (`lib/bodyType.ts`), which both `/api/onboarding` and
+  `/api/profile/update` call server-side rather than trusting the client's `goal`. ~20 modules branch
+  on `goal` — `deficit-calculator`, `plateau`, `adaptiveTarget`, `planCards`, `goalProjection`,
+  `WeightStats`, the paywall — so a fourth enum value means re-auditing every one for nothing.
+  `recomp` is `goal='lose'` pinned to 0.25 kg/week: a gentle deficit is the only one in which muscle
+  is realistically kept, so the pin overrides whatever pace the client sent. Pre-`040` rows have
+  `body_focus` NULL and are back-filled for display by `focusFromProfile` — never assume it is set.
+  **`body_type` is a self-reported preference that preselects a focus; it is never presented as a
+  body-fat measurement**, and nothing may derive one from it. Its illustrations in
+  `public/body-types/` are the **one sanctioned exception** to the emoji-and-gradients house style —
+  four hand-drawn SVG versions were tried and none read as a body, because width alone cannot express
+  body composition. They load through a plain `<img>`, never `next/image` (Hobby meters image
+  optimisation), and `BodyTypeImage` falls back to a neutral block when a file is absent, so a missing
+  asset can never ship a broken-image icon. Constraints on the artwork live in that folder's README.
+  This exception does **not** extend to the story engine, which still downloads no images at all.
 - **Streak freezes are never paywalled.** The free auto-*freeze* prevents a break; the Pro *rescue*
   repairs one. Do not merge or gate the two.
 - **If you move the reminder cron, move `CATCH_ALL_IST_HOUR` with it.** They are coupled, and

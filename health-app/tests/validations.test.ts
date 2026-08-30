@@ -61,6 +61,29 @@ describe('onboardingSchema', () => {
   it('rejects string numbers (no silent coercion at the API boundary)', () => {
     expect(onboardingSchema.safeParse({ ...valid, age: '25' }).success).toBe(false)
   })
+
+  it('accepts every body_focus and body_type', () => {
+    for (const body_focus of ['fat_loss', 'recomp', 'maintain', 'muscle_gain']) {
+      expect(onboardingSchema.safeParse({ ...valid, body_focus }).success).toBe(true)
+    }
+    for (const body_type of ['skinny', 'skinny_fat', 'average', 'soft', 'athletic']) {
+      expect(onboardingSchema.safeParse({ ...valid, body_type }).success).toBe(true)
+    }
+  })
+
+  it('leaves both optional, so a pre-040 client still submits', () => {
+    expect(onboardingSchema.safeParse(valid).success).toBe(true)
+  })
+
+  it('rejects junk in either new field', () => {
+    expect(onboardingSchema.safeParse({ ...valid, body_focus: 'bulk' }).success).toBe(false)
+    expect(onboardingSchema.safeParse({ ...valid, body_type: 'dad_bod' }).success).toBe(false)
+  })
+
+  it('the goal enum did not grow — "recomp" is a focus, never a goal', () => {
+    expect(onboardingSchema.safeParse({ ...valid, goal: 'recomp' }).success).toBe(false)
+    expect(profileUpdateSchema.safeParse({ ...valid, goal: 'recomp' }).success).toBe(false)
+  })
 })
 
 describe('addFoodSchema', () => {

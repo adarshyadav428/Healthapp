@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { MEAL_CONTEXTS } from './mealContext'
 import { MAX_LOG_GRAMS } from './portion-units'
+import { BODY_FOCUSES, BODY_TYPES } from './bodyType'
 
 export const signInSchema = z.object({
   email: z.string().email(),
@@ -18,9 +19,15 @@ export const onboardingSchema = z.object({
   height_cm: z.number().positive(),
   current_weight_kg: z.number().positive(),
   target_weight_kg: z.number().positive(),
+  // Stays three-valued. The four-value selector the user actually sees is
+  // `body_focus` below; the routes derive this from it via `planForFocus`.
   goal: z.enum(['lose', 'maintain', 'gain']),
   activity_level: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']),
   pace_kg_per_week: z.number().min(0).max(2),
+  // Optional so a client that predates migration 040 — or a resumed
+  // localStorage draft saved before it — still submits successfully.
+  body_focus: z.enum(BODY_FOCUSES).optional(),
+  body_type: z.enum(BODY_TYPES).optional(),
 })
 
 export const addFoodSchema = z.object({
@@ -94,6 +101,8 @@ export const profileUpdateSchema = z.object({
   target_weight_kg: z.number().positive(),
   activity_level: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']),
   goal: z.enum(['lose', 'maintain', 'gain']),
+  body_focus: z.enum(BODY_FOCUSES).optional(),
+  body_type: z.enum(BODY_TYPES).optional(),
   pace_kg_per_week: z.number().min(0.25).max(1.0).optional(),
   water_target_ml: z.number().min(500).max(8000).optional(),
   // Manual target overrides — when present, skip TDEE recalculation

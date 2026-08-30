@@ -18,7 +18,10 @@ export const STEP_LABELS = ['Log a meal', 'About you', 'Your body & goal', 'Life
 const fieldsByStep: Record<number, (keyof OnboardingData)[]> = {
   1: [],
   2: ['display_name', 'age', 'sex'],
-  3: ['height_cm', 'current_weight_kg', 'target_weight_kg', 'goal'],
+  // `body_type` is deliberately absent: it's a shortcut that preselects the
+  // focus, not a question the user must answer. Gating on it would turn the
+  // silhouettes into a wall.
+  3: ['height_cm', 'current_weight_kg', 'target_weight_kg', 'goal', 'body_focus'],
   4: ['activity_level', 'pace_kg_per_week'],
 }
 
