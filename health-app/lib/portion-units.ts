@@ -879,3 +879,23 @@ export function normalizeQuantity(raw: string, unit: Unit): number {
   if (!Number.isFinite(n) || n <= 0) return min
   return round2q(Math.min(n, max))
 }
+
+/**
+ * `g` and `oz` are raw weight/volume; everything else is a household measure.
+ */
+const isRawUnit = (unit: Unit) => unit.key === 'g' || unit.key === 'oz'
+
+/**
+ * The quantity to show after the measure picker switches from `from` to `to`.
+ *
+ * Between two household measures (katori → plate, bowl → glass) the *number*
+ * stays put: someone who typed "2" and switches katori → plate means two
+ * plates, not "1.2 plates because 2 katori weigh 300 g". Only when grams or
+ * ounces is on either side do we re-express by weight — otherwise "1 katori" →
+ * Grams would silently collapse to "1 gram" and log a single calorie.
+ */
+export function quantityOnUnitSwitch(from: Unit, to: Unit, quantity: number): number {
+  if (!isRawUnit(from) && !isRawUnit(to)) return round2q(quantity)
+  const per = to.toGrams(1)
+  return per > 0 ? round2q(from.toGrams(quantity) / per) : 1
+}

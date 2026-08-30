@@ -9,6 +9,7 @@ import {
   quantityBounds,
   stepQuantity,
   normalizeQuantity,
+  quantityOnUnitSwitch,
   GRAMS_UNIT,
   MAX_LOG_GRAMS,
   SMART_PORTIONS,
@@ -420,6 +421,27 @@ describe('quantity stepper', () => {
         expect(grams, raw).toBeGreaterThan(0)
         expect(grams, raw).toBeLessThanOrEqual(MAX_LOG_GRAMS)
       }
+    })
+  })
+
+  describe('quantityOnUnitSwitch', () => {
+    const plate: Unit = { key: 'plate', label: 'Plate (250g)', toGrams: (q) => q * 250 }
+
+    it('keeps the typed number between two household measures', () => {
+      expect(quantityOnUnitSwitch(katori, plate, 1)).toBe(1)
+      expect(quantityOnUnitSwitch(katori, plate, 2)).toBe(2)
+      expect(quantityOnUnitSwitch(plate, katori, 1.5)).toBe(1.5)
+    })
+
+    it('re-expresses by weight when grams is on either side', () => {
+      // 1 katori (200g) → Grams shows 200, not 1
+      expect(quantityOnUnitSwitch(katori, GRAMS_UNIT, 1)).toBe(200)
+      // 300g → katori shows 1.5
+      expect(quantityOnUnitSwitch(GRAMS_UNIT, katori, 300)).toBe(1.5)
+    })
+
+    it('re-expresses by weight when ounces is on either side', () => {
+      expect(quantityOnUnitSwitch(ounce, katori, 7)).toBe(quantityOnUnitSwitch(GRAMS_UNIT, katori, 7 * 28.35))
     })
   })
 })

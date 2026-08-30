@@ -10,7 +10,7 @@ import { X, ChevronDown } from 'lucide-react'
 import { getIstDayRange } from '../../lib/dateUtils'
 import { MEAL_CONTEXTS, MEAL_CONTEXT_LABELS, isMealContext, type MealContext } from '../../lib/mealContext'
 import { useUser } from '../../hooks/useUser'
-import { buildUnits, inferPortionSelection, quantityBounds, stepQuantity, normalizeQuantity, isLiquidFood, GRAMS_UNIT, type Unit } from '../../lib/portion-units'
+import { buildUnits, inferPortionSelection, quantityBounds, stepQuantity, normalizeQuantity, quantityOnUnitSwitch, isLiquidFood, GRAMS_UNIT, type Unit } from '../../lib/portion-units'
 import { UnitPicker } from './UnitPicker'
 import { userFacingApiError } from '../../lib/apiError'
 
@@ -65,11 +65,11 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
   const onQuantityChange = (raw: string) => setQuantityStr(raw.replace(/[^0-9.]/g, ''))
   const onQuantityBlur = () => setQuantityStr(String(normalizeQuantity(quantityStr, unit)))
 
-  // Switching measure keeps the amount constant — re-express current grams in the new unit
+  // Between two household measures (katori → plate) the typed number is kept;
+  // to/from Grams re-expresses by weight. See quantityOnUnitSwitch.
   const switchUnit = (u: Unit) => {
-    const per = u.toGrams(1)
+    setQuantityStr(String(quantityOnUnitSwitch(unit, u, quantity)))
     setUnit(u)
-    setQuantityStr(String(per > 0 ? round2(grams / per) : 1))
     setShowUnitPicker(false)
   }
 
