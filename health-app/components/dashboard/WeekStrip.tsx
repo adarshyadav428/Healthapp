@@ -2,40 +2,18 @@
 
 import { useMemo } from 'react'
 import Link from 'next/link'
-
-const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-
-/** UTC date key — matches how /log parses its ?date= param (UTC day ranges). */
-function utcKey(d: Date): string {
-  return [
-    d.getUTCFullYear(),
-    String(d.getUTCMonth() + 1).padStart(2, '0'),
-    String(d.getUTCDate()).padStart(2, '0'),
-  ].join('-')
-}
+import { buildWeekStrip } from '../../lib/weekStrip'
 
 /**
  * Last-7-days strip on the home screen: tap any day to jump straight to that
  * day's diary (/log?date=…). An ember dot marks days with at least one food
  * log (accent reserved for data per Ember Air); today is the ink-filled chip.
  * The 7-day window mirrors the free-tier history limit, so no chip here can
- * hit the upgrade redirect.
+ * hit the upgrade redirect. Days come from buildWeekStrip, which keys them by
+ * IST calendar day to match /log and the server's loggedDates.
  */
 export function WeekStrip({ loggedDates }: { loggedDates: string[] }) {
-  const days = useMemo(() => {
-    const logged = new Set(loggedDates)
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(Date.now() - (6 - i) * 86_400_000)
-      const key = utcKey(d)
-      return {
-        key,
-        letter: DAY_LETTERS[d.getUTCDay()],
-        dayNum: d.getUTCDate(),
-        isToday: i === 6,
-        hasLog: logged.has(key),
-      }
-    })
-  }, [loggedDates])
+  const days = useMemo(() => buildWeekStrip(loggedDates), [loggedDates])
 
   return (
     <div className="mt-4 flex justify-between gap-1.5">
