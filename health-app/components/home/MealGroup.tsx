@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Pencil } from 'lucide-react'
 import type { FoodLog } from '../../types/index'
+import { isLiquidFood } from '../../lib/portion-units'
 
 const MEAL_CONFIG: Record<string, { label: string; letter: string }> = {
   breakfast: { label: 'Breakfast', letter: 'B' },
@@ -57,7 +58,7 @@ export function MealGroup({ meal, items, onEdit }: Props) {
               <div className="flex-1 min-w-0">
                 <p className="text-[13.5px] font-medium text-ink truncate leading-tight">{name}</p>
                 <p className="text-[11.5px] text-ink-3 mt-[2px] truncate tabular-nums">
-                  {item.grams ? `${Math.round(item.grams)}g` : `${item.servings} srv`}
+                  {item.grams ? `${Math.round(item.grams)}${isLiquidFood(name) ? 'ml' : 'g'}` : `${item.servings} srv`}
                   {' · '}P {Math.round(item.protein_g)} · C {Math.round(item.carbs_g)} · F {Math.round(item.fat_g)}
                 </p>
               </div>

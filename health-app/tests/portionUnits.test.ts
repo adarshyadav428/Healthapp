@@ -12,6 +12,7 @@ import {
   GRAMS_UNIT,
   MAX_LOG_GRAMS,
   SMART_PORTIONS,
+  isLiquidFood,
   type Unit,
 } from '../lib/portion-units'
 
@@ -83,6 +84,58 @@ describe('buildUnits', () => {
 
     const default100 = buildUnits(makeFood({ name: 'Zzz obscure dish', serving_size_g: 100 }))
     expect(default100.some((u) => u.key === 'serving')).toBe(false)
+  })
+})
+
+describe('isLiquidFood — raw unit reads in ml, not grams', () => {
+  it.each([
+    'Chaas / Buttermilk (Spiced)',
+    'Buttermilk (Chaas)',
+    'Sweet Lassi',
+    'Mango Lassi',
+    'Amul Taaza Milk',
+    'Badam Milk',
+    'Banana Shake',
+    'Mango Milkshake',
+    'Cold Coffee',
+    'Masala Chai',
+    'Green Tea',
+    'Fresh Lime Juice',
+    'Aam Panna',
+    'Coconut Water (Nariyal Pani)',
+    'Thums Up',
+    'Tomato Soup',
+    'Jeera Water',
+  ])('treats "%s" as a liquid', (name) => {
+    expect(isLiquidFood(name)).toBe(true)
+  })
+
+  it.each([
+    'Milk Cake',
+    'Milk Bikis Biscuits',
+    'Cadbury Dairy Milk Chocolate',
+    'Cooked Rice (Chawal)',
+    'Chapati / Roti',
+    'Paneer Butter Masala',
+    'Watermelon',
+    'Dal Tadka',
+  ])('does not treat "%s" as a liquid', (name) => {
+    expect(isLiquidFood(name)).toBe(false)
+  })
+
+  it('labels the raw unit "Millilitres" for a liquid and "Grams" otherwise', () => {
+    const chaas = buildUnits(makeFood({ name: 'Chaas / Buttermilk (Spiced)' }))
+    expect(chaas[0].key).toBe('g') // key unchanged — only the label switches
+    expect(chaas[0].label).toBe('Millilitres')
+    expect(chaas[0].toGrams(200)).toBe(200)
+
+    const roti = buildUnits(makeFood({ name: 'Chapati / Roti' }))
+    expect(roti[0].label).toBe('Grams')
+  })
+
+  it('still defaults chaas to a glass, not the raw unit', () => {
+    const food = makeFood({ name: 'Buttermilk (Chaas)' })
+    expect(pickDefaultUnit(buildUnits(food), food).label).toBe('1 glass (200ml)')
   })
 })
 

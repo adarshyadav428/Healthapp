@@ -10,7 +10,8 @@ import type { Food } from '../types/index'
  *   1. SMART_PORTIONS name match (works for every source — IFCT, OFF, custom)
  *   2. common_portions jsonb from the DB (IFCT migration 008)
  *   3. serving_size_g, only when it looks like a real serving (≠ 100g default)
- * Grams is always offered first and ounces last.
+ * The raw unit is always offered first — grams, or millilitres for a
+ * drinkable liquid (see isLiquidFood); ounces are never offered.
  */
 
 export type Unit = { key: string; label: string; toGrams: (q: number) => number }
@@ -27,6 +28,28 @@ export function portionRange(unit: string | undefined): { min: number; max: numb
 }
 
 export const GRAMS_UNIT: Unit = { key: 'g', label: 'Grams', toGrams: (q) => q }
+
+/**
+ * Drinkable liquids where a gram figure reads wrong — nobody pours "200 grams"
+ * of chaas. Nutrition is still stored per 100 g and the density of these
+ * (buttermilk, milk, juice, tea, soft drinks) is ~1.0, so 1 ml ≈ 1 g and the
+ * existing "(200ml)" household portions already convert 1:1. This only swaps
+ * the *label* of the raw unit — the key stays `g` so every bounds / default /
+ * infer path that special-cases `g` keeps working untouched.
+ *
+ * `EXCLUDE` keeps solids that merely contain a drink word out: "Milk Cake",
+ * "Milk Bikis Biscuits", "Cadbury Dairy Milk Chocolate", "coffee cake".
+ */
+const LIQUID_FOOD_EXCLUDE = /cake|biscuit|bikis|chocolate|cookie|powder|barfi|burfi|\bpeda\b|kalakand|candy|toffee|halwa|rusk/i
+const LIQUID_FOOD_INCLUDE =
+  /lassi|chaas|chaach|buttermilk|milkshake|smoothie|\bshake\b|\bmilk\b|doodh|\bchai\b|\btea\b|coffee|\bjuice\b|nimbu|shikanji|aam panna|\bpanna\b|sharbat|sherbet|thandai|coconut water|nariyal pani|\bcola\b|pepsi|thums|sprite|fanta|limca|maaza|frooti|mirinda|soft drink|\bsoda\b|\bwater\b|shorba|\bsoup\b|kadha|kanji/i
+
+export function isLiquidFood(name: string): boolean {
+  return LIQUID_FOOD_INCLUDE.test(name) && !LIQUID_FOOD_EXCLUDE.test(name)
+}
+
+/** Raw unit for a drinkable liquid — same maths as grams, ml label. */
+export const MILLILITRES_UNIT: Unit = { key: 'g', label: 'Millilitres', toGrams: (q) => q }
 
 export type SmartPortion = { key: string; label: string; grams: number }
 export type SmartEntry   = { pattern: RegExp; portions: SmartPortion[]; defaultKey: string }
@@ -690,8 +713,9 @@ export const SMART_PORTIONS: SmartEntry[] = [
 export function buildUnits(food: Food): Unit[] {
   const units: Unit[] = []
 
-  // Always offer grams first (raw input)
-  units.push(GRAMS_UNIT)
+  // Always offer the raw unit first — millilitres for drinkable liquids
+  // (chaas, juice, milk), grams for everything else.
+  units.push(isLiquidFood(food.name) ? MILLILITRES_UNIT : GRAMS_UNIT)
 
   // 1. Smart lookup — works for ALL sources (USDA, OFF, IFCT, custom)
   //    This fixes the root cause: serving_size_g = 100 in nutrition DBs ≠ 1 real serving

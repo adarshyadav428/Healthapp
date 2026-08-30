@@ -9,7 +9,7 @@ import { getIstDayRange, dateStrToUtcMidnight } from '../../lib/dateUtils'
 import { ArrowLeft, ChevronDown, Drumstick, Droplet, Wheat, Sprout, Loader2, Minus, Plus } from 'lucide-react'
 import { reportLogMilestone } from '../../store/milestoneStore'
 import type { LogMilestone } from '../../lib/logMilestones'
-import { buildUnits, defaultPortionFor, quantityBounds, stepQuantity, normalizeQuantity, type Unit } from '../../lib/portion-units'
+import { buildUnits, defaultPortionFor, quantityBounds, stepQuantity, normalizeQuantity, isLiquidFood, type Unit } from '../../lib/portion-units'
 import { mealForTime } from '../../lib/meal'
 import { MEAL_CONTEXTS, MEAL_CONTEXT_LABELS, type MealContext } from '../../lib/mealContext'
 import { logMetaHeaders } from '../../lib/posthog/client'
@@ -78,6 +78,8 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
 
   const quantityNum = Math.max(0, parseFloat(quantityStr) || 0)
   const grams = unit.toGrams(quantityNum)
+  // Drinkable liquids read in ml, not grams (density ~1, so the number is the same).
+  const liquid = useMemo(() => isLiquidFood(food.name), [food.name])
 
   // Same granularity EditFoodLogModal uses: 10 g in gram mode, half a portion
   // otherwise, so the two amount editors behave identically. Both now read it
@@ -260,7 +262,7 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
               </p>
             </div>
             <div className="bg-surface-2 rounded-control px-3 py-1.5">
-              <p className="text-xs font-bold text-ink tabular-nums">Net wt: {Math.round(grams)} g</p>
+              <p className="text-xs font-bold text-ink tabular-nums">{liquid ? 'Volume' : 'Net wt'}: {Math.round(grams)} {liquid ? 'ml' : 'g'}</p>
             </div>
           </div>
 

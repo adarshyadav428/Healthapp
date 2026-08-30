@@ -7,6 +7,7 @@ import { FoodResult } from './FoodResult'
 import { Clock, Star, Zap, PlusCircle, Search, X, ScanLine, MessageSquarePlus } from 'lucide-react'
 import { useFoodSearch, type RecentLogItem } from '../../hooks/useFoodSearch'
 import { markLogStart } from '../../lib/posthog/client'
+import { isLiquidFood } from '../../lib/portion-units'
 import {
   ComboTile, CopyYesterdayButton, EmojiTile, ShortcutHeading, ShortcutRow,
 } from './shortcuts'
@@ -96,7 +97,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
               <ShortcutRow
                 key={item.food.id}
                 name={item.food.name}
-                detail={`${Math.round(item.grams)}g · ${Math.round(item.kcal)} kcal`}
+                detail={`${Math.round(item.grams)}${isLiquidFood(item.food.name) ? 'ml' : 'g'} · ${Math.round(item.kcal)} kcal`}
                 tile={<EmojiTile name={item.food.name} />}
                 busy={quickAddingId === item.food.id}
                 disabled={!!quickAddingId}
