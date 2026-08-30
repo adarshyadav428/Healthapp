@@ -9,7 +9,7 @@ import { getIstDayRange, dateStrToUtcMidnight } from '../../lib/dateUtils'
 import { ArrowLeft, ChevronDown, Drumstick, Droplet, Wheat, Sprout, Loader2, Minus, Plus } from 'lucide-react'
 import { reportLogMilestone } from '../../store/milestoneStore'
 import type { LogMilestone } from '../../lib/logMilestones'
-import { buildUnits, defaultPortionFor, quantityBounds, stepQuantity, normalizeQuantity, isLiquidFood, type Unit } from '../../lib/portion-units'
+import { buildUnits, defaultPortionFor, quantityBounds, stepQuantity, normalizeQuantity, quantityOnUnitSwitch, isLiquidFood, type Unit } from '../../lib/portion-units'
 import { mealForTime } from '../../lib/meal'
 import { MEAL_CONTEXTS, MEAL_CONTEXT_LABELS, type MealContext } from '../../lib/mealContext'
 import { logMetaHeaders } from '../../lib/posthog/client'
@@ -26,7 +26,6 @@ const MEAL_OPTIONS = [
 type MealValue = (typeof MEAL_OPTIONS)[number]['value']
 
 const round1 = (n: number) => Math.round(n * 10) / 10
-const round2 = (n: number) => Math.round(n * 100) / 100
 
 /** Pick an emoji based on the food name — fallback when we have no real image. */
 function foodEmoji(name: string): string {
@@ -94,13 +93,12 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
   // snap to the minimum rather than silently disabling the Add button.
   const onQuantityBlur = () => setQuantityStr(String(normalizeQuantity(quantityStr, unit)))
 
-  // Switching measure keeps the AMOUNT, not the number in the box. Without
-  // this, opening on "1 katori" and switching to Grams left the quantity at 1
-  // and silently logged one gram.
+  // Switching between two household measures (katori → plate) keeps the number
+  // the user typed. Switching to/from Grams re-expresses by weight, so "1
+  // katori" → Grams can't silently become "1 gram". See quantityOnUnitSwitch.
   const switchUnit = (u: Unit) => {
-    const per = u.toGrams(1)
+    setQuantityStr(String(quantityOnUnitSwitch(unit, u, quantityNum)))
     setUnit(u)
-    setQuantityStr(String(per > 0 ? round2(grams / per) : 1))
     setShowUnitPicker(false)
   }
 
