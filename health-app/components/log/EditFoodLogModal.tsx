@@ -10,7 +10,7 @@ import { X, ChevronDown } from 'lucide-react'
 import { getIstDayRange } from '../../lib/dateUtils'
 import { MEAL_CONTEXTS, MEAL_CONTEXT_LABELS, isMealContext, type MealContext } from '../../lib/mealContext'
 import { useUser } from '../../hooks/useUser'
-import { buildUnits, inferPortionSelection, quantityBounds, stepQuantity, normalizeQuantity, GRAMS_UNIT, type Unit } from '../../lib/portion-units'
+import { buildUnits, inferPortionSelection, quantityBounds, stepQuantity, normalizeQuantity, isLiquidFood, GRAMS_UNIT, type Unit } from '../../lib/portion-units'
 import { UnitPicker } from './UnitPicker'
 import { userFacingApiError } from '../../lib/apiError'
 
@@ -55,6 +55,8 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
 
   const quantity = Math.max(0, parseFloat(quantityStr) || 0)
   const grams = round2(unit.toGrams(quantity))
+  // Drinkable liquids read in ml (density ~1, so the total is the same number).
+  const liquid = food ? isLiquidFood(food.name) : false
 
   // Stepper granularity, bounds and blur repair are shared with AddFoodModal so
   // both sheets agree on what one tap of − / + means (lib/portion-units.ts).
@@ -206,7 +208,7 @@ export function EditFoodLogModal({ log, onClose, onSaved, logDate = new Date() }
             </button>
           </div>
           {unit.key !== 'g' && (
-            <p className="mt-1 text-xs text-ink-2 tabular-nums">= {Math.round(grams)}g total</p>
+            <p className="mt-1 text-xs text-ink-2 tabular-nums">= {Math.round(grams)}{liquid ? 'ml' : 'g'} total</p>
           )}
         </div>
 

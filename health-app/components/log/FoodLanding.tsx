@@ -11,7 +11,7 @@ import { toast } from '../ui/use-toast'
 import { reportLogMilestone } from '../../store/milestoneStore'
 import type { LogMilestone } from '../../lib/logMilestones'
 import { mealForTime } from '../../lib/meal'
-import { defaultPortionFor } from '../../lib/portion-units'
+import { defaultPortionFor, isLiquidFood } from '../../lib/portion-units'
 import { captureEvent, logMetaHeaders, markLogStart } from '../../lib/posthog/client'
 import { EVENTS } from '../../lib/posthog/events'
 import { useUser } from '../../hooks/useUser'
@@ -313,7 +313,7 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
           <div className="min-w-0 flex-1">
             <p className="truncate text-[14.5px] font-semibold text-ink">{suggestion.food.name}</p>
             <p className="mt-[3px] text-[12px] text-ink-3">
-              {Math.round(suggestion.grams)}g · {Math.round(suggestion.kcal)} kcal · fits what&apos;s left
+              {Math.round(suggestion.grams)}{isLiquidFood(suggestion.food.name) ? 'ml' : 'g'} · {Math.round(suggestion.kcal)} kcal · fits what&apos;s left
             </p>
           </div>
           <button
@@ -366,7 +366,7 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
               <ShortcutRow
                 key={food.id}
                 name={food.name}
-                detail={`${Math.round(defaultPortionFor(food).grams)}g`}
+                detail={`${Math.round(defaultPortionFor(food).grams)}${isLiquidFood(food.name) ? 'ml' : 'g'}`}
                 tile={<EmojiTile name={food.name} />}
                 busy={relogId === food.id}
                 disabled={!!relogId}
@@ -390,7 +390,7 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
               <ShortcutRow
                 key={item.food.id}
                 name={item.food.name}
-                detail={`${Math.round(item.grams)}g · ${Math.round(item.kcal)} kcal`}
+                detail={`${Math.round(item.grams)}${isLiquidFood(item.food.name) ? 'ml' : 'g'} · ${Math.round(item.kcal)} kcal`}
                 tile={<EmojiTile name={item.food.name} />}
                 busy={relogId === item.food.id}
                 disabled={!!relogId}

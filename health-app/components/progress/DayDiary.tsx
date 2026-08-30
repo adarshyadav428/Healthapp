@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { FoodLog, ExerciseLog } from '../../types/index'
 import { getIstDayRange } from '../../lib/dateUtils'
+import { isLiquidFood } from '../../lib/portion-units'
 import { Loader2, Dumbbell, Flame, Pencil, Trash2 } from 'lucide-react'
 import { toast } from '../ui/use-toast'
 import { EditFoodLogModal } from '../log/EditFoodLogModal'
@@ -152,7 +153,7 @@ export function DayDiary(
                   <div key={log.id} className="flex items-center justify-between rounded-control bg-surface-2 border border-hairline px-3 py-2">
                     <div className="min-w-0 flex-1 mr-2">
                       <p className="text-xs font-semibold text-ink truncate">{log.food?.name ?? 'Food item'}</p>
-                      <p className="text-[10px] text-ink-2 tabular-nums">{Math.round(log.grams)}g · {Math.round(log.protein_g)}P {Math.round(log.carbs_g)}C {Math.round(log.fat_g)}F</p>
+                      <p className="text-[10px] text-ink-2 tabular-nums">{Math.round(log.grams)}{log.food?.name && isLiquidFood(log.food.name) ? 'ml' : 'g'} · {Math.round(log.protein_g)}P {Math.round(log.carbs_g)}C {Math.round(log.fat_g)}F</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <span className="text-xs font-bold text-ink mr-1 tabular-nums">{Math.round(log.kcal)} kcal</span>
