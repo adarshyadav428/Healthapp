@@ -8,6 +8,7 @@ import { SwipeDayNav } from '../../components/log/SwipeDayNav'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import { isProStatus } from '../../lib/subscription'
+import { checkAiTrial } from '../../lib/aiTrialServer'
 import type { Food, FoodLog } from '../../types/index'
 import { getIstDayRange, istDateStr, dateStrToUtcMidnight } from '../../lib/dateUtils'
 import { isWithinFreeLogWindow } from '../../lib/backfill'
@@ -112,6 +113,12 @@ export default async function LogPage({
   // control that silently teleports them to the paywall.
   const prevDayLocked = !isPro && !isWithinFreeLogWindow(shiftDateStr(dateStr, -1))
 
+  // AI scans left, for the chat entry point's pre-emptive gate — a blocked free
+  // user should hit the paywall on tap, not after typing out a whole meal
+  // (matches the dashboard chat FAB). Pro skips the count; it can't be gated.
+  const aiTrial = isPro ? null : await checkAiTrial(supabase, user.id)
+  const aiTrialRemaining = aiTrial?.allowed ? aiTrial.remaining : 0
+
   // Free-tier history gate: clamp dates older than 7 IST days
   if (!isPro && searchParams?.date) {
     const cutoffStr = istDateStr(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
@@ -198,6 +205,7 @@ export default async function LogPage({
               logDate={dateStr}
               isToday={isToday}
               isPro={isPro}
+              aiTrialRemaining={aiTrialRemaining}
             />
           </div>
         )}

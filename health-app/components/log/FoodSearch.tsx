@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import dynamic from 'next/dynamic'
+import { useRouter } from 'next/navigation'
 import type { Food } from '../../types/index'
 import { FoodResult } from './FoodResult'
 import { Clock, Star, Zap, PlusCircle, Search, X, ScanLine, MessageSquarePlus } from 'lucide-react'
@@ -29,9 +30,15 @@ type Props = {
   isToday?: boolean
   /** Pro entitlement — drives whether "create custom food" opens a form or a lock. */
   isPro?: boolean
+  /** Free AI scans left. A spent free user's chat tap goes to the paywall
+   *  rather than opening a modal they'd fill out and be ejected from — the same
+   *  pre-emptive gate the dashboard chat FAB uses. */
+  aiTrialRemaining?: number
 }
 
-export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, hasYesterdayLogs, logDate, isToday = true, isPro = true }: Props) {
+export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, hasYesterdayLogs, logDate, isToday = true, isPro = true, aiTrialRemaining = 0 }: Props) {
+  const router = useRouter()
+  const canUseAi = isPro || aiTrialRemaining > 0
   // Start the clock for `seconds_to_log`: this surface opening is the moment
   // the user set out to log something. See markLogStart in lib/posthog/client.
   useEffect(() => { markLogStart() }, [])
@@ -71,10 +78,10 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
           )}
           <button
             type="button"
-            onClick={() => setShowChat(true)}
+            onClick={() => canUseAi ? setShowChat(true) : router.push('/upgrade?reason=chat_scan_pro')}
             className="rounded-full p-1.5 transition-colors"
             style={{ color: 'var(--brand)' }}
-            aria-label="Log meal with AI chat"
+            aria-label={canUseAi ? 'Log meal with AI chat' : 'AI meal logging — a Pro feature'}
           >
             <MessageSquarePlus className="h-4 w-4" />
           </button>

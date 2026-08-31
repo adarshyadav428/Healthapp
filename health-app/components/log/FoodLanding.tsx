@@ -60,11 +60,14 @@ type Props = {
   /** Pro entitlement — threaded through to search's custom-food gate and the
    *  suggestion row's free daily cap. */
   isPro?: boolean
+  /** Free AI scans left — threaded to search's chat button so a spent user
+   *  hits the paywall on tap, not after typing a meal. */
+  aiTrialRemaining?: number
 }
 
 const AIR = { boxShadow: 'var(--shadow-air)' } as const
 
-export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYesterdayLogs, logDate, isToday = true, isPro = true }: Props) {
+export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYesterdayLogs, logDate, isToday = true, isPro = true, aiTrialRemaining = 0 }: Props) {
   const searchParams = useSearchParams()
   // Home's "Add food manually" links here with ?search=1 to jump straight
   // into the search box instead of landing on this page first.
@@ -176,6 +179,7 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
           logDate={logDate}
           isToday={isToday}
           isPro={isPro}
+          aiTrialRemaining={aiTrialRemaining}
         />
       </div>
     )
