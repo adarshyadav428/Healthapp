@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isProStatus } from './subscription'
+import { limitsForSignupDate } from './freeTier'
 import type { LogMilestone } from './logMilestones'
 
 /**
@@ -23,6 +24,12 @@ import type { LogMilestone } from './logMilestones'
 export type LogActivationContext = {
   is_first_log: boolean
   days_since_signup: number | null
+  /**
+   * Raw profiles.created_at — the same value days_since_signup is derived from,
+   * kept unrounded so toLogMilestone can resolve the account's per-cohort
+   * free-tier limits (limitsForSignupDate).
+   */
+  created_at: string | null
   total_logs_before: number
   is_pro: boolean
   /**
@@ -71,6 +78,7 @@ export async function getLogActivationContext(
   return {
     is_first_log: (count ?? 0) === 0,
     days_since_signup: daysSinceSignup,
+    created_at: (profileRow?.created_at as string | null) ?? null,
     total_logs_before: count ?? 0,
     is_pro: isProStatus(subRow?.status),
     logs_before: (logRows ?? []) as { logged_at: string }[],
@@ -82,11 +90,10 @@ export async function getLogActivationContext(
  * The `milestone` field every successful log response carries — computed
  * from the pre-insert context plus how many rows the route just inserted.
  *
- * TODO(C2): add the account's per-cohort paywall threshold here so
- * getLogMilestoneAction can compare against it. getLogActivationContext already
- * fetches profiles.created_at (as days_since_signup) — thread the raw timestamp
- * (or limitsForSignupDate(created_at).paywallThreshold) through onto LogMilestone
- * so the client no longer reads a module-scope constant.
+ * `paywallThreshold` is resolved here, server-side, from the account's signup
+ * cohort (limitsForSignupDate) and rides on the wire so getLogMilestoneAction —
+ * which runs on the client — never reads a module constant that can't vary per
+ * user. Pre-cutoff accounts get 3; post-cutoff get 2.
  */
 export function toLogMilestone(
   activation: LogActivationContext,
@@ -96,5 +103,6 @@ export function toLogMilestone(
     isFirstLog: activation.is_first_log,
     totalLogs: activation.total_logs_before + insertedCount,
     isPro: activation.is_pro,
+    paywallThreshold: limitsForSignupDate(activation.created_at).paywallThreshold,
   }
 }

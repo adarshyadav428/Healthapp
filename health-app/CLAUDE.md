@@ -210,9 +210,21 @@ actively seeding.
 - **If you move the reminder cron, move `CATCH_ALL_IST_HOUR` with it.** They are coupled, and
   `tests/reminderWiring.test.ts` parses `vercel.json` to prove it.
 - **The free-tier list on `app/page.tsx` is a public claim.** If you change what's free, change both.
+- **Free-tier limits come from `lib/freeTier.ts`, never a local constant.** Every history/weight/
+  suggestion/scan/paywall number is keyed on `profiles.created_at`: accounts created before
+  `FREE_TIER_CUTOFF` keep `LEGACY_LIMITS` forever (the "Free forever" promise is made to every
+  visitor, so an existing user's entitlement never shrinks), accounts on/after get the tighter
+  `POST_CUTOFF_LIMITS`. A null/unparseable `created_at` fails **open** to `LEGACY_LIMITS` — the
+  opposite of the "unreadable tier is not Pro" rule, on purpose: the one-way door is on the
+  tightening side. Pure and import-free so Client Components can read it; the server resolves the
+  cohort and passes limits down as props / on the `LogMilestone`.
+- **New capabilities added after the cutoff ship Pro-gated by default.** Moving one to free is a
+  deliberate call, not the default. This is how the free/paid balance shifts over time without ever
+  revoking a feature someone already had.
 - **AI limits are server-enforced and fail closed.** Camera and chat share **one** lifetime pool of
-  `AI_TRIAL_SCANS` (3) calls, unlocked only after email verification (`lib/aiTrial.ts` +
-  `lib/aiTrialServer.ts`, enforced with a 403 in the routes). The UI is never the boundary.
+  `AI_TRIAL_SCANS` (`lib/freeTier.ts` `LEGACY_LIMITS.aiScans`) calls, unlocked only after email
+  verification (`lib/aiTrial.ts` + `lib/aiTrialServer.ts`, enforced with a 403 in the routes). The UI
+  is never the boundary.
 - **Surgical changes only.** No drive-by refactors, no unrelated cleanup, no speculative abstractions.
 - **All five gates green before declaring done.** Never report a change as working on the strength of a
   successful build alone.

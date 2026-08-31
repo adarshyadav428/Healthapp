@@ -9,12 +9,20 @@
  * (CLAUDE.md), so it is reproduced here verbatim — this module only relocates
  * it — and tests/planFeatures.test.ts pins the surfaces together.
  *
- * `/pricing` is deliberately left on its own hand-written lists for now; only
- * the landing page, /upgrade and the post-log interstitial read from here.
+ * The lists now deliberately name no day count. The free history window varies
+ * by signup date — newer cohorts get a shorter window than existing users (see
+ * lib/freeTier.ts for the enforced, per-cohort value) — so any fixed number in
+ * the copy would be wrong for someone. "Full history — every day you’ve ever
+ * logged" is the Pro claim, true for every cohort forever.
+ *
+ * `/pricing` now reads from this module too: an earlier PR left it on its own
+ * hand-written arrays, and that ended in C2. Every plan-list surface — the
+ * landing page, /pricing, /upgrade and the post-log interstitial — renders
+ * from here.
+ *
+ * The enforced history window is NOT here — it varies by signup cohort and
+ * lives in lib/freeTier.ts. This module is copy only.
  */
-
-/** The enforced free history window, in days (see lib/backfill.ts). */
-export const FREE_HISTORY_DAYS = 7
 
 /**
  * Free tier — verbatim from app/page.tsx. Substance is a public claim; do not
@@ -30,11 +38,11 @@ export const FREE_FEATURES = [
   '850+ Indian foods database',
 ] as const
 
-/** Pro tier — the 7-day-truthful list (seeded from app/upgrade/page.tsx). */
+/** Pro tier — the reconciled list, naming no day count (seeded from app/upgrade/page.tsx). */
 export const PRO_FEATURES = [
   'Unlimited AI photo & chat logging',
   'Weekly AI recap — your week summarised every Sunday',
-  `Full history — beyond the last ${FREE_HISTORY_DAYS} days`,
+  'Full history — every day you’ve ever logged',
   'Custom foods & recipes — log your home-cooked dishes',
   'Advanced trends — full weight history, macro breakdown charts',
   'Priority email support',
@@ -46,7 +54,7 @@ export const PRO_FEATURES = [
  * subset of PRO_FEATURES so the interstitial can never contradict the full list.
  */
 export const PRO_FEATURES_INTERSTITIAL = [
-  `Full history — beyond the last ${FREE_HISTORY_DAYS} days`,
+  'Full history — every day you’ve ever logged',
   'Unlimited AI photo & chat logging',
   'Custom foods & recipes — log your home-cooked dishes',
 ] as const

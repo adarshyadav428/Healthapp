@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { paywallPriceLine, PRICE_MONTHLY, PRICE_ANNUAL, FREE_TRIAL_DAYS } from '../lib/pricing'
+
+const pricingPage = readFileSync(join(__dirname, '..', 'app', 'pricing', 'page.tsx'), 'utf8')
 
 describe('paywallPriceLine', () => {
   it('promises the free trial inside the Play app', () => {
@@ -33,5 +37,16 @@ describe('paywallPriceLine', () => {
   // Google rejects anything shorter than 3 days.
   it('never drops below Play’s minimum trial length', () => {
     expect(FREE_TRIAL_DAYS).toBeGreaterThanOrEqual(3)
+  })
+})
+
+describe('/pricing feature lists', () => {
+  // This page is "public pricing, which a payment aggregator verifies"
+  // (tests/middleware.test.ts). It must render the reconciled plan lists, not a
+  // hand-written copy that claimed free, ungated features as Pro.
+  it('renders the shared lib/planFeatures lists, not local arrays', () => {
+    expect(pricingPage).toMatch(/from ['"].*lib\/planFeatures['"]/)
+    expect(pricingPage).not.toMatch(/const\s+FREE_FEATURES\s*=/)
+    expect(pricingPage).not.toMatch(/const\s+PRO_FEATURES\s*=/)
   })
 })

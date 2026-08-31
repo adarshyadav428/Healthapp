@@ -67,6 +67,32 @@ describe('getLogMilestoneAction', () => {
       getLogMilestoneAction({ isFirstLog: true, totalLogs: 3, isPro: false }, seenNone)
     ).toBe('first_log_celebration')
   })
+
+  // Per-cohort threshold (PR C2). The server resolves it from the signup date
+  // and rides it on the milestone; getLogMilestoneAction compares against it.
+  it('fires the paywall at the 2nd log for a post-cutoff account (threshold 2)', () => {
+    const seen = { celebrationSeen: true, paywallSeen: false }
+    expect(getLogMilestoneAction({ isFirstLog: false, totalLogs: 1, isPro: false, paywallThreshold: 2 }, seen)).toBe(null)
+    expect(getLogMilestoneAction({ isFirstLog: false, totalLogs: 2, isPro: false, paywallThreshold: 2 }, seen)).toBe('log_paywall')
+  })
+
+  it('a pre-cutoff account (threshold 3) is not shown the paywall at the 2nd log', () => {
+    expect(
+      getLogMilestoneAction(
+        { isFirstLog: false, totalLogs: 2, isPro: false, paywallThreshold: 3 },
+        { celebrationSeen: true, paywallSeen: false }
+      )
+    ).toBe(null)
+  })
+
+  it('falls back to LOG_PAYWALL_THRESHOLD when the milestone omits it (deploy skew)', () => {
+    expect(
+      getLogMilestoneAction(
+        { isFirstLog: false, totalLogs: LOG_PAYWALL_THRESHOLD, isPro: false },
+        { celebrationSeen: true, paywallSeen: false }
+      )
+    ).toBe('log_paywall')
+  })
 })
 
 describe('nextUnseenStreakMilestone', () => {

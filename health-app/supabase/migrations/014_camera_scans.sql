@@ -1,6 +1,7 @@
 -- 014_camera_scans.sql
--- Tracks daily AI photo scans per user for rate limiting (5/day free, unlimited Pro).
--- Barcode scans (OFF API lookup) are free and not tracked here.
+-- Rows here count against the shared lifetime AI trial pool (camera + chat combined,
+-- AI_TRIAL_SCANS in lib/aiTrial.ts), which unlocks once the account's email is verified.
+-- Pro is unlimited. Barcode scans (OFF API lookup) are free and not tracked here.
 
 CREATE TABLE IF NOT EXISTS public.camera_photo_logs (
   id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
