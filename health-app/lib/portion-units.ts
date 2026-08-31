@@ -42,7 +42,12 @@ export const GRAMS_UNIT: Unit = { key: 'g', label: 'Grams', toGrams: (q) => q }
  */
 const LIQUID_FOOD_EXCLUDE = /cake|biscuit|bikis|chocolate|cookie|powder|barfi|burfi|\bpeda\b|kalakand|candy|toffee|halwa|rusk/i
 const LIQUID_FOOD_INCLUDE =
-  /lassi|chaas|chaach|buttermilk|milkshake|smoothie|\bshake\b|\bmilk\b|doodh|\bchai\b|\btea\b|coffee|\bjuice\b|nimbu|shikanji|aam panna|\bpanna\b|sharbat|sherbet|thandai|coconut water|nariyal pani|\bcola\b|pepsi|thums|sprite|fanta|limca|maaza|frooti|mirinda|soft drink|\bsoda\b|\bwater\b|shorba|\bsoup\b|kadha|kanji/i
+  // \blassi\b and \bfanta\b bounded for the same reason as in SMART_PORTIONS:
+  // "lassi" hides inside "Cla{ssi}c" and "fanta" inside "Fanta{sy}", so
+  // "Saffola Classic Oats" and "Sunfeast Dark Fantasy Choco Fills" were both
+  // read as drinkable liquids and offered a "Millilitres" raw unit. EXCLUDE
+  // did not save them — neither name carries a solid word it lists.
+  /\blassi\b|chaas|chaach|buttermilk|milkshake|smoothie|\bshake\b|\bmilk\b|doodh|\bchai\b|\btea\b|coffee|\bjuice\b|nimbu|shikanji|aam panna|\bpanna\b|sharbat|sherbet|thandai|coconut water|nariyal pani|\bcola\b|pepsi|thums|sprite|\bfanta\b|limca|maaza|frooti|mirinda|soft drink|\bsoda\b|\bwater\b|shorba|\bsoup\b|kadha|kanji/i
 
 export function isLiquidFood(name: string): boolean {
   return LIQUID_FOOD_INCLUDE.test(name) && !LIQUID_FOOD_EXCLUDE.test(name)
@@ -127,7 +132,12 @@ export const SMART_PORTIONS: SmartEntry[] = [
     defaultKey: 'plate',
   },
   {
-    pattern: /puri|poori/i,
+    // Bounded: unanchored, "puri" hides inside "Kolhapuri", so Kolhapuri
+    // Mutton was offered a 25 g puri — 54 kcal for a 150 g katori of mutton
+    // curry (327 kcal), a 6x under-log with the row's own katori discarded.
+    // Every real puri row spells it as a whole word (Puri, Sev Puri, Dahi
+    // Puri, Poori Bhaji, "… Deep-Fried Puri"); Pani Puri is caught above.
+    pattern: /\bpuri\b|\bpoori\b/i,
     portions: [
       { key: '1', label: '1 puri (25g)',   grams: 25 },
       { key: '3', label: '3 puris (75g)',  grams: 75 },
@@ -212,6 +222,27 @@ export const SMART_PORTIONS: SmartEntry[] = [
       { key: 'plate',  label: '1 plate (250g)',  grams: 250 },
     ],
     defaultKey: 'katori',
+  },
+  // Cooking oils, above the dish rules that would otherwise claim them by a
+  // word in their own name. This is not a word-boundary case — "Rice Bran" is
+  // genuinely the word "rice" — so the only fix is to match the oil first:
+  // "Saffola Gold Oil (Rice Bran + Sunflower)" took the rice katori and opened
+  // on 150 g of a 900 kcal/100 g oil (1,350 kcal, one tap), and "Cooking oil
+  // (sabzi / stir-fry)" took the sabzi katori the same way. \boil\b is bounded
+  // so it cannot hide inside "boiled"/"broiled".
+  //
+  // One ladder is right here even though the rows disagree (some call a tsp
+  // 5 g, some 10 g): a teaspoon of oil is a physical quantity, unlike the bar
+  // sizes that needed splitting. The default is 2 tsp because that is the
+  // serving_size_g nearly every oil row in the catalogue declares.
+  {
+    pattern: /\boil\b/i,
+    portions: [
+      { key: 'tsp',  label: '1 tsp (5g)',   grams: 5 },
+      { key: '2tsp', label: '2 tsp (10g)',  grams: 10 },
+      { key: 'tbsp', label: '1 tbsp (15g)', grams: 15 },
+    ],
+    defaultKey: '2tsp',
   },
   {
     pattern: /rice|chawal/i,
@@ -484,8 +515,25 @@ export const SMART_PORTIONS: SmartEntry[] = [
   // fall through to the soft-drink rule (250 g of powder) and, once that was
   // word-bounded, to /chocolate/ (half a bar). Both ignore the row's real
   // scoop in common_portions, so the scoop has to live here.
+  //
+  // A gainer's scoop is not a whey scoop, and one shared ladder cannot serve
+  // both: MuscleBlaze Mass Gainer XXL is a 50 g scoop on a 150 g (3-scoop)
+  // label serving, so the generic 30 g scoop below opened it at a fifth of one
+  // serving and offered no unit that could express a real one — and because a
+  // name match makes buildUnits discard common_portions, the row's own correct
+  // 50 g/150 g portions were unreachable. Gainers get their own rule, ABOVE the
+  // whey one so a "Whey Mass Gainer" name lands on the gainer ladder.
   {
-    pattern: /whey|mass gainer|protein powder/i,
+    pattern: /mass gainer|weight gainer/i,
+    portions: [
+      { key: 'scoop',   label: '1 scoop (50g)',   grams: 50 },
+      { key: '2scoop',  label: '2 scoops (100g)', grams: 100 },
+      { key: 'serving', label: '3 scoops (150g)', grams: 150 },
+    ],
+    defaultKey: 'serving',
+  },
+  {
+    pattern: /whey|protein powder/i,
     portions: [
       { key: 'scoop',  label: '1 scoop (30g)',   grams: 30 },
       { key: '2scoop', label: '2 scoops (60g)',  grams: 60 },
@@ -612,7 +660,12 @@ export const SMART_PORTIONS: SmartEntry[] = [
   // tap. "Coca-Cola" and "Thums Up Cola" still match, the hyphen and the
   // space being word boundaries.
   {
-    pattern: /\bcola\b|pepsi|thums|sprite|fanta|soft drink|\bsoda\b/i,
+    // \bfanta\b for the same reason as \bcola\b: "fanta" hides inside
+    // "Fantasy", so "Sunfeast Dark Fantasy Choco Fills" — a 28 g biscuit pack
+    // at 528 kcal/100 g — matched here and pre-selected a 250 ml glass:
+    // ~1,320 kcal on one tap. It carries no other portion word, so bounding
+    // this drops it to its own "1 piece (14g)". Real "Fanta" still matches.
+    pattern: /\bcola\b|pepsi|thums|sprite|\bfanta\b|soft drink|\bsoda\b/i,
     portions: [
       { key: 'glass',  label: '1 glass (250ml)',   grams: 250 },
       { key: 'can',    label: '1 can (330ml)',     grams: 330 },
@@ -686,6 +739,20 @@ export const SMART_PORTIONS: SmartEntry[] = [
       { key: 'cup',    label: '1 cup (100g)',    grams: 100 },
     ],
     defaultKey: 'scoop',
+  },
+  // A Perk is a 13 g count-line bar. The /chocolate/ rule below opens on a
+  // 25 g "half bar" — nearly two whole Perks, ~133 kcal against the pack's
+  // ~69 — and the row's own correct {bar, 13 g} is discarded with the rest of
+  // common_portions the moment the name matches. Deliberately narrow: 5 Star
+  // (~19 g) and Munch (~18 g) are the same class but not the same weight, and
+  // one ladder shared across bar sizes is the bug being fixed here, not the fix.
+  {
+    pattern: /\bperk\b/i,
+    portions: [
+      { key: 'bar',  label: '1 bar (13g)',  grams: 13 },
+      { key: '2bar', label: '2 bars (26g)', grams: 26 },
+    ],
+    defaultKey: 'bar',
   },
   {
     pattern: /chocolate|dairy milk|kitkat|kit kat/i,

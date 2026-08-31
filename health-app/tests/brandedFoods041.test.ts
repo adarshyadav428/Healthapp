@@ -93,14 +93,25 @@ describe(FILE, () => {
     expect(/delete\s+from\s+foods/i.test(stripLineComments(sql))).toBe(false)
   })
 
-  it('source_ids are unique here and unused by any other migration', () => {
+  it('source_ids are unique here, and no other migration re-inserts one', () => {
     const ids = rows.map((r) => r.source_id)
     expect(new Set(ids).size).toBe(ids.length)
+
+    // A later migration *naming* one of these ids is expected, and required:
+    // it is how a wrong value gets corrected, per this file's own header and
+    // the 038 precedent (042 already does it for branded-amul-ghee). Asserting
+    // the id appears nowhere else outlawed that. What must never happen is a
+    // second INSERT of the same row, so match the id in tuple position —
+    // ('branded','branded-x', … — which a guarded `where source_id = '…'`
+    // never looks like.
     const others = readdirSync(MIGRATIONS_DIR)
       .filter((f) => f.endsWith('.sql') && f !== FILE)
-      .map((f) => readFileSync(join(MIGRATIONS_DIR, f), 'utf8'))
-      .join('\n')
-    for (const id of ids) expect(others.includes(`'${id}'`), id).toBe(false)
+      .map((f) => ({ file: f, sql: stripLineComments(readFileSync(join(MIGRATIONS_DIR, f), 'utf8')) }))
+    for (const id of ids) {
+      const tuple = new RegExp(`\\(\\s*'[^']+'\\s*,\\s*'${id}'`)
+      const clash = others.find((o) => tuple.test(o.sql))
+      expect(clash?.file, `${id} is INSERTed a second time by ${clash?.file}`).toBeUndefined()
+    }
   })
 
   it('common_portions is valid JSON with real gram weights', () => {
@@ -155,5 +166,39 @@ describe(FILE, () => {
     expect(nc!.name).toContain('Namkeen')
     const food = asFood(nc!)
     expect(pickDefaultUnit(buildUnits(food), food).toGrams(1)).toBe(30)
+  })
+})
+
+/**
+ * The correction migration. These are applied by hand in the Supabase SQL
+ * editor and nothing records which have been run, so the properties that keep
+ * a correction safe — keyed on source_id, guarded on the value being replaced,
+ * never a DELETE — are the only thing standing between a re-run and a wrong
+ * catalogue. 038 established the shape; this pins it.
+ */
+describe('042_correct_branded_041_rows.sql', () => {
+  const CORRECTIONS = '042_correct_branded_041_rows.sql'
+  const fix = stripLineComments(readFileSync(join(MIGRATIONS_DIR, CORRECTIONS), 'utf8'))
+  const updates = fix.split(';').filter((s) => /update\s+foods/i.test(s))
+
+  it('corrects by UPDATE only — never deletes, never re-inserts', () => {
+    expect(/delete\s+from\s+foods/i.test(fix)).toBe(false)
+    expect(/insert\s+into\s+foods/i.test(fix)).toBe(false)
+    expect(updates.length).toBeGreaterThan(0)
+  })
+
+  it('every UPDATE is keyed on source_id and guarded, so a re-run is a no-op', () => {
+    for (const stmt of updates) {
+      expect(/\bsource_id\s*=\s*'/i.test(stmt), stmt).toBe(true)
+      // key + at least one guard on the value 041 wrote, beyond the key itself
+      expect(stmt.split(/\band\b/i).length, stmt).toBeGreaterThanOrEqual(3)
+    }
+  })
+
+  it('only touches source_ids that 041 actually created', () => {
+    const ids = new Set(rows.map((r) => r.source_id))
+    const touched = [...fix.matchAll(/source_id\s*=\s*'([^']+)'/gi)].map((m) => m[1])
+    expect(touched.length).toBeGreaterThan(0)
+    for (const id of touched) expect(ids.has(id), id).toBe(true)
   })
 })

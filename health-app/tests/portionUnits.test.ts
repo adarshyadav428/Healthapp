@@ -120,6 +120,12 @@ describe('isLiquidFood — raw unit reads in ml, not grams', () => {
     'Paneer Butter Masala',
     'Watermelon',
     'Dal Tadka',
+    // Hidden substrings: "lassi" inside "Classic", "fanta" inside "Fantasy".
+    // Neither name carries a word LIQUID_FOOD_EXCLUDE lists, so bounding the
+    // pattern is the only thing keeping them solid.
+    'Saffola Classic Oats',
+    'Sunfeast Dark Fantasy Choco Fills',
+    'Pintola Classic Creamy Peanut Butter',
   ])('does not treat "%s" as a liquid', (name) => {
     expect(isLiquidFood(name)).toBe(false)
   })
@@ -329,10 +335,91 @@ describe('SMART_PORTIONS table sanity', () => {
   })
 
   it('chocolate-flavoured whey is a scoop, not a bar or a glass', () => {
-    for (const name of ['MuscleBlaze Whey Gold (Chocolate Fudge)', 'MuscleBlaze Mass Gainer XXL (Chocolate)']) {
-      const food = makeFood({ name, source: 'branded' })
-      expect(pickDefaultUnit(buildUnits(food), food).toGrams(1), name).toBe(30)
+    const whey = makeFood({ name: 'MuscleBlaze Whey Gold (Chocolate Fudge)', source: 'branded' })
+    expect(pickDefaultUnit(buildUnits(whey), whey).toGrams(1)).toBe(30)
+  })
+
+  /**
+   * A gainer is not a whey, and one shared scoop ladder cannot serve both.
+   * Mass Gainer XXL is a 50 g scoop on a 150 g (3-scoop) label serving; under
+   * the shared rule it opened on 30 g — a fifth of one serving — and no unit
+   * in the picker could express a real one, because the name match had already
+   * discarded the row's own common_portions.
+   */
+  it('a mass gainer opens on its own 150g serving, not a 30g whey scoop', () => {
+    const gainer = makeFood({ name: 'MuscleBlaze Mass Gainer XXL (Chocolate)', source: 'branded' })
+    const units = buildUnits(gainer)
+    expect(pickDefaultUnit(units, gainer).toGrams(1)).toBe(150)
+    // the pack's real 50 g scoop is selectable again — it was not, under the whey rule
+    expect(units.map((u) => u.toGrams(1))).toEqual(expect.arrayContaining([50, 100, 150]))
+    // and splitting the rule must not have moved plain whey
+    const whey = makeFood({ name: 'AS-IT-IS Whey Protein Concentrate', source: 'branded' })
+    expect(pickDefaultUnit(buildUnits(whey), whey).toGrams(1)).toBe(30)
+  })
+
+  /**
+   * "Cadbury Perk" is a 13 g count-line bar. /chocolate/'s 25 g "half bar" is
+   * nearly two whole Perks, and the row's own { bar, 13 g } goes out with the
+   * rest of common_portions the moment the name matches.
+   */
+  it('a 13g Perk is one bar, not half of a 50g bar', () => {
+    const perk = makeFood({ name: 'Cadbury Perk Chocolate', source: 'branded', brand: 'Cadbury' })
+    expect(pickDefaultUnit(buildUnits(perk), perk).toGrams(1)).toBe(13)
+    // the generic chocolate ladder still owns the bars it actually fits
+    const kitkat = makeFood({ name: 'KitKat Chocolate Bar', source: 'branded' })
+    expect(pickDefaultUnit(buildUnits(kitkat), kitkat).toGrams(1)).toBe(25)
+  })
+
+  /**
+   * The rest of the hidden-substring class, found in the same sweep as
+   * \blassi\b and \bcola\b. In each case the wrong rule was the whole answer:
+   * a name match discards the row's own common_portions, so there was nothing
+   * underneath to soften it.
+   */
+  it('"Fantasy" contains "fanta" — a biscuit is not a soft drink', () => {
+    const df = makeFood({
+      name: 'Sunfeast Dark Fantasy Choco Fills',
+      source: 'branded',
+      serving_size_g: 28,
+      common_portions: [
+        { unit: 'piece', grams: 14, label: '1 piece (14g)' },
+        { unit: 'piece', grams: 28, label: '2 pieces (28g)' },
+      ],
+    })
+    // Was 250 — a glass of Fanta, i.e. 250g of biscuit, ~1320 kcal on one tap.
+    expect(pickDefaultUnit(buildUnits(df), df).toGrams(1)).toBe(14)
+    const fanta = makeFood({ name: 'Fanta Orange' })
+    expect(pickDefaultUnit(buildUnits(fanta), fanta).toGrams(1)).toBe(250)
+  })
+
+  it('"Kolhapuri" contains "puri" — a mutton curry is not a puri', () => {
+    const km = makeFood({ name: 'Kolhapuri Mutton (Spicy)' })
+    // Was 25 — one puri, 54 kcal against a 150g katori of mutton curry.
+    expect(pickDefaultUnit(buildUnits(km), km).toGrams(1)).toBe(150)
+    for (const name of ['Puri', 'Sev Puri', 'Dahi Puri', 'Poori Bhaji (2 pooris + aloo bhaji)']) {
+      const food = makeFood({ name })
+      expect(pickDefaultUnit(buildUnits(food), food).toGrams(1), name).toBe(25)
     }
+  })
+
+  /**
+   * Not a word-boundary case: "Rice Bran" really is the word "rice". The only
+   * fix is for the oil to match first.
+   */
+  it('a cooking oil is spoons, whatever dish word its name carries', () => {
+    for (const name of [
+      'Saffola Gold Oil (Rice Bran + Sunflower)', // took the 150g rice katori
+      'Cooking oil (sabzi / stir-fry)',           // took the sabzi katori
+      'Groundnut Oil / Peanut Oil',
+      'Mustard Oil (Sarson ka Tel)',
+    ]) {
+      const oil = makeFood({ name })
+      expect(pickDefaultUnit(buildUnits(oil), oil).toGrams(1), name).toBe(10)
+    }
+    // \boil\b must not reach inside "boiled" and steal the dish
+    const firstMatch = (name: string) => SMART_PORTIONS.find((e) => e.pattern.test(name))!
+    expect(firstMatch('Boiled Rice').portions[0].grams).toBe(150)
+    expect(firstMatch('Boiled Egg').portions[0].label).toContain('egg')
   })
 
   it('greek yogurt is a single-serve cup, not a katori', () => {

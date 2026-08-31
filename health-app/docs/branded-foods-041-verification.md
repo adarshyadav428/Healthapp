@@ -36,6 +36,35 @@ Highest search volume, so a wrong number here costs the most:
 4. **Nescafé Classic Instant Coffee** — already corrected once during authoring (carbs were entered at
    42 g instead of ~75 g; instant-coffee solids are mostly carbohydrate).
 
+## Provenance failures found in review (2026-08-31)
+
+These four rows did not hold up. **None of their numbers has been changed.** Correcting them needs a
+panel read off a pack, and guessing one would make a rank-4 row more confidently wrong, not less.
+Until each is ticked, treat these as *less* trustworthy than the unreviewed rows below.
+
+| Row | What is wrong | ✓ |
+|---|---|:-:|
+| **Amul Butter (Pasteurised)** | Duplicates `ifct-butter` ("Butter (Amul)", `007`) and `ifct-amul-butter-unsalted` (`017`) — same brand, same 720/0.5/~0.5/80. The migration header's claim that no butter row existed is false. Three rows for one product, and the `ifct` one outranks this at rank 6 vs 4. | ☐ |
+| **Haldiram's Rasgulla (Tin)** | Duplicates `ifct-rasgulla` (186, 4.5, 40.2, 1.5) with protein changed to 2.5 — same kcal, same fat, carbs within 0.2. Two visible rows disagree by 80% on protein, and whichever the user taps decides their day. | ☐ |
+| **Nutrela Soya Chunks (Raw)** | 345/52.0/33.0/0.5/13.0 is byte-identical to `ifct-soya-chunks-dry` (`017`); `010` holds a third row. These are generic IFCT values wearing a brand name, not a Nutrela panel. | ☐ |
+| **Aashirvaad Whole Wheat Atta (Raw)** | 341/12.0/69.0/1.5 is `ifct-atta`'s generic wheat-flour data (341/12.1/69.4/1.7), fibre aside. This is also one of the four highest-traffic rows listed above. | ☐ |
+
+**Removal is not available as a fix.** `foods` has no soft-delete column and `DELETE` is forbidden —
+`food_logs`, `food_favourites`, `saved_meal_items` and `food_dismissals` all cascade off it. Search
+dedupes by normalised name + brand (`lib/mergeSearchResults.ts`), so renaming a duplicate to collide
+with the row it duplicates *would* collapse it behind the higher-ranked IFCT row. That is a product
+decision about what users see in search, not a data correction, and has not been taken.
+
+### Corrected in `042_correct_branded_041_rows.sql`
+
+- **Amul Pure Cow Ghee** — the row disagreed with itself about a tablespoon: `serving_size_g = 10`
+  with `'1 tbsp (10g)'`, while its own `common_portions` said 14 g, and the two surface in different
+  places (the food page renders the description, the add-modal reads the portions). `042` aligns the
+  portions to the row's own stated serving, matching the Amul Butter row beside it. **Still open:**
+  whether a tablespoon of ghee is 10 g or ~14 g — and note that `/ghee|butter/` in
+  `lib/portion-units.ts` shows 15 g regardless, because a name match suppresses `common_portions`
+  entirely.
+
 ## All rows
 
 Per 100 g unless the name says otherwise. "Serving" is `serving_size_g`, the pack serving the row
