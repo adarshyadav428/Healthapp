@@ -18,6 +18,13 @@ export const VERIFY_PROMPT_COOLDOWN_DAYS = 7
 export type VerifyPromptState = {
   /** ISO timestamp of the last "Not now". */
   lastDismissedAt?: string
+  /**
+   * ISO timestamp of the last time an AI scan was refused for lack of a verified
+   * email. This is the strongest possible intent signal — the user tried to use
+   * the exact thing verifying unlocks — so it overrides the grace period, and a
+   * block newer than the last dismissal re-opens the ask.
+   */
+  aiGateBlockedAt?: string
 } | null
 
 export function shouldPromptEmailVerification(args: {
@@ -33,21 +40,28 @@ export function shouldPromptEmailVerification(args: {
   // Already proven — never ask again.
   if (emailVerifiedAt) return false
 
-  // Without a creation date we can't tell whether the grace period has passed.
-  // Stay quiet: a missed nudge is recoverable, a nag on first launch is the
-  // exact friction this whole change exists to remove.
-  if (!accountCreatedAt) return false
-  const created = new Date(accountCreatedAt).getTime()
-  if (!Number.isFinite(created)) return false
+  const blockedAt = state?.aiGateBlockedAt ? new Date(state.aiGateBlockedAt).getTime() : NaN
+  const aiBlocked = Number.isFinite(blockedAt)
 
-  const ageDays = (now.getTime() - created) / 86_400_000
-  if (ageDays < VERIFY_PROMPT_GRACE_DAYS) return false
+  // Without a creation date we can't tell whether the grace period has passed —
+  // stay quiet, unless an AI gate has already refused this user, which is reason
+  // enough on its own regardless of account age.
+  if (!aiBlocked) {
+    if (!accountCreatedAt) return false
+    const created = new Date(accountCreatedAt).getTime()
+    if (!Number.isFinite(created)) return false
+    const ageDays = (now.getTime() - created) / 86_400_000
+    if (ageDays < VERIFY_PROMPT_GRACE_DAYS) return false
+  }
 
   if (state?.lastDismissedAt) {
     const dismissed = new Date(state.lastDismissedAt).getTime()
     if (Number.isFinite(dismissed)) {
+      // A fresh AI block after the last "Not now" re-expresses intent — honour it
+      // over the cooldown. Otherwise the cooldown stands.
+      const supersededByBlock = aiBlocked && blockedAt > dismissed
       const since = (now.getTime() - dismissed) / 86_400_000
-      if (since < VERIFY_PROMPT_COOLDOWN_DAYS) return false
+      if (!supersededByBlock && since < VERIFY_PROMPT_COOLDOWN_DAYS) return false
     }
   }
 

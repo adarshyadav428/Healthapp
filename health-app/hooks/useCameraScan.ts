@@ -16,6 +16,7 @@ import { portionRange } from '../lib/portion-units'
 import { useUser } from './useUser'
 import { useDailyTotals } from './useDailyTotals'
 import { resolveAiGateAction } from '../lib/aiGateRedirect'
+import { recordAiVerificationBlock } from '../lib/verifyPromptStore'
 
 export type Mode = 'barcode' | 'photo' | 'manual'
 export type PhotoResult = { food: Food; estimated_grams: number; unit: string }
@@ -69,6 +70,9 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
   const [results, setResults]               = useState<PhotoResult[] | null>(null)
   const [selected, setSelected]             = useState<PhotoResult | null>(null)
   const [confidence, setConfidence]         = useState<string | null>(null)
+  // Free AI scans left after the most recent scan. null = Pro, or not yet known
+  // (the count only rides back on a scan response). See lib/aiTrial.
+  const [scansLeft, setScansLeft]           = useState<number | null>(null)
   const [grams, setGrams]                   = useState(100)
   const [photoContext, setPhotoContext]     = useState('')
   const [showContextInput, setShowContextInput] = useState(false)
@@ -238,6 +242,9 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
         // new, unverified user off the flow they signed up for).
         if (res.status === 403 && json.upgrade) {
           setCaptured(null)
+          // An unverified block is the strongest reason to surface the verify
+          // card — bypasses its grace period on the dashboard (see verifyPromptStore).
+          if (json.block === 'unverified' && user?.id) recordAiVerificationBlock(user.id)
           const action = resolveAiGateAction({ block: json.block, scan: 'camera', context })
           onClose()
           if (action.kind === 'redirect') router.push(action.href)
@@ -252,6 +259,7 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
         }))
         setResults(items)
         setConfidence(json.confidence ?? null)
+        if (typeof json.remaining === 'number') setScansLeft(json.remaining)
         if (items[0]) { setSelected(items[0]); setGrams(items[0].estimated_grams); setCustomName(items[0].food.name) }
       })
       .catch((e) => {
@@ -259,7 +267,7 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
         setCaptured(null)
       })
       .finally(() => setAnalyzing(false))
-  }, [captured, photoContext, onClose, router, context])
+  }, [captured, photoContext, onClose, router, context, user?.id])
 
   const retake = useCallback(() => {
     setCaptured(null); setResults(null); setSelected(null); setConfidence(null)
@@ -346,7 +354,7 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
     videoRef, canvasRef, galleryRef,
     // state
     barcodeSupport, mode, camError, barcodeLoading, captured, analyzing,
-    results, selected, confidence, grams, photoContext, showContextInput,
+    results, selected, confidence, scansLeft, grams, photoContext, showContextInput,
     meal, logging, manualBarcode, manualLoading, customName, editingName,
     // setters exposed to the view
     setGrams, setPhotoContext, setShowContextInput, setMeal,

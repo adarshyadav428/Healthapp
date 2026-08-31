@@ -1,4 +1,4 @@
-import type { AiTrialBlock } from './aiTrial'
+import { AI_TRIAL_SCANS, type AiTrialBlock } from './aiTrial'
 
 /**
  * What the client should do when an AI scan (camera or chat) comes back
@@ -30,7 +30,7 @@ export function resolveAiGateAction(args: {
       kind: 'stay',
       message:
         block === 'unverified'
-          ? 'Confirm your email to unlock 3 free AI scans. For now, add your meal by search on the next screen.'
+          ? `Confirm your email to unlock ${AI_TRIAL_SCANS} free AI scans. For now, add your meal by search on the next screen.`
           : "You've used your free AI scans — they're unlimited on Pro. Add your meal by search on the next screen.",
     }
   }

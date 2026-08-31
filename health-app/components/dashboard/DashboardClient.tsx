@@ -27,6 +27,7 @@ import { InstallPromptCard } from '../pwa/InstallPromptCard'
 import { useFoodLogs } from '../../hooks/useFoodLogs'
 import { useUser } from '../../hooks/useUser'
 import { nextUnseenStreakMilestone } from '../../lib/logMilestones'
+import { AI_TRIAL_SCANS, aiScansLeftLabel } from '../../lib/aiTrial'
 import { nextStreakBadge } from '../../lib/badges'
 import { proteinCoachLine } from '../../lib/proteinCoach'
 import { cn } from '../../lib/utils'
@@ -282,6 +283,17 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
       >
         <MessageCircle className="h-5 w-5 text-brand" strokeWidth={2} />
       </button>
+
+      {/* Trial countdown beside the AI FAB — only mid-trial (a verified free user
+          who has spent at least one scan), so it informs rather than nags. */}
+      {!isPro && aiTrialRemaining > 0 && aiTrialRemaining < AI_TRIAL_SCANS && (
+        <p
+          className="fixed right-5 z-30 whitespace-nowrap rounded-full bg-surface px-2.5 py-1 text-[10.5px] font-semibold text-ink-3 tabular-nums"
+          style={{ bottom: 'calc(140px + env(safe-area-inset-bottom))', boxShadow: 'var(--shadow-float)' }}
+        >
+          {aiScansLeftLabel(aiTrialRemaining)}
+        </p>
+      )}
 
       {showChat && <ChatLogModal onClose={() => setShowChat(false)} />}
     </>

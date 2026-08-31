@@ -4,23 +4,10 @@ import { useEffect, useState } from 'react'
 import { MailCheck } from 'lucide-react'
 import { useUser } from '../../hooks/useUser'
 import { useSendVerificationLink } from '../../hooks/useSendVerificationLink'
-import {
-  parseVerifyPromptState,
-  shouldPromptEmailVerification,
-} from '../../lib/emailVerification'
+import { shouldPromptEmailVerification } from '../../lib/emailVerification'
+import { readVerifyPromptState, patchVerifyPromptState } from '../../lib/verifyPromptStore'
 import { captureEvent } from '../../lib/posthog/client'
 import { AI_TRIAL_SCANS } from '../../lib/aiTrial'
-
-const storageKey = (uid: string) => `gis.verifyEmail.${uid}`
-
-function persist(uid: string, patch: { lastDismissedAt?: string }) {
-  try {
-    const prev = parseVerifyPromptState(localStorage.getItem(storageKey(uid)))
-    localStorage.setItem(storageKey(uid), JSON.stringify({ ...prev, ...patch }))
-  } catch {
-    /* noop — worst case we ask again */
-  }
-}
 
 /**
  * "Confirm your email" card.
@@ -29,7 +16,9 @@ function persist(uid: string, patch: { lastDismissedAt?: string }) {
  * address can be a typo and nobody would know — costing the user their password
  * reset, and us any way to reach a subscriber about a receipt or refund. So we
  * ask for proof later, once they've had a few days to decide the app is worth
- * keeping — decision logic in lib/emailVerification.ts.
+ * keeping — decision logic in lib/emailVerification.ts. The one exception: if an
+ * AI scan was already refused for lack of a verified email, the card appears
+ * immediately (the user has shown they want the thing verifying unlocks).
  *
  * The copy leads with the free AI scans rather than the password-reset risk:
  * verifying now unlocks something (lib/aiTrial), and an offer converts far
@@ -47,17 +36,11 @@ export function VerifyEmailCard() {
 
   useEffect(() => {
     if (!user?.id || !profile) return
-    let state = null
-    try {
-      state = parseVerifyPromptState(localStorage.getItem(storageKey(user.id)))
-    } catch {
-      /* fail open */
-    }
     setVisible(
       shouldPromptEmailVerification({
         emailVerifiedAt: profile.email_verified_at ?? null,
         accountCreatedAt: profile.created_at ?? null,
-        state,
+        state: readVerifyPromptState(user.id),
       })
     )
   }, [user?.id, profile])
@@ -99,7 +82,7 @@ export function VerifyEmailCard() {
         <button
           type="button"
           onClick={() => {
-            persist(user.id, { lastDismissedAt: new Date().toISOString() })
+            patchVerifyPromptState(user.id, { lastDismissedAt: new Date().toISOString() })
             captureEvent('email_verify_prompt_dismissed')
             setVisible(false)
           }}
