@@ -42,7 +42,12 @@ export const GRAMS_UNIT: Unit = { key: 'g', label: 'Grams', toGrams: (q) => q }
  */
 const LIQUID_FOOD_EXCLUDE = /cake|biscuit|bikis|chocolate|cookie|powder|barfi|burfi|\bpeda\b|kalakand|candy|toffee|halwa|rusk/i
 const LIQUID_FOOD_INCLUDE =
-  /lassi|chaas|chaach|buttermilk|milkshake|smoothie|\bshake\b|\bmilk\b|doodh|\bchai\b|\btea\b|coffee|\bjuice\b|nimbu|shikanji|aam panna|\bpanna\b|sharbat|sherbet|thandai|coconut water|nariyal pani|\bcola\b|pepsi|thums|sprite|fanta|limca|maaza|frooti|mirinda|soft drink|\bsoda\b|\bwater\b|shorba|\bsoup\b|kadha|kanji/i
+  // \blassi\b and \bfanta\b bounded for the same reason as in SMART_PORTIONS:
+  // "lassi" hides inside "Cla{ssi}c" and "fanta" inside "Fanta{sy}", so
+  // "Saffola Classic Oats" and "Sunfeast Dark Fantasy Choco Fills" were both
+  // read as drinkable liquids and offered a "Millilitres" raw unit. EXCLUDE
+  // did not save them — neither name carries a solid word it lists.
+  /\blassi\b|chaas|chaach|buttermilk|milkshake|smoothie|\bshake\b|\bmilk\b|doodh|\bchai\b|\btea\b|coffee|\bjuice\b|nimbu|shikanji|aam panna|\bpanna\b|sharbat|sherbet|thandai|coconut water|nariyal pani|\bcola\b|pepsi|thums|sprite|\bfanta\b|limca|maaza|frooti|mirinda|soft drink|\bsoda\b|\bwater\b|shorba|\bsoup\b|kadha|kanji/i
 
 export function isLiquidFood(name: string): boolean {
   return LIQUID_FOOD_INCLUDE.test(name) && !LIQUID_FOOD_EXCLUDE.test(name)

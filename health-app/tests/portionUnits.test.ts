@@ -120,6 +120,12 @@ describe('isLiquidFood — raw unit reads in ml, not grams', () => {
     'Paneer Butter Masala',
     'Watermelon',
     'Dal Tadka',
+    // Hidden substrings: "lassi" inside "Classic", "fanta" inside "Fantasy".
+    // Neither name carries a word LIQUID_FOOD_EXCLUDE lists, so bounding the
+    // pattern is the only thing keeping them solid.
+    'Saffola Classic Oats',
+    'Sunfeast Dark Fantasy Choco Fills',
+    'Pintola Classic Creamy Peanut Butter',
   ])('does not treat "%s" as a liquid', (name) => {
     expect(isLiquidFood(name)).toBe(false)
   })

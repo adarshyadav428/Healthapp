@@ -17,7 +17,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **84 files / 1,226 tests**. There is no `vitest.config.ts`; defaults apply.
+- **Tests:** Vitest 4.1 — **84 files / 1,229 tests**. There is no `vitest.config.ts`; defaults apply.
 - **Deploy:** Vercel **Hobby** plan, region `bom1`. The Hobby limits are load-bearing (see Hard rules).
 
 ## Architecture / directory map
@@ -78,7 +78,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (84 files / 1,226 tests)
+npm test                 # vitest run — the whole suite (84 files / 1,229 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
 npm run check:tokens     # design-token guard: no raw hex, no broken opacity modifiers
@@ -157,7 +157,10 @@ actively seeding.
   "Saffola Gold Oil (Rice Bran + Sunflower)" contains the real word "rice" and took the rice katori —
   150 g of a 900 kcal/100 g oil, ~1,350 kcal — so it needed a `\boil\b` rule placed *above* the dish
   rules instead. Where bounding a word would not be true to the name, the fix is ordering, not
-  anchoring.
+  anchoring. **`SMART_PORTIONS` is not the only name-matching regex in that file** — `isLiquidFood`'s
+  `LIQUID_FOOD_INCLUDE` decides whether the raw unit reads "Millilitres" or "Grams" and had the same
+  two words unbounded, so "Saffola Classic Oats" and "Dark Fantasy" were both being poured. Fix a
+  hidden substring in one and grep the file for the others.
 - **A `SMART_PORTIONS` rule *replaces* the row's `common_portions`, so it must carry that pack's real
   size — and one ladder must never be shared across packs of different sizes.** Suppressing
   `common_portions` is deliberate (see `defaultPortionFor` below), but it means a rule is a promise
