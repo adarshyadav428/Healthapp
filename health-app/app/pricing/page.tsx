@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Check } from "lucide-react";
 import { PRICE_ANNUAL, PRICE_MONTHLY } from "@/lib/pricing";
+import { FREE_FEATURES, PRO_FEATURES } from "@/lib/planFeatures";
 import {
   ANDROID_PACKAGE_ID,
   LEGAL_NAME,
@@ -14,20 +15,6 @@ export const metadata: Metadata = {
   description:
     "GetInShape Pro pricing in Indian Rupees — what the free plan includes, what Pro costs, what each payment is for and how billing works.",
 };
-
-const FREE_FEATURES = [
-  "Log food by search from 850+ Indian foods",
-  "Daily calorie and macro targets",
-  "Weight tracking and streaks",
-];
-
-const PRO_FEATURES = [
-  "Unlimited food logging, every day",
-  "Photo scan and chat logging",
-  "Advanced progress charts and weight trend",
-  "Coaching insights, plateau detection and adaptive targets",
-  "Saved meals and one-tap repeat logging",
-];
 
 export default function PricingPage() {
   return (
@@ -54,6 +41,10 @@ export default function PricingPage() {
             </p>
             <p className="mt-1 text-xs text-ink-2">
               Free forever · no card required
+            </p>
+            <p className="mt-2 text-sm text-ink-2">
+              Everything you need to log your food, weight and exercise — a
+              complete tracker, not a trial.
             </p>
             <ul className="mt-4 space-y-2">
               {FREE_FEATURES.map((f) => (

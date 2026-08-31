@@ -18,7 +18,7 @@ import { PRICE_MONTHLY, PRICE_ANNUAL, FREE_TRIAL_DAYS } from '../../lib/pricing'
 import { PRO_FEATURES } from '../../lib/planFeatures'
 
 const REASON_COPY: Record<string, { title: string; description: string }> = {
-  history:            { title: 'Unlock your full history', description: 'Free users can view the last 7 days. Pro shows everything.' },
+  history:            { title: 'Unlock your full history', description: 'Free shows your recent diary. Pro opens every day you’ve ever logged.' },
   custom_foods:       { title: 'Create custom foods',      description: 'Log your home-cooked dishes and family recipes with Pro.' },
   ai_insights:        { title: 'Get your weekly AI recap', description: 'A summary of your week — calories, days logged, weight change — every Sunday.' },
   // CSV export is free and complete for everyone — it's data portability, not a

@@ -23,7 +23,9 @@
  * the constant and copy without pulling server code into the bundle. The DB
  * side lives in ./aiTrialServer.
  */
-export const AI_TRIAL_SCANS = 3
+import { LEGACY_LIMITS } from './freeTier'
+
+export const AI_TRIAL_SCANS = LEGACY_LIMITS.aiScans
 
 /** Why a non-Pro user was refused. Drives paywall copy and the funnel prop. */
 export type AiTrialBlock = 'unverified' | 'exhausted'

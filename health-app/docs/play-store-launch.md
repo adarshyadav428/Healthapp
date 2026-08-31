@@ -99,10 +99,15 @@ Play App Signing issues a **second, different** certificate. Both fingerprints m
 >
 > 🔥 **Stay consistent** — daily streaks, weekly deficit tracker, weight trends, and meal reminders.
 >
-> **Free forever:** unlimited food logging, 7-day history, exercise & weight tracking, barcode scanning — plus 3 free AI scans once you confirm your email.
-> **Pro (₹299/month or ₹1,999/year, both with a 3-day free trial):** full history, unlimited AI logging, custom foods & family recipes.
+> **Free forever:** unlimited food logging, your recent diary, exercise & weight tracking, barcode scanning — plus 3 free AI scans once you confirm your email.
+> **Pro (₹299/month or ₹1,999/year, both with a 3-day free trial):** your full history — every day you've ever logged — unlimited AI logging, custom foods & family recipes.
 >
 > Your data stays yours — no ads, no selling data. Delete your account anytime.
+
+<!-- Listing-copy note: as of the pricing repositioning the free history window differs by
+     signup date (new installs get a shorter free window than existing users). Keep this
+     listing's wording cohort-neutral — "recent diary" free, "every day you've ever logged"
+     for Pro. Do NOT submit a version that names a fixed day count (e.g. "7-day history"). -->
 
 **Assets checklist:**
 - [x] App icon 512×512 PNG — `store-assets/play-icon-512.png` (white ember flame on the CTA gradient; SVG source at `store-assets/icon-source.svg`)

@@ -11,6 +11,7 @@
  */
 
 import { SOURCE_RANK } from './foodMatch'
+import { LEGACY_LIMITS } from './freeTier'
 import type { Food } from '../types/index'
 
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack'
@@ -45,7 +46,7 @@ export const MAX_GAP_SHARE = 0.85
 export const MIN_USEFUL_KCAL = 120
 
 /** Free users get a taste, mirroring the AI trial that already converts. */
-export const FREE_SUGGESTIONS_PER_DAY = 3
+export const FREE_SUGGESTIONS_PER_DAY = LEGACY_LIMITS.suggestions
 
 /** Serving size for a food, preferring its own declared portion. */
 export function servingGrams(food: Food): number {

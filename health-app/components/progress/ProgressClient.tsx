@@ -17,7 +17,6 @@ import type { BadgeStats } from '../../lib/badges'
 import { formatGoalDate } from '../../lib/projection'
 import { formatKg } from '../../lib/formatWeight'
 import { DeficitTrendCard, type DeficitPeriodView } from './DeficitTrendCard'
-import { FREE_HISTORY_DAYS } from '../../lib/planFeatures'
 import {
   Flame, Scale, ChevronLeft, ChevronRight, CalendarDays, X, Dumbbell, Lock, Crown,
 } from 'lucide-react'
@@ -40,6 +39,8 @@ type Props = {
   exerciseLogs: ExerciseRow[]
   profile:     Profile
   isPro:       boolean
+  /** Free history window in days, resolved server-side from the signup cohort. */
+  freeHistoryDays: number
   /** Lifetime counters for the badge shelf. Badges are free — never Pro-gated. */
   badgeStats?: BadgeStats
   /** This week's energy balance, computed server-side from the shared calculator. */
@@ -58,12 +59,6 @@ function pad(n: number) { return String(n).padStart(2, '0') }
 
 const AIR = { boxShadow: 'var(--shadow-air)' } as const
 
-const RANGES = [
-  { label: '7 days', days: 7 },
-  { label: '14 days', days: 14 },
-  { label: '30 days', days: 30 },
-]
-
 const METRIC_CONFIG = {
   kcal:    { color: 'var(--energy)', label: 'Calories', unit: 'kcal' },
   protein: { color: 'var(--protein)', label: 'Protein', unit: 'g' },
@@ -72,7 +67,7 @@ const METRIC_CONFIG = {
 } as const
 
 export function ProgressClient({
-  streak, weightLogs, loggedDates, logs, exerciseLogs, profile, isPro, badgeStats,
+  streak, weightLogs, loggedDates, logs, exerciseLogs, profile, isPro, freeHistoryDays, badgeStats,
   weekView, monthView, maintenanceKcal,
 }: Props) {
   const { user } = useUser()
@@ -90,15 +85,26 @@ export function ProgressClient({
     () => computeWeightTrend(weightLogs, profile.target_weight_kg ?? null),
     [weightLogs, profile.target_weight_kg]
   )
-  const [range, setRange] = useState(7)
+  const [range, setRange] = useState(freeHistoryDays)
   const [metric, setMetric] = useState<keyof typeof METRIC_CONFIG>('kcal')
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+
+  // The free window is always the first (unlocked) chip, so a post-cutoff user
+  // whose window isn't 7 still sees a range that matches what's on the chart.
+  // 14/30 stay Pro-locked. Legacy users get the unchanged 7/14/30.
+  const ranges = useMemo(() => {
+    const wider = [14, 30].filter((d) => d > freeHistoryDays)
+    return [{ days: freeHistoryDays }, ...wider.map((d) => ({ days: d }))].map((r) => ({
+      days: r.days,
+      label: `${r.days} days`,
+    }))
+  }, [freeHistoryDays])
 
   // Oldest IST day a free account can open a diary for. A day selected before
   // this is withheld server-side, so DayDiary must say "Pro" rather than the
   // literally-false "Nothing logged on this day".
   const freeWindowCutoff = istDate(
-    new Date(Date.now() - (FREE_HISTORY_DAYS - 1) * 86_400_000).toISOString()
+    new Date(Date.now() - (freeHistoryDays - 1) * 86_400_000).toISOString()
   )
 
   const metricTargets: Record<string, number> = {
@@ -231,7 +237,7 @@ export function ProgressClient({
           <div className="flex min-w-0 items-center gap-2.5">
             <Lock className="h-4 w-4 shrink-0 text-brand-ink" />
             <div className="min-w-0">
-              <p className="text-[12.5px] font-bold text-brand-ink">Showing last 7 days</p>
+              <p className="text-[12.5px] font-bold text-brand-ink">Showing last {freeHistoryDays} days</p>
               <p className="text-[11px] text-brand-ink opacity-80">Pro unlocks full trends history</p>
             </div>
           </div>
@@ -344,8 +350,8 @@ export function ProgressClient({
         <div className="mb-4 flex items-center justify-between">
           <p className="text-[15px] font-semibold text-ink">{cfg.label} trend</p>
           <div className="flex gap-1 rounded-full bg-surface-2 p-0.5">
-            {RANGES.map((r) => {
-              const locked = !isPro && r.days > 7
+            {ranges.map((r) => {
+              const locked = !isPro && r.days > freeHistoryDays
               return locked ? (
                 <Link
                   key={r.days}

@@ -13,17 +13,33 @@
  * decision lives here where both sides can share it and tests can cover it.
  */
 
+import { LEGACY_LIMITS } from './freeTier'
+
 export type LogMilestone = {
   /** This request created the user's first-ever log(s). */
   isFirstLog: boolean
   /** Lifetime log count AFTER this request's insert. */
   totalLogs: number
   isPro: boolean
+  /**
+   * The account's per-cohort paywall threshold, resolved on the server from
+   * profiles.created_at via limitsForSignupDate (see toLogMilestone). Rides on
+   * the wire so getLogMilestoneAction — which runs on the client — never has to
+   * read a module-scope constant that can't vary per user. Optional: absent only
+   * during a brief deploy skew, where getLogMilestoneAction falls back to
+   * LOG_PAYWALL_THRESHOLD.
+   */
+  paywallThreshold?: number
 }
 
 export type MilestoneAction = 'first_log_celebration' | 'log_paywall' | null
 
-export const LOG_PAYWALL_THRESHOLD = 3
+/**
+ * Pre-cutoff / fallback threshold only. The live per-account value now rides on
+ * `LogMilestone.paywallThreshold` (resolved server-side per signup cohort); this
+ * constant is still the sensible default and stays referenced by tests and docs.
+ */
+export const LOG_PAYWALL_THRESHOLD = LEGACY_LIMITS.paywallThreshold
 
 /**
  * Streak lengths (days) worth a one-time celebration. The early rungs (3, 14,
@@ -73,7 +89,10 @@ export function getLogMilestoneAction(
   // overlays — the paywall then fires on the next log instead.
   if (m.isFirstLog && !seen.celebrationSeen) return 'first_log_celebration'
   // >= (not ===) so existing free users past the threshold still see the
-  // interstitial once on their next log.
-  if (!m.isPro && m.totalLogs >= LOG_PAYWALL_THRESHOLD && !seen.paywallSeen) return 'log_paywall'
+  // interstitial once on their next log. `?? LOG_PAYWALL_THRESHOLD` guards a
+  // brief deploy skew where an old client reads a milestone the new server
+  // sent before this field existed.
+  const threshold = m.paywallThreshold ?? LOG_PAYWALL_THRESHOLD
+  if (!m.isPro && m.totalLogs >= threshold && !seen.paywallSeen) return 'log_paywall'
   return null
 }
