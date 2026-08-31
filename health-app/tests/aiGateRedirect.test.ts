@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { resolveAiGateAction } from '../lib/aiGateRedirect'
+import { AI_TRIAL_SCANS } from '../lib/aiTrial'
 
 describe('resolveAiGateAction — standalone (unchanged behaviour)', () => {
   it('redirects an unverified camera scan to verify_ai', () => {
@@ -46,6 +47,8 @@ describe('resolveAiGateAction — onboarding (stay in the wizard)', () => {
     if (action.kind === 'stay') {
       expect(action.message).toMatch(/confirm your email/i)
       expect(action.message).toMatch(/search/i)
+      // interpolates the constant, not a hardcoded "3"
+      expect(action.message).toContain(`${AI_TRIAL_SCANS} free AI scans`)
     }
   })
 

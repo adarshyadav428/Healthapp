@@ -38,6 +38,9 @@ export async function POST(req: Request) {
 
   // AI chat logging is Pro-only — same reasoning as the camera scan route, and
   // it draws on the same shared lifetime trial pool.
+  // Scans left BEFORE this one is spent (null = Pro). Hoisted so the success
+  // return can report the balance — see the camera route for the rationale.
+  let trialRemaining: number | null = null
   if (!isPro) {
     const trial = await checkAiTrial(supabase, userId)
     if (!trial.allowed) {
@@ -53,6 +56,7 @@ export async function POST(req: Request) {
         { status: 403 }
       )
     }
+    trialRemaining = trial.remaining
   }
 
   const body = await req.json().catch(() => null)
@@ -167,5 +171,6 @@ export async function POST(req: Request) {
 
   captureServerEvent(userId, 'ai_scan_completed', { type: 'chat', items: validItems.length })
 
-  return NextResponse.json({ meal: parsed.meal, items: validItems })
+  const remaining = trialRemaining === null ? null : trialRemaining - 1
+  return NextResponse.json({ meal: parsed.meal, items: validItems, remaining })
 }

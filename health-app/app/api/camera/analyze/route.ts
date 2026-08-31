@@ -99,6 +99,10 @@ export async function POST(req: Request) {
   // anything, so a renewing allowance was an open tab on our API budget.
   // Enforced here rather than in the UI because the UI is not a security
   // boundary — this route is reachable directly.
+  //
+  // Scans left BEFORE this one is spent (null = Pro, i.e. unlimited). Hoisted
+  // out of the block so the success return can tell the client how many remain.
+  let trialRemaining: number | null = null
   if (!isPro) {
     const trial = await checkAiTrial(supabase, userId)
     if (!trial.allowed) {
@@ -114,6 +118,7 @@ export async function POST(req: Request) {
         { status: 403 }
       )
     }
+    trialRemaining = trial.remaining
   }
 
   const body = await req.json().catch(() => null)
@@ -330,5 +335,7 @@ export async function POST(req: Request) {
 
   captureServerEvent(userId, 'ai_scan_completed', { type: 'camera', confidence })
 
-  return NextResponse.json({ foods: enrichedFoods, confidence })
+  // `trialRemaining` was the count before this scan; one has now been spent.
+  const remaining = trialRemaining === null ? null : trialRemaining - 1
+  return NextResponse.json({ foods: enrichedFoods, confidence, remaining })
 }

@@ -11,6 +11,7 @@ import { dateStrToUtcMidnight } from '../lib/dateUtils'
 import { useUser } from './useUser'
 import { useDailyTotals } from './useDailyTotals'
 import { resolveAiGateAction } from '../lib/aiGateRedirect'
+import { recordAiVerificationBlock } from '../lib/verifyPromptStore'
 
 export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
@@ -76,6 +77,9 @@ export function useChatLog({ onClose, logDate, context = 'standalone' }: Params)
   const queryClient = useQueryClient()
   const [state, setState] = useState<State>({ type: 'idle' })
   const [input, setInput] = useState('')
+  // Free AI scans left after the most recent scan. null = Pro, or not yet known
+  // (the count only rides back on a scan response). See lib/aiTrial.
+  const [scansLeft, setScansLeft] = useState<number | null>(null)
 
   const handleSend = async () => {
     const message = input.trim()
@@ -99,6 +103,7 @@ export function useChatLog({ onClose, logDate, context = 'standalone' }: Params)
         if (res.status === 403 && data.upgrade) {
           setState({ type: 'idle' })
           setInput(message)
+          if (data.block === 'unverified' && user?.id) recordAiVerificationBlock(user.id)
           const action = resolveAiGateAction({ block: data.block, scan: 'chat', context })
           onClose()
           if (action.kind === 'redirect') router.push(action.href)
@@ -112,6 +117,7 @@ export function useChatLog({ onClose, logDate, context = 'standalone' }: Params)
         setInput(message)
         return
       }
+      if (typeof data.remaining === 'number') setScansLeft(data.remaining)
       const meal = (data.meal?.toLowerCase() ?? inferMeal()) as Meal
       const items: FoodItem[] = (data.items as FoodItem[]).map((item) => ({ ...item, originalGrams: item.grams }))
       setState({ type: 'confirm', message, meal, items })
@@ -202,7 +208,7 @@ export function useChatLog({ onClose, logDate, context = 'standalone' }: Params)
     : null
 
   return {
-    state, setState, input, setInput,
+    state, setState, input, setInput, scansLeft,
     handleSend, updateGrams, removeItem, handleLog,
     totalKcal, coaching,
   }

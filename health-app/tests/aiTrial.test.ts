@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { decideAiTrial, AI_TRIAL_SCANS } from '../lib/aiTrial'
+import { decideAiTrial, aiScansLeftLabel, AI_TRIAL_SCANS } from '../lib/aiTrial'
 
 const VERIFIED = '2026-07-01T00:00:00Z'
 
@@ -47,5 +47,25 @@ describe('decideAiTrial', () => {
   it('treats a zero limit as no trial at all', () => {
     expect(decideAiTrial({ emailVerifiedAt: VERIFIED, usedCount: 0, limit: 0 }))
       .toEqual({ allowed: false, block: 'exhausted' })
+  })
+})
+
+describe('aiScansLeftLabel', () => {
+  it('renders nothing for Pro / unknown (null) or a negative count', () => {
+    expect(aiScansLeftLabel(null)).toBeNull()
+    expect(aiScansLeftLabel(-1)).toBeNull()
+  })
+
+  it('counts down in the plural above one', () => {
+    expect(aiScansLeftLabel(3)).toBe('3 free AI scans left')
+    expect(aiScansLeftLabel(2)).toBe('2 free AI scans left')
+  })
+
+  it('names the last one as the last one', () => {
+    expect(aiScansLeftLabel(1)).toBe('This is your last free AI scan')
+  })
+
+  it('says the wall is here at zero', () => {
+    expect(aiScansLeftLabel(0)).toBe('No free AI scans left')
   })
 })

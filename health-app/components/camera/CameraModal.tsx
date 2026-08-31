@@ -8,6 +8,7 @@ import {
 import type { Food } from '../../types/index'
 import { Button } from '../ui/button'
 import { useCameraScan, type Mode } from '../../hooks/useCameraScan'
+import { aiScansLeftLabel } from '../../lib/aiTrial'
 
 type Props = {
   onClose: () => void
@@ -29,7 +30,7 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
   const {
     videoRef, canvasRef, galleryRef,
     barcodeSupport, mode, camError, barcodeLoading, captured, analyzing,
-    results, selected, confidence, grams, photoContext, showContextInput,
+    results, selected, confidence, scansLeft, grams, photoContext, showContextInput,
     meal, logging, manualBarcode, manualLoading, customName, editingName,
     setGrams, setPhotoContext, setShowContextInput, setMeal,
     setManualBarcode, setCustomName, setEditingName,
@@ -201,6 +202,10 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
               </div>
             )}
 
+            {aiScansLeftLabel(scansLeft) && (
+              <p className="text-[12.5px] text-ink-2 tabular-nums">{aiScansLeftLabel(scansLeft)}</p>
+            )}
+
             {/* Food name — tappable to edit */}
             <div>
               {editingName ? (
@@ -339,6 +344,11 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
               >
                 <Pencil className="h-3.5 w-3.5" /> Add context (optional)
               </button>
+            )}
+            {aiScansLeftLabel(scansLeft) && (
+              <p className="text-center text-[12px] font-medium text-white/40 tabular-nums">
+                {aiScansLeftLabel(scansLeft)}
+              </p>
             )}
             <div className="flex gap-2">
               <button

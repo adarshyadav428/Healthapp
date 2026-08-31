@@ -52,3 +52,19 @@ export function decideAiTrial(args: {
   if (remaining <= 0) return { allowed: false, block: 'exhausted' }
   return { allowed: true, remaining }
 }
+
+/**
+ * The line a free user sees while a scan is in reach — camera pre-analyze, chat
+ * idle. Scarcity you watch descend is craving; a wall that only appears at zero
+ * is a surprise. `null` means render nothing (Pro, or the balance isn't known
+ * yet — the count only arrives on the first scan's response).
+ *
+ * This is the countdown voice, distinct on purpose from lib/welcomeCards.ts's
+ * "N of 3 used" tally, which describes a wall that has already come down.
+ */
+export function aiScansLeftLabel(scansLeft: number | null): string | null {
+  if (scansLeft === null || scansLeft < 0) return null
+  if (scansLeft === 0) return 'No free AI scans left'
+  if (scansLeft === 1) return 'This is your last free AI scan'
+  return `${scansLeft} free AI scans left`
+}

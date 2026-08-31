@@ -73,6 +73,47 @@ describe('shouldPromptEmailVerification', () => {
   it('ignores an unparseable dismissal timestamp rather than hiding forever', () => {
     expect(shouldPromptEmailVerification(args({ state: { lastDismissedAt: 'nope' } }))).toBe(true)
   })
+
+  describe('an AI gate block overrides the grace period', () => {
+    it('prompts a day-1 account once an AI scan was refused for it', () => {
+      const at = args({
+        accountCreatedAt: daysAgo(1),
+        state: { aiGateBlockedAt: daysAgo(0) },
+      })
+      expect(shouldPromptEmailVerification(at)).toBe(true)
+    })
+
+    it('still never prompts a verified account, AI block or not', () => {
+      const at = args({
+        emailVerifiedAt: daysAgo(1),
+        accountCreatedAt: daysAgo(1),
+        state: { aiGateBlockedAt: daysAgo(0) },
+      })
+      expect(shouldPromptEmailVerification(at)).toBe(false)
+    })
+
+    it('a block newer than the last dismissal re-opens the ask inside the cooldown', () => {
+      const at = args({
+        state: { lastDismissedAt: daysAgo(2), aiGateBlockedAt: daysAgo(1) },
+      })
+      expect(shouldPromptEmailVerification(at)).toBe(true)
+    })
+
+    it('an older block does not defeat a fresh dismissal', () => {
+      const at = args({
+        state: { lastDismissedAt: daysAgo(1), aiGateBlockedAt: daysAgo(2) },
+      })
+      expect(shouldPromptEmailVerification(at)).toBe(false)
+    })
+
+    it('an unparseable block timestamp is simply ignored', () => {
+      const at = args({
+        accountCreatedAt: daysAgo(1),
+        state: { aiGateBlockedAt: 'nope' },
+      })
+      expect(shouldPromptEmailVerification(at)).toBe(false)
+    })
+  })
 })
 
 describe('parseVerifyPromptState', () => {

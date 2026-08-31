@@ -5,6 +5,7 @@ import { X, Send, Loader2, RotateCcw, CheckCircle, MessageSquarePlus } from 'luc
 import { Sheet, SheetContent } from '../ui/sheet'
 import { Button } from '../ui/button'
 import { useChatLog, type Meal } from '../../hooks/useChatLog'
+import { aiScansLeftLabel } from '../../lib/aiTrial'
 
 const MEAL_OPTIONS: { value: Meal; label: string }[] = [
   { value: 'breakfast', label: '🌅 Breakfast' },
@@ -26,7 +27,7 @@ export function ChatLogModal({
   context?: 'standalone' | 'onboarding'
 }) {
   const {
-    state, setState, input, setInput,
+    state, setState, input, setInput, scansLeft,
     handleSend, updateGrams, removeItem, handleLog,
     totalKcal, coaching,
   } = useChatLog({ onClose, logDate, context })
@@ -200,6 +201,10 @@ export function ChatLogModal({
                 </button>
               ))}
             </div>
+          )}
+
+          {(state.type === 'idle' || state.type === 'done') && aiScansLeftLabel(scansLeft) && (
+            <p className="px-1 pt-3 text-[12.5px] text-ink-2 tabular-nums">{aiScansLeftLabel(scansLeft)}</p>
           )}
         </div>
 
