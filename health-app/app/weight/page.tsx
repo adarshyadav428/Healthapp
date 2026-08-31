@@ -31,7 +31,8 @@ export default async function WeightPage() {
     .eq('user_id', user.id)
     .order('measured_at', { ascending: false })
 
-  if (!isProStatus(subResult.data?.status)) logsQuery = logsQuery.limit(FREE_WEIGHT_ROWS)
+  const isPro = isProStatus(subResult.data?.status)
+  if (!isPro) logsQuery = logsQuery.limit(FREE_WEIGHT_ROWS)
 
   const logsResult = await logsQuery
 
@@ -52,7 +53,11 @@ export default async function WeightPage() {
       >
         <PageHeader label={profile.target_weight_kg ? `Toward ${formatKg(profile.target_weight_kg)} kg` : 'Body'} title="Weight" back />
         <div className="mt-5">
-          <WeightClient logs={weightLogs} profile={profile} />
+          <WeightClient
+            logs={weightLogs}
+            profile={profile}
+            atFreeCap={!isPro && weightLogs.length >= FREE_WEIGHT_ROWS}
+          />
         </div>
       </main>
       <BottomNav />

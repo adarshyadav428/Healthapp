@@ -33,6 +33,11 @@ const REASON_COPY: Record<string, { title: string; description: string }> = {
   // email first", so this banner explains why that's what they're seeing.
   verify_ai:          { title: `Confirm your email for ${AI_TRIAL_SCANS} free AI scans`, description: `Tap the button below and we'll send you a link. Confirming unlocks ${AI_TRIAL_SCANS} free AI scans — no payment needed.` },
   free_logs:          { title: "You're building a real habit", description: 'Keep the momentum — Pro unlocks your full history, unlimited AI logging and custom foods.' },
+  // The monthly Wrapped's locked card links here. Its `paywall_viewed` fires
+  // server-side on /wrapped, so this reason is deliberately absent from
+  // PAYWALL_SOURCE_ONLY_HERE — it only needs the copy.
+  wrapped:            { title: 'See your whole month', description: 'Your most-logged dish, your best day, your longest streak and your weight curve — your full Wrapped, with Pro.' },
+  meal_suggestions:   { title: 'More meal ideas, all day', description: 'Free gives you three suggestions a day. Pro keeps them coming, always tuned to the calories you have left.' },
 }
 
 /**

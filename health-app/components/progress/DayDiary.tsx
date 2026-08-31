@@ -9,6 +9,7 @@ import { Loader2, Dumbbell, Flame, Pencil, Trash2 } from 'lucide-react'
 import { toast } from '../ui/use-toast'
 import { EditFoodLogModal } from '../log/EditFoodLogModal'
 import { ShareDayButton } from '../log/ShareDayButton'
+import { ProLock } from '../ui/ProLock'
 
 const MEAL_CONFIG = {
   breakfast: { emoji: '🥣', label: 'Breakfast', color: 'text-energy-ink' },
@@ -55,7 +56,14 @@ function useDayExercise(userId: string | null, date: Date) {
 }
 
 export function DayDiary(
-  { userId, date, firstName }: { userId: string; date: Date; firstName?: string | null }
+  { userId, date, firstName, beyondFreeWindow = false }: {
+    userId: string
+    date: Date
+    firstName?: string | null
+    /** The selected day is older than the free history window — the API clamped
+     *  it away, so an empty result means "Pro", not "nothing logged". */
+    beyondFreeWindow?: boolean
+  }
 ) {
   const { data: logs, isLoading } = useDayLogs(userId, date)
   const { data: exerciseLogs = [] } = useDayExercise(userId, date)
@@ -93,6 +101,16 @@ export function DayDiary(
   }
 
   if (!logs || logs.length === 0) {
+    if (beyondFreeWindow) {
+      return (
+        <ProLock.Card
+          reason="history"
+          title="This day is beyond your free history"
+          body="Free shows the last 7 days in full. Pro opens every day you've ever logged — search back to any date."
+          cta="See what Pro adds"
+        />
+      )
+    }
     return (
       <div className="py-6 text-center">
         <p className="text-2xl mb-1">🍽️</p>

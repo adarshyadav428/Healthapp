@@ -12,7 +12,17 @@ import { istDateStr } from '../../lib/dateUtils'
  * native scroll, and the gesture must be strongly horizontal so normal page
  * scrolling never navigates. Swiping forward past today is a no-op.
  */
-export function SwipeDayNav({ dateStr, children }: { dateStr: string; children: ReactNode }) {
+export function SwipeDayNav({
+  dateStr,
+  prevDayLocked = false,
+  children,
+}: {
+  dateStr: string
+  /** Mirrors FoodHeader: a right-swipe past the free window goes to the paywall,
+   *  not to a diary the server would clamp away. */
+  prevDayLocked?: boolean
+  children: ReactNode
+}) {
   const router = useRouter()
   const start = useRef<{ x: number; y: number; scrollable: boolean } | null>(null)
 
@@ -47,6 +57,10 @@ export function SwipeDayNav({ dateStr, children }: { dateStr: string; children: 
         if (!dir) return
         const todayStr = istDateStr()
         if (dir === 'next' && dateStr >= todayStr) return // no future days
+        if (dir === 'prev' && prevDayLocked) {
+          router.push('/upgrade?reason=history')
+          return
+        }
         router.push(logHref(shiftDateStr(dateStr, dir === 'next' ? 1 : -1), todayStr))
       }}
     >

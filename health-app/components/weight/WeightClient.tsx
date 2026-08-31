@@ -11,13 +11,24 @@ import { formatKg } from '../../lib/formatWeight'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
 import { Button } from '../ui/button'
+import { ProLock } from '../ui/ProLock'
 import { Plus, Trash2 } from 'lucide-react'
 
 // Charts and modal — split into their own chunks (recharts ships ~95KB).
 const WeightChart    = dynamic(() => import('./WeightChart').then(m => m.WeightChart),       { ssr: false, loading: () => <div className="h-48 rounded-card bg-surface border border-hairline animate-pulse" /> })
 const WeightLogModal = dynamic(() => import('./WeightLogModal').then(m => m.WeightLogModal), { ssr: false })
 
-export function WeightClient({ logs, profile }: { logs: WeightLog[]; profile: Profile }) {
+export function WeightClient({
+  logs,
+  profile,
+  atFreeCap = false,
+}: {
+  logs: WeightLog[]
+  profile: Profile
+  /** Free account whose weigh-in history has hit the 30-row cap — the chart and
+   *  trend stop there, and until now nothing said so. */
+  atFreeCap?: boolean
+}) {
   const [open, setOpen] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const { data = logs } = useWeightLogs(profile.id, logs)
@@ -80,6 +91,12 @@ export function WeightClient({ logs, profile }: { logs: WeightLog[]; profile: Pr
         <div className="rounded-sheet border border-hairline bg-surface p-4 shadow-rest">
           <p className="text-xs font-semibold uppercase tracking-wide text-ink-2 mb-3">Trend</p>
           <WeightChart logs={sorted} />
+          {atFreeCap && (
+            <div className="mt-3 flex items-center justify-between gap-2 border-t border-hairline pt-3">
+              <p className="text-[12px] text-ink-3">Showing your last 30 weigh-ins</p>
+              <ProLock.Chip label="Full history" reason="history" />
+            </div>
+          )}
         </div>
       )}
 

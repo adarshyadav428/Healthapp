@@ -17,6 +17,7 @@ import type { BadgeStats } from '../../lib/badges'
 import { formatGoalDate } from '../../lib/projection'
 import { formatKg } from '../../lib/formatWeight'
 import { DeficitTrendCard, type DeficitPeriodView } from './DeficitTrendCard'
+import { FREE_HISTORY_DAYS } from '../../lib/planFeatures'
 import {
   Flame, Scale, ChevronLeft, ChevronRight, CalendarDays, X, Dumbbell, Lock, Crown,
 } from 'lucide-react'
@@ -92,6 +93,13 @@ export function ProgressClient({
   const [range, setRange] = useState(7)
   const [metric, setMetric] = useState<keyof typeof METRIC_CONFIG>('kcal')
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+
+  // Oldest IST day a free account can open a diary for. A day selected before
+  // this is withheld server-side, so DayDiary must say "Pro" rather than the
+  // literally-false "Nothing logged on this day".
+  const freeWindowCutoff = istDate(
+    new Date(Date.now() - (FREE_HISTORY_DAYS - 1) * 86_400_000).toISOString()
+  )
 
   const metricTargets: Record<string, number> = {
     kcal: profile.daily_calorie_target,
@@ -403,7 +411,12 @@ export function ProgressClient({
               <X className="h-4 w-4 text-ink-2" />
             </button>
           </div>
-          <DayDiary firstName={firstName} userId={user.id} date={dateStrToUtcMidnight(selectedDate)} />
+          <DayDiary
+            firstName={firstName}
+            userId={user.id}
+            date={dateStrToUtcMidnight(selectedDate)}
+            beyondFreeWindow={!isPro && selectedDate < freeWindowCutoff}
+          />
         </div>
       )}
 

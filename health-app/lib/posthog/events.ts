@@ -149,14 +149,18 @@ export type PaywallSource =
   | 'chat_scan_pro'
   | 'custom_foods'
   | 'history_limit'
+  // The end card of the weekly-recap story, reached via `/upgrade?reason=ai_insights`.
   | 'recap_end_card'
+  // The locked weekly-recap card on the dashboard — a free user's only sight of
+  // the feature. Distinct from `recap_end_card` so impression→click on the card
+  // itself is measurable.
+  | 'recap_card'
   // The monthly Wrapped's locked card. Unlike every other source here it
   // doesn't block an action — it withholds something about the user that they
   // can already see exists, which is a different (and better-converting) ask.
   | 'wrapped'
-  // Dormant: the suggestion deck (with its own end-of-deck wall) was cut to a
-  // single inline row on 2026-08-23, which renders no upgrade affordance. Kept
-  // named for when a wall returns to that surface.
+  // The inline meal-suggestion row's free daily cap (FREE_SUGGESTIONS_PER_DAY).
+  // Fires from components/log/FoodLanding.tsx once the day's suggestions run out.
   | 'meal_suggestions'
   // Reserved: there is no anonymous AI entry point today (every AI route
   // requires an authenticated user). Kept named so the funnel has a slot ready
