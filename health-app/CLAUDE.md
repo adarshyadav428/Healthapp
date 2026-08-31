@@ -17,7 +17,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **81 files / 1,146 tests**. There is no `vitest.config.ts`; defaults apply.
+- **Tests:** Vitest 4.1 — **84 files / 1,226 tests**. There is no `vitest.config.ts`; defaults apply.
 - **Deploy:** Vercel **Hobby** plan, region `bom1`. The Hobby limits are load-bearing (see Hard rules).
 
 ## Architecture / directory map
@@ -55,8 +55,9 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   `components/log/shortcuts.tsx` holds the one set of re-log / combo / copy-yesterday tiles that both
   `FoodLanding` and `FoodSearch` render — they used to be implemented twice, with different ordering
   and different meal-selection behaviour, which is how the same shortcut came to mean two things.
-- **`supabase/migrations/`** — `001`–`038`. Numbers are **not unique** (`002`, `004`, `005`, `009` each
-  appear twice) and there is **no `021`**. Always reference a migration by its exact filename.
+- **`supabase/migrations/`** — `001`–`042`. Numbers are **not unique** (`002`, `004`, `005`, `009` each
+  appear twice) and there is **no `021`**; `040` is absent on this branch because it belongs to the
+  unmerged body-focus work. Always reference a migration by its exact filename.
 - **`middleware.ts`** — self-contained (there is no `lib/supabase/middleware.ts`). Refreshes the
   session cookie on every request, redirects unauthenticated users to `/auth/sign-in?returnTo=…`, and
   bounces authenticated users off `/auth/*` to `/dashboard`. Public routes are `/`, `/privacy`,
@@ -77,7 +78,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (81 files / 1,146 tests)
+npm test                 # vitest run — the whole suite (84 files / 1,226 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
 npm run check:tokens     # design-token guard: no raw hex, no broken opacity modifiers
@@ -148,9 +149,26 @@ actively seeding.
   and *every* chocolate row a 250 ml glass of cola (Dairy Milk, KitKat, 5 Star, Munch, Amul Dark, both
   chocolate wheys). Both had been live since the rules were written, because the rule that *should* have
   caught them sits lower in the table and `.find` never reached it. `\bsev\b`, `\bpav\b`, `\bsoda\b`,
-  `\bgur\b`, `\blassi\b` and `\bcola\b` are all bounded for this reason. Two ways to be wrong here:
-  a pattern too broad (steals foods from below) and a pattern too low (never gets reached) — the second
-  is the invisible one.
+  `\bgur\b`, `\blassi\b`, `\bcola\b`, `\bfanta\b`, `\bpuri\b` and `\boil\b` are all bounded for this
+  reason — `fanta` hid inside "Dark **Fanta**sy" (a 28 g biscuit pack offered a 250 ml glass, ~1,320
+  kcal) and `puri` inside "Kolha**puri** Mutton" (a 150 g katori of curry offered one 25 g puri).
+  Two ways to be wrong here: a pattern too broad (steals foods from below) and a pattern too low
+  (never gets reached) — the second is the invisible one. **Not every case is a boundary case:**
+  "Saffola Gold Oil (Rice Bran + Sunflower)" contains the real word "rice" and took the rice katori —
+  150 g of a 900 kcal/100 g oil, ~1,350 kcal — so it needed a `\boil\b` rule placed *above* the dish
+  rules instead. Where bounding a word would not be true to the name, the fix is ordering, not
+  anchoring.
+- **A `SMART_PORTIONS` rule *replaces* the row's `common_portions`, so it must carry that pack's real
+  size — and one ladder must never be shared across packs of different sizes.** Suppressing
+  `common_portions` is deliberate (see `defaultPortionFor` below), but it means a rule is a promise
+  that its numbers beat the row's own. A shared `/whey|mass gainer|protein powder/` scoop of 30 g put
+  MuscleBlaze Mass Gainer XXL — a **50 g** scoop on a **150 g** three-scoop label serving — on a fifth
+  of one serving, with no unit in the picker able to express a real one, because the row's correct
+  50 g/150 g portions had already been discarded. Gainers now have their own rule above the whey one.
+  The same shape, inverted: `Cadbury Perk` is a **13 g** count-line bar, and `/chocolate/`'s 25 g "half
+  bar" logged nearly two of them, so it needs its own rule too. Before adding a pattern, check the
+  `serving_size_g` and `common_portions` of every row it will capture; if they disagree on size, that
+  is two rules, not one. `tests/portionUnits.test.ts` pins both.
 - **One function decides how much of a food a tap logs: `defaultPortionFor`** (`lib/portion-units.ts`).
   Every surface that adds a food without asking — the "+" quick-add pill and `AddFoodModal`'s opening
   state — must call it. They used to disagree: the pill used `food.serving_size_g` while the modal used
@@ -393,4 +411,11 @@ above generated estimates, so the numbers must actually come from a panel; `041`
 spot-check sheet are in `docs/branded-foods-041-verification.md`, and `tests/brandedFoods041.test.ts`
 pins the parts a hand-applied migration has nothing else to catch: uniqueness, macro plausibility, no
 duplicate of an existing row, and that every **name** routes to a portion default near its own pack
-serving — the name, not `common_portions`, decides that).
+serving — the name, not `common_portions`, decides that) · `042_correct_branded_041_rows.sql` (the
+first correction to `041`, and the shape every later one should copy: guarded, idempotent `UPDATE`s
+keyed on `source_id`, no-ops both on a re-run and on a database where `041` was never applied. Its
+header also records what was **not** corrected — four `041` rows duplicate measured IFCT rows and
+three of those carry IFCT-derived values under a `branded` provenance claim. Those need a panel read
+off a pack; inventing one makes a rank-4 row more confidently wrong. They are tracked in
+`docs/branded-foods-041-verification.md`, and note that **removing a duplicate is not available** —
+`foods` has no soft-delete column and `DELETE` is forbidden).
