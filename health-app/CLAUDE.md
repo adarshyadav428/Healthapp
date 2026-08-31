@@ -17,7 +17,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **84 files / 1,229 tests**. There is no `vitest.config.ts`; defaults apply.
+- **Tests:** Vitest 4.1 — **87 files / 1,264 tests**. There is no `vitest.config.ts`; defaults apply.
 - **Deploy:** Vercel **Hobby** plan, region `bom1`. The Hobby limits are load-bearing (see Hard rules).
 
 ## Architecture / directory map
@@ -55,9 +55,9 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   `components/log/shortcuts.tsx` holds the one set of re-log / combo / copy-yesterday tiles that both
   `FoodLanding` and `FoodSearch` render — they used to be implemented twice, with different ordering
   and different meal-selection behaviour, which is how the same shortcut came to mean two things.
-- **`supabase/migrations/`** — `001`–`042`. Numbers are **not unique** (`002`, `004`, `005`, `009` each
-  appear twice) and there is **no `021`**; `040` is absent on this branch because it belongs to the
-  unmerged body-focus work. Always reference a migration by its exact filename.
+- **`supabase/migrations/`** — `001`–`043`. Numbers are **not unique** (`002`, `004`, `005`, `009` each
+  appear twice) and there is **no `021`**; `040` is not in `main` either — it belongs to the unmerged
+  body-focus work. Always reference a migration by its exact filename.
 - **`middleware.ts`** — self-contained (there is no `lib/supabase/middleware.ts`). Refreshes the
   session cookie on every request, redirects unauthenticated users to `/auth/sign-in?returnTo=…`, and
   bounces authenticated users off `/auth/*` to `/dashboard`. Public routes are `/`, `/privacy`,
@@ -78,7 +78,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (84 files / 1,229 tests)
+npm test                 # vitest run — the whole suite (87 files / 1,264 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
 npm run check:tokens     # design-token guard: no raw hex, no broken opacity modifiers
@@ -433,4 +433,11 @@ header also records what was **not** corrected — four `041` rows duplicate mea
 three of those carry IFCT-derived values under a `branded` provenance claim. Those need a panel read
 off a pack; inventing one makes a rank-4 row more confidently wrong. They are tracked in
 `docs/branded-foods-041-verification.md`, and note that **removing a duplicate is not available** —
-`foods` has no soft-delete column and `DELETE` is forbidden).
+`foods` has no soft-delete column and `DELETE` is forbidden) · `043_correct_rasgulla_protein.sql`
+(aligns `branded-haldirams-rasgulla`'s protein to the measured `ifct-rasgulla` row it was derived
+from — **not** a verified tin panel, so it is a correction to re-correct, not a settled number).
+**Once a migration is applied, its file no longer matches the database** — every later correction
+lives in its own file and 041 still reads the original values, so read the corrections before
+trusting a number in 041 or in the verification sheet's table. `tests/brandedFoods041.test.ts` walks
+every `NNN_correct_*.sql` automatically and holds each to the same shape: UPDATE-only, keyed on
+`source_id`, guarded on the value being replaced.
