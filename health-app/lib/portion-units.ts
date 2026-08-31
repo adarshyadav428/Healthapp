@@ -480,6 +480,32 @@ export const SMART_PORTIONS: SmartEntry[] = [
     ],
     defaultKey: 'glass',
   },
+  // Whey and gainers are measured in scoops. Chocolate-flavoured tubs used to
+  // fall through to the soft-drink rule (250 g of powder) and, once that was
+  // word-bounded, to /chocolate/ (half a bar). Both ignore the row's real
+  // scoop in common_portions, so the scoop has to live here.
+  {
+    pattern: /whey|mass gainer|protein powder/i,
+    portions: [
+      { key: 'scoop',  label: '1 scoop (30g)',   grams: 30 },
+      { key: '2scoop', label: '2 scoops (60g)',  grams: 60 },
+    ],
+    defaultKey: 'scoop',
+  },
+  // "Cadbury Dairy Milk" contains "milk". The milk rule below matched it first
+  // and pre-selected a 200 ml glass — 200 g of chocolate, ~1050 kcal, one tap
+  // away, on a 40 g bar. The /chocolate|dairy milk/ rule that was meant to
+  // catch it sits ~150 lines lower and never got the chance: this table is
+  // scanned with `.find`, so it must sit ABOVE /milk|doodh/, not below it.
+  {
+    pattern: /dairy milk/i,
+    portions: [
+      { key: 'squares', label: '2 squares (10g)',  grams: 10 },
+      { key: 'half',    label: 'Half bar (25g)',   grams: 25 },
+      { key: 'bar',     label: '1 bar (50g)',      grams: 50 },
+    ],
+    defaultKey: 'half',
+  },
   {
     pattern: /milk|doodh/i,
     portions: [
@@ -488,6 +514,17 @@ export const SMART_PORTIONS: SmartEntry[] = [
       { key: 'cup',   label: '1 cup (240ml)',      grams: 240 },
     ],
     defaultKey: 'glass',
+  },
+  // Greek yogurt is sold in single-serve 90-100 g cups, not ladled from a
+  // container. The katori rule below would default it to 150 g. Above it.
+  {
+    pattern: /greek yogurt|greek yoghurt/i,
+    portions: [
+      { key: 'half', label: 'Half cup (45g)', grams: 45 },
+      { key: 'cup',  label: '1 cup (90g)',    grams: 90 },
+      { key: '2cup', label: '2 cups (180g)',  grams: 180 },
+    ],
+    defaultKey: 'cup',
   },
   {
     pattern: /curd|dahi|yogurt/i,
@@ -499,8 +536,13 @@ export const SMART_PORTIONS: SmartEntry[] = [
     ],
     defaultKey: 'medium',
   },
+  // Word-bounded on purpose: unanchored, "lassi" sits inside "Classic", so
+  // every ...Classic... product matched this rule first and was offered a
+  // 200 ml glass — "Pintola Classic Creamy Peanut Butter" (200 g, ~1200 kcal)
+  // and "Mother Dairy Classic Curd" both did exactly that. Same class of bug
+  // as \bsev\b, \bpav\b and \bsoda\b elsewhere in this table.
   {
-    pattern: /lassi|chaas|buttermilk/i,
+    pattern: /\blassi\b|\bchaas\b|buttermilk/i,
     portions: [
       { key: 'glass',  label: '1 glass (200ml)', grams: 200 },
       { key: 'large',  label: 'Large (300ml)',   grams: 300 },
@@ -535,6 +577,17 @@ export const SMART_PORTIONS: SmartEntry[] = [
     ],
     defaultKey: 'cup',
   },
+  // Instant coffee is a powder, not a cup. The /coffee/ rule below offers a
+  // 150 ml cup; against a jar's per-100 g panel that is 150 g of powder,
+  // ~530 kcal, where a cup uses 2 g. Must sit above it.
+  {
+    pattern: /instant coffee|coffee powder|coffee granules/i,
+    portions: [
+      { key: 'tsp',  label: '1 tsp (2g)', grams: 2 },
+      { key: '2tsp', label: '2 tsp (4g)', grams: 4 },
+    ],
+    defaultKey: 'tsp',
+  },
   {
     pattern: /coffee/i,
     portions: [
@@ -551,8 +604,15 @@ export const SMART_PORTIONS: SmartEntry[] = [
     ],
     defaultKey: 'glass',
   },
+  // \bcola\b word-bounded for the same reason as \blassi\b above: unanchored,
+  // "cola" sits inside "chocolate", so every chocolate row in the catalogue
+  // — Dairy Milk, KitKat, 5 Star, Munch, Amul Dark, and both chocolate whey
+  // powders — matched THIS rule before reaching /chocolate/ 40 lines down,
+  // and was offered a 250 ml glass: 250 g of chocolate, ~1300 kcal, on one
+  // tap. "Coca-Cola" and "Thums Up Cola" still match, the hyphen and the
+  // space being word boundaries.
   {
-    pattern: /cola|pepsi|thums|sprite|fanta|soft drink|\bsoda\b/i,
+    pattern: /\bcola\b|pepsi|thums|sprite|fanta|soft drink|\bsoda\b/i,
     portions: [
       { key: 'glass',  label: '1 glass (250ml)',   grams: 250 },
       { key: 'can',    label: '1 can (330ml)',     grams: 330 },

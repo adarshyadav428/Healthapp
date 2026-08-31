@@ -284,6 +284,63 @@ describe('SMART_PORTIONS table sanity', () => {
     expect(firstMatch('Pani Puri').portions[0].grams).toBe(90)  // not 25g puri
     expect(firstMatch('Chicken Biryani').portions.some((p) => p.label.includes('plate'))).toBe(true) // biryani, not chicken curry
   })
+
+  /**
+   * Three products whose names carry a word belonging to a *liquid* rule that
+   * sits above the rule they actually want. Same shape as the namkeen scar
+   * above: the table is scanned with `.find`, so the narrow rule must be
+   * inserted higher, and `common_portions` cannot rescue any of them — a name
+   * match makes buildUnits ignore the column entirely.
+   */
+  it('a chocolate bar is not a glass of milk', () => {
+    const dm = makeFood({ name: 'Cadbury Dairy Milk (Milk Chocolate)', source: 'branded', brand: 'Cadbury' })
+    // Was 200 — the /milk|doodh/ glass, i.e. 200g of chocolate on one tap.
+    expect(pickDefaultUnit(buildUnits(dm), dm).toGrams(1)).toBe(25)
+    const milk = makeFood({ name: 'Amul Taaza Milk' })
+    expect(pickDefaultUnit(buildUnits(milk), milk).toGrams(1)).toBe(200)
+  })
+
+  it('instant coffee is a spoon of powder, not a cup of coffee', () => {
+    const jar = makeFood({ name: 'Nescafé Classic Instant Coffee', source: 'branded', brand: 'Nescafé' })
+    expect(pickDefaultUnit(buildUnits(jar), jar).toGrams(1)).toBe(2)
+    const brewed = makeFood({ name: 'Filter Coffee' })
+    expect(pickDefaultUnit(buildUnits(brewed), brewed).toGrams(1)).toBe(150)
+  })
+
+  it('"Classic" in a product name is not a lassi', () => {
+    const pb = makeFood({ name: 'Pintola Classic Creamy Peanut Butter', source: 'branded', brand: 'Pintola' })
+    expect(pickDefaultUnit(buildUnits(pb), pb).toGrams(1)).toBe(16)
+    const curd = makeFood({ name: 'Mother Dairy Classic Curd', source: 'branded' })
+    expect(pickDefaultUnit(buildUnits(curd), curd).toGrams(1)).toBe(150)
+    const lassi = makeFood({ name: 'Amul Masti Lassi (200ml pouch)' })
+    expect(pickDefaultUnit(buildUnits(lassi), lassi).toGrams(1)).toBe(200)
+  })
+
+  it('"chocolate" contains "cola" — it is not a soft drink', () => {
+    for (const name of ['Cadbury Dairy Milk (Milk Chocolate)', 'KitKat Chocolate Bar', 'Amul Dark Chocolate (55% Cocoa)', 'Cadbury Perk Chocolate']) {
+      const food = makeFood({ name, source: 'branded' })
+      // Was 250 — a glass of cola, i.e. 250g of chocolate.
+      expect(pickDefaultUnit(buildUnits(food), food).toGrams(1), name).toBeLessThanOrEqual(50)
+    }
+    const cola = makeFood({ name: 'Coca-Cola' })
+    expect(pickDefaultUnit(buildUnits(cola), cola).toGrams(1)).toBe(250)
+    const thums = makeFood({ name: 'Thums Up Cola' })
+    expect(pickDefaultUnit(buildUnits(thums), thums).toGrams(1)).toBe(250)
+  })
+
+  it('chocolate-flavoured whey is a scoop, not a bar or a glass', () => {
+    for (const name of ['MuscleBlaze Whey Gold (Chocolate Fudge)', 'MuscleBlaze Mass Gainer XXL (Chocolate)']) {
+      const food = makeFood({ name, source: 'branded' })
+      expect(pickDefaultUnit(buildUnits(food), food).toGrams(1), name).toBe(30)
+    }
+  })
+
+  it('greek yogurt is a single-serve cup, not a katori', () => {
+    const cup = makeFood({ name: 'Epigamia Greek Yogurt (Natural)', source: 'branded', brand: 'Epigamia' })
+    expect(pickDefaultUnit(buildUnits(cup), cup).toGrams(1)).toBe(90)
+    const dahi = makeFood({ name: 'Curd (Dahi)' })
+    expect(pickDefaultUnit(buildUnits(dahi), dahi).toGrams(1)).toBe(150)
+  })
 })
 
 describe('defaultPortionFor — the one answer both log buttons use', () => {
