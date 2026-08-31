@@ -17,7 +17,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **71 files / 1,026 tests**. There is no `vitest.config.ts`; defaults apply.
+- **Tests:** Vitest 4.1 — **81 files / 1,146 tests**. There is no `vitest.config.ts`; defaults apply.
 - **Deploy:** Vercel **Hobby** plan, region `bom1`. The Hobby limits are load-bearing (see Hard rules).
 
 ## Architecture / directory map
@@ -77,7 +77,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (71 files / 1,026 tests)
+npm test                 # vitest run — the whole suite (81 files / 1,146 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
 npm run check:tokens     # design-token guard: no raw hex, no broken opacity modifiers
@@ -142,6 +142,15 @@ actively seeding.
   **~952 kcal** for a 30 g packet. Adding a pattern near the top, or a broad one anywhere, silently
   re-homes every food that also matches something below it — `tests/portionUnits.test.ts` pins both
   directions, and a fix in search ranking is only half a fix until the portion default agrees with it.
+- **A `SMART_PORTIONS` pattern is a substring match — word-bound anything that hides inside a longer
+  word.** `lassi` sits inside "Cla**ssi**c" and `cola` inside "cho**cola**te", so *every* Classic-branded
+  product was offered a 200 ml glass of lassi (Pintola Classic Peanut Butter opened on 200 g, ~1,200 kcal)
+  and *every* chocolate row a 250 ml glass of cola (Dairy Milk, KitKat, 5 Star, Munch, Amul Dark, both
+  chocolate wheys). Both had been live since the rules were written, because the rule that *should* have
+  caught them sits lower in the table and `.find` never reached it. `\bsev\b`, `\bpav\b`, `\bsoda\b`,
+  `\bgur\b`, `\blassi\b` and `\bcola\b` are all bounded for this reason. Two ways to be wrong here:
+  a pattern too broad (steals foods from below) and a pattern too low (never gets reached) — the second
+  is the invisible one.
 - **One function decides how much of a food a tap logs: `defaultPortionFor`** (`lib/portion-units.ts`).
   Every surface that adds a food without asking — the "+" quick-add pill and `AddFoodModal`'s opening
   state — must call it. They used to disagree: the pill used `food.serving_size_g` while the modal used
@@ -361,4 +370,10 @@ Food Facts gave us, and for how to audit such an `UPDATE` in the file header) ·
 `038_correct_mislabelled_food_rows.sql` (the same, for **values**: a row whose per-serving column landed
 in the per-100 g fields is rescaled by its own `serving_size_g`, never by another product's numbers, and
 guarded on a plausibility range so a second hand-paste cannot rescale twice — these are applied by hand,
-so every value-correcting `UPDATE` needs to be idempotent).
+so every value-correcting `UPDATE` needs to be idempotent) · `018_branded_foods.sql` and
+`041_branded_foods_v2.sql` (label-accurate `source='branded'` rows, rank 4 — above Open Food Facts and
+above generated estimates, so the numbers must actually come from a panel; `041`'s provenance and its
+spot-check sheet are in `docs/branded-foods-041-verification.md`, and `tests/brandedFoods041.test.ts`
+pins the parts a hand-applied migration has nothing else to catch: uniqueness, macro plausibility, no
+duplicate of an existing row, and that every **name** routes to a portion default near its own pack
+serving — the name, not `common_portions`, decides that).
