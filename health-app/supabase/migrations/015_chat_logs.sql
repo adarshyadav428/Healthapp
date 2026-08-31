@@ -1,6 +1,7 @@
 -- 015_chat_logs.sql
--- Per-user AI chat-log counter backing the free tier's 10 chat logs/day
--- (enforced in app/api/chat/analyze/route.ts).
+-- Per-user AI chat-log counter. Rows here count against the shared lifetime AI trial
+-- pool (camera + chat combined, AI_TRIAL_SCANS in lib/aiTrial.ts), which unlocks once
+-- the account's email is verified; Pro is unlimited (enforced in app/api/chat/analyze/route.ts).
 --
 -- Rewritten to be idempotent: the original used bare `create policy` /
 -- `create index`, so a partial application left the table and one policy in

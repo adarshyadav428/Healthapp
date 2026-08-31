@@ -71,7 +71,7 @@ export async function resolveLoggedAtForRequest(
       ok: false,
       status: 403,
       upgrade: true,
-      error: 'The free plan can log to the last 7 days. Upgrade to Pro to edit older days.',
+      error: `The free plan can log to the last ${historyDays} days. Upgrade to Pro to edit older days.`,
     }
   }
 

@@ -5,8 +5,12 @@
  * claimed Pro gave "30+ days" of history while the enforced free window is 7
  * days (lib/backfill.ts), a regression of a fix marked closed a month earlier.
  * lib/planFeatures.ts is now the source of truth for the landing page,
- * /upgrade and the post-log interstitial; this pins them together so a fourth
- * audit isn't needed to catch a third drift.
+ * /pricing, /upgrade and the post-log interstitial; this pins them together so
+ * a fourth audit isn't needed to catch a third drift.
+ *
+ * The lists now name no day count at all: the free history window varies by
+ * signup date (lib/freeTier.ts), so any fixed number would be wrong for some
+ * cohort. The Pro claim is "Full history — every day you've ever logged".
  */
 
 import { describe, expect, it } from 'vitest'
@@ -16,20 +20,21 @@ import {
   FREE_FEATURES,
   PRO_FEATURES,
   PRO_FEATURES_INTERSTITIAL,
-  FREE_HISTORY_DAYS,
 } from '../lib/planFeatures'
 
 const ROOT = join(__dirname, '..')
 const read = (...p: string[]) => readFileSync(join(ROOT, ...p), 'utf8')
 
 describe('lib/planFeatures invariants', () => {
-  it('the enforced free window is 7 days', () => {
-    expect(FREE_HISTORY_DAYS).toBe(7)
+  it('this module names no day count (the window lives in lib/freeTier.ts)', () => {
+    expect(read('lib', 'planFeatures.ts')).not.toMatch(/FREE_HISTORY_DAYS/)
   })
 
-  it('PRO_FEATURES states the 7-day boundary and never a 30-day one', () => {
-    expect(PRO_FEATURES.some((f) => /beyond the last 7 days/.test(f))).toBe(true)
-    for (const f of PRO_FEATURES) expect(f).not.toMatch(/\b30\+?\s*days?\b/i)
+  it('PRO_FEATURES claims full history and names no day count', () => {
+    expect(PRO_FEATURES.some((f) => /full history/i.test(f))).toBe(true)
+    for (const f of [...PRO_FEATURES, ...PRO_FEATURES_INTERSTITIAL]) {
+      expect(f).not.toMatch(/\b\d+\+?\s*days?\b/i)
+    }
   })
 
   it('the interstitial list is a strict subset of PRO_FEATURES', () => {
@@ -45,6 +50,7 @@ describe('lib/planFeatures invariants', () => {
 describe('the surfaces render from the shared module', () => {
   it.each([
     ['app/page.tsx', ['app', 'page.tsx']],
+    ['app/pricing/page.tsx', ['app', 'pricing', 'page.tsx']],
     ['app/upgrade/page.tsx', ['app', 'upgrade', 'page.tsx']],
     ['components/milestones/LogMilestones.tsx', ['components', 'milestones', 'LogMilestones.tsx']],
   ])('%s imports from lib/planFeatures', (_label, path) => {

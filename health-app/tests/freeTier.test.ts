@@ -4,6 +4,7 @@ import {
   LEGACY_LIMITS,
   POST_CUTOFF_LIMITS,
   FREE_TIER_CUTOFF,
+  type FreeTierLimits,
 } from '../lib/freeTier'
 
 describe('limitsForSignupDate', () => {
@@ -26,14 +27,11 @@ describe('limitsForSignupDate', () => {
   })
 })
 
-describe('C1 inertness pin', () => {
-  // C2 flips POST_CUTOFF_LIMITS. Until then it must be identical to LEGACY, so
-  // limitsForSignupDate is a pure refactor no matter which branch it takes.
-  it('POST_CUTOFF_LIMITS deep-equals LEGACY_LIMITS', () => {
-    expect(POST_CUTOFF_LIMITS).toEqual(LEGACY_LIMITS)
-  })
-
-  it('every current constant value is still what it was', () => {
+describe('the two tiers', () => {
+  // LEGACY is what a pre-cutoff account keeps forever — and what every
+  // hand-maintained constant held before consolidation. Changing this is a
+  // "Free forever" breach; it must not move.
+  it('LEGACY_LIMITS are the pre-repositioning values', () => {
     expect(LEGACY_LIMITS).toEqual({
       historyDays: 7,
       weightRows: 30,
@@ -41,5 +39,23 @@ describe('C1 inertness pin', () => {
       aiScans: 3,
       paywallThreshold: 3,
     })
+  })
+
+  // POST_CUTOFF is the new-signup tier. These are the only numbers the
+  // repositioning moves, and every one is a one-line revert.
+  it('POST_CUTOFF_LIMITS tightens history, weight and the paywall — not the AI trial', () => {
+    expect(POST_CUTOFF_LIMITS).toEqual({
+      historyDays: 5,
+      weightRows: 14,
+      suggestions: 3,
+      aiScans: 3,
+      paywallThreshold: 2,
+    })
+  })
+
+  it('never loosens anything relative to LEGACY', () => {
+    for (const k of Object.keys(LEGACY_LIMITS) as (keyof FreeTierLimits)[]) {
+      expect(POST_CUTOFF_LIMITS[k]).toBeLessThanOrEqual(LEGACY_LIMITS[k])
+    }
   })
 })

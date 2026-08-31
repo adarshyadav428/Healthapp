@@ -3,8 +3,11 @@ import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import { PageHeader } from '../../components/layout/PageHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { DeficitPageClient, type WeekView } from '../../components/progress/DeficitPageClient'
+import { ProLock } from '../../components/ui/ProLock'
 import { calculateMaintenance } from '../../lib/tdee'
 import { istDateStr } from '../../lib/dateUtils'
+import { isProStatus } from '../../lib/subscription'
+import { deficitAccess } from '../../lib/deficitAccess'
 import {
   groupKcalByIstDay,
   buildWeekWindow,
@@ -21,9 +24,13 @@ export default async function DeficitPage() {
   const supabase = createServerClient()
   const user = await getAuthedUser(supabase)
 
-  // Both queries only need user.id — one parallel round trip, not two sequential
+  // All four queries only need user.id — one parallel round trip, not four
+  // sequential. `allLogs` is the heavy all-time scan; it's only used to build
+  // the deficit view a locked user never sees, but skipping it would mean a
+  // second sequential round trip for the common (allowed) path, so it rides
+  // along here and its result is simply ignored when access is denied.
   const since = new Date(Date.now() - 28 * 86_400_000).toISOString()
-  const [{ data: profile }, { data: logs }, { data: allLogs }] = await Promise.all([
+  const [{ data: profile }, { data: logs }, { data: allLogs }, { data: sub }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase
       .from('food_logs')
@@ -32,9 +39,38 @@ export default async function DeficitPage() {
       .gte('logged_at', since)
       .order('logged_at', { ascending: true }),
     supabase.from('food_logs').select('kcal, logged_at').eq('user_id', user.id),
+    supabase.from('subscriptions').select('status').eq('user_id', user.id).maybeSingle(),
   ])
 
   if (!profile || !profile.height_cm) redirect('/onboarding')
+
+  // /deficit is Pro as of the pricing repositioning (C2). Grandfathered
+  // (pre-cutoff) and Pro accounts render exactly as before; a post-cutoff free
+  // account gets a 3-day taste, then this locked state.
+  const access = deficitAccess({
+    isPro: isProStatus(sub?.status),
+    createdAt: profile.created_at,
+  })
+  if (!access.allowed) {
+    return (
+      <div className="min-h-screen">
+        <main
+          className="mx-auto w-full max-w-md px-6"
+          style={{ paddingTop: 'calc(20px + env(safe-area-inset-top))', paddingBottom: 'calc(120px + env(safe-area-inset-bottom))' }}
+        >
+          <PageHeader label="1 kg fat = 7,700 kcal deficit" title="Deficit" back />
+          <div className="mt-5">
+            <ProLock.Card
+              reason="history"
+              title="Your calorie deficit is a Pro feature"
+              body="You had 3 days to see how it works. Pro keeps the full picture — every week's deficit, what it's worth in fat, and where you're heading."
+            />
+          </div>
+        </main>
+        <BottomNav />
+      </div>
+    )
+  }
 
   // One source of maintenance, shared with /progress and every other surface.
   const maintenance = calculateMaintenance({
