@@ -12,6 +12,7 @@ import { checkAiTrial } from '../../lib/aiTrialServer'
 import type { Food, FoodLog } from '../../types/index'
 import { getIstDayRange, istDateStr, dateStrToUtcMidnight } from '../../lib/dateUtils'
 import { isWithinFreeLogWindow } from '../../lib/backfill'
+import { limitsForSignupDate } from '../../lib/freeTier'
 import { shiftDateStr } from '../../lib/logDates'
 
 // Below-fold widgets — split into separate chunks so they don't block initial JS parse.
@@ -66,7 +67,7 @@ export default async function LogPage({
   const [profileResult, subResult, logSnapshotResult, yesterdayResult, dayLogsResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('height_cm, daily_calorie_target, protein_g_target, carbs_g_target, fat_g_target, current_weight_kg, water_target_ml, display_name')
+      .select('height_cm, daily_calorie_target, protein_g_target, carbs_g_target, fat_g_target, current_weight_kg, water_target_ml, display_name, created_at')
       .eq('id', user.id)
       .maybeSingle(),
     supabase
@@ -100,18 +101,22 @@ export default async function LogPage({
   if (profileError) throw new Error(profileError.message)
   if (!profile || profile.height_cm === null) redirect('/onboarding')
 
-  // Check Pro status — free users can only view the last 7 days of history
+  // Check Pro status — free users can only view their cohort's history window
   const sub = subResult.data
   const isPro = isProStatus(sub?.status)
 
-  // A day is editable (backfill-able) if it's within the free 7-day window, or
+  // Free history window in days, keyed on signup cohort (lib/freeTier.ts).
+  const historyDays = limitsForSignupDate(profile.created_at).historyDays
+
+  // A day is editable (backfill-able) if it's within the free history window, or
   // for any past day when Pro. Drives whether the logging surface renders.
-  const isEditable = isPro || isWithinFreeLogWindow(dateStr)
+  const isEditable = isPro || isWithinFreeLogWindow(dateStr, new Date(), historyDays)
 
   // Would stepping one day earlier leave the free history window? Drives the
   // header's back-chevron: a free user at the boundary sees a lock, not a
   // control that silently teleports them to the paywall.
-  const prevDayLocked = !isPro && !isWithinFreeLogWindow(shiftDateStr(dateStr, -1))
+  const prevDayLocked =
+    !isPro && !isWithinFreeLogWindow(shiftDateStr(dateStr, -1), new Date(), historyDays)
 
   // AI scans left, for the chat entry point's pre-emptive gate — a blocked free
   // user should hit the paywall on tap, not after typing out a whole meal
@@ -119,10 +124,13 @@ export default async function LogPage({
   const aiTrial = isPro ? null : await checkAiTrial(supabase, user.id)
   const aiTrialRemaining = aiTrial?.allowed ? aiTrial.remaining : 0
 
-  // Free-tier history gate: clamp dates older than 7 IST days
-  if (!isPro && searchParams?.date) {
-    const cutoffStr = istDateStr(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
-    if (dateStr < cutoffStr) redirect('/upgrade?reason=history')
+  // Free-tier history gate: a viewed day outside the free window redirects to
+  // the paywall. Uses the same isWithinFreeLogWindow predicate as isEditable
+  // above — this previously recomputed the cutoff inline as `now - 7 days`,
+  // which is one day wider than the window helper (today + 6 prior), so the
+  // boundary day rendered a dead, uneditable page instead of redirecting.
+  if (!isPro && searchParams?.date && !isWithinFreeLogWindow(dateStr, new Date(), historyDays)) {
+    redirect('/upgrade?reason=history')
   }
 
   if (logSnapshotResult.error) throw new Error(logSnapshotResult.error.message)

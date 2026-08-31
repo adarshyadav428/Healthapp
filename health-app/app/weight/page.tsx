@@ -6,12 +6,10 @@ import { WeightClient } from '../../components/weight/WeightClient'
 import type { WeightLog } from '../../types/index'
 import { formatKg } from '../../lib/formatWeight'
 import { isProStatus } from '../../lib/subscription'
+import { limitsForSignupDate } from '../../lib/freeTier'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { robots: { index: false } }
-
-// Keep in step with FREE_WEIGHT_ROWS in app/api/weight/logs/route.ts.
-const FREE_WEIGHT_ROWS = 30
 
 export default async function WeightPage() {
   const supabase = createServerClient()
@@ -32,7 +30,8 @@ export default async function WeightPage() {
     .order('measured_at', { ascending: false })
 
   const isPro = isProStatus(subResult.data?.status)
-  if (!isPro) logsQuery = logsQuery.limit(FREE_WEIGHT_ROWS)
+  const weightRows = limitsForSignupDate(profileResult.data?.created_at).weightRows
+  if (!isPro) logsQuery = logsQuery.limit(weightRows)
 
   const logsResult = await logsQuery
 
@@ -56,7 +55,7 @@ export default async function WeightPage() {
           <WeightClient
             logs={weightLogs}
             profile={profile}
-            atFreeCap={!isPro && weightLogs.length >= FREE_WEIGHT_ROWS}
+            atFreeCap={!isPro && weightLogs.length >= weightRows}
           />
         </div>
       </main>

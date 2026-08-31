@@ -13,6 +13,8 @@
  * decision lives here where both sides can share it and tests can cover it.
  */
 
+import { LEGACY_LIMITS } from './freeTier'
+
 export type LogMilestone = {
   /** This request created the user's first-ever log(s). */
   isFirstLog: boolean
@@ -23,7 +25,7 @@ export type LogMilestone = {
 
 export type MilestoneAction = 'first_log_celebration' | 'log_paywall' | null
 
-export const LOG_PAYWALL_THRESHOLD = 3
+export const LOG_PAYWALL_THRESHOLD = LEGACY_LIMITS.paywallThreshold
 
 /**
  * Streak lengths (days) worth a one-time celebration. The early rungs (3, 14,

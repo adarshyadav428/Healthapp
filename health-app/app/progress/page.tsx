@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import { isProStatus } from '../../lib/subscription'
+import { limitsForSignupDate } from '../../lib/freeTier'
 import type { FoodLog, WeightLog } from '../../types/index'
 import { calculateStreakState, longestStreak } from '../../lib/streak'
 import { istDateStr } from '../../lib/dateUtils'
@@ -119,12 +120,14 @@ export default async function ProgressPage() {
       .select('logged_at')
       .eq('user_id', user.id)
       .gte('logged_at', sixtyDaysAgo.toISOString()),
+    // No .limit() here — Pro is sold uncapped weight history. Free users are
+    // trimmed to their cohort's weightRows in memory once Pro status is known
+    // (below), the same one-network-stage pattern as the 90-day log fetch.
     supabase
       .from('weight_logs')
       .select('id, weight_kg, measured_at, notes')
       .eq('user_id', user.id)
-      .order('measured_at', { ascending: false })
-      .limit(30),
+      .order('measured_at', { ascending: false }),
     supabase
       .from('food_logs')
       .select('logged_at, kcal, protein_g, carbs_g, fat_g, meal, context')
@@ -153,16 +156,23 @@ export default async function ProgressPage() {
 
   if (logsResult.error) throw new Error(logsResult.error.message)
 
+  // Free-tier limits, keyed on signup cohort (lib/freeTier.ts). C1 ships these
+  // identical to the previous hard-coded 7 / 30.
+  const freeLimits = limitsForSignupDate(profile.created_at)
+
   // Trim the 90-day fetch down to the free-tier window before anything is
-  // passed to the client — free users receive exactly the same 7 days as before.
+  // passed to the client — free users receive exactly the same days as before.
   const freeCutoff = new Date()
-  freeCutoff.setUTCDate(freeCutoff.getUTCDate() - 7)
+  freeCutoff.setUTCDate(freeCutoff.getUTCDate() - freeLimits.historyDays)
   const freeCutoffMs = freeCutoff.getTime()
   const withinTier = <T extends { logged_at: string }>(rows: T[]) =>
     isPro ? rows : rows.filter((r) => new Date(r.logged_at).getTime() >= freeCutoffMs)
 
   const streak      = calculateStreakState((streakResult.data ?? []) as unknown as FoodLog[]).streak
-  const weightLogs  = (weightResult.data ?? []) as unknown as WeightLog[]
+  // Weigh-ins are fetched uncapped now (Pro gets full history); free users keep
+  // the previous window of the most-recent N rows.
+  const allWeightLogs = (weightResult.data ?? []) as unknown as WeightLog[]
+  const weightLogs  = isPro ? allWeightLogs : allWeightLogs.slice(0, freeLimits.weightRows)
   const loggedDates = (streakResult.data ?? []).map((r) => r.logged_at as string)
   const logs        = withinTier(logsResult.data ?? [])
   // Exercise logs are optional — table may not exist yet
@@ -237,6 +247,7 @@ export default async function ProgressPage() {
           exerciseLogs={exerciseLogs}
           profile={profile}
           isPro={isPro}
+          freeHistoryDays={freeLimits.historyDays}
           badgeStats={badgeStats}
           weekView={weekView}
           monthView={monthView}

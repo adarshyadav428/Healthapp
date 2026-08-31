@@ -2,11 +2,10 @@ import { NextResponse } from 'next/server'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { istDaysAgoStart } from '../../../../lib/dateUtils'
 import { isProStatus } from '../../../../lib/subscription'
-
-const FREE_HISTORY_DAYS = 7
+import { limitsForSignupDate } from '../../../../lib/freeTier'
 
 // Range variant of /api/exercise/today, with the same free-tier history clamp
-// as /api/logs so the 7-day limit holds no matter which endpoint is called.
+// as /api/logs so the limit holds no matter which endpoint is called.
 export async function GET(req: Request) {
   try {
     const supabase = createServerClient()
@@ -17,13 +16,12 @@ export async function GET(req: Request) {
     let start = searchParams.get('start')
     const end = searchParams.get('end')
 
-    const { data: sub } = await supabase
-      .from('subscriptions')
-      .select('status')
-      .eq('user_id', user.id)
-      .maybeSingle()
+    const [{ data: sub }, { data: profile }] = await Promise.all([
+      supabase.from('subscriptions').select('status').eq('user_id', user.id).maybeSingle(),
+      supabase.from('profiles').select('created_at').eq('id', user.id).maybeSingle(),
+    ])
     if (!isProStatus(sub?.status)) {
-      const cutoff = istDaysAgoStart(FREE_HISTORY_DAYS)
+      const cutoff = istDaysAgoStart(limitsForSignupDate(profile?.created_at).historyDays)
       // ISO-8601 UTC strings compare correctly as strings
       if (!start || start < cutoff) start = cutoff
     }

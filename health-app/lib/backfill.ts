@@ -1,15 +1,27 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { istDateStr } from './dateUtils'
 import { isProStatus } from './subscription'
+import { LEGACY_LIMITS, limitsForSignupDate } from './freeTier'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-/** Free users may log to today back through the last 7 IST days (today = day 1). */
-export const FREE_BACKFILL_DAYS = 7
+/**
+ * Free users may log to today back through the last N IST days (today = day 1).
+ * Sourced from lib/freeTier.ts — this export stays because other code imports it.
+ */
+export const FREE_BACKFILL_DAYS = LEGACY_LIMITS.historyDays
 
-/** True if `dateStr` (YYYY-MM-DD, IST) is inside the free backfill window. */
-export function isWithinFreeLogWindow(dateStr: string, now: Date = new Date()): boolean {
-  const oldest = istDateStr(new Date(now.getTime() - (FREE_BACKFILL_DAYS - 1) * DAY_MS))
+/**
+ * True if `dateStr` (YYYY-MM-DD, IST) is inside the free backfill window.
+ * `days` defaults to the legacy window; callers that know the account's signup
+ * cohort pass `limitsForSignupDate(created_at).historyDays`.
+ */
+export function isWithinFreeLogWindow(
+  dateStr: string,
+  now: Date = new Date(),
+  days: number = FREE_BACKFILL_DAYS
+): boolean {
+  const oldest = istDateStr(new Date(now.getTime() - (days - 1) * DAY_MS))
   return dateStr >= oldest && dateStr <= istDateStr(now)
 }
 
@@ -45,11 +57,16 @@ export async function resolveLoggedAtForRequest(
   if (dateStr > today) return { ok: false, error: 'Cannot log to a future date', status: 400 }
   if (dateStr === today) return { ok: true, logged_at: now.toISOString() }
 
-  // Past IST day — free users are limited to the last 7 days.
-  const { data: sub } = await supabase
-    .from('subscriptions').select('status').eq('user_id', userId).maybeSingle()
+  // Past IST day — free users are limited to their cohort's history window.
+  // profiles.created_at rides along in the same round trip as the sub read, so
+  // resolving the cohort costs no extra wall time.
+  const [{ data: sub }, { data: profile }] = await Promise.all([
+    supabase.from('subscriptions').select('status').eq('user_id', userId).maybeSingle(),
+    supabase.from('profiles').select('created_at').eq('id', userId).maybeSingle(),
+  ])
   const isPro = isProStatus(sub?.status)
-  if (!isPro && !isWithinFreeLogWindow(dateStr, now)) {
+  const historyDays = limitsForSignupDate(profile?.created_at).historyDays
+  if (!isPro && !isWithinFreeLogWindow(dateStr, now, historyDays)) {
     return {
       ok: false,
       status: 403,
