@@ -17,7 +17,6 @@ import type { BadgeStats } from '../../lib/badges'
 import { formatGoalDate } from '../../lib/projection'
 import { formatKg } from '../../lib/formatWeight'
 import { DeficitTrendCard, type DeficitPeriodView } from './DeficitTrendCard'
-import { FREE_HISTORY_DAYS } from '../../lib/planFeatures'
 import {
   Flame, Scale, ChevronLeft, ChevronRight, CalendarDays, X, Dumbbell, Lock, Crown,
 } from 'lucide-react'
@@ -40,6 +39,8 @@ type Props = {
   exerciseLogs: ExerciseRow[]
   profile:     Profile
   isPro:       boolean
+  /** Free history window in days, resolved server-side from the signup cohort. */
+  freeHistoryDays: number
   /** Lifetime counters for the badge shelf. Badges are free — never Pro-gated. */
   badgeStats?: BadgeStats
   /** This week's energy balance, computed server-side from the shared calculator. */
@@ -72,7 +73,7 @@ const METRIC_CONFIG = {
 } as const
 
 export function ProgressClient({
-  streak, weightLogs, loggedDates, logs, exerciseLogs, profile, isPro, badgeStats,
+  streak, weightLogs, loggedDates, logs, exerciseLogs, profile, isPro, freeHistoryDays, badgeStats,
   weekView, monthView, maintenanceKcal,
 }: Props) {
   const { user } = useUser()
@@ -90,7 +91,7 @@ export function ProgressClient({
     () => computeWeightTrend(weightLogs, profile.target_weight_kg ?? null),
     [weightLogs, profile.target_weight_kg]
   )
-  const [range, setRange] = useState(7)
+  const [range, setRange] = useState(freeHistoryDays)
   const [metric, setMetric] = useState<keyof typeof METRIC_CONFIG>('kcal')
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
@@ -98,7 +99,7 @@ export function ProgressClient({
   // this is withheld server-side, so DayDiary must say "Pro" rather than the
   // literally-false "Nothing logged on this day".
   const freeWindowCutoff = istDate(
-    new Date(Date.now() - (FREE_HISTORY_DAYS - 1) * 86_400_000).toISOString()
+    new Date(Date.now() - (freeHistoryDays - 1) * 86_400_000).toISOString()
   )
 
   const metricTargets: Record<string, number> = {
@@ -345,7 +346,7 @@ export function ProgressClient({
           <p className="text-[15px] font-semibold text-ink">{cfg.label} trend</p>
           <div className="flex gap-1 rounded-full bg-surface-2 p-0.5">
             {RANGES.map((r) => {
-              const locked = !isPro && r.days > 7
+              const locked = !isPro && r.days > freeHistoryDays
               return locked ? (
                 <Link
                   key={r.days}

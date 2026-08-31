@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { createServerClient, getAuthedUser } from '../../../../lib/supabase/server'
 import { isProStatus } from '../../../../lib/subscription'
 import { getIstDayRange } from '../../../../lib/dateUtils'
-import { suggestMeals, FREE_SUGGESTIONS_PER_DAY } from '../../../../lib/mealSuggest'
+import { suggestMeals } from '../../../../lib/mealSuggest'
+import { limitsForSignupDate } from '../../../../lib/freeTier'
 import { captureServerEvent } from '../../../../lib/posthog/server'
 import type { Food } from '../../../../types/index'
 
@@ -28,7 +29,7 @@ export async function GET() {
   const [profileResult, todayLogs, subResult, dismissedResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('daily_calorie_target, protein_g_target')
+      .select('daily_calorie_target, protein_g_target, created_at')
       .eq('id', user.id)
       .maybeSingle(),
     supabase
@@ -73,7 +74,7 @@ export async function GET() {
 
   const all = suggestMeals((foods ?? []) as unknown as Food[], gap, {
     dismissedIds: (dismissedResult.data ?? []).map((r) => r.food_id as string),
-    limit: isPro ? 20 : FREE_SUGGESTIONS_PER_DAY,
+    limit: isPro ? 20 : limitsForSignupDate(profile?.created_at).suggestions,
   })
 
   captureServerEvent(user.id, 'meal_suggestions_viewed', {

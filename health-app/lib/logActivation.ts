@@ -81,6 +81,12 @@ export async function getLogActivationContext(
 /**
  * The `milestone` field every successful log response carries — computed
  * from the pre-insert context plus how many rows the route just inserted.
+ *
+ * TODO(C2): add the account's per-cohort paywall threshold here so
+ * getLogMilestoneAction can compare against it. getLogActivationContext already
+ * fetches profiles.created_at (as days_since_signup) — thread the raw timestamp
+ * (or limitsForSignupDate(created_at).paywallThreshold) through onto LogMilestone
+ * so the client no longer reads a module-scope constant.
  */
 export function toLogMilestone(
   activation: LogActivationContext,

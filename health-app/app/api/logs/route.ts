@@ -2,9 +2,8 @@ import { NextResponse } from 'next/server'
 import { createServerClient, getApiUser } from '../../../lib/supabase/server'
 import { istDaysAgoStart } from '../../../lib/dateUtils'
 import { isProStatus } from '../../../lib/subscription'
+import { limitsForSignupDate } from '../../../lib/freeTier'
 import type { FoodLog } from '../../../types/index'
-
-const FREE_HISTORY_DAYS = 7
 
 // Same column list the server pages use — `foods(*)` shipped every column of
 // every food row on each refetch, which is dead weight on mobile connections.
@@ -23,14 +22,15 @@ export async function GET(req: Request) {
     const end = searchParams.get('end')
 
     // Pro gate: the free tier's "7 days history" was only enforced by the UI —
-    // the API itself returned unlimited history to anyone who called it.
-    const { data: sub } = await supabase
-      .from('subscriptions')
-      .select('status')
-      .eq('user_id', user.id)
-      .maybeSingle()
+    // the API itself returned unlimited history to anyone who called it. The
+    // free window is keyed on signup cohort (lib/freeTier.ts); profiles.created_at
+    // rides the same round trip as the sub read.
+    const [{ data: sub }, { data: profile }] = await Promise.all([
+      supabase.from('subscriptions').select('status').eq('user_id', user.id).maybeSingle(),
+      supabase.from('profiles').select('created_at').eq('id', user.id).maybeSingle(),
+    ])
     if (!isProStatus(sub?.status)) {
-      const cutoff = istDaysAgoStart(FREE_HISTORY_DAYS)
+      const cutoff = istDaysAgoStart(limitsForSignupDate(profile?.created_at).historyDays)
       // ISO-8601 UTC strings compare correctly as strings
       if (!start || start < cutoff) start = cutoff
     }
