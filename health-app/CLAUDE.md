@@ -123,8 +123,21 @@ actively seeding.
   `food_dismissals` all reference it `ON DELETE CASCADE` — one delete silently wipes that food from
   every user's diary, with no error.
 - **Never hand-edit `data/indian-foods.json`.** Fix `scripts/generate-indian-foods-estimate.ts` and
-  re-run it; keep `tests/curatedFoods.test.ts` green — it's what stops a meat dish shipping with a
-  carb dish's protein.
+  re-run it; keep `tests/curatedFoods.test.ts` and `tests/foodDataQuality.test.ts` green — between
+  them they stop a meat dish shipping with a carb dish's protein, and stop the same dish shipping
+  twice under one name at two different calorie counts.
+- **Search results collapse to one row per food, never multiple.** `collapseDuplicateFoods`
+  (`lib/mergeSearchResults.ts`) groups by `foodClusterKey` and elects the highest-`SOURCE_RANK` member
+  of each cluster — this is what stopped "boiled egg" returning three cards at three different kcal
+  figures with a source badge asking the user to pick. `foodClusterKey` is deliberately conservative:
+  two rows cluster only when every word distinguishing them is a provable translation of a word
+  already in the other name (checked against `lib/food-synonyms.ts`'s groups), and a branded row never
+  clusters with a brandless one or a different brand. Under-clustering is the safe failure — widening
+  it (plurals, dropping true qualifiers like "raw"/"cooked") needs its own evidence
+  (`tests/foodDataQuality.test.ts` exists to catch an over-merge before it ships), never a quiet
+  refinement. `components/log/FoodResult.tsx` no longer badges a result by source for this reason —
+  `👤 Custom` (ownership) is the one label kept; provenance is an arbitration the collapse already
+  performs, so surfacing it again re-asks a settled question.
 - **Never write a raw hex color** in `app/` or `components/` — reference a token (`bg-brand`, `text-ink`, …).
 - **Never use Tailwind's `/NN` opacity modifier on a token color.** Our tokens are plain `var(--x)`
   strings, so `bg-brand/40` is a **silent no-op** that renders full strength. Use a pre-mixed alpha
@@ -433,4 +446,9 @@ header also records what was **not** corrected — four `041` rows duplicate mea
 three of those carry IFCT-derived values under a `branded` provenance claim. Those need a panel read
 off a pack; inventing one makes a rank-4 row more confidently wrong. They are tracked in
 `docs/branded-foods-041-verification.md`, and note that **removing a duplicate is not available** —
-`foods` has no soft-delete column and `DELETE` is forbidden).
+`foods` has no soft-delete column and `DELETE` is forbidden) ·
+`043_correct_duplicate_cluster_rows.sql` (the measured `ifct-egg-boiled` row had shipped with fat
+copied from protein, kcal computed from that wrong fat — internally consistent, so no Atwater check
+could have caught it; corrected against IFCT 2017's own published figure. Same guarded-`UPDATE` shape
+as `042`; `lib/indian-foods-data.ts`'s seed value was corrected directly in the same commit, since that
+file is hand-curated, not generated).

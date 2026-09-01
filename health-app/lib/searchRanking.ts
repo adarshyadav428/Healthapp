@@ -1,8 +1,10 @@
 import { foldSpelling } from './spelling-variants'
 
 /** Split a food name into words. Mirrors the punctuation that shows up in our
- *  own data: "Bhutta (Roasted Corn)", "Masala Corn / Corn Chaat", "Dal, Toor". */
-const nameWords = (name: string): string[] => name.split(/[\s/,()[\]-]+/).filter(Boolean)
+ *  own data: "Bhutta (Roasted Corn)", "Masala Corn / Corn Chaat", "Dal, Toor".
+ *  Exported for `lib/foodClusterKey.ts`, which needs the identical split so a
+ *  cluster key and a search score never disagree on what counts as a word. */
+export const nameWords = (name: string): string[] => name.split(/[\s/,()[\]-]+/).filter(Boolean)
 
 /**
  * Lowercase, collapse whitespace, and fold romanisation variants to one
@@ -15,8 +17,10 @@ const nameWords = (name: string): string[] => name.split(/[\s/,()[\]-]+/).filter
  * scored 0 and fell to the synonym tier — before SOURCE_RANK could break the
  * tie. See `lib/spelling-variants.ts` for why it folds spellings only and never
  * translations.
+ *
+ * Exported for `lib/foodClusterKey.ts` — see `nameWords` above for why.
  */
-const normalize = (s: string): string => foldSpelling(s.toLowerCase().replace(/\s+/g, ' ').trim())
+export const normalize = (s: string): string => foldSpelling(s.toLowerCase().replace(/\s+/g, ' ').trim())
 
 /**
  * Score a food name against the query. Higher is better; 0 means no real match.
