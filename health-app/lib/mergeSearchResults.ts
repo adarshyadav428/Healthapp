@@ -76,16 +76,13 @@ export function collapseDuplicateFoods<T extends { name: string; brand?: string 
   sourceRank: Record<string, number>,
   limit = MAX_SEARCH_RESULTS
 ): T[] {
-  const firstIndexOf = new Map<string, number>()
   const winnerOf = new Map<string, T>()
   const order: string[] = []
 
-  foods.forEach((food, i) => {
+  foods.forEach((food) => {
     const key = foodClusterKey(food)
-    if (!firstIndexOf.has(key)) {
-      firstIndexOf.set(key, i)
-      order.push(key)
-    }
+    if (!winnerOf.has(key)) order.push(key)
+
     const current = winnerOf.get(key)
     if (!current || (sourceRank[food.source] ?? 0) > (sourceRank[current.source] ?? 0)) {
       winnerOf.set(key, food)
