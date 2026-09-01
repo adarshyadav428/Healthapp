@@ -45,7 +45,7 @@ Until each is ticked, treat these as *less* trustworthy than the unreviewed rows
 | Row | What is wrong | ✓ |
 |---|---|:-:|
 | **Amul Butter (Pasteurised)** | Duplicates `ifct-butter` ("Butter (Amul)", `007`) and `ifct-amul-butter-unsalted` (`017`) — same brand, same 720/0.5/~0.5/80. The migration header's claim that no butter row existed is false. Three rows for one product, and the `ifct` one outranks this at rank 6 vs 4. | ☐ |
-| **Haldiram's Rasgulla (Tin)** | Duplicates `ifct-rasgulla` (186, 4.5, 40.2, 1.5) with protein changed to 2.5 — same kcal, same fat, carbs within 0.2. Two visible rows disagree by 80% on protein, and whichever the user taps decides their day. | ☐ |
+| **Haldiram's Rasgulla (Tin)** | Duplicated `ifct-rasgulla` (186, 4.5, 40.2, 1.5) with protein changed to 2.5 — same kcal, same fat, carbs within 0.2. **`043` has aligned the protein to 4.5**, removing the 80% disagreement between two rows visible in the same search. Still open: 4.5 is the *measured IFCT* value, not a tin panel, and the duplication itself remains. | ☐ |
 | **Nutrela Soya Chunks (Raw)** | 345/52.0/33.0/0.5/13.0 is byte-identical to `ifct-soya-chunks-dry` (`017`); `010` holds a third row. These are generic IFCT values wearing a brand name, not a Nutrela panel. | ☐ |
 | **Aashirvaad Whole Wheat Atta (Raw)** | 341/12.0/69.0/1.5 is `ifct-atta`'s generic wheat-flour data (341/12.1/69.4/1.7), fibre aside. This is also one of the four highest-traffic rows listed above. | ☐ |
 
@@ -55,7 +55,22 @@ dedupes by normalised name + brand (`lib/mergeSearchResults.ts`), so renaming a 
 with the row it duplicates *would* collapse it behind the higher-ranked IFCT row. That is a product
 decision about what users see in search, not a data correction, and has not been taken.
 
-### Corrected in `042_correct_branded_041_rows.sql`
+### Corrected by migration
+
+⚠️ **041 is applied, so its file no longer matches the database.** Every correction below lives in a
+later migration; 041 still reads the original value. That divergence is inherent to correcting by
+migration rather than editing an applied file — read the corrections, not just 041, before trusting a
+number in the table below.
+
+**`043_correct_rasgulla_protein.sql`**
+
+- **Haldiram's Rasgulla (Tin)** — protein `2.5` → `4.5`, aligning the branded row to the measured
+  `ifct-rasgulla` row it was derived from (identical kcal, identical fat, carbs within 0.2). Removes
+  a near-double disagreement between two rows a user sees side by side. **Not a verified panel** — if
+  a tin ever says otherwise, correct it again with another guarded UPDATE rather than assuming this
+  settled it. The row below still reads `2.5`.
+
+**`042_correct_branded_041_rows.sql`**
 
 - **Amul Pure Cow Ghee** — the row disagreed with itself about a tablespoon: `serving_size_g = 10`
   with `'1 tbsp (10g)'`, while its own `common_portions` said 14 g, and the two surface in different
