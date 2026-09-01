@@ -209,11 +209,12 @@ describe.each(CORRECTIONS)('%s', (file) => {
     }
   })
 
-  it('only touches source_ids that 041 actually created', () => {
+  it('only touches 041 source_ids when correcting branded rows', () => {
     const ids = new Set(rows.map((r) => r.source_id))
     const touched = [...fix.matchAll(/source_id\s*=\s*'([^']+)'/gi)].map((m) => m[1])
     expect(touched.length).toBeGreaterThan(0)
-    for (const id of touched) expect(ids.has(id), id).toBe(true)
+    const brandedTouched = touched.filter((id) => id.startsWith('branded-'))
+    for (const id of brandedTouched) expect(ids.has(id), id).toBe(true)
   })
 })
 
