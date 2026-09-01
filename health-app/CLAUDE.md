@@ -17,7 +17,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **87 files / 1,264 tests**. There is no `vitest.config.ts`; defaults apply.
+- **Tests:** Vitest 4.1 — **88 files / 1,272 tests**. There is no `vitest.config.ts`; defaults apply.
 - **Deploy:** Vercel **Hobby** plan, region `bom1`. The Hobby limits are load-bearing (see Hard rules).
 
 ## Architecture / directory map
@@ -55,9 +55,9 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   `components/log/shortcuts.tsx` holds the one set of re-log / combo / copy-yesterday tiles that both
   `FoodLanding` and `FoodSearch` render — they used to be implemented twice, with different ordering
   and different meal-selection behaviour, which is how the same shortcut came to mean two things.
-- **`supabase/migrations/`** — `001`–`043`. Numbers are **not unique** (`002`, `004`, `005`, `009` each
-  appear twice) and there is **no `021`**; `040` is not in `main` either — it belongs to the unmerged
-  body-focus work. Always reference a migration by its exact filename.
+- **`supabase/migrations/`** — `001`–`043`. Numbers are **not unique** (`002`, `004`, `005`, `009` and
+  now `043` each appear twice) and there is **no `021`**; `040` is not in `main` either — it belongs to
+  the unmerged body-focus work. Always reference a migration by its exact filename.
 - **`middleware.ts`** — self-contained (there is no `lib/supabase/middleware.ts`). Refreshes the
   session cookie on every request, redirects unauthenticated users to `/auth/sign-in?returnTo=…`, and
   bounces authenticated users off `/auth/*` to `/dashboard`. Public routes are `/`, `/privacy`,
@@ -78,7 +78,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (87 files / 1,264 tests)
+npm test                 # vitest run — the whole suite (88 files / 1,272 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
 npm run check:tokens     # design-token guard: no raw hex, no broken opacity modifiers
@@ -123,8 +123,21 @@ actively seeding.
   `food_dismissals` all reference it `ON DELETE CASCADE` — one delete silently wipes that food from
   every user's diary, with no error.
 - **Never hand-edit `data/indian-foods.json`.** Fix `scripts/generate-indian-foods-estimate.ts` and
-  re-run it; keep `tests/curatedFoods.test.ts` green — it's what stops a meat dish shipping with a
-  carb dish's protein.
+  re-run it; keep `tests/curatedFoods.test.ts` and `tests/foodDataQuality.test.ts` green — between
+  them they stop a meat dish shipping with a carb dish's protein, and stop the same dish shipping
+  twice under one name at two different calorie counts.
+- **Search results collapse to one row per food, never multiple.** `collapseDuplicateFoods`
+  (`lib/mergeSearchResults.ts`) groups by `foodClusterKey` and elects the highest-`SOURCE_RANK` member
+  of each cluster — this is what stopped "boiled egg" returning three cards at three different kcal
+  figures with a source badge asking the user to pick. `foodClusterKey` is deliberately conservative:
+  two rows cluster only when every word distinguishing them is a provable translation of a word
+  already in the other name (checked against `lib/food-synonyms.ts`'s groups), and a branded row never
+  clusters with a brandless one or a different brand. Under-clustering is the safe failure — widening
+  it (plurals, dropping true qualifiers like "raw"/"cooked") needs its own evidence
+  (`tests/foodDataQuality.test.ts` exists to catch an over-merge before it ships), never a quiet
+  refinement. `components/log/FoodResult.tsx` no longer badges a result by source for this reason —
+  `👤 Custom` (ownership) is the one label kept; provenance is an arbitration the collapse already
+  performs, so surfacing it again re-asks a settled question.
 - **Never write a raw hex color** in `app/` or `components/` — reference a token (`bg-brand`, `text-ink`, …).
 - **Never use Tailwind's `/NN` opacity modifier on a token color.** Our tokens are plain `var(--x)`
   strings, so `bg-brand/40` is a **silent no-op** that renders full strength. Use a pre-mixed alpha
@@ -435,9 +448,17 @@ off a pack; inventing one makes a rank-4 row more confidently wrong. They are tr
 `docs/branded-foods-041-verification.md`, and note that **removing a duplicate is not available** —
 `foods` has no soft-delete column and `DELETE` is forbidden) · `043_correct_rasgulla_protein.sql`
 (aligns `branded-haldirams-rasgulla`'s protein to the measured `ifct-rasgulla` row it was derived
-from — **not** a verified tin panel, so it is a correction to re-correct, not a settled number).
+from — **not** a verified tin panel, so it is a correction to re-correct, not a settled number) ·
+`043_correct_duplicate_cluster_rows.sql` (two different `043`s — see the note on non-unique numbers
+above; the measured `ifct-egg-boiled` row had shipped with fat copied from protein, kcal computed from
+that wrong fat — internally consistent, so no Atwater check could have caught it; corrected against
+IFCT 2017's own published figure. `lib/indian-foods-data.ts`'s seed value was corrected directly in
+the same commit, since that file is hand-curated, not generated; provenance in
+`docs/duplicate-cluster-corrections-043.md`).
 **Once a migration is applied, its file no longer matches the database** — every later correction
 lives in its own file and 041 still reads the original values, so read the corrections before
 trusting a number in 041 or in the verification sheet's table. `tests/brandedFoods041.test.ts` walks
-every `NNN_correct_*.sql` automatically and holds each to the same shape: UPDATE-only, keyed on
-`source_id`, guarded on the value being replaced.
+every `NNN_correct_*.sql` that corrects a **041** row automatically and holds each to the same shape:
+UPDATE-only, keyed on `source_id`, guarded on the value being replaced. A correction to a row from a
+different migration (`038`, `043_correct_duplicate_cluster_rows`) is excluded from that walk by name
+and reviewed by eye instead — the same reason `038` always was.

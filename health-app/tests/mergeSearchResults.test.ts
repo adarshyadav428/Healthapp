@@ -1,8 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { dedupeFoodsByNameBrand, capOpenFoodFactsDominance } from '../lib/mergeSearchResults'
+import {
+  collapseDuplicateFoods,
+  capOpenFoodFactsDominance,
+  MAX_SEARCH_RESULTS,
+} from '../lib/mergeSearchResults'
+import { SOURCE_RANK } from '../lib/foodMatch'
 import type { Food } from '../types/index'
 
-// Minimal Food factory — only the fields dedupe reads matter.
+// Minimal Food factory — only the fields dedupe/collapse read matter.
 function food(partial: Partial<Food> & { name: string }): Food {
   return {
     id: partial.id ?? Math.random().toString(36).slice(2),
@@ -21,34 +26,85 @@ function food(partial: Partial<Food> & { name: string }): Food {
   } as unknown as Food
 }
 
-describe('dedupeFoodsByNameBrand', () => {
+describe('collapseDuplicateFoods', () => {
+  it('collapses the boiled egg cluster to the measured IFCT row', () => {
+    // The live bug this fixes: three "boiled egg" rows at three different
+    // kcal figures (curated 108, ifct 173, off 140), badged by source and
+    // left for the user to arbitrate. SOURCE_RANK already has an answer.
+    const rows = [
+      food({ name: 'Boiled Egg', source: 'curated' }),
+      food({ name: 'Boiled Egg (Anda)', source: 'ifct' }),
+      food({ name: 'Boiled egg', source: 'off' }),
+    ]
+    const result = collapseDuplicateFoods(rows, SOURCE_RANK)
+    expect(result).toHaveLength(1)
+    expect(result[0].source).toBe('ifct')
+  })
+
+  it('never collapses two genuinely different foods', () => {
+    const rows = [food({ name: 'Boiled Egg' }), food({ name: 'Egg White' })]
+    const result = collapseDuplicateFoods(rows, SOURCE_RANK)
+    expect(result.map((f) => f.name)).toEqual(['Boiled Egg', 'Egg White'])
+  })
+
+  it('never collapses a branded row into a brandless one', () => {
+    const rows = [food({ name: 'Butter' }), food({ name: 'Amul Butter', brand: 'Amul' })]
+    const result = collapseDuplicateFoods(rows, SOURCE_RANK)
+    expect(result).toHaveLength(2)
+  })
+
+  it('never collapses two different brands of the same food', () => {
+    const rows = [
+      food({ name: 'Chips', brand: 'Lays' }),
+      food({ name: 'Chips', brand: 'Bingo' }),
+    ]
+    const result = collapseDuplicateFoods(rows, SOURCE_RANK)
+    expect(result).toHaveLength(2)
+  })
+
   it('surfaces a personal estimate when there is no name collision (re-find a scan)', () => {
     const global = [food({ name: 'Roti', source: 'ifct' })]
     const mine = [food({ name: "Amma's Special Thali", source: 'estimate' })]
-    const result = dedupeFoodsByNameBrand([...global, ...mine])
+    const result = collapseDuplicateFoods([...global, ...mine], SOURCE_RANK)
     expect(result.map((f) => f.name)).toContain("Amma's Special Thali")
   })
 
-  it('lets the global row win a name+brand collision (accurate IFCT beats an estimate)', () => {
+  it('lets the global row win a name collision over a personal estimate', () => {
     const global = [food({ name: 'Aloo Paratha', source: 'ifct' })]
     const mine = [food({ name: 'aloo paratha', source: 'estimate' })]
-    const result = dedupeFoodsByNameBrand([...global, ...mine])
+    const result = collapseDuplicateFoods([...global, ...mine], SOURCE_RANK)
     const alooRows = result.filter((f) => f.name.toLowerCase() === 'aloo paratha')
     expect(alooRows).toHaveLength(1)
     expect(alooRows[0].source).toBe('ifct')
   })
 
-  it('treats same name with different brands as distinct', () => {
-    const result = dedupeFoodsByNameBrand([
-      food({ name: 'Chips', brand: 'Lays' }),
-      food({ name: 'Chips', brand: 'Bingo' }),
-    ])
-    expect(result).toHaveLength(2)
+  it('elects the winner regardless of which cluster member sorted first', () => {
+    // The estimate is listed first (as it would be if it won the exact-name
+    // relevance tier before SOURCE_RANK was ever consulted) — the winner
+    // must still be the measured row.
+    const rows = [
+      food({ name: 'Boiled Egg', source: 'curated' }),
+      food({ name: 'Boiled Egg (Anda)', source: 'ifct' }),
+    ]
+    const result = collapseDuplicateFoods(rows, SOURCE_RANK)
+    expect(result).toHaveLength(1)
+    expect(result[0].source).toBe('ifct')
+  })
+
+  it('emits the winner at the position of the cluster\'s first occurrence', () => {
+    const rows = [
+      food({ name: 'Roti', source: 'ifct' }),
+      food({ name: 'Boiled Egg', source: 'curated' }),
+      food({ name: 'Rice', source: 'ifct' }),
+      food({ name: 'Boiled Egg (Anda)', source: 'ifct' }),
+    ]
+    const result = collapseDuplicateFoods(rows, SOURCE_RANK)
+    expect(result.map((f) => f.name)).toEqual(['Roti', 'Boiled Egg (Anda)', 'Rice'])
   })
 
   it('caps the result at the given limit', () => {
     const many = Array.from({ length: 30 }, (_, i) => food({ name: `Food ${i}` }))
-    expect(dedupeFoodsByNameBrand(many, 20)).toHaveLength(20)
+    expect(collapseDuplicateFoods(many, SOURCE_RANK, 20)).toHaveLength(20)
   })
 })
 
@@ -72,7 +128,7 @@ describe('capOpenFoodFactsDominance', () => {
       food({ name: 'Bhutta (Roasted Corn)', source: 'curated' }),
     ]
     const capped = capOpenFoodFactsDominance(rows, 10)
-    const visible = dedupeFoodsByNameBrand(capped, 20).map((f) => f.name)
+    const visible = collapseDuplicateFoods(capped, SOURCE_RANK, MAX_SEARCH_RESULTS).map((f) => f.name)
     expect(visible).toContain('Bhutta (Roasted Corn)')
   })
 
@@ -100,5 +156,15 @@ describe('capOpenFoodFactsDominance', () => {
     ]
     const capped = capOpenFoodFactsDominance(rows, 5)
     expect(capped[5].name).toBe('Sweet Corn (Makkai)')
+  })
+
+  it('applies a tighter cap for a query naming no brand, a looser one when it does', () => {
+    // Mirrors how the route calls this: MAX_OFF_WITHOUT_BRAND (3) for a plain
+    // query like "boiled egg", the default 10 for a brand-named one.
+    const rows = Array.from({ length: 6 }, (_, i) => food({ name: `Off ${i}`, source: 'off' }))
+    const tight = capOpenFoodFactsDominance(rows, 3)
+    expect(tight.slice(0, 3).map((f) => f.name)).toEqual(['Off 0', 'Off 1', 'Off 2'])
+    const loose = capOpenFoodFactsDominance(rows, 10)
+    expect(loose.map((f) => f.name)).toEqual(rows.map((f) => f.name))
   })
 })

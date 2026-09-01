@@ -5747,19 +5747,6 @@
   },
   {
     "source": "curated",
-    "source_id": "est-corn-chaat-2",
-    "name": "Corn Chaat",
-    "brand": null,
-    "serving_size_g": 120,
-    "serving_description": "1 plate (120g)",
-    "kcal_per_100g": 219.9,
-    "protein_g_per_100g": 5.1,
-    "carbs_g_per_100g": 25.8,
-    "fat_g_per_100g": 10.7,
-    "fiber_g_per_100g": 1.8
-  },
-  {
-    "source": "curated",
     "source_id": "est-aloo-toast",
     "name": "Aloo Toast",
     "brand": null,

@@ -719,7 +719,11 @@ addMany(
     'Daliya Porridge',
     'Ragi Porridge',
     'Sprout Salad',
-    'Corn Chaat',
+    // 'Corn Chaat' lived here AND in the 'street' list above (with
+    // 'Bhutta (Roasted Corn)', the category it actually fits) — two
+    // categories means two different macro baselines for one literal name,
+    // so the catalogue shipped it at both 264.5 and 219.9 kcal/100g. Caught
+    // by tests/foodDataQuality.test.ts. Kept once, in 'street'.
     'Aloo Toast',
     'Vegetable Sandwich',
     'Paneer Sandwich',

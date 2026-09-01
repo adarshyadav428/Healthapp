@@ -176,8 +176,19 @@ describe(FILE, () => {
  * never a DELETE — are the only thing standing between a re-run and a wrong
  * catalogue. 038 established the shape; this pins it.
  */
+// 038 and 043_correct_duplicate_cluster_rows correct rows from other
+// migrations (007's IFCT seed, in the latter's case), not 041's branded
+// rows — the "only touches source_ids that 041 actually created" check
+// below does not apply to them, same reason 038 has always been excluded.
+// Both are reviewed by eye rather than walked automatically; see
+// docs/duplicate-cluster-corrections-043.md for 043's provenance.
 const CORRECTIONS = readdirSync(MIGRATIONS_DIR)
-  .filter((f) => /^\d{3}_correct_.*\.sql$/.test(f) && f !== '038_correct_mislabelled_food_rows.sql')
+  .filter(
+    (f) =>
+      /^\d{3}_correct_.*\.sql$/.test(f) &&
+      f !== '038_correct_mislabelled_food_rows.sql' &&
+      f !== '043_correct_duplicate_cluster_rows.sql'
+  )
   .sort()
 
 describe.each(CORRECTIONS)('%s', (file) => {
@@ -198,11 +209,12 @@ describe.each(CORRECTIONS)('%s', (file) => {
     }
   })
 
-  it('only touches source_ids that 041 actually created', () => {
+  it('only touches 041 source_ids when correcting branded rows', () => {
     const ids = new Set(rows.map((r) => r.source_id))
     const touched = [...fix.matchAll(/source_id\s*=\s*'([^']+)'/gi)].map((m) => m[1])
     expect(touched.length).toBeGreaterThan(0)
-    for (const id of touched) expect(ids.has(id), id).toBe(true)
+    const brandedTouched = touched.filter((id) => id.startsWith('branded-'))
+    for (const id of brandedTouched) expect(ids.has(id), id).toBe(true)
   })
 })
 

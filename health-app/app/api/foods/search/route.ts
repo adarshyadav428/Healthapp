@@ -7,12 +7,17 @@ import {
   type OFFSearchResult,
 } from '../../../../lib/open-food-facts'
 import { TtlCache } from '../../../../lib/searchCache'
-import { compareFoodsForQuery } from '../../../../lib/searchRanking'
+import { compareFoodsForQuery, queryNamesBrand } from '../../../../lib/searchRanking'
 import { expandSearchQuery } from '../../../../lib/food-synonyms'
 import { correctFoodQuery } from '../../../../lib/typo-correction'
 import { buildNameIlikeOrFilter } from '../../../../lib/searchFilter'
 import { isPlausibleFood, SOURCE_RANK } from '../../../../lib/foodMatch'
-import { dedupeFoodsByNameBrand, capOpenFoodFactsDominance, MAX_SEARCH_RESULTS } from '../../../../lib/mergeSearchResults'
+import {
+  collapseDuplicateFoods,
+  capOpenFoodFactsDominance,
+  MAX_OFF_WITHOUT_BRAND,
+  MAX_SEARCH_RESULTS,
+} from '../../../../lib/mergeSearchResults'
 import { INDIAN_FOODS } from '../../../../lib/indian-foods-data'
 import { CURATED_FOODS } from '../../../../lib/curated-foods-data'
 import type { Food } from '../../../../types/index'
@@ -175,7 +180,7 @@ async function searchGlobal(
     // at 60 against the live table, "rice" and "dal" returned a different
     // top result than at 200 purely because of where the slice fell.
     // Synonym expansion widens these queries further. The client still gets
-    // 20 — `dedupeFoodsByNameBrand` caps the response regardless.
+    // 20 — `collapseDuplicateFoods` caps the response regardless.
     supabase.from('foods').select(FOOD_SELECT).or(orFilter).neq('source', 'estimate').limit(200),
     shouldFetchExternal
       ? searchOpenFoodFactsIndia(synonymQueries[0])
@@ -190,10 +195,11 @@ async function searchGlobal(
 
   // Name match first, then how much of the name the query explains, then
   // source trust. The source tie-break matters because the table holds both
-  // measured IFCT rows and estimated `curated` ones — without it, two rows
-  // scoring the same on name would be ordered by name alone, and
-  // `dedupeFoodsByNameBrand` (which keeps the first occurrence) could drop
-  // the measured row. See lib/searchRanking.ts for why it ranks last.
+  // measured IFCT rows and estimated `curated` ones — this ordering feeds
+  // `collapseDuplicateFoods` below, which elects the highest-source-rank
+  // member of each cluster regardless of this sort, but still uses this
+  // order to decide where each surviving cluster sits in the list. See
+  // lib/searchRanking.ts for why source rank is scored last.
   // Ranked against every synonym variant, not just the typed word — a row
   // matched only via a synonym would otherwise score zero and be ordered by
   // source alone.
@@ -214,10 +220,25 @@ async function searchGlobal(
 
   const externalWithIds = await persistExternalFoods(externalRaw)
 
+  // A query that names no brand ("boiled egg") gets a tighter OFF cap than
+  // one that does ("amul butter") — see capOpenFoodFactsDominance. Checked
+  // against whatever brands this search actually turned up, reusing the same
+  // signal compareFoodsForQuery already scores rows against, rather than a
+  // second brand-detection path.
+  const queryNamesAnyBrand = [...localResults, ...externalWithIds].some((f) =>
+    queryNamesBrand(f.brand, query)
+  )
+
   // Merge: local IFCT → OFF India → OFF World. Drop physically-impossible
-  // rows (bad OFF data: 0-kcal solids, >100 g macros/100 g) before dedupe.
-  const foods = dedupeFoodsByNameBrand(
-    capOpenFoodFactsDominance([...localResults, ...externalWithIds].filter(isPlausibleFood))
+  // rows (bad OFF data: 0-kcal solids, >100 g macros/100 g), collapse rows
+  // that are the same food (SOURCE_RANK decides which survives), then cap
+  // Open Food Facts dominance.
+  const foods = collapseDuplicateFoods(
+    capOpenFoodFactsDominance(
+      [...localResults, ...externalWithIds].filter(isPlausibleFood),
+      queryNamesAnyBrand ? 10 : MAX_OFF_WITHOUT_BRAND
+    ),
+    SOURCE_RANK
   )
 
   // Only a result built from healthy upstreams earns the full TTL. If OFF
@@ -319,11 +340,12 @@ export async function GET(request: Request) {
     // making the whole per-user read above dead work. Give them a few reserved
     // slots inside the same budget instead.
     const ownSlots = Math.min(myEstimateFoods.length, RESERVED_OWN_FOOD_SLOTS)
-    const finalResult = dedupeFoodsByNameBrand(
+    const finalResult = collapseDuplicateFoods(
       [
         ...globalResults.slice(0, MAX_SEARCH_RESULTS - ownSlots),
         ...myEstimateFoods,
-      ].filter(isPlausibleFood)
+      ].filter(isPlausibleFood),
+      SOURCE_RANK
     )
     return NextResponse.json(finalResult)
   } catch (err) {

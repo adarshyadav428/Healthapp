@@ -403,9 +403,16 @@ export const INDIAN_FOODS: FoodSeed[] = [
     kcal_per_100g: 165, protein_g_per_100g: 25.8, carbs_g_per_100g: 2.5, fat_g_per_100g: 6.2, fiber_g_per_100g: 0.3,
   },
   {
+    // Corrected 2026-09-01 (see supabase/migrations/043 for the retroactive
+    // fix and full provenance). The row had shipped with fat copied from
+    // protein (13.3 both) and kcal derived from that wrong fat via Atwater —
+    // self-consistent, so no consistency check could have caught it; only
+    // checking the source did. Real IFCT 2017 (nodef/ifct2017, code M004,
+    // "Egg, poultry, whole, boiled"): 618 kJ ≈ 148 kcal, protein 13.43 g
+    // (kept: this one was already right), fat 10.54 g.
     source: 'ifct', source_id: 'ifct-egg-boiled', name: 'Boiled Egg (Anda)',
     brand: null, serving_size_g: 55, serving_description: '1 whole egg (55g)',
-    kcal_per_100g: 173, protein_g_per_100g: 13.3, carbs_g_per_100g: 0, fat_g_per_100g: 13.3, fiber_g_per_100g: 0,
+    kcal_per_100g: 148, protein_g_per_100g: 13.4, carbs_g_per_100g: 0, fat_g_per_100g: 10.5, fiber_g_per_100g: 0,
   },
   {
     source: 'ifct', source_id: 'ifct-egg-omelette', name: 'Omelette (2 Eggs)',
