@@ -176,9 +176,12 @@ describe(FILE, () => {
  * never a DELETE — are the only thing standing between a re-run and a wrong
  * catalogue. 038 established the shape; this pins it.
  */
-describe('042_correct_branded_041_rows.sql', () => {
-  const CORRECTIONS = '042_correct_branded_041_rows.sql'
-  const fix = stripLineComments(readFileSync(join(MIGRATIONS_DIR, CORRECTIONS), 'utf8'))
+const CORRECTIONS = readdirSync(MIGRATIONS_DIR)
+  .filter((f) => /^\d{3}_correct_.*\.sql$/.test(f) && f !== '038_correct_mislabelled_food_rows.sql')
+  .sort()
+
+describe.each(CORRECTIONS)('%s', (file) => {
+  const fix = stripLineComments(readFileSync(join(MIGRATIONS_DIR, file), 'utf8'))
   const updates = fix.split(';').filter((s) => /update\s+foods/i.test(s))
 
   it('corrects by UPDATE only — never deletes, never re-inserts', () => {
@@ -195,10 +198,29 @@ describe('042_correct_branded_041_rows.sql', () => {
     }
   })
 
-  it('only touches source_ids that 041 actually created', () => {
+  it('only touches 041 source_ids when correcting branded rows', () => {
     const ids = new Set(rows.map((r) => r.source_id))
     const touched = [...fix.matchAll(/source_id\s*=\s*'([^']+)'/gi)].map((m) => m[1])
     expect(touched.length).toBeGreaterThan(0)
-    for (const id of touched) expect(ids.has(id), id).toBe(true)
+    const brandedTouched = touched.filter((id) => id.startsWith('branded-'))
+    for (const id of brandedTouched) expect(ids.has(id), id).toBe(true)
+  })
+})
+
+/**
+ * A correction migration only makes sense if the value it replaces is still
+ * what 041 ships. Once 041's file and a correction agree, the correction is
+ * dead weight that silently no-ops — and worse, reads as applied. 043 guards
+ * on the rasgulla protein 041 wrote (2.5); if someone ever edits 041 to 4.5,
+ * this catches that the guard can no longer match.
+ */
+describe('corrections still match what 041 ships', () => {
+  it('043 guards on the rasgulla protein still present in 041', () => {
+    const rasgulla = rows.find((r) => r.source_id === 'branded-haldirams-rasgulla')
+    expect(rasgulla, 'branded-haldirams-rasgulla missing from 041').toBeDefined()
+    expect(rasgulla!.protein).toBe(2.5)
+    const fix = readFileSync(join(MIGRATIONS_DIR, '043_correct_rasgulla_protein.sql'), 'utf8')
+    expect(fix).toContain('protein_g_per_100g = 2.5')
+    expect(fix).toContain('protein_g_per_100g = 4.5')
   })
 })
