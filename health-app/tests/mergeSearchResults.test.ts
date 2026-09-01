@@ -160,11 +160,34 @@ describe('capOpenFoodFactsDominance', () => {
 
   it('applies a tighter cap for a query naming no brand, a looser one when it does', () => {
     // Mirrors how the route calls this: MAX_OFF_WITHOUT_BRAND (3) for a plain
-    // query like "boiled egg", the default 10 for a brand-named one.
+    // query like "boiled egg", the default 10 for a brand-named one. Neither
+    // call here passes `drop`, so both still demote rather than discard —
+    // this pins the cap number alone, not the drop behaviour below.
     const rows = Array.from({ length: 6 }, (_, i) => food({ name: `Off ${i}`, source: 'off' }))
     const tight = capOpenFoodFactsDominance(rows, 3)
     expect(tight.slice(0, 3).map((f) => f.name)).toEqual(['Off 0', 'Off 1', 'Off 2'])
     const loose = capOpenFoodFactsDominance(rows, 10)
     expect(loose.map((f) => f.name)).toEqual(rows.map((f) => f.name))
+  })
+
+  it('drop: true removes surplus rows instead of demoting them', () => {
+    // The actual bug this fixes: demoting-not-dropping is a no-op whenever
+    // the total candidate count is under the 20-row response limit, which is
+    // exactly the "boiled egg" case — one Indian answer plus a handful of
+    // foreign packaged eggs, nowhere near 20 total. Demoting left every OFF
+    // row still in the response, just reordered; a cap only a user can
+    // actually see needs to discard, not reorder, once candidates are few.
+    const rows = Array.from({ length: 6 }, (_, i) => food({ name: `Off ${i}`, source: 'off' }))
+    const dropped = capOpenFoodFactsDominance(rows, 3, { drop: true })
+    expect(dropped.map((f) => f.name)).toEqual(['Off 0', 'Off 1', 'Off 2'])
+  })
+
+  it('drop: true never removes a non-OFF row, only surplus OFF ones', () => {
+    const rows = [
+      ...Array.from({ length: 6 }, (_, i) => food({ name: `Off ${i}`, source: 'off' })),
+      food({ name: 'Sweet Corn (Makkai)', source: 'ifct' }),
+    ]
+    const dropped = capOpenFoodFactsDominance(rows, 2, { drop: true })
+    expect(dropped.map((f) => f.name)).toEqual(['Off 0', 'Off 1', 'Sweet Corn (Makkai)'])
   })
 })

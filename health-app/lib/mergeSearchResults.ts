@@ -6,25 +6,40 @@ const OFF_SOURCES = new Set(['off', 'off_india', 'off_world'])
 
 /**
  * Push surplus Open Food Facts rows behind everything else, preserving the
- * order within each group.
+ * order within each group — or, with `drop: true`, remove them outright.
  *
  * Every OFF row we ever show is written into the `foods` table, so over time a
  * popular query accumulates dozens of near-identical packaged products that then
  * compete in the *local* ranking. Searching "corn" returned twenty cornflakes
  * variants — including Spanish-labelled ones — and pushed "Bhutta (Roasted
- * Corn)" off the end of the list entirely. This does not re-rank measured data
- * below estimates; it just guarantees an India-first row can always be seen.
+ * Corn)" off the end of the list entirely. Demoting rather than discarding
+ * does not re-rank measured data below estimates; it just guarantees an
+ * India-first row can always be seen.
+ *
+ * That "never hidden" guarantee is right when OFF genuinely swamps the page
+ * (corn: dozens of candidates, the cap matters because the tail falls off the
+ * 20-row response entirely). It is the wrong default when the *total*
+ * candidate count is small — "boiled egg" surfaced one Indian answer plus a
+ * handful of foreign packaged-egg listings (a UK co-op, a supermarket own
+ * brand …), well under the 20-row limit. Demoting them left every one still
+ * inside the response, just reordered — the cap changed nothing a user could
+ * see. `drop: true` is for exactly that case: a query naming no brand
+ * (`MAX_OFF_WITHOUT_BRAND`, checked by the caller) isn't asking to browse
+ * foreign supermarkets' egg cartons, so surplus rows are removed, not shuffled
+ * to the back of a list short enough that "the back" is still on the page.
  *
  * `maxOff` tightens further when the query names no brand (`queryNamesBrand`,
  * `lib/searchRanking.ts`): "boiled egg" is a question about eggs, not about
  * which foreign supermarket sells eggs, so a query without a brand in it only
  * needs a handful of packaged alternatives, not a full page of them. A
  * brand-named query ("amul butter") is unaffected — the caller passes the
- * looser cap in that case.
+ * looser cap and leaves `drop` false in that case, keeping the original
+ * never-hidden guarantee for a query that IS asking to see packaged options.
  */
 export function capOpenFoodFactsDominance<T extends { source: string }>(
   foods: T[],
-  maxOff = 10
+  maxOff = 10,
+  { drop = false }: { drop?: boolean } = {}
 ): T[] {
   const kept: T[] = []
   const surplus: T[] = []
@@ -35,7 +50,7 @@ export function capOpenFoodFactsDominance<T extends { source: string }>(
     } else if (offSeen < maxOff) {
       offSeen++
       kept.push(food)
-    } else {
+    } else if (!drop) {
       surplus.push(food)
     }
   }

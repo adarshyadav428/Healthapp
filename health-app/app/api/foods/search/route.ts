@@ -232,11 +232,16 @@ async function searchGlobal(
   // Merge: local IFCT → OFF India → OFF World. Drop physically-impossible
   // rows (bad OFF data: 0-kcal solids, >100 g macros/100 g), collapse rows
   // that are the same food (SOURCE_RANK decides which survives), then cap
-  // Open Food Facts dominance.
+  // Open Food Facts dominance — outright dropping surplus rows when the
+  // query names no brand, since demoting them only helps once the total
+  // candidate count exceeds the 20-row response; a narrow query like "boiled
+  // egg" never has enough rows for "the back of the list" to fall off the
+  // page, so demoting alone left every foreign packaged egg still visible.
   const foods = collapseDuplicateFoods(
     capOpenFoodFactsDominance(
       [...localResults, ...externalWithIds].filter(isPlausibleFood),
-      queryNamesAnyBrand ? 10 : MAX_OFF_WITHOUT_BRAND
+      queryNamesAnyBrand ? 10 : MAX_OFF_WITHOUT_BRAND,
+      { drop: !queryNamesAnyBrand }
     ),
     SOURCE_RANK
   )
