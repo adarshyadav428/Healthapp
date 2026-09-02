@@ -124,6 +124,8 @@ export const FOOD_LOG_METHODS = [
   'log_again',
   'meal_template',
   'copy_yesterday',
+  /** One meal section copied from another day (the meal clipboard). */
+  'copy_meal',
   'photo_scan',
   'chat',
   'quick_add',

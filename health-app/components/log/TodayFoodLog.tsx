@@ -7,11 +7,13 @@ import { useUser } from '../../hooks/useUser'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
 import { getIstDayRange, istDateStr } from '../../lib/dateUtils'
-import { Trash2, ChevronDown, Pencil, BookmarkPlus, Check, X } from 'lucide-react'
+import { Trash2, ChevronDown, Pencil, BookmarkPlus, Check, X, ClipboardCopy } from 'lucide-react'
 import { IconButton } from '../ui/IconButton'
 import { EditFoodLogModal } from './EditFoodLogModal'
 import { ShareDayButton } from './ShareDayButton'
 import { firstNameFrom } from '../../lib/shareCard'
+import { MEAL_CLIPBOARD_KEY, serializeMealClipboard } from '../../lib/mealClipboard'
+import type { Meal } from '../../lib/meal'
 
 const MEAL_CONFIG: Record<string, { label: string; emoji: string; dot: string }> = {
   breakfast: { label: 'Breakfast', emoji: '🥣', dot: 'var(--brand)' },
@@ -20,9 +22,11 @@ const MEAL_CONFIG: Record<string, { label: string; emoji: string; dot: string }>
   snack:     { label: 'Snacks',    emoji: '🥜', dot: 'var(--carbs)' },
 }
 
-function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
+function MealGroup({ meal, logs, dateStr, onDelete, deletingId, onEdit }: {
   meal: string
   logs: FoodLog[]
+  /** The IST day these logs belong to — what the clipboard copies FROM. */
+  dateStr: string
   onDelete: (id: string) => void
   deletingId: string | null
   onEdit: (log: FoodLog) => void
@@ -31,6 +35,7 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
   const [saving, setSaving] = useState(false)
   const [savingName, setSavingName] = useState(false)
   const [mealName, setMealName] = useState('')
+  const [copied, setCopied] = useState(false)
   const cfg = MEAL_CONFIG[meal] ?? { label: meal, emoji: '🍽️', dot: 'var(--ink-3)' }
   const totalKcal = logs.reduce((s, l) => s + l.kcal, 0)
 
@@ -56,6 +61,35 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
     } finally {
       setSaving(false)
     }
+  }
+
+  // Copy stores a *reference* to this meal (day + slot), not its rows — the
+  // paste re-reads them server-side. See lib/mealClipboard.ts for why.
+  const copyMeal = () => {
+    try {
+      window.localStorage.setItem(
+        MEAL_CLIPBOARD_KEY,
+        serializeMealClipboard({
+          date: dateStr,
+          meal: meal as Meal,
+          label: cfg.label,
+          emoji: cfg.emoji,
+          items: logs.length,
+          kcal: Math.round(totalKcal),
+          copiedAt: Date.now(),
+        })
+      )
+    } catch {
+      toast({ title: 'Could not copy', description: 'Storage is unavailable in this browser.', variant: 'error' })
+      return
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+    toast({
+      title: `${cfg.label} copied`,
+      description: 'Open another day and tap Paste above the log.',
+      duration: 4000,
+    })
   }
 
   return (
@@ -151,14 +185,26 @@ function MealGroup({ meal, logs, onDelete, deletingId, onEdit }: {
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => setSavingName(true)}
-              className="flex w-full items-center gap-1.5 rounded-control px-3 py-1.5 text-[11px] font-semibold text-ink-3 transition-colors"
-            >
-              <BookmarkPlus className="h-3.5 w-3.5" strokeWidth={1.75} />
-              Save as meal template
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={copyMeal}
+                className="flex flex-1 items-center gap-1.5 rounded-control px-3 py-1.5 text-[11px] font-semibold text-ink-3 transition-colors"
+              >
+                {copied
+                  ? <Check className="h-3.5 w-3.5 text-good" strokeWidth={2} />
+                  : <ClipboardCopy className="h-3.5 w-3.5" strokeWidth={1.75} />}
+                {copied ? 'Copied' : `Copy ${cfg.label.toLowerCase()}`}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSavingName(true)}
+                className="flex flex-1 items-center gap-1.5 rounded-control px-3 py-1.5 text-[11px] font-semibold text-ink-3 transition-colors"
+              >
+                <BookmarkPlus className="h-3.5 w-3.5" strokeWidth={1.75} />
+                Save as meal template
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -283,6 +329,7 @@ export function TodayFoodLog(
           key={meal}
           meal={meal}
           logs={mealLogs}
+          dateStr={istDateStr(date)}
           onDelete={deleteLog}
           deletingId={deletingId}
           onEdit={setEditingLog}
