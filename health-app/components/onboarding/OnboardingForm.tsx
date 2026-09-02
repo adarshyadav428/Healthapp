@@ -91,13 +91,15 @@ export function OnboardingForm() {
   } = useOnboardingDraft(form)
 
   // Every field has a valid default and onboardingSchema has no cross-field
-  // rule, so the form is valid the moment a name is typed. Without this guard,
-  // pressing Enter in any input on steps 2–4 implicitly submits the form —
-  // saving defaults for every unreached field and skipping straight to the
-  // plan screen. Only the final step's explicit submit button may submit.
+  // rule, so the form is valid the moment a name is typed. Left alone, pressing
+  // Enter in any input on steps 2–4 implicitly submits the whole form — saving
+  // defaults for every unreached field and skipping straight to the plan
+  // screen. On those steps Enter instead advances one step (through nextStep's
+  // per-step validation); only the final step's submit actually submits.
   const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
     if (step < TOTAL_STEPS) {
       e.preventDefault()
+      nextStep()
       return
     }
     form.handleSubmit(onSubmit)(e)

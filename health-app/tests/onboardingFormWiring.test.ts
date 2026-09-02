@@ -7,6 +7,9 @@
  * the user hadn't reached, then jump straight to /onboarding/plan. Users saw
  * onboarding "vanish" mid-way and land on the welcome/plan screen.
  *
+ * On steps 2–4 Enter now advances one step (via nextStep's per-step
+ * validation) rather than doing nothing; only the final step submits.
+ *
  * Asserted against the source rather than with a rendered form: this repo has
  * no testing-library / jsdom setup, and the bug lives in one line of JSX
  * wiring. Same approach as coachingWiring.test.ts.
@@ -31,9 +34,10 @@ describe('onboarding wizard does not submit before the final step', () => {
   it('routes submit through a guard that blocks steps before TOTAL_STEPS', () => {
     const guard = /const handleFormSubmit\s*=\s*\([^)]*\)\s*=>\s*\{([\s\S]*?)\n\s{2}\}/.exec(form)?.[1]
     expect(guard, 'handleFormSubmit moved or was renamed').toBeTruthy()
-    // Below the last step: prevent the native submit and bail.
+    // Below the last step: prevent the native submit, advance one step, bail.
     expect(guard).toMatch(/step\s*<\s*TOTAL_STEPS/)
     expect(guard).toContain('e.preventDefault()')
+    expect(guard).toContain('nextStep()')
     // On the last step only, the real submit runs.
     expect(guard).toContain('form.handleSubmit(onSubmit)(e)')
   })
