@@ -268,6 +268,14 @@ actively seeding.
   `AI_TRIAL_SCANS` (`lib/freeTier.ts` `LEGACY_LIMITS.aiScans`) calls, unlocked only after email
   verification (`lib/aiTrial.ts` + `lib/aiTrialServer.ts`, enforced with a 403 in the routes). The UI
   is never the boundary.
+- **An OAuth / magic-link redirect must land on `/auth/callback`, and that route must stay out of the
+  service-worker page cache.** Only `app/auth/callback/route.ts` calls `exchangeCodeForSession`; send a
+  PKCE `?code=` anywhere else (`/onboarding`, `/dashboard`) and middleware sees no session, bounces to
+  `/auth/sign-in` and the code is gone — the flow silently does nothing. Pass a destination with
+  `?next=`. Separately, any route that answers with a redirect needs a `NetworkOnly` entry in
+  `next.config.js` `runtimeCaching` (like `/auth/callback` and `/api/foods/search`): the default
+  `pages` `NetworkFirst` rule caches and replays a `redirected` response, which the browser rejects
+  for a navigation — an intermittent blank page a hard refresh clears.
 - **Surgical changes only.** No drive-by refactors, no unrelated cleanup, no speculative abstractions.
 - **All five gates green before declaring done.** Never report a change as working on the strength of a
   successful build alone.

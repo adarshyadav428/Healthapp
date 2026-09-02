@@ -60,9 +60,13 @@ export default function SignUpPage() {
     try {
       const supabase = getBrowserSupabaseClient()
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
+      // Must land on /auth/callback so the server exchanges the PKCE `code` for
+      // a session. Redirecting straight to /onboarding meant the `?code=` hit a
+      // protected page with no session yet, so middleware bounced the user to
+      // /auth/sign-in and dropped the code — Google sign-up silently did nothing.
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: `${appUrl}/onboarding` },
+        options: { redirectTo: `${appUrl}/auth/callback?next=/onboarding` },
       })
       if (error) throw new Error(error.message)
     } catch (err) {
