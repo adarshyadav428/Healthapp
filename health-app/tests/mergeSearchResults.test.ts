@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   collapseDuplicateFoods,
   capOpenFoodFactsDominance,
+  dropForeignWhenIndianExists,
   MAX_SEARCH_RESULTS,
 } from '../lib/mergeSearchResults'
 import { SOURCE_RANK } from '../lib/foodMatch'
@@ -166,5 +167,92 @@ describe('capOpenFoodFactsDominance', () => {
     expect(tight.slice(0, 3).map((f) => f.name)).toEqual(['Off 0', 'Off 1', 'Off 2'])
     const loose = capOpenFoodFactsDominance(rows, 10)
     expect(loose.map((f) => f.name)).toEqual(rows.map((f) => f.name))
+  })
+})
+
+describe('dropForeignWhenIndianExists', () => {
+  // `lib/open-food-facts.ts` prefixes by endpoint: `offi_` = listed as sold in
+  // India, `off_` = world only. After `offToExternal` flattens `source` to
+  // 'off' for both, the prefix is the only surviving signal.
+  const indianPacket = (name: string, brand: string) =>
+    food({ name, brand, source: 'off', source_id: `offi_${name}` })
+  const foreignPacket = (name: string, brand: string) =>
+    food({ name, brand, source: 'off', source_id: `off_${name}` })
+
+  it('hides foreign supermarket rows once an Indian row answers the query', () => {
+    // The live "boiled egg" screen: one Indian answer, five foreign own-brands,
+    // all rendered as identical cards with no way to tell which to pick.
+    const rows = [
+      food({ name: 'Boiled Egg (Anda)', source: 'ifct', source_id: 'ifct-egg-boiled' }),
+      foreignPacket('Boiled egg', 'CP'),
+      foreignPacket('Boiled Eggs', 'Bili Bili'),
+      foreignPacket('2 hard boiled eggs', 'Morrisons'),
+      foreignPacket('Organic Hard Boiled Eggs', 'Vital Farms'),
+      foreignPacket('Free range hard boiled eggs', 'Co-op'),
+    ]
+    const result = dropForeignWhenIndianExists(rows, 'boiled egg')
+    expect(result.map((f) => f.name)).toEqual(['Boiled Egg (Anda)'])
+  })
+
+  it('keeps foreign rows when nothing Indian matched — an empty screen is worse', () => {
+    const rows = [
+      foreignPacket('Marmite Yeast Extract', 'Marmite'),
+      foreignPacket('Vegemite', 'Vegemite'),
+    ]
+    const result = dropForeignWhenIndianExists(rows, 'marmite')
+    expect(result).toHaveLength(2)
+  })
+
+  it('never drops an Open Food Facts row listed as sold in India', () => {
+    const rows = [
+      food({ name: 'Butter', source: 'ifct', source_id: 'ifct-butter' }),
+      indianPacket('Amul Butter', 'Amul'),
+      foreignPacket('Kerrygold Butter', 'Kerrygold'),
+    ]
+    const result = dropForeignWhenIndianExists(rows, 'butter')
+    expect(result.map((f) => f.name)).toEqual(['Butter', 'Amul Butter'])
+  })
+
+  it('treats every non-Open-Food-Facts source as an Indian answer', () => {
+    for (const source of ['ifct', 'curated', 'branded', 'restaurant', 'user'] as const) {
+      const rows = [
+        food({ name: 'Something', source, source_id: `${source}-something` }),
+        foreignPacket('Foreign Thing', 'Tesco'),
+      ]
+      const result = dropForeignWhenIndianExists(rows, 'something')
+      expect(result.map((f) => f.name), source).toEqual(['Something'])
+    }
+  })
+
+  it('keeps a foreign row when the query names its brand', () => {
+    const rows = [
+      food({ name: 'Baked Beans', source: 'curated', source_id: 'est-baked-beans' }),
+      foreignPacket('Baked Beans', 'Tesco'),
+    ]
+    const result = dropForeignWhenIndianExists(rows, 'tesco baked beans')
+    expect(result).toHaveLength(2)
+  })
+
+  it('leaves a list of purely Indian rows untouched', () => {
+    const rows = [
+      food({ name: 'Cooked Rice (Chawal)', source: 'ifct', source_id: 'ifct-rice' }),
+      food({ name: 'Jeera Rice', source: 'curated', source_id: 'est-jeera-rice' }),
+    ]
+    expect(dropForeignWhenIndianExists(rows, 'rice')).toHaveLength(2)
+  })
+
+  it('keeps an OFF row with no source_id — absent provenance is not proof of foreign', () => {
+    // `Food.source_id` is nullable. A row that cannot be shown to be foreign is
+    // kept, matching the "an empty screen is worse" bias everywhere else here.
+    const rows = [
+      food({ name: 'Poha', source: 'ifct', source_id: 'ifct-poha' }),
+      food({ name: 'Mystery Packet', source: 'off', source_id: null }),
+    ]
+    const result = dropForeignWhenIndianExists(rows, 'poha')
+    expect(result.map((f) => f.name)).toEqual(['Poha', 'Mystery Packet'])
+  })
+
+  it('handles an empty list', () => {
+    expect(dropForeignWhenIndianExists([], 'anything')).toEqual([])
   })
 })
