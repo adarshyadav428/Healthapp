@@ -22,6 +22,18 @@ const withPWA = require('@ducanh2912/next-pwa').default({
           sameOrigin && url.pathname.startsWith('/api/foods/search'),
         handler: 'NetworkOnly',
       },
+      {
+        // The OAuth / magic-link callback answers with a 307 redirect. Under the
+        // default `pages` NetworkFirst rule the worker caches (and later replays)
+        // a `redirected` response, which the browser rejects for a navigation
+        // ("a redirected response was used for a request whose redirect mode is
+        // not follow") — a blank page that a retry or hard-refresh clears. Same
+        // reason next-pwa carves `/api/auth/callback` out of its own API rule.
+        // NetworkOnly never caches, so the redirect is handled natively.
+        urlPattern: ({ url, sameOrigin }) =>
+          sameOrigin && url.pathname.startsWith('/auth/callback'),
+        handler: 'NetworkOnly',
+      },
     ],
   },
 })
