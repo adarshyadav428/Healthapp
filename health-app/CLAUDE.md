@@ -37,6 +37,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   boundary), `logDates.ts` (the diary's date strings and hrefs — IST, delegating to `dateUtils`),
   `portion-units.ts` (`defaultPortionFor` — the one source of a food's serving amount; see Hard rules),
   `validations.ts` (Zod schemas shared by forms and routes), `nutrition.ts`,
+  `mealClipboard.ts` (copy-a-meal-to-another-day; see Hard rules),
   `subscription.ts` (the Pro gate).
 - **`lib/supabase/`** — three factories, never interchangeable: `createServerClient()` (cookie-bound,
   acts as the current user), `createAdminClient()` (service-role; trusted server-only routes),
@@ -211,6 +212,15 @@ actively seeding.
   scanning while viewing a past day filed the meal on today, silently.
   `tests/coachingWiring.test.ts` holds all of them to it: the payload date and the totals context must
   be the same day, or the coaching line describes a day the meal didn't land on.
+- **The meal clipboard carries a *reference*, never nutrition.** "Copy Breakfast" (`lib/mealClipboard.ts`,
+  `components/log/PasteMealCard.tsx`) stores only the source IST day and meal slot in `localStorage`;
+  `/api/logs/copy-meal` re-reads those rows under the caller's RLS and re-inserts them wholesale, the
+  same way `copy-yesterday` does. Making the clipboard carry the items would put user-editable kcal on
+  the way back into `food_logs` — the one thing every logging route refuses — and would paste a stale
+  snapshot when the source meal was edited in between. A *deleted* source meal must 404, never paste
+  nothing and report success. It is `localStorage` and not React state because copy and paste happen on
+  two different days and changing the day is a navigation. `tests/mealClipboard.test.ts` pins both the
+  parse (a hand-edited or expired entry degrades to "no paste button", never a crash) and the wiring.
 - **The diary's day boundary is IST, everywhere, including the header.** `lib/logDates.ts` delegates to
   `istDateStr`; there is no UTC day helper left and none may come back. When the page resolved the day
   in IST and the header in UTC, everything between 00:00 and 05:30 IST — the late-dinner window — was

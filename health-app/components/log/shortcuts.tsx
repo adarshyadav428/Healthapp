@@ -94,6 +94,15 @@ export function ComboTile() {
   )
 }
 
+/** A copied meal section, waiting to be pasted onto the day being viewed. */
+export function MealTile({ emoji }: { emoji: string }) {
+  return (
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft">
+      <span className="text-[22px] leading-none" aria-hidden="true">{emoji}</span>
+    </div>
+  )
+}
+
 export function ShortcutHeading({ title, hint }: { title: string; hint?: React.ReactNode }) {
   return (
     <div className="mb-2.5 flex items-baseline gap-2 px-0.5">
