@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import dynamic from 'next/dynamic'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -90,6 +90,21 @@ export function OnboardingForm() {
     nextStep, prevStep, clearDraft,
   } = useOnboardingDraft(form)
 
+  // Every field has a valid default and onboardingSchema has no cross-field
+  // rule, so the form is valid the moment a name is typed. Left alone, pressing
+  // Enter in any input on steps 2–4 implicitly submits the whole form — saving
+  // defaults for every unreached field and skipping straight to the plan
+  // screen. On those steps Enter instead advances one step (through nextStep's
+  // per-step validation); only the final step's submit actually submits.
+  const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
+    if (step < TOTAL_STEPS) {
+      e.preventDefault()
+      nextStep()
+      return
+    }
+    form.handleSubmit(onSubmit)(e)
+  }
+
   const onSubmit = async (values: OnboardingData) => {
     try {
       const res = await fetch('/api/onboarding', {
@@ -176,7 +191,7 @@ export function OnboardingForm() {
         <p className="mt-2 text-sm font-semibold text-ink">{STEP_LABELS[step - 1]}</p>
       </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleFormSubmit} className="space-y-4">
         {/* Step 1: Log a meal — the activation moment, before any biometrics */}
         {step === 1 && (
           <div className="space-y-4 text-center">
