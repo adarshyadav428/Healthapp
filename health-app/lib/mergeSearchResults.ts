@@ -1,5 +1,6 @@
 import type { Food } from '../types/index'
 import { foodClusterKey } from './foodClusterKey'
+import { queryNamesBrand } from './searchRanking'
 
 /** Open Food Facts rows, wherever they came from — live fetch or cached in `foods`. */
 const OFF_SOURCES = new Set(['off', 'off_india', 'off_world'])
@@ -52,6 +53,55 @@ export const MAX_OFF_WITHOUT_BRAND = 3
 /** How many rows a search response carries. Exported so callers that need to
  *  reserve slots inside that budget don't hard-code the number separately. */
 export const MAX_SEARCH_RESULTS = 20
+
+/**
+ * Is this a row Open Food Facts does **not** list as sold in India?
+ *
+ * `lib/open-food-facts.ts` prefixes every fetched row's `source_id` by endpoint:
+ * `offi_` for in.openfoodfacts.org (listed as sold in India) and `off_` for
+ * world.openfoodfacts.org. `offToExternal` in the search route then flattens
+ * `source` to `'off'` for **both**, so after persistence the prefix is the only
+ * surviving record of which endpoint a row came from — including for every row
+ * already cached in `foods`. `app/api/camera/barcode/route.ts` depends on the
+ * same convention. Don't "tidy" either prefix.
+ *
+ * `offi_` cannot be mistaken for `off_`: the fourth character is `i`, not `_`.
+ */
+function isForeignOffRow(row: { source: string; source_id?: string | null }): boolean {
+  // `source_id` is nullable on `Food`. A null one carries no provenance, so it
+  // cannot be shown to be foreign — treat it as Indian and keep it, matching
+  // the "an empty screen is worse" bias below.
+  return OFF_SOURCES.has(row.source) && (row.source_id?.startsWith('off_') ?? false)
+}
+
+/**
+ * Hide products Open Food Facts doesn't list as sold in India, but only when we
+ * have an Indian answer to offer instead.
+ *
+ * Searching "boiled egg" returned one Indian row (`Boiled Egg (Anda)`) and five
+ * British and American supermarket own-brands — Morrisons, Tesco, Co-op, Vital
+ * Farms, Great Value — none of them buyable here, all rendered as identical
+ * cards. A new user has no way to tell which to pick, and "2 hard boiled eggs"
+ * actively misleads: the name says two eggs, the number is per 100 g.
+ *
+ * This is deliberately **not** a cap. `capOpenFoodFactsDominance` limits how
+ * many packaged rows crowd a page; this asks a different question — is the
+ * product available to this user at all — and Indian packaged rows (`offi_`,
+ * Amul, Britannia …) are never touched by it.
+ *
+ * Two escape hatches, both load-bearing:
+ * - **Nothing Indian matched** — return the list untouched. A food we only know
+ *   from world Open Food Facts must stay findable; an empty screen is worse than
+ *   a foreign packet.
+ * - **The query names the brand** — someone who types "tesco" means Tesco.
+ */
+export function dropForeignWhenIndianExists<
+  T extends { source: string; source_id?: string | null; brand?: string | null },
+>(foods: T[], query: string): T[] {
+  const hasIndianRow = foods.some((food) => !isForeignOffRow(food))
+  if (!hasIndianRow) return foods
+  return foods.filter((food) => !isForeignOffRow(food) || queryNamesBrand(food.brand, query))
+}
 
 /**
  * Collapse rows that are the same food — same `foodClusterKey` — down to one,

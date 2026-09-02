@@ -138,6 +138,19 @@ actively seeding.
   refinement. `components/log/FoodResult.tsx` no longer badges a result by source for this reason —
   `👤 Custom` (ownership) is the one label kept; provenance is an arbitration the collapse already
   performs, so surfacing it again re-asks a settled question.
+- **The `source_id` prefix `offi_` vs `off_` records whether Open Food Facts lists a product as sold in
+  India, and it is the only surviving signal.** `lib/open-food-facts.ts` writes `offi_` for the India
+  endpoint and `off_` for the world one, but `offToExternal` in `app/api/foods/search/route.ts` flattens
+  `source` to `'off'` for **both**, so after a row is persisted the prefix is all that is left — which is
+  also what makes it answerable for the ~900 rows already cached, with no migration.
+  `dropForeignWhenIndianExists` (`lib/mergeSearchResults.ts`) hides `off_` rows whenever any Indian row
+  matched, because "boiled egg" was answering with five British and American supermarket own-brands a
+  user here cannot buy; `app/api/camera/barcode/route.ts` looks up both prefixes by hand. Renaming or
+  "tidying" either prefix silently breaks both. Its two escape hatches are load-bearing: nothing Indian
+  matched → return everything (an empty screen is worse than a foreign packet), and the query naming a
+  brand → keep that brand. It is **not** a cap and does not replace `capOpenFoodFactsDominance`, which
+  answers a different question (how many packaged rows crowd a page) and still must never suppress
+  Indian packaged rows.
 - **Never write a raw hex color** in `app/` or `components/` — reference a token (`bg-brand`, `text-ink`, …).
 - **Never use Tailwind's `/NN` opacity modifier on a token color.** Our tokens are plain `var(--x)`
   strings, so `bg-brand/40` is a **silent no-op** that renders full strength. Use a pre-mixed alpha
