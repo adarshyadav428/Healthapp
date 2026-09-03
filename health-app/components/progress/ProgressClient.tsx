@@ -422,6 +422,7 @@ export function ProgressClient({
             userId={user.id}
             date={dateStrToUtcMidnight(selectedDate)}
             beyondFreeWindow={!isPro && selectedDate < freeWindowCutoff}
+            freeHistoryDays={freeHistoryDays}
           />
         </div>
       )}

@@ -313,20 +313,52 @@ describe('RLS invariants across every migration', () => {
    * select/insert/delete and no UPDATE policy, and failed silently.
    *
    * Each entry below is a write on a USER-SCOPED client (`createServerClient`).
-   * Service-role writes bypass RLS and are deliberately absent — notably
-   * `season_participants.completed_at`, which app/api/seasons/route.ts stamps
-   * through `createAdminClient()` precisely because users must not be able to
-   * assert their own completion.
+   * Service-role writes bypass RLS and are deliberately absent — see the
+   * `subscriptions` block below, where every write is service-role and the
+   * user-scoped policies were therefore pure attack surface.
+   *
+   * `subscriptions` used to be listed here, "for app/api/razorpay/cancel".
+   * That route uses `createAdminClient()`, so the entry asserted a requirement
+   * that never existed — and because the assertion passed, it actively
+   * concealed the P0 that shipped in 001_initial.sql. An entry in this table is
+   * a claim that a *session-scoped* writer needs the policy; verify that before
+   * adding one.
    */
   it.each([
     ['profiles', 'app/api/profile/update, app/api/onboarding'],
     ['food_logs', 'app/api/logs/edit'],
     ['weight_logs', 'app/api/weight/add'],
-    ['subscriptions', 'app/api/razorpay/cancel'],
     ['foods', 'app/api/foods/custom (own custom rows only)'],
     ['push_subscriptions', 'app/api/push/subscribe upsert on endpoint'],
   ])('gives %s an UPDATE policy for its user-scoped writer (%s)', (table) => {
     expect(policiesFor(state, table, 'update').length).toBeGreaterThan(0)
+  })
+
+  /**
+   * The billing table is the inverse case, and it is a P0 if it regresses.
+   *
+   * `subscriptions.status` is the entire Pro gate (`isProStatus`, consumed by
+   * ~20 surfaces), and it is written ONLY by provider webhooks on the
+   * service-role client. A user-scoped INSERT/UPDATE/DELETE policy therefore
+   * grants a privilege no code needs and lets any signed-in account write
+   * `{"status":"active"}` straight to PostgREST with the public anon key and
+   * their own JWT — free Pro, forever, invisible to all three providers.
+   * Closed by 044_subscriptions_rls_lockdown.sql.
+   *
+   * SELECT must stay: every Pro gate reads the caller's own row.
+   */
+  it('gives subscriptions no user-scoped write policy at all', () => {
+    for (const cmd of ['insert', 'update', 'delete'] as const) {
+      expect(
+        policiesFor(state, 'subscriptions', cmd),
+        `subscriptions must have no ${cmd.toUpperCase()} policy — status is an entitlement the ` +
+          `business grants, never something a user may assert about themselves`
+      ).toEqual([])
+    }
+  })
+
+  it('still lets a user read their own subscription', () => {
+    expect(policiesFor(state, 'subscriptions', 'select').length).toBeGreaterThan(0)
   })
 
   /**

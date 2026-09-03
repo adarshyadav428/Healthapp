@@ -63,11 +63,14 @@ type Props = {
   /** Free AI scans left — threaded to search's chat button so a spent user
    *  hits the paywall on tap, not after typing a meal. */
   aiTrialRemaining?: number
+  /** The day's calorie + protein targets, forwarded to AddFoodModal so a log
+   *  answers with a coaching sentence instead of just a number (P1-13). */
+  targets?: { kcal: number; protein: number }
 }
 
 const AIR = { boxShadow: 'var(--shadow-air)' } as const
 
-export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYesterdayLogs, logDate, isToday = true, isPro = true, aiTrialRemaining = 0 }: Props) {
+export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYesterdayLogs, logDate, isToday = true, isPro = true, aiTrialRemaining = 0, targets }: Props) {
   const searchParams = useSearchParams()
   // Home's "Add food manually" links here with ?search=1 to jump straight
   // into the search box instead of landing on this page first.
@@ -126,7 +129,11 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
       const res = await fetch('/api/meals/log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...logMetaHeaders('meal_template') },
-        body: JSON.stringify({ meal_id: meal.id, meal_type: currentMeal }),
+        // logDate, not today: this row renders on any editable day (see
+        // app/log/page.tsx), so a combo tapped while viewing a past day must
+        // land on that day. Without it the route fell back to
+        // `logged_at DEFAULT now()` and filed the meal on today, silently.
+        body: JSON.stringify({ meal_id: meal.id, meal_type: currentMeal, date: logDate }),
       })
       const j = (await res.json().catch(() => ({}))) as { logged?: number; error?: string }
       if (!res.ok) throw new Error(j.error ?? 'Could not log meal')
@@ -180,6 +187,7 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
           isToday={isToday}
           isPro={isPro}
           aiTrialRemaining={aiTrialRemaining}
+          targets={targets}
         />
       </div>
     )
@@ -434,7 +442,7 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
       {showCamera && (
         <CameraModal logDate={logDate} onClose={() => setShowCamera(false)} onFoodFound={(food) => { setShowCamera(false); setFoundFood(food) }} />
       )}
-      {foundFood && <AddFoodModal food={foundFood} onClose={() => setFoundFood(null)} logDate={logDate} />}
+      {foundFood && <AddFoodModal food={foundFood} onClose={() => setFoundFood(null)} logDate={logDate} targets={targets} />}
       {showQuickAdd && <QuickAddModal onClose={() => setShowQuickAdd(false)} logDate={logDate} />}
     </div>
   )

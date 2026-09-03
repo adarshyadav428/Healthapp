@@ -14,6 +14,8 @@ import { mealForTime } from '../../lib/meal'
 import { MEAL_CONTEXTS, MEAL_CONTEXT_LABELS, type MealContext } from '../../lib/mealContext'
 import { logMetaHeaders } from '../../lib/posthog/client'
 import { userFacingApiError } from '../../lib/apiError'
+import { coachingLine, dayContextFor } from '../../lib/coaching'
+import { useDailyTotals } from '../../hooks/useDailyTotals'
 import { UnitPicker } from './UnitPicker'
 
 const MEAL_OPTIONS = [
@@ -59,11 +61,48 @@ function foodEmoji(name: string): string {
   return '🍽️'
 }
 
-export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: () => void; logDate?: string }) {
+export function AddFoodModal(
+  { food, onClose, logDate, targets }: {
+    food: Food
+    onClose: () => void
+    logDate?: string
+    /**
+     * The day's calorie + protein targets, so logging can answer with a
+     * coaching sentence rather than just a number.
+     *
+     * `coachingLine` is pure, free and costs no AI call, but it was wired only
+     * into useCameraScan and useChatLog — both behind the 3-call lifetime AI
+     * trial. A free user logging by search, which is the overwhelming majority
+     * of all logs, therefore never saw a coaching sentence in their life: the
+     * app built its best retention asset and attached it to the one surface
+     * almost nobody can reach (audit 2026-09-03, P1-13).
+     *
+     * Optional on purpose. BottomNav's barcode result and the onboarding
+     * barcode step render this modal without a profile in hand; they simply get
+     * no line, which is what coachingLine already returns when it can't speak.
+     */
+    targets?: { kcal: number; protein: number }
+  }
+) {
   const { user } = useUser()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const inFlightRef = useRef(false)
   const queryClient = useQueryClient()
+
+  // Scoped to the day being logged to, not "today" — backfilling a past day
+  // must describe that day's budget. Same rule as useChatLog and useCameraScan,
+  // pinned by tests/coachingWiring.test.ts.
+  const totalsDate = useMemo(
+    () => (logDate ? dateStrToUtcMidnight(logDate) : new Date()),
+    [logDate]
+  )
+  const { totals: dailyTotals, isLoading: totalsLoading, error: totalsError } =
+    useDailyTotals(user?.id ?? null, totalsDate)
+  const dayContext = dayContextFor({
+    totals: dailyTotals,
+    isLoading: totalsLoading,
+    error: totalsError,
+  })
 
   const units = useMemo(() => buildUnits(food), [food])
   // Same helper the search row's "+" uses, so tapping through to this modal
@@ -152,7 +191,24 @@ export function AddFoodModal({ food, onClose, logDate }: { food: Food; onClose: 
         queryClient.invalidateQueries({ queryKey: ['food-logs'] })
       }
 
-      toast({ title: '✅ Food logged!', description: `${nutrition.kcal} kcal added to ${meal}`, duration: 2500 })
+      // The day's totals as they stood BEFORE this meal — the same "consumed so
+      // far" figure the camera and chat paths pass. Read before the cache write
+      // above lands, and dayContextFor drops the context entirely while the
+      // read is loading or failed rather than passing zeros through, so the
+      // sentence can never promise a full budget to someone who has none left.
+      const coaching = targets
+        ? coachingLine(
+            { kcal: nutrition.kcal, protein: nutrition.protein },
+            { kcal: targets.kcal, protein: targets.protein },
+            dayContext
+          )
+        : null
+
+      toast({
+        title: '✅ Food logged!',
+        description: coaching ?? `${nutrition.kcal} kcal added to ${meal}`,
+        duration: coaching ? 4000 : 2500,
+      })
       reportLogMilestone(body.milestone)
       onClose()
     } catch (err) {

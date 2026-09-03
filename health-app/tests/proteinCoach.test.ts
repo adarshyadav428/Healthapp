@@ -58,3 +58,42 @@ describe('proteinCoachLine', () => {
     expect(proteinCoachLine(NaN, 104, 65)).toBeNull()
   })
 })
+
+/**
+ * P2-11 (audit 2026-09-03). `bestSuggestion` picks the NEAREST source with no
+ * ceiling, and the largest source is 26g of soya chunks — so any gap much above
+ * that used to be answered with "about 50g of soya chunks covers it", which is
+ * 26g. False, and shown precisely to the users furthest from their target. This
+ * is the free tier's only coaching line, so for most accounts it is the only
+ * thing the app ever says about their eating.
+ */
+describe('never claims a portion covers a gap it cannot', () => {
+  it.each([60, 80, 100, 150])('does not say "covers it" for a %sg gap', (gap) => {
+    const line = proteinCoachLine(0, gap, 70)
+    expect(line?.text).not.toContain('covers it')
+  })
+
+  it('still says "covers it" when the portion genuinely closes the gap', () => {
+    // 12g gap → a bowl of curd is 11g, i.e. >=70% of it.
+    const line = proteinCoachLine(0, 12, 70)
+    expect(line?.text).toContain('covers it')
+  })
+
+  it('states what the portion actually contributes on a large gap', () => {
+    const line = proteinCoachLine(0, 100, 70)
+    // Names the real contribution rather than implying closure.
+    expect(line?.text).toMatch(/gets you \d+g of that/)
+    expect(line?.text).toContain('100g of protein to go')
+  })
+
+  it('never promises more than the largest single source on any gap', () => {
+    for (let gap = 6; gap <= 200; gap++) {
+      const text = proteinCoachLine(0, gap, 70)?.text ?? ''
+      if (text.includes('covers it')) {
+        // Every "covers it" claim must be backed by a portion >= 70% of the gap.
+        const largest = 26
+        expect(gap, `"${text}" claims closure on a ${gap}g gap`).toBeLessThanOrEqual(largest / 0.7)
+      }
+    }
+  })
+})

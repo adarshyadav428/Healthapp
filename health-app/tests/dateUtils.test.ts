@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getIstDayRange, istDaysAgoStart, istDateStr, dateStrToUtcMidnight } from '../lib/dateUtils'
+import { getIstDayRange, istDaysAgoStart, istDateStr, dateStrToUtcMidnight, clampHistoryStart } from '../lib/dateUtils'
 
 describe('getIstDayRange', () => {
   it('brackets the IST calendar day (IST midnight = 18:30 UTC previous day)', () => {
@@ -62,5 +62,48 @@ describe('dateStrToUtcMidnight + getIstDayRange (the /log + diary contract)', ()
     const { start } = getIstDayRange(dateStrToUtcMidnight('2026-01-01'))
     // start is IST-midnight of Jan 1 = 2025-12-31T18:30Z; its IST date is Jan 1
     expect(istDateStr(new Date(start))).toBe('2026-01-01')
+  })
+})
+
+describe('clampHistoryStart (the free-tier history bound)', () => {
+  const CUTOFF = '2026-08-29T18:30:00.000Z'
+
+  it('returns the cutoff when no start is given', () => {
+    expect(clampHistoryStart(null, CUTOFF)).toBe(CUTOFF)
+    expect(clampHistoryStart(undefined, CUTOFF)).toBe(CUTOFF)
+    expect(clampHistoryStart('', CUTOFF)).toBe(CUTOFF)
+  })
+
+  it('clamps a start older than the cutoff', () => {
+    expect(clampHistoryStart('2020-01-01T00:00:00.000Z', CUTOFF)).toBe(CUTOFF)
+  })
+
+  it('does not widen a narrower request', () => {
+    const later = '2026-09-01T00:00:00.000Z'
+    expect(clampHistoryStart(later, CUTOFF)).toBe(later)
+  })
+
+  /**
+   * P1-1. These are all valid PostgreSQL timestamp literals, and every one of
+   * them sorts ABOVE an ISO cutoff beginning '2' — so the string comparison
+   * this replaced let each through. `epoch` is the damaging one: Postgres reads
+   * it as 1970-01-01, which is "give me everything".
+   */
+  it.each(['epoch', 'today', 'now', 'yesterday', 'infinity', 'allballs', 'garbage'])(
+    'refuses the non-ISO literal %s rather than passing it through',
+    (literal) => {
+      expect(clampHistoryStart(literal, CUTOFF)).toBeNull()
+      // The bug, stated as the property that failed: it used to survive.
+      expect(literal > CUTOFF).toBe(true)
+    }
+  )
+
+  it('compares instants, not digits — a large positive offset does not sneak past', () => {
+    // Same wall-clock digits as the cutoff but +14:00, so a LATER instant than
+    // it looks. String-compared it beats the cutoff; parsed, it is correctly
+    // treated as later and kept.
+    const offset = '2026-08-29T18:30:00.000+14:00'
+    expect(Date.parse(offset)).toBeLessThan(Date.parse(CUTOFF))
+    expect(clampHistoryStart(offset, CUTOFF)).toBe(CUTOFF)
   })
 })

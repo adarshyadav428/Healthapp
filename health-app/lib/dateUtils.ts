@@ -65,3 +65,31 @@ export function dateStrToUtcMidnight(dateStr: string): Date {
   const [y, m, d] = dateStr.split('-').map(Number)
   return new Date(Date.UTC(y, m - 1, d))
 }
+
+/**
+ * Clamp an untrusted `?start=` query param to the oldest instant a caller is
+ * entitled to read. Returns the cutoff when `start` is absent or older than it,
+ * `start` when it is newer, and **`null` when `start` is not a real timestamp** —
+ * callers must answer 400 rather than hand the value to Postgres.
+ *
+ * It compares **parsed instants, not strings.** The string comparison this
+ * replaces (`if (!start || start < cutoff) start = cutoff`) was only correct for
+ * ISO-8601 input, and nothing validated that the input was ISO-8601. PostgreSQL
+ * also accepts `epoch`, `today`, `now`, `yesterday` and `infinity` as timestamp
+ * literals, and `'epoch' > '2026-…'` lexicographically ('e' sorts above '2'), so
+ * `?start=epoch` sailed straight through the clamp, PostgREST forwarded it
+ * verbatim as `logged_at=gte.epoch`, and Postgres read it as 1970-01-01 — handing
+ * a free account its **entire** history through the app's own API. Found by the
+ * 2026-09-03 audit (P1-1); it had been the only thing standing between the free
+ * tier and unlimited history since the clamp was written.
+ *
+ * Parsing also fixes a quieter case the string compare got wrong in the other
+ * direction: an ISO string carrying a large positive UTC offset is a *later*
+ * instant than its digits suggest, so it could beat a cutoff it should not.
+ */
+export function clampHistoryStart(start: string | null | undefined, cutoff: string): string | null {
+  if (!start) return cutoff
+  const startMs = Date.parse(start)
+  if (!Number.isFinite(startMs)) return null
+  return startMs < Date.parse(cutoff) ? cutoff : start
+}

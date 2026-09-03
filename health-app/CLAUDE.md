@@ -17,7 +17,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **88 files / 1,272 tests**. There is no `vitest.config.ts`; defaults apply.
+- **Tests:** Vitest 4.1 — **88 files / 1,313 tests**. There is no `vitest.config.ts`; defaults apply.
 - **Deploy:** Vercel **Hobby** plan, region `bom1`. The Hobby limits are load-bearing (see Hard rules).
 
 ## Architecture / directory map
@@ -55,9 +55,9 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   `components/log/shortcuts.tsx` holds the one set of re-log / combo / copy-yesterday tiles that both
   `FoodLanding` and `FoodSearch` render — they used to be implemented twice, with different ordering
   and different meal-selection behaviour, which is how the same shortcut came to mean two things.
-- **`supabase/migrations/`** — `001`–`043`. Numbers are **not unique** (`002`, `004`, `005`, `009` and
-  now `043` each appear twice) and there is **no `021`**; `040` is not in `main` either — it belongs to
-  the unmerged body-focus work. Always reference a migration by its exact filename.
+- **`supabase/migrations/`** — `001`–`044`. Numbers are **not unique** (`002`, `004`, `005`, `009` and
+  `043` each appear twice) and there is **no `021`**. Always reference a migration by its exact filename.
+  (`040_body_focus.sql` **is** on `main` — PR #46 merged; this line previously said otherwise.)
 - **`middleware.ts`** — self-contained (there is no `lib/supabase/middleware.ts`). Refreshes the
   session cookie on every request, redirects unauthenticated users to `/auth/sign-in?returnTo=…`, and
   bounces authenticated users off `/auth/*` to `/dashboard`. Public routes are `/`, `/privacy`,
@@ -78,7 +78,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (88 files / 1,272 tests)
+npm test                 # vitest run — the whole suite (88 files / 1,313 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
 npm run check:tokens     # design-token guard: no raw hex, no broken opacity modifiers
@@ -138,6 +138,22 @@ actively seeding.
   refinement. `components/log/FoodResult.tsx` no longer badges a result by source for this reason —
   `👤 Custom` (ownership) is the one label kept; provenance is an arbitration the collapse already
   performs, so surfacing it again re-asks a settled question.
+- **`subscriptions` has exactly one RLS policy — `subs_select`. Never give it a user-scoped write
+  policy.** `status` is the entire Pro gate (`isProStatus`, ~20 surfaces) and it is an entitlement the
+  *business* grants; every write in the tree is a provider webhook on `createAdminClient()`. From
+  `001_initial.sql` until `044_subscriptions_rls_lockdown.sql` the table also carried
+  `subs_insert`/`subs_update`/`subs_delete` scoped to `auth.uid() = user_id`, which meant any signed-in
+  account could POST `{"user_id":"<self>","status":"active"}` straight to PostgREST with the **public**
+  anon key and its own JWT and hold Pro forever — free, permanent (nothing reads `current_period_end`)
+  and invisible to Razorpay, Play and Stripe alike, because no provider was ever involved. It was found
+  by the 2026-09-03 audit, not by a user, and the fix removed privileges **no code had ever used**.
+  The generalisation is the important part, and it is the same lesson `034` taught on `foods`:
+  **a row being yours does not mean every column of it is yours to assert.** Before adding a write
+  policy to any table, ask which *session-scoped* writer needs it; if the answer is "none, the webhook
+  uses the admin client", the policy is pure attack surface. `tests/rlsPolicies.test.ts` now pins both
+  halves (no write policy, SELECT kept) — and note the same file used to *assert* that `subscriptions`
+  needed an UPDATE policy "for `app/api/razorpay/cancel`", a route that uses the admin client. That
+  wrong entry passed, and a passing assertion is what hid the hole for two audits.
 - **Never write a raw hex color** in `app/` or `components/` — reference a token (`bg-brand`, `text-ink`, …).
 - **Never use Tailwind's `/NN` opacity modifier on a token color.** Our tokens are plain `var(--x)`
   strings, so `bg-brand/40` is a **silent no-op** that renders full strength. Use a pre-mixed alpha
@@ -145,11 +161,38 @@ actively seeding.
 - **Never add a third Vercel cron.** Hobby caps at two, and both are used (`vercel.json`). Monthly
   Wrapped deliberately rides inside the Sunday recap run.
 - **Never call `sendPushToUser` for a scheduled push** — always `sendBudgetedPush`. The one-push-per-day
-  budget only works if nothing bypasses it.
+  budget only works if nothing bypasses it — **and that includes a failed read of its own bookkeeping.**
+  `sendBudgetedPush` took `data` alone from both `push_sends` reads, so a DB blip produced "nothing sent
+  today, nothing ignored": the daily cap lifted and the back-off cleared at the same instant, on every
+  user at once. It now fails **closed** (`skipped: 'budget_unreadable'`). The insert is the deliberate
+  exception and stays swallowed — losing the bookkeeping costs one extra push, losing the read costs the
+  notification permission. The same swallow had also reappeared in `push-reminders`' batched reads,
+  twenty lines below a comment refusing exactly that ("a mass mis-timed send dressed as a no-op"), where
+  an empty `food_logs` result classifies **every** subscribed user as "hasn't logged today". Both fixed
+  2026-09-03 (audit P1-4, P1-5). **The general rule: supabase-js *resolves* with `{ data, error }`, so
+  `const { data } = await …` inside a `try` silently discards the failure and the `catch` never fires.
+  Destructure `error` on every read whose emptiness means something.**
+- **The coaching line is free and belongs on every logging surface.** `coachingLine` (`lib/coaching.ts`)
+  is pure, needs no AI call and costs nothing to run — but it was wired only into `useCameraScan` and
+  `useChatLog`, both behind the 3-call lifetime AI trial, so a free user logging by search never saw a
+  sentence in their life. `AddFoodModal` now fires it too, taking the day's `targets` as an optional
+  prop from `app/log/page.tsx` (surfaces without a profile — BottomNav's barcode result, the onboarding
+  barcode step — pass nothing and correctly get no line). Any new logging surface should pass `targets`
+  and scope `useDailyTotals` to `logDate`; `tests/coachingWiring.test.ts` pins all of them.
 - **Never import the server Supabase client into a Client Component**, or the browser client into a
   Server Component / Route Handler. `createAdminClient()` is for trusted server-only routes only.
 - **Never reference the four dropped wellness tables** (`water_logs`, `sleep_logs`, `fasting_sessions`,
   `measurements_logs`) — migration `019` removed them. Only `exercise_logs` remains of the extended trackers.
+  Two references outlived the drop by two audits, both because nothing *executed* them:
+  `/api/admin/run-migrations` probed `water_logs`, reported it `MISSING` (correctly — it is meant to be)
+  and handed the operator DDL to **re-create** it, so the documented "apply migrations" path actively
+  instructed undoing `019`; and `types/index.ts` still exported `WaterLog` and `MeasurementLog`, which a
+  contributor grepping for the shape would reasonably read as evidence the tables exist. Both removed
+  2026-09-03 (audit P1-11). Dead code that *describes* a dropped table is the same violation as live code
+  that reads one. **`profiles.water_target_ml` is the remaining stub** — no UI renders it, but it is
+  carried in `/log`'s select, echoed back by two components and has its own error-recovery branch in
+  `/api/profile/update`, so it is dead *and* load-bearing: removing the column without those five sites
+  going first would 500 every profile update.
 - **`SMART_PORTIONS` is ordered, specific before generic** (`lib/portion-units.ts`). It is scanned with
   `.find`, so the first matching pattern wins and a name can match two: "Moong Dal Namkeen" carries both
   a dish word and a snack word. With the dal rule first it pre-selected a 200 g katori and offered
@@ -193,11 +236,38 @@ actively seeding.
   difference a user forgives. A smart match also **suppresses** the DB `common_portions` from migration
   `008` — that is deliberate and pinned (a bogus `999 g` label must stay out of the picker); if measured
   IFCT portions need to surface, fix the rows, not the precedence.
-- **Every logging surface threads the date it is looking at.** `useChatLog`, search and quick-add all
-  send `date` in the payload *and* scope `useDailyTotals` to the same day. The camera did neither, so
-  scanning while viewing a past day filed the meal on today, silently.
+- **Every logging surface threads the date it is looking at — and "surface" includes the ones that
+  don't open a modal.** `useChatLog`, search and quick-add all send `date` in the payload *and* scope
+  `useDailyTotals` to the same day. The camera did neither, so scanning while viewing a past day filed
+  the meal on today, silently. **Saved combos were the same bug, found two audits later** (2026-09-03,
+  P0-2): `/api/meals/log` had no `date` in its schema *at all*, so every combo took
+  `logged_at DEFAULT now()`, and `FoodLanding`'s "Your combos" row carried no `isToday` guard while
+  `FoodSearch`'s copy of the same row did. `app/log/page.tsx` mounts `FoodLanding` on any **editable**
+  day, on purpose, "so a missed day can be backfilled" — so the row was reachable on a past day and
+  tapping it moved today's total instead. Three lessons worth keeping: a **column default is not a
+  policy** (`DEFAULT now()` silently supplies a wrong answer where a missing value should have been an
+  error); two components rendering "the same" shortcut will drift unless both are pinned; and a route
+  that starts accepting a date must resolve it through **`resolveLoggedAtForRequest`** (`lib/backfill.ts`),
+  never `new Date()` inline, or accepting the date becomes a way around the free-tier backfill window.
   `tests/coachingWiring.test.ts` holds all of them to it: the payload date and the totals context must
-  be the same day, or the coaching line describes a day the meal didn't land on.
+  be the same day, or the coaching line describes a day the meal didn't land on — and it now also pins
+  that both saved-combo call sites send a `date` and that the insert never falls back to the default.
+- **Never compare an untrusted timestamp as a string — parse it.** `/api/logs` and
+  `/api/exercise/logs` clamped the free-tier history window with
+  `if (!start || start < cutoff) start = cutoff`, over a `start` taken raw from the query
+  string. That is only correct for ISO-8601 input and **nothing validated that it was ISO-8601**.
+  PostgreSQL also accepts `epoch`, `today`, `now`, `yesterday` and `infinity` as timestamp
+  literals, and every one of them sorts *above* a cutoff beginning `'2'` — so `?start=epoch`
+  survived the clamp, PostgREST forwarded it verbatim as `logged_at=gte.epoch`, Postgres read it
+  as 1970-01-01, and a free account got its **entire** history through the app's own API
+  (audit 2026-09-03, P1-1). The comment above the line even asserted the invariant
+  ("ISO-8601 UTC strings compare correctly as strings") — true, and irrelevant, because the input
+  was never checked to be one. Both routes now parse first: an unparseable `start` is a 400 for
+  every tier, and the bound goes through **`clampHistoryStart`** (`lib/dateUtils.ts`), which
+  compares instants. Parsing also fixes the quieter inverse — an ISO string with a large positive
+  UTC offset is a *later* instant than its digits look. Pinned in both places on purpose
+  (`tests/dateUtils.test.ts` for the function, `tests/routeEntitlements.test.ts` for each literal
+  against the real route), and each defence fails independently under sabotage.
 - **The diary's day boundary is IST, everywhere, including the header.** `lib/logDates.ts` delegates to
   `istDateStr`; there is no UTC day helper left and none may come back. When the page resolved the day
   in IST and the header in UTC, everything between 00:00 and 05:30 IST — the late-dinner window — was
@@ -253,6 +323,16 @@ actively seeding.
 - **If you move the reminder cron, move `CATCH_ALL_IST_HOUR` with it.** They are coupled, and
   `tests/reminderWiring.test.ts` parses `vercel.json` to prove it.
 - **The free-tier list on `app/page.tsx` is a public claim.** If you change what's free, change both.
+  **And no user-facing string may hardcode a per-cohort number.** The limits are threaded correctly
+  through the *enforcement* — but the sentences explaining each gate still said "the last 7 days" and
+  "your last 30 weigh-ins" after `POST_CUTOFF_LIMITS` made those 5 and 14, so a post-cutoff user was
+  served 5 and told 7 at the exact moment they hit the wall. The fix is not "show no number" — it is
+  **pass the account's real number down as a prop** (`DayDiary` takes `freeHistoryDays`, `WeightClient`
+  takes `freeWeightRows`) and keep copy that can't receive one cohort-neutral. `PRO_FEATURES` was wrong
+  in both directions too: it sold "No ads, ever" (free has no ads either) while omitting streak rescue,
+  the month deficit and unlimited suggestions — three gates people actually pay for.
+  `tests/planFeatures.test.ts` now fails on the banned literals, scanning shipped strings with comments
+  stripped so a file may still explain the history without tripping its own rule (audit P1-3, P1-12).
 - **Free-tier limits come from `lib/freeTier.ts`, never a local constant.** Every history/weight/
   suggestion/scan/paywall number is keyed on `profiles.created_at`: accounts created before
   `FREE_TIER_CUTOFF` keep `LEGACY_LIMITS` forever (the "Free forever" promise is made to every
@@ -376,7 +456,8 @@ These are deep dives, kept out of this file on purpose. Read the relevant one **
 | `docs/growth-mechanics-plan-2026-07-29.md` | `components/story/`, `lib/streakRescue.ts`, `lib/mealSuggest.ts`, `lib/pushBudget.ts`, `lib/reminderSchedule.ts`, `lib/cronBatch.ts` — note Seasons was cut, see below |
 | `docs/refactor-safety-contract.md` | Any refactor — it maps each covered behavior to the test that pins it, and lists the accepted residual gaps |
 | `TESTING.md` | Shipping. The manual script for everything tests can't reach (auth, real phones, the day boundary) |
-| `docs/deep-dive-audit-2026-07-31.md` | Investigating a suspected systemic issue — the last full audit |
+| `docs/deep-dive-audit-2026-09-03.md` | Investigating a suspected systemic issue — the **latest** full audit. Both P0s and 9 of its 13 P1s are fixed; **still open: the three IST leaks (P1-8, P1-9, P2-4) and every P2** |
+| `docs/deep-dive-audit-2026-07-31.md` | The previous full audit — read for the fixes it made and the false alarms it recorded |
 | `docs/growth-advice-audit-2026-08-25.md` | Anything about attribution, the paywall's placement, trial length, or adding an A/B mechanism — it scores the app against an external growth playbook, and §7 records where we disagree with it on purpose |
 | `docs/prompts/growth-advice-apply.md` | Re-running that audit, or holding any new growth book against the app |
 
@@ -435,6 +516,9 @@ Migrations worth knowing: `001_initial.sql` (core schema) · `007_seed_indian_fo
 `019_drop_deprecated_tables.sql` (removed the four wellness tables) · `034_foods_rls_ownership.sql`
 (restricts `foods` writes to a user's own `source='user'` rows — before this, RLS checked only "are you
 logged in", so any account could delete a catalogue row and cascade it out of **every** user's diary) ·
+`044_subscriptions_rls_lockdown.sql` (the same defect on the **billing** table: drops
+`subs_insert`/`subs_update`/`subs_delete`, keeping only `subs_select`, so `status` can no longer be
+asserted by the account it bills — see the hard rule above) ·
 `036_reminder_hour.sql` (`profiles.reminder_hour`, IST, default 20) · `037_name_packaged_moong_dal.sql`
 (renamed ten OFF-persisted namkeen packets keyed by barcode — the precedent for correcting a name Open
 Food Facts gave us, and for how to audit such an `UPDATE` in the file header) ·

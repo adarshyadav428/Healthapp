@@ -38,6 +38,24 @@ function getJwtClient(): JWT {
   return jwtClient
 }
 
+/**
+ * Both Play API calls in verify.ts carry AbortSignal.timeout(10s). This one is
+ * the call they BOTH make first, and it had no bound at all — so a stalled
+ * Google OAuth endpoint held the whole function regardless of those timeouts.
+ * It was named in the 2026-07-31 audit's P1-5 evidence and missed by its fix.
+ *
+ * The consequence is money: a TWA buyer taps Buy, PaymentRequest succeeds,
+ * /api/play/verify hangs here, Vercel kills the function, the client gets no
+ * JSON and shows "Verification failed" — payment taken, Pro not granted. On the
+ * RTDN path Pub/Sub simply times out and redelivers.
+ *
+ * `google-auth-library`'s getAccessToken() accepts no AbortSignal, so the bound
+ * has to be a race. The library's own request keeps running after we walk away;
+ * that is acceptable because the token is cached in module scope, so a late
+ * success is at worst a wasted socket, never a wrong answer.
+ */
+const PLAY_AUTH_TIMEOUT_MS = 10_000
+
 /** Returns a valid androidpublisher access token, cached until ~1 min before expiry. */
 export async function getPlayAccessToken(): Promise<string> {
   if (cachedToken && cachedToken.expiresAt - 60_000 > Date.now()) {
@@ -45,7 +63,18 @@ export async function getPlayAccessToken(): Promise<string> {
   }
 
   const client = getJwtClient()
-  const { token } = await client.getAccessToken()
+
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const { token } = await Promise.race([
+    client.getAccessToken(),
+    new Promise<never>((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error('Timed out obtaining Play access token')),
+        PLAY_AUTH_TIMEOUT_MS
+      )
+    }),
+  ]).finally(() => clearTimeout(timer))
+
   if (!token) throw new Error('Failed to obtain Play access token')
 
   // google-auth-library caches internally; mirror its expiry when available.

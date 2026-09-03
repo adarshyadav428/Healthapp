@@ -11,6 +11,9 @@ import {
 } from '../../../../lib/monthlyWrapped'
 import type { FoodLog } from '../../../../types/index'
 
+/** Matches the camera and chat routes — the recap call was the one that never got one. */
+const GEMINI_TIMEOUT_MS = 20_000
+
 export const runtime = 'nodejs'
 
 // Sunday 7 PM IST (= 13:30 UTC Sun) via vercel.json. For every user who logged
@@ -273,6 +276,16 @@ async function buildMessage(stats: RecapStats, firstName?: string): Promise<stri
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { maxOutputTokens: 80, temperature: 0.7 },
         }),
+        // Without this the whole cron can hang on one stalled socket.
+        // processInBatches only checks its deadline BETWEEN items, so an
+        // un-timed await inside one item bypasses CRON_TIME_BUDGET_MS entirely:
+        // at concurrency 8, eight stalled requests stall the run, Vercel kills
+        // the function at 60 s, and no response is ever written — so `remaining`
+        // and `timedOut` go unreported, which is the exact silent truncation
+        // lib/cronBatch.ts exists to prevent. Monthly Wrapped rides in this same
+        // run, so it dies with it. The catch below already falls back to
+        // recapFallbackMessage, so a timeout costs the AI sentence, nothing more.
+        signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
       }
     )
     if (!res.ok) return fallback

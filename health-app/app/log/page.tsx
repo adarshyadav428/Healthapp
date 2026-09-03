@@ -213,6 +213,7 @@ export default async function LogPage({
               logDate={dateStr}
               isToday={isToday}
               isPro={isPro}
+              targets={{ kcal: profile.daily_calorie_target ?? 0, protein: profile.protein_g_target ?? 0 }}
               aiTrialRemaining={aiTrialRemaining}
             />
           </div>

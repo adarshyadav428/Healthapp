@@ -1,0 +1,79 @@
+-- 044_subscriptions_rls_lockdown.sql
+--
+-- P0: any authenticated user could grant themselves Pro, permanently and for free.
+-- Found by the 2026-09-03 audit; see docs/deep-dive-audit-2026-09-03.md finding P0-1.
+--
+-- ── What was wrong ───────────────────────────────────────────────────────────
+--
+-- 001_initial.sql:176-179 gave `subscriptions` the same four policies every
+-- user-owned table got:
+--
+--   CREATE POLICY subs_select ON subscriptions FOR SELECT USING (auth.uid() = user_id);
+--   CREATE POLICY subs_insert ON subscriptions FOR INSERT WITH CHECK (auth.uid() = user_id);
+--   CREATE POLICY subs_update ON subscriptions FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+--   CREATE POLICY subs_delete ON subscriptions FOR DELETE USING (auth.uid() = user_id);
+--
+-- `subscriptions.status` is plain nullable text and `isProStatus(status)`
+-- (lib/subscription.ts) is the ENTIRE Pro gate. So a signed-in user needed only
+-- the public NEXT_PUBLIC_SUPABASE_ANON_KEY — which ships in the JS bundle — and
+-- their own session JWT:
+--
+--   POST /rest/v1/subscriptions {"user_id":"<own uid>","status":"active"}
+--
+-- `WITH CHECK (auth.uid() = user_id)` passes, because the row genuinely is
+-- theirs. That unlocks unlimited AI camera + chat, full history, custom foods,
+-- streak rescue, unlimited suggestions, the month deficit and Wrapped — and
+-- nothing anywhere reads `current_period_end`, so it never expires. Invisible to
+-- Razorpay, Google Play and Stripe alike, because no provider was ever involved.
+--
+-- This is the same defect 034_foods_rls_ownership.sql fixed on `foods`, on the
+-- billing table instead of the catalogue. The lesson of 034 was never
+-- table-specific: **a row being yours does not mean every column of it is yours
+-- to assert.** `status` is an entitlement the business grants, not a user
+-- preference, and it must only ever be written by a provider webhook.
+--
+-- ── Why dropping the policies is the whole fix ───────────────────────────────
+--
+-- Nothing in the application needs them. Every write to `subscriptions` in the
+-- entire tree goes through createAdminClient() (service role, bypasses RLS):
+--
+--   app/api/razorpay/verify/route.ts:47      upsert
+--   app/api/razorpay/cancel/route.ts:41      update  (cancel_at_period_end)
+--   app/api/razorpay/webhook/route.ts:55     update  (applyStatus)
+--   app/api/play/verify/route.ts:66          upsert
+--   app/api/play/rtdn/route.ts:70            update
+--   app/api/stripe/webhook/route.ts:48,74,91 upsert/update
+--
+-- and every session-client access is a .select() — the ~20 Pro gates, plus
+-- hooks/useSubscription.ts. So `subs_insert`/`subs_update`/`subs_delete` grant
+-- privileges no code has ever used. Dropping them changes no application
+-- behaviour whatsoever; `subs_select` is kept, because reading your own
+-- subscription is exactly what every Pro gate does.
+--
+-- With RLS enabled and no INSERT/UPDATE/DELETE policy, PostgREST denies those
+-- verbs outright ("no policy" means denied), which is the desired end state.
+--
+-- Idempotent and safe to re-run: DROP POLICY IF EXISTS no-ops when the policy is
+-- already gone, so this applies cleanly to a database that has run it before and
+-- to one that never had the policies at all.
+
+DROP POLICY IF EXISTS subs_insert ON subscriptions;
+DROP POLICY IF EXISTS subs_update ON subscriptions;
+DROP POLICY IF EXISTS subs_delete ON subscriptions;
+
+-- Deliberately NOT dropped — a user must be able to read their own entitlement:
+--   subs_select ON subscriptions FOR SELECT USING (auth.uid() = user_id)
+
+-- ── Verify, after applying ───────────────────────────────────────────────────
+--
+-- Expect exactly one row, `subs_select` / SELECT:
+--
+--   select policyname, cmd, qual, with_check
+--   from pg_policies
+--   where tablename = 'subscriptions'
+--   order by policyname;
+--
+-- And confirm RLS is still on (it must be, or dropping policies opens the table):
+--
+--   select relrowsecurity from pg_class where relname = 'subscriptions';
+--   -- expect: t

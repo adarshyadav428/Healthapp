@@ -55,7 +55,9 @@ export function buildWelcomeCards({ stats, firstName, aiTrialUsed = 0 }: Welcome
           : `${AI_TRIAL_SCANS} free AI scans`,
         after: 'Unlimited',
       },
-      { before: 'Last 7 days only', after: 'Full history' },
+      // Cohort-neutral: the free window is 7 days pre-cutoff and 5 after
+      // (lib/freeTier.ts), and this card has no access to which one applied.
+      { before: 'Recent days only', after: 'Full history' },
       { before: 'No custom foods', after: 'Your own recipes' },
     ],
   }

@@ -22,12 +22,17 @@ export function WeightClient({
   logs,
   profile,
   atFreeCap = false,
+  freeWeightRows,
 }: {
   logs: WeightLog[]
   profile: Profile
-  /** Free account whose weigh-in history has hit the 30-row cap — the chart and
-   *  trend stop there, and until now nothing said so. */
+  /** Free account whose weigh-in history has hit its cohort's row cap — the
+   *  chart and trend stop there, and until now nothing said so. */
   atFreeCap?: boolean
+  /** The account's cohort cap (lib/freeTier.ts). The caption used to say "30"
+   *  unconditionally, which is wrong for every account created on or after
+   *  FREE_TIER_CUTOFF — they get 14, and were shown 14 while being told 30. */
+  freeWeightRows?: number
 }) {
   const [open, setOpen] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -93,7 +98,9 @@ export function WeightClient({
           <WeightChart logs={sorted} />
           {atFreeCap && (
             <div className="mt-3 flex items-center justify-between gap-2 border-t border-hairline pt-3">
-              <p className="text-[12px] text-ink-3">Showing your last 30 weigh-ins</p>
+              <p className="text-[12px] text-ink-3">
+                {freeWeightRows ? `Showing your last ${freeWeightRows} weigh-ins` : 'Showing your recent weigh-ins'}
+              </p>
               <ProLock.Chip label="Full history" reason="history" />
             </div>
           )}

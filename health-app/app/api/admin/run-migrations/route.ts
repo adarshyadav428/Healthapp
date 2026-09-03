@@ -1,23 +1,26 @@
 /**
- * One-time migration endpoint. Secured by SEED_SECRET.
- * Creates exercise_logs + water_logs tables if they don't exist.
+ * One-time bootstrap check for `exercise_logs`. Secured by SEED_SECRET.
  *
- * Usage (run once):
+ * Usage:
  *   POST /api/admin/run-migrations   { "secret": "<SEED_SECRET>" }
  *
- * Uses the Supabase service role key — which has DDL rights via the
- * Postgres REST API when the JWT matches the project's service role.
+ * **This route does not apply migrations.** The service role cannot run raw DDL
+ * through the REST API, so all it does is probe whether the table exists and, if
+ * not, hand back SQL for a human to paste into the Supabase SQL editor. The real
+ * migration set lives in `supabase/migrations/` and is applied by hand, in order.
+ *
+ * It used to also probe `water_logs` and return DDL that re-created it, plus
+ * `profiles.water_target_ml`. `019_drop_deprecated_tables.sql` dropped that table
+ * on purpose, and CLAUDE.md makes referencing the four dropped wellness tables a
+ * hard-rule violation — so the documented "apply migrations" path was actively
+ * instructing an operator to undo a deliberate migration, and reporting the table
+ * as `MISSING` (which is correct, and exactly what it should stay). Removed by the
+ * 2026-09-03 audit (P1-11).
  */
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '../../../../lib/supabase/server'
 
 export const runtime = 'nodejs'
-
-// The migration uses individual INSERT-based table existence checks
-// because the service role can't run raw DDL via the REST API.
-// Instead we use supabase's schema inspection + client operations
-// to safely set up the tables via RPC if available, otherwise we
-// signal what SQL to run manually.
 
 const MIGRATION_SQL = `
 CREATE TABLE IF NOT EXISTS exercise_logs (
@@ -39,22 +42,6 @@ CREATE POLICY exercise_logs_select ON exercise_logs FOR SELECT USING (auth.uid()
 CREATE POLICY exercise_logs_insert ON exercise_logs FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY exercise_logs_update ON exercise_logs FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY exercise_logs_delete ON exercise_logs FOR DELETE USING (auth.uid() = user_id);
-CREATE TABLE IF NOT EXISTS water_logs (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  ml integer NOT NULL CHECK (ml > 0),
-  logged_at timestamptz NOT NULL DEFAULT now(),
-  created_at timestamptz DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS idx_water_logs_user_logged_at ON water_logs (user_id, logged_at DESC);
-ALTER TABLE water_logs ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS water_logs_select ON water_logs;
-DROP POLICY IF EXISTS water_logs_insert ON water_logs;
-DROP POLICY IF EXISTS water_logs_delete ON water_logs;
-CREATE POLICY water_logs_select ON water_logs FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY water_logs_insert ON water_logs FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY water_logs_delete ON water_logs FOR DELETE USING (auth.uid() = user_id);
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS water_target_ml integer NOT NULL DEFAULT 2500;
 `
 
 export async function POST(req: Request) {
@@ -66,31 +53,21 @@ export async function POST(req: Request) {
 
   if (body.secret?.trim() !== secret) return NextResponse.json({ error: 'Invalid secret' }, { status: 403 })
 
-  // Check which tables already exist by attempting a count
   const admin = createAdminClient()
-  const checks = await Promise.all([
-    admin.from('exercise_logs').select('id', { count: 'exact', head: true }),
-    admin.from('water_logs').select('id', { count: 'exact', head: true }),
-  ])
+  const { error } = await admin.from('exercise_logs').select('id', { count: 'exact', head: true })
 
-  const exerciseExists = !checks[0].error
-  const waterExists = !checks[1].error
-
-  if (exerciseExists && waterExists) {
+  if (!error) {
     return NextResponse.json({
       ok: true,
-      message: 'Both tables already exist. No migration needed.',
+      message: 'exercise_logs already exists. Nothing to do.',
       exercise_logs: 'exists',
-      water_logs: 'exists',
     })
   }
 
-  // Tables don't exist — return the SQL for the user to run in Supabase dashboard
   return NextResponse.json({
     ok: false,
-    message: 'Tables missing. Run the SQL below in Supabase Dashboard → SQL Editor.',
-    exercise_logs: exerciseExists ? 'exists' : 'MISSING',
-    water_logs: waterExists ? 'exists' : 'MISSING',
+    message: 'exercise_logs is missing. Run the SQL below in Supabase Dashboard → SQL Editor.',
+    exercise_logs: 'MISSING',
     sql_to_run: MIGRATION_SQL.trim(),
     supabase_dashboard_url: `https://supabase.com/dashboard/project/${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('https://', '').replace('.supabase.co', '')}/sql/new`,
   }, { status: 202 })

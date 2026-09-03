@@ -79,10 +79,25 @@ export async function GET(req: Request) {
   // 2 x N round trips inside a serial loop, which at a few thousand users
   // exceeded the function timeout and silently stopped pushing partway
   // through — with no error anywhere to say so.
-  const [{ data: windowLogs }, { data: rescueRows }] = await Promise.all([
+  const [windowLogsRes, rescueRowsRes] = await Promise.all([
     admin.from('food_logs').select('user_id, logged_at').in('user_id', userIds).gte('logged_at', sixtyDaysAgo),
     admin.from('streak_rescues').select('user_id, rescued_date').in('user_id', userIds),
   ])
+
+  // Fail loudly, exactly like the two reads above. Taking `data` alone turned a
+  // failed food_logs read into an empty set, which classifies EVERY subscribed
+  // user as "hasn't logged today" and nudges all of them — including people who
+  // logged an hour ago. That is the same "mass mis-timed send dressed as a
+  // no-op" the reminder-hour read refuses to allow twenty lines up; it just
+  // arrived later, in the batch added when the N+1 was fixed. A failed
+  // streak_rescues read is quieter but wrong in a worse way: every streak
+  // number in the copy is then computed as if no day had ever been rescued, so
+  // paying users get told their streak is shorter than it is.
+  if (windowLogsRes.error) return NextResponse.json({ error: windowLogsRes.error.message }, { status: 500 })
+  if (rescueRowsRes.error) return NextResponse.json({ error: rescueRowsRes.error.message }, { status: 500 })
+
+  const windowLogs = windowLogsRes.data
+  const rescueRows = rescueRowsRes.data
 
   const logsByUser = new Map<string, { logged_at: string }[]>()
   const loggedTodayIds = new Set<string>()
