@@ -7,7 +7,7 @@ import { toast } from '../components/ui/use-toast'
 import { captureEvent, logMetaHeaders, markLogStart } from '../lib/posthog/client'
 import { reportLogMilestone } from '../store/milestoneStore'
 import { coachingLine, dayContextFor } from '../lib/coaching'
-import { dateStrToUtcMidnight } from '../lib/dateUtils'
+import { dateStrToUtcMidnight, formatIst } from '../lib/dateUtils'
 import { useUser } from './useUser'
 import { useDailyTotals } from './useDailyTotals'
 import { resolveAiGateAction } from '../lib/aiGateRedirect'
@@ -88,8 +88,10 @@ export function useChatLog({ onClose, logDate, context = 'standalone' }: Params)
     setInput('')
 
     try {
-      const now = new Date()
-      const currentTime = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+      // The clock the model infers a meal type from has to be the same clock
+      // the log is filed under — IST. In the device's zone an NRI's 9pm dinner
+      // arrived as 06:30, and came back tagged breakfast.
+      const currentTime = formatIst(new Date(), { hour: '2-digit', minute: '2-digit' })
       const res = await fetch('/api/chat/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

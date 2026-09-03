@@ -48,14 +48,14 @@ elsewhere fail loudly on purpose.
 
 ---
 
-## 1a. Fix status — both P0s and 10 of 13 P1s fixed the same day (2026-09-03)
+## 1a. Fix status — both P0s and all 13 P1s fixed the same day (2026-09-03)
 
-Gates after the changes: **88 files / 1,313 tests** pass (+41), tsc clean, lint clean, tokens clean,
+Gates after the changes: **89 files / 1,334 tests** pass (+62), tsc clean, lint clean, tokens clean,
 build clean. `044` was applied to production by Adarsh on 2026-09-03.
 
 | ID | Status | How |
 |---|---|---|
-| **P0-1** `subscriptions` self-grantable Pro | **Fixed in code — ⚠️ needs applying** | `supabase/migrations/044_subscriptions_rls_lockdown.sql` drops `subs_insert`, `subs_update` and `subs_delete`, keeping `subs_select`. No application code changed, because nothing user-scoped ever wrote that table. `tests/rlsPolicies.test.ts` gains a positive assertion that `subscriptions` has **no** user write policy, and the wrong entry that hid this — which claimed `subscriptions` needed an UPDATE policy "for `app/api/razorpay/cancel`", a route that uses the admin client — was removed. **Not live until you run the migration.** |
+| **P0-1** `subscriptions` self-grantable Pro | **Fixed — applied to production 2026-09-03** | `supabase/migrations/044_subscriptions_rls_lockdown.sql` drops `subs_insert`, `subs_update` and `subs_delete`, keeping `subs_select`. No application code changed, because nothing user-scoped ever wrote that table. `tests/rlsPolicies.test.ts` gains a positive assertion that `subscriptions` has **no** user write policy, and the wrong entry that hid this — which claimed `subscriptions` needed an UPDATE policy "for `app/api/razorpay/cancel`", a route that uses the admin client — was removed. **Not live until you run the migration.** |
 | **P1-1** `?start=epoch` defeats the history clamp | **Fixed** | New pure helper `clampHistoryStart` (`lib/dateUtils.ts`) compares **parsed instants**, not strings, and returns `null` for anything that is not a real timestamp. Both `/api/logs` and `/api/exercise/logs` now 400 an unparseable `start` for **every** tier before the clamp, then bound through the helper. Pinned twice — `tests/dateUtils.test.ts` for the function, `tests/routeEntitlements.test.ts` for each of the six literals against the real route — and each defence fails independently under sabotage. |
 | **P0-2** saved combo files on today | **Fixed** | `/api/meals/log` now accepts an optional `date` and resolves it through `resolveLoggedAtForRequest` (`lib/backfill.ts`), so the row carries an explicit `logged_at` instead of falling back to `DEFAULT now()` — and the free-tier backfill window is enforced, so accepting a date did not open a new bypass. `FoodLanding` and `useFoodSearch` both send `date`. The streak analytics for the log now describe the day it landed on rather than "now". |
 
@@ -76,10 +76,36 @@ each turns a specific test red. Two checks were themselves wrong on the first at
 rather than trusted — a CRLF file that made a `\n` patch silently no-op, and a copy guard that fired
 on its own explanatory comments.
 
-**Still open:** the three IST leaks (**P1-8**, **P1-9**, **P2-4**) and every P2 except P2-11. The IST
-leaks are grouped deliberately: the durable fix is a lint rule banning `toLocale*` without an explicit
-`timeZone` and date-fns day helpers in `app/`/`components/`, since both constructs read as correct and
-a reviewer will keep missing them.
+### The three timezone leaks — P1-8, P1-9, P2-4 (fixed 2026-09-03, with the rule)
+
+Grouped on purpose, because the three fixes were never the point: both leaking constructs *read as
+correct*, so a reviewer will keep missing them. The durable half is a lint rule, and it exists now.
+
+| Piece | What |
+|---|---|
+| **The helper** | **`formatIst(value, options, locale)`** (`lib/dateUtils.ts`) — the one sanctioned way to turn an instant into text. Built on `Intl.DateTimeFormat`, **not** the `Date` methods, so the file needs no exemption from the rule it exists to satisfy: the ban has zero holes to imitate. `locale` stays per-call because it decides field *order* ("Sep 3" vs "3 Sept") — a copy decision, not a timezone one. |
+| **The rule** | `.eslintrc.json` `no-restricted-syntax` bans bare `toLocaleDateString` / `toLocaleTimeString`, `new Date(…).toLocaleString`, and `new Intl.DateTimeFormat` — each unless the call names a `timeZone`. `no-restricted-imports` bans **`date-fns`** outright. Number formatting is untouched: `kcal.toLocaleString('en-IN')` is not a date, and a probe confirmed it stays clean. |
+| **The reach** | `next lint` covers `app`/`components`/`lib` by default. `hooks/` and `store/` were **never linted** — and `hooks/useChatLog.ts` was one of the leaks. `next.config.js` now sets `eslint.dirs` to include them. |
+| **The proof** | The rule was verified by sabotage, not by a green run: a probe file with all four violations plus four legal forms produced exactly four errors in each of `components/`, `hooks/` and `store/`, and `npm run lint` exited 1. |
+| **The pin** | `tests/istFormatting.test.ts` (21 cases) pins `formatIst`'s zone behaviour against a 19:30 UTC / 01:00 IST instant, pins `lastIstDateStrs`, pins the rule's presence and the lint dirs, and sweeps the shipped tree for both constructs *and* for the `eslint-disable` comment that would quietly re-open the hole. The sweep was itself sabotaged — reintroducing the `RecentMealCard` leak turned it red and named the file. |
+
+**Seven call sites were leaking, not three.** The rule found four the audit had not:
+
+| Site | Was |
+|---|---|
+| `components/progress/ProgressClient.tsx` | date-fns local-day grouping + labels (**P1-8**). Now IST throughout: `istDate` delegates to `istDateStr`, the day list comes from the new `lastIstDateStrs`, and the exercise window compares **parsed instants** against `istDaysAgoStart` rather than date-fns intervals. |
+| `components/dashboard/DashboardClient.tsx:111` | Home's header in device-local time (**P1-9**). |
+| `components/home/RecentMealCard.tsx:15` | recent-meal clock in device-local time (**P2-4**). |
+| `components/home/MealGroup.tsx:14` | *the same clock bug on the diary's own list* — the file P2-4 was copied from or to. |
+| `components/weight/WeightClient.tsx:127` | a `timestamptz` weigh-in read back in the device's zone: a 00:30 IST entry listed under the previous date. |
+| `components/weight/WeightChart.tsx` | date-fns `format` on the same column, for the axis and the tooltip. |
+| `hooks/useChatLog.ts:92` | the clock sent to Gemini to infer a meal type. An NRI's 9pm dinner arrived as 06:30 and came back tagged **breakfast** — a wrong *value*, not just a wrong label. |
+| `lib/projection.ts:30` | the projected goal date. Fixing it also made `tests/projection.test.ts` deterministic, so its `toMatch(/Dec 2026/)` — an assertion that could not fail for the reason it was written — was tightened to the exact day. |
+
+`date-fns` is now unused in the shipped tree; the dependency is left in `package.json` deliberately
+(removing it is lockfile churn with no runtime effect), but the import is a lint error.
+
+**Still open:** every P2 except P2-4 and P2-11.
 
 ---
 

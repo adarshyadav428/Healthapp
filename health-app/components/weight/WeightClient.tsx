@@ -8,6 +8,7 @@ import { BmiCard } from './BmiCard'
 import { useWeightLogs } from '../../hooks/useWeightLogs'
 import { projectGoalDate, formatGoalDate } from '../../lib/projection'
 import { formatKg } from '../../lib/formatWeight'
+import { formatIst } from '../../lib/dateUtils'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
 import { Button } from '../ui/button'
@@ -123,8 +124,9 @@ export function WeightClient({
         <div className="rounded-sheet border border-hairline bg-surface p-4 shadow-rest space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-ink-2">Recent entries</p>
           {recentEntries.map((log) => {
-            const date = new Date(log.measured_at)
-            const label = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', weekday: 'short' })
+            // measured_at is a timestamptz, so it must be read back in IST:
+            // in the device's zone, a weigh-in at 00:30 IST listed as yesterday.
+            const label = formatIst(log.measured_at, { day: 'numeric', month: 'short', weekday: 'short' })
             return (
               <div key={log.id} className="flex items-center justify-between rounded-control bg-surface-2 px-4 py-2.5">
                 <span className="text-sm text-ink-2">{label}</span>

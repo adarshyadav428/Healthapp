@@ -1,3 +1,31 @@
 {
-  "extends": "next/core-web-vitals"
+  "extends": "next/core-web-vitals",
+  "rules": {
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "CallExpression[callee.property.name=/^toLocale(Date|Time)String$/]:not(:has(Property[key.name='timeZone'])):not(:has(Property[key.value='timeZone']))",
+        "message": "This formats in the runtime's zone (the device's in the browser, UTC on Vercel) — this app's day boundary is IST everywhere. Use formatIst() from lib/dateUtils, or pass an explicit timeZone if you really mean another zone."
+      },
+      {
+        "selector": "CallExpression[callee.object.type='NewExpression'][callee.object.callee.name='Date'][callee.property.name='toLocaleString']:not(:has(Property[key.name='timeZone'])):not(:has(Property[key.value='timeZone']))",
+        "message": "This formats a Date in the runtime's zone. Use formatIst() from lib/dateUtils, or pass an explicit timeZone."
+      },
+      {
+        "selector": "NewExpression[callee.object.name='Intl'][callee.property.name='DateTimeFormat']:not(:has(Property[key.name='timeZone'])):not(:has(Property[key.value='timeZone']))",
+        "message": "An Intl.DateTimeFormat with no timeZone resolves to the runtime's zone. Use formatIst() from lib/dateUtils, or pass an explicit timeZone."
+      }
+    ],
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "date-fns",
+            "message": "date-fns' day helpers (startOfDay, eachDayOfInterval, format, parseISO) all work in the runtime's LOCAL day, which is a second definition of 'a day' competing with IST. Use lib/dateUtils (istDateStr, getIstDayRange, formatIst) and lib/logDates (shiftDateStr, lastIstDateStrs)."
+          }
+        ]
+      }
+    ]
+  }
 }

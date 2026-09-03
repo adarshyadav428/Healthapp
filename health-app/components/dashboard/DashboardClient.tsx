@@ -31,6 +31,7 @@ import { AI_TRIAL_SCANS, aiScansLeftLabel } from '../../lib/aiTrial'
 import { nextStreakBadge } from '../../lib/badges'
 import { proteinCoachLine } from '../../lib/proteinCoach'
 import { cn } from '../../lib/utils'
+import { formatIst } from '../../lib/dateUtils'
 import { reportStreakMilestone } from '../../store/milestoneStore'
 import { Flame, Plus, MessageCircle, Snowflake } from 'lucide-react'
 
@@ -108,7 +109,9 @@ export function DashboardClient({ profile, initialLogs, streakDays, longestStrea
     [logs.length, totals.protein_g, profile.protein_g_target, profile.current_weight_kg]
   )
   const recent = logs.slice(0, 3) // logs arrive newest-first
-  const todayDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+  // IST, like every other day boundary here. In the device's zone this header
+  // could name a different day than the diary directly beneath it (P1-9).
+  const todayDate = formatIst(new Date(), { weekday: 'long', month: 'short', day: 'numeric' }, 'en-US')
   const nextBadge = nextStreakBadge(streakDays, longestStreakDays)
 
   // Home gets one moment. Each card still owns whether it *could* speak; this

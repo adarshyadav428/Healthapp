@@ -11,6 +11,38 @@
 // Indian Standard Time = UTC + 5:30
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000
 
+/** The IANA zone every day boundary in this app is defined in. */
+export const IST_TZ = 'Asia/Kolkata'
+
+/**
+ * Render an instant as text a user reads, in IST. The one sanctioned way.
+ *
+ * `toLocaleDateString` / `toLocaleTimeString` with no explicit `timeZone`
+ * format in the **runtime's** zone: the device's in a client component, UTC on
+ * a Vercel server. Both are wrong here, because every other part of this app
+ * defines a day in IST — so a phone set to any other zone showed a weigh-in
+ * made at 00:30 IST under the previous date, listed a 1am snack under
+ * yesterday, and let Home's header name a day the diary below it disagreed
+ * with. Nothing looks wrong in the source: the call reads as correct, which is
+ * why three of these survived two audits before 2026-09-03 (P1-8/P1-9/P2-4).
+ * `.eslintrc.json` now bans the raw calls outright, so the next one can't ship.
+ *
+ * Deliberately built on `Intl.DateTimeFormat` rather than the `Date` methods,
+ * so this file needs no exemption from the rule it exists to satisfy — the ban
+ * has zero holes to imitate.
+ *
+ * `locale` stays per-call because it decides field ORDER ("Sep 3" in en-US,
+ * "3 Sep" in en-IN). That is a copy decision, not a timezone one, and forcing
+ * one locale here would silently restyle every date in the app.
+ */
+export function formatIst(
+  value: string | number | Date,
+  options: Intl.DateTimeFormatOptions,
+  locale = 'en-IN'
+): string {
+  return new Intl.DateTimeFormat(locale, { ...options, timeZone: IST_TZ }).format(new Date(value))
+}
+
 /**
  * Returns UTC ISO timestamps bounding the IST calendar day containing `date`.
  * Use this (not getUtcDayRange) for anything a user thinks of as "today" —

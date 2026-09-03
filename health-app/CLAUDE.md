@@ -17,7 +17,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **88 files / 1,313 tests**. There is no `vitest.config.ts`; defaults apply.
+- **Tests:** Vitest 4.1 — **89 files / 1,334 tests**. There is no `vitest.config.ts`; defaults apply.
 - **Deploy:** Vercel **Hobby** plan, region `bom1`. The Hobby limits are load-bearing (see Hard rules).
 
 ## Architecture / directory map
@@ -78,7 +78,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (88 files / 1,313 tests)
+npm test                 # vitest run — the whole suite (89 files / 1,334 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
 npm run check:tokens     # design-token guard: no raw hex, no broken opacity modifiers
@@ -272,6 +272,27 @@ actively seeding.
   `istDateStr`; there is no UTC day helper left and none may come back. When the page resolved the day
   in IST and the header in UTC, everything between 00:00 and 05:30 IST — the late-dinner window — was
   off by one: the "Today" pill sat on the wrong day and the next-day chevron unlocked.
+- **Never format a date or time without naming a zone — `npm run lint` now refuses it.** Use
+  **`formatIst`** (`lib/dateUtils.ts`) for anything a user reads; pass an explicit `timeZone` only when
+  you genuinely mean another zone (`/wrapped`, `StreakRescueCard` and `FoodHeader` format a synthetic
+  UTC-midnight date standing in for an IST calendar date, and say so). `.eslintrc.json` bans bare
+  `toLocaleDateString` / `toLocaleTimeString`, `new Date(…).toLocaleString` and `new Intl.DateTimeFormat`
+  via `no-restricted-syntax`; `next.config.js` extends the lint dirs to `hooks/` and `store/`, which
+  `next lint` skips by default and which is where one of these hid. Number formatting is untouched —
+  `kcal.toLocaleString('en-IN')` is not a date. **The locale is not the zone:** `'en-IN'` sets language
+  and field order only, which is why `new Date(iso).toLocaleTimeString('en-IN', …)` reads as correct
+  and is not — it formats in the *device's* zone in a client component and in UTC on Vercel. That put a
+  1am snack under yesterday, listed a 00:30 IST weigh-in on the previous date, let Home's header name a
+  day the diary beneath it disagreed with, and sent an NRI's 9pm dinner to the AI as 06:30, which came
+  back tagged breakfast. Three of them survived two audits (2026-09-03: P1-8/P1-9/P2-4).
+- **`date-fns` is banned outright** (`no-restricted-imports`), and the dependency is now unused.
+  `startOfDay`, `eachDayOfInterval`, `format` and `parseISO` all work in the runtime's **local** day —
+  a second definition of "a day" competing with IST, and the one that made the Trends chart group a
+  meal into one bar and label that bar with a different date. Replacements: `istDateStr`,
+  `getIstDayRange`, `istDaysAgoStart`, `formatIst` (`lib/dateUtils.ts`) and `shiftDateStr`,
+  `lastIstDateStrs` (`lib/logDates.ts`). The rule and the lint dirs are themselves pinned by
+  `tests/istFormatting.test.ts`, which also sweeps the shipped tree for both constructs and for the
+  `eslint-disable` that would quietly re-open the hole.
 - **Home leads with one attention card, never two.** `pickDashboardMoment` (`lib/dashboardMoments.ts`)
   holds the frozen order `streak-rescue > streak-restart > plateau`, the same shape as `lib/pushBudget.ts`
   one screen further in. At a streak of zero a Pro user inside the rescue window qualifies for two cards
@@ -456,7 +477,7 @@ These are deep dives, kept out of this file on purpose. Read the relevant one **
 | `docs/growth-mechanics-plan-2026-07-29.md` | `components/story/`, `lib/streakRescue.ts`, `lib/mealSuggest.ts`, `lib/pushBudget.ts`, `lib/reminderSchedule.ts`, `lib/cronBatch.ts` — note Seasons was cut, see below |
 | `docs/refactor-safety-contract.md` | Any refactor — it maps each covered behavior to the test that pins it, and lists the accepted residual gaps |
 | `TESTING.md` | Shipping. The manual script for everything tests can't reach (auth, real phones, the day boundary) |
-| `docs/deep-dive-audit-2026-09-03.md` | Investigating a suspected systemic issue — the **latest** full audit. Both P0s and 9 of its 13 P1s are fixed; **still open: the three IST leaks (P1-8, P1-9, P2-4) and every P2** |
+| `docs/deep-dive-audit-2026-09-03.md` | Investigating a suspected systemic issue — the **latest** full audit. Both P0s, all 13 P1s and P2-4/P2-11 are fixed; **still open: every other P2** |
 | `docs/deep-dive-audit-2026-07-31.md` | The previous full audit — read for the fixes it made and the false alarms it recorded |
 | `docs/growth-advice-audit-2026-08-25.md` | Anything about attribution, the paywall's placement, trial length, or adding an A/B mechanism — it scores the app against an external growth playbook, and §7 records where we disagree with it on purpose |
 | `docs/prompts/growth-advice-apply.md` | Re-running that audit, or holding any new growth book against the app |

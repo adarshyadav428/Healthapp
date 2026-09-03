@@ -1,5 +1,6 @@
 import type { FoodLog } from '../../types/index'
 import { foodEmoji, tintFor } from '../../lib/foodVisual'
+import { formatIst } from '../../lib/dateUtils'
 
 // Ember Air "Recently logged" card: a 64px food-emoji tile on a soft macro
 // tint, name + "Meal · time" caption, and the kcal right-aligned.
@@ -11,8 +12,10 @@ const MEAL_LABEL: Record<string, string> = {
   snack: 'Snack',
 }
 
+// IST — the zone the log was filed under. Rendered in the device's zone, a
+// 1am snack read as an 8:30pm one the evening before (audit 2026-09-03, P2-4).
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })
+  return formatIst(iso, { hour: 'numeric', minute: '2-digit', hour12: true })
 }
 
 export function RecentMealCard({ log, imageUrl, onClick }: { log: FoodLog; imageUrl?: string | null; onClick?: () => void }) {

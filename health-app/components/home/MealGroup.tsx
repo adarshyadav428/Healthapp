@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Pencil } from 'lucide-react'
 import type { FoodLog } from '../../types/index'
 import { isLiquidFood } from '../../lib/portion-units'
+import { formatIst } from '../../lib/dateUtils'
 
 const MEAL_CONFIG: Record<string, { label: string; letter: string }> = {
   breakfast: { label: 'Breakfast', letter: 'B' },
@@ -10,8 +11,10 @@ const MEAL_CONFIG: Record<string, { label: string; letter: string }> = {
   snack:     { label: 'Snack',     letter: 'S' },
 }
 
+// IST, matching the day this log is grouped under. Same defect as
+// RecentMealCard's clock, on the diary's own list.
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })
+  return formatIst(iso, { hour: 'numeric', minute: '2-digit', hour12: true })
 }
 
 interface Props {
