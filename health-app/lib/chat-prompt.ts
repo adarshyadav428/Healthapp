@@ -34,6 +34,14 @@ DO NOT OVER-SPECIFY:
   user did not mention. "sabzi" with no vegetable named is "Mixed Vegetable Sabzi". A generic
   name you can justify beats a specific one you're guessing at.
 
+COUNTED ITEMS:
+- When an item is naturally counted rather than weighed (chicken pieces, paneer cubes, boiled
+  eggs, samosas, idlis...), also include "unit": "pcs" and "count": <the number of pieces>, so
+  the user can correct "6 pieces" to "8 pieces" directly instead of guessing at grams. "grams"
+  must still be the TOTAL weight for that count (6 pieces at ~55g each = 330). Omit "unit" and
+  "count" entirely for anything weighed or scooped (rice, dal, curry, roti) — leave those as
+  "grams" only.
+
 OUTPUT FORMAT:
 {
   "meal": "Breakfast|Lunch|Dinner|Snack",
@@ -50,6 +58,19 @@ OUTPUT FORMAT:
       "protein_g_per_100g": 8.1,
       "carbs_g_per_100g": 20.0,
       "fat_g_per_100g": 6.5
+    },
+    {
+      "name": "Chicken Piece",
+      "portion_desc": "6 medium pieces",
+      "grams": 330,
+      "is_stated_component": true,
+      "confidence": "medium",
+      "unit": "pcs",
+      "count": 6,
+      "kcal_per_100g": 165,
+      "protein_g_per_100g": 18.0,
+      "carbs_g_per_100g": 0,
+      "fat_g_per_100g": 10.0
     }
   ]
 }

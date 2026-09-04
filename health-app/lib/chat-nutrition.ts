@@ -26,6 +26,15 @@ export type ChatItem = {
    */
   is_stated_component?: boolean
   confidence?: 'low' | 'medium' | 'high'
+  /**
+   * "pcs" for a naturally-countable item (chicken pieces, paneer cubes) —
+   * `count` is then how many, and `grams` is still the TOTAL weight for
+   * that count. Lets the confirm UI offer a "− 6 pieces +" stepper instead
+   * of a gram slider for exactly the items a user is most likely to want to
+   * correct by count rather than by weight. Omitted/"g" for everything else.
+   */
+  unit?: 'g' | 'pcs'
+  count?: number
   kcal_per_100g: number
   protein_g_per_100g: number
   carbs_g_per_100g: number
@@ -79,6 +88,8 @@ export type ResolvedChatItem = {
   portion_desc: string
   grams: number
   confidence: 'low' | 'medium' | 'high'
+  unit?: 'g' | 'pcs'
+  count?: number
   kcal_per_100g: number
   protein_g_per_100g: number
   carbs_g_per_100g: number
@@ -173,11 +184,16 @@ function appendNote(existing: string, note: string): string {
 function resolveAll(rawItems: ChatItem[]): ResolvedChatItem[] {
   return rawItems.map((item) => {
     const n = resolveChatItemNutrition(item)
+    const count = item.unit === 'pcs' ? num(item.count) ?? undefined : undefined
     return {
       name: item.name,
       portion_desc: item.portion_desc,
       grams: Math.max(0, num(item.grams) ?? 0),
       confidence: n.plausible ? (item.confidence ?? 'medium') : 'low',
+      // A count needs a positive whole number to drive a stepper — anything
+      // else (missing, zero, fractional) just means "no stepper", not "0 pcs".
+      unit: item.unit === 'pcs' && count && count > 0 ? 'pcs' : undefined,
+      count: item.unit === 'pcs' && count && count > 0 ? Math.round(count) : undefined,
       kcal_per_100g: n.kcal_per_100g,
       protein_g_per_100g: n.protein_g_per_100g,
       carbs_g_per_100g: n.carbs_g_per_100g,
