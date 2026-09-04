@@ -16,6 +16,7 @@ import { logMetaHeaders } from '../../lib/posthog/client'
 import { userFacingApiError } from '../../lib/apiError'
 import { coachingLine, dayContextFor } from '../../lib/coaching'
 import { useDailyTotals } from '../../hooks/useDailyTotals'
+import { useScrollLock } from '../ui/use-scroll-lock'
 import { UnitPicker } from './UnitPicker'
 
 const MEAL_OPTIONS = [
@@ -113,6 +114,8 @@ export function AddFoodModal(
   const [meal, setMeal] = useState<MealValue>(mealForTime())
   const [context, setContext] = useState<MealContext | null>(null)
   const [showUnitPicker, setShowUnitPicker] = useState(false)
+
+  useScrollLock()
 
   const quantityNum = Math.max(0, parseFloat(quantityStr) || 0)
   const grams = unit.toGrams(quantityNum)
@@ -237,7 +240,7 @@ export function AddFoodModal(
       </div>
 
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto px-4 pb-32">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-32">
         {/* Hero card */}
         <div className="relative rounded-sheet overflow-hidden h-44 mb-5 bg-brand-soft">
           <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-90">
@@ -384,7 +387,16 @@ export function AddFoodModal(
       </div>
 
       {/* Sticky bottom Add button */}
-      <div className="absolute inset-x-0 bottom-0 bg-canvas border-t border-hairline px-4 pt-3 pb-5 safe-area-inset-bottom">
+      {/* `safe-area-inset-bottom` used to be here and is not a class that
+          exists — globals.css defines `.safe-area-bottom`. Renaming it would
+          have *cut* the padding, since that utility resolves to
+          `env(safe-area-inset-bottom)` = 0 without `viewport-fit=cover`; this
+          matches BottomNav's idiom instead, keeping 20px today and picking the
+          inset up if cover ever lands. */}
+      <div
+        className="absolute inset-x-0 bottom-0 bg-canvas border-t border-hairline px-4 pt-3"
+        style={{ paddingBottom: 'calc(20px + env(safe-area-inset-bottom))' }}
+      >
         <button
           type="button"
           onClick={handleSubmit}
