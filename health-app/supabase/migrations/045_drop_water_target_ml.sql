@@ -1,0 +1,70 @@
+-- 045_drop_water_target_ml.sql
+--
+-- Removes the last trace of water tracking: `profiles.water_target_ml`.
+-- Closes the schema half of the 2026-09-03 audit's P2-3; the code half shipped
+-- in PR #60 (commit 06bc4af). See docs/deep-dive-audit-2026-09-03.md.
+--
+-- ── Why this could not be run before ─────────────────────────────────────────
+--
+-- `019_drop_deprecated_tables.sql` dropped `water_logs` on 2026-07-?? and cut
+-- water tracking from the product. It did not drop this column, and the column
+-- then spent over a year being *dead and load-bearing at the same time* — the
+-- worst combination, because nothing rendered it yet five sites would break if
+-- it vanished:
+--
+--   app/log/page.tsx                        selected it on the hot path
+--   components/settings/SettingsClient.tsx  echoed it back in two payloads
+--   components/dashboard/AdaptiveTargetCard.tsx   echoed it back
+--   lib/validations.ts                      accepted it in profileUpdateSchema
+--   app/api/profile/update/route.ts         wrote it, AND had a bespoke
+--                                           error-recovery branch keyed on the
+--                                           string "water_target_ml"
+--   types/index.ts                          declared it on Profile
+--
+-- Running this migration against that code would have made every profile update
+-- fail: the UPDATE names a column that no longer exists, Postgres errors, and
+-- the retry branch — which existed to survive exactly this — would have dropped
+-- the field and retried, so in practice it would have limped rather than 500'd.
+-- Either way the app would have been writing a column it believed in and the
+-- database did not. All six sites were removed first, deliberately, so that this
+-- file changes nothing at all.
+--
+-- The generalisation is in CLAUDE.md: nothing about a dead field should be
+-- load-bearing. If removing it needs a checklist, it isn't dead — it's
+-- undocumented.
+--
+-- ── Is this safe to run? ─────────────────────────────────────────────────────
+--
+-- Yes, and it is the rare destructive migration that loses nothing anyone can
+-- miss. The data is a *target* a user may have set in a UI that has not existed
+-- since migration 019 — not a log of anything they did. The readings it was a
+-- target for (`water_logs`) were already deleted by 019, so the column is a
+-- goal for a metric with no history and no screen.
+--
+-- Still: this is DROP COLUMN. It is not reversible, and this project has NO
+-- database backups (Supabase Free tier). If you want the values first, run this
+-- before applying, and keep the result:
+--
+--   select id, water_target_ml
+--   from profiles
+--   where water_target_ml is not null;
+--
+-- ── After this ───────────────────────────────────────────────────────────────
+--
+-- No application code references `water_target_ml` in any form, so nothing needs
+-- to ship alongside this. `IF EXISTS` makes it idempotent and makes it a no-op
+-- on any database where it was never added.
+
+ALTER TABLE profiles DROP COLUMN IF EXISTS water_target_ml;
+
+-- ── Verify, after applying ───────────────────────────────────────────────────
+--
+-- Expect zero rows:
+--
+--   select column_name
+--   from information_schema.columns
+--   where table_name = 'profiles' and column_name = 'water_target_ml';
+--
+-- And confirm the profile screen still saves: Settings → change your target
+-- weight → Save. That is the route (/api/profile/update) that used to name this
+-- column, so it is the one worth a click.
