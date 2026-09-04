@@ -85,7 +85,7 @@ export function CreateFoodModal({
 
   return (
     <Sheet open onOpenChange={(v) => !v && onClose()}>
-      <SheetContent title="Create a custom food" className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <SheetContent title="Create a custom food" className="sm:max-w-md max-h-[calc(90vh-var(--kb-inset,0px))] overflow-y-auto overscroll-contain">
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">

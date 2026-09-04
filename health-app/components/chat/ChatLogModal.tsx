@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { X, Send, Loader2, RotateCcw, CheckCircle, MessageSquarePlus } from 'lucide-react'
 import { Sheet, SheetContent } from '../ui/sheet'
 import { Button } from '../ui/button'
@@ -15,6 +15,9 @@ const MEAL_OPTIONS: { value: Meal; label: string }[] = [
 ]
 
 function round1(n: number) { return Math.round(n * 10) / 10 }
+
+/** Roughly four lines at `text-base`; past this the textarea scrolls itself. */
+const INPUT_MAX_H = 120
 
 export function ChatLogModal({
   onClose,
@@ -33,12 +36,25 @@ export function ChatLogModal({
   } = useChatLog({ onClose, logDate, context })
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  // Grow the input with its content instead of reserving two lines up front,
+  // and collapse it again when `handleSend` clears the value.
+  useLayoutEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, INPUT_MAX_H)}px`
+  }, [input])
+
   return (
     <Sheet open onOpenChange={(v) => !v && onClose()}>
-      <SheetContent title="Log a meal with AI" className="sm:max-w-lg flex flex-col max-h-[90vh] p-0 pt-3">
+      {/* `px-0` rather than `p-0`: tailwind-merge would let `p-0` strip the
+          sheet's own safe-area `pb-`, which is what left the input row sitting
+          under the keyboard. `max-h` subtracts the keyboard inset so the sheet
+          shrinks as sheet.tsx lifts it, instead of pushing its top off-screen. */}
+      <SheetContent title="Log a meal with AI" className="sm:max-w-lg flex flex-col max-h-[calc(90vh-var(--kb-inset,0px))] px-0">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pb-3 border-b border-hairline">
+        <div className="shrink-0 flex items-center justify-between px-5 pb-3 border-b border-hairline">
           <div className="flex items-center gap-2">
             <MessageSquarePlus className="h-5 w-5 text-brand" />
             <h2 className="font-display text-base font-bold text-ink">Log with AI</h2>
@@ -48,8 +64,10 @@ export function ChatLogModal({
           </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        {/* Content — `min-h-0` is load-bearing: a flex child defaults to
+            `min-height: auto`, so without it a long conversation refuses to
+            shrink and pushes the input row out of the sheet entirely. */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
 
           {/* User message bubble */}
           {'message' in state && (
@@ -210,21 +228,21 @@ export function ChatLogModal({
 
         {/* Input area */}
         {(state.type === 'idle' || state.type === 'done') && (
-          <div className="px-5 pb-6 pt-3 border-t border-hairline">
-            <div className="flex gap-2 items-end">
+          <div className="shrink-0 px-5 py-3 border-t border-hairline">
+            <div className="flex gap-2 items-center">
               <textarea
                 ref={textareaRef}
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
                 placeholder="Describe what you ate — e.g. 4 roti, dal, sabzi..."
-                rows={2}
-                className="flex-1 resize-none rounded-control border border-hairline bg-surface-2 px-4 py-2.5 text-sm text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
+                rows={1}
+                className="flex-1 resize-none rounded-control border border-hairline bg-surface-2 px-4 py-2.5 text-base text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-colors"
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim()}
-                className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-brand text-white hover:opacity-90 disabled:opacity-40 active:scale-95 transition-all"
+                className="flex-shrink-0 flex items-center justify-center h-11 w-11 rounded-full bg-brand text-white hover:opacity-90 disabled:opacity-40 active:scale-95 transition-all"
               >
                 <Send className="h-4 w-4" />
               </button>

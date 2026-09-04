@@ -227,7 +227,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
               <RowChevron />
             </button>
           </SheetTrigger>
-          <SheetContent className="max-h-[88vh] overflow-y-auto">
+          <SheetContent className="max-h-[calc(88vh-var(--kb-inset,0px))] overflow-y-auto overscroll-contain">
             <SheetTitle className="mb-4">Goals &amp; targets</SheetTitle>
 
             {/* Calorie quick-editor */}

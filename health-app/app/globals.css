@@ -69,6 +69,12 @@
 
   /* Ember Air — flatter card elevation for the redesigned core screens */
   --shadow-air:  0 1px 2px rgba(23,21,15,.04), 0 12px 32px -16px rgba(23,21,15,.10);
+
+  /* On-screen keyboard height, published by components/KeyboardInset.tsx and
+     0 whenever no keyboard is up. Not a theme value — declared here only so it
+     always resolves and the contract is discoverable. Read by sheet
+     positioning; a sheet that lifts by it must also subtract it from max-h. */
+  --kb-inset:    0px;
 }
 
 .dark {
