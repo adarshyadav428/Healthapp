@@ -74,7 +74,6 @@ export function AdaptiveTargetCard({ profile }: { profile: Profile }) {
           target_weight_kg: profile.target_weight_kg,
           activity_level: profile.activity_level,
           goal: profile.goal,
-          water_target_ml: profile.water_target_ml ?? 2500,
           custom_calorie_target: suggestion.newTarget,
           custom_protein_target: profile.protein_g_target,
           custom_carbs_target: profile.carbs_g_target,

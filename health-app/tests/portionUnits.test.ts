@@ -589,3 +589,50 @@ describe('quantity stepper', () => {
     })
   })
 })
+
+/**
+ * The stepper's ceiling must be a ceiling.
+ *
+ * `quantityBounds` derives `max` from MAX_LOG_GRAMS so that "the stepper
+ * physically cannot build a payload the server would reject" — its own words.
+ * The 2dp tidy-up rounded to *nearest*, so the ceiling could round UP past the
+ * limit it was derived from: a 6 g portion gave max 1666.67, which is 10,000.02
+ * g, and the field showed a legal-looking number over a 400 from the server.
+ * 226 of the first 500 integer per-unit sizes overflowed (2026-09-03, P2-8).
+ */
+describe('quantityBounds never exceeds MAX_LOG_GRAMS', () => {
+  const unitOfWeight = (perUnit: number) => ({
+    key: 'portion' as const,
+    label: 'portion',
+    toGrams: (q: number) => q * perUnit,
+  })
+
+  it('holds for every integer portion weight from 1g to 500g', () => {
+    const overflowing: number[] = []
+    for (let perUnit = 1; perUnit <= 500; perUnit++) {
+      const { max } = quantityBounds(unitOfWeight(perUnit) as never)
+      if (max * perUnit > MAX_LOG_GRAMS) overflowing.push(perUnit)
+    }
+    expect(overflowing, 'these portion sizes build a payload the server rejects').toEqual([])
+  })
+
+  it('holds for the case that was observed to fail', () => {
+    const { max } = quantityBounds(unitOfWeight(6) as never)
+    expect(max * 6).toBeLessThanOrEqual(MAX_LOG_GRAMS)
+    expect(max).toBe(1666.66) // was 1666.67 → 10,000.02 g
+  })
+
+  it('still rounds to 2dp rather than truncating to a whole number', () => {
+    // The fix is floor-at-2dp, not floor-to-integer: a stepper whose ceiling
+    // jumped to 1666 would be needlessly wrong in the other direction.
+    const { max } = quantityBounds(unitOfWeight(3) as never)
+    expect(max).toBe(3333.33)
+  })
+
+  it('a fractional-gram unit cannot overflow either', () => {
+    for (const perUnit of [0.5, 1.5, 2.5, 7.7, 12.3, 99.9]) {
+      const { max } = quantityBounds(unitOfWeight(perUnit) as never)
+      expect(max * perUnit, `perUnit=${perUnit}`).toBeLessThanOrEqual(MAX_LOG_GRAMS)
+    }
+  })
+})

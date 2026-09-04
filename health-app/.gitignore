@@ -42,3 +42,14 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# next-pwa build output. `npm run build` rewrites public/sw.js on every run —
+# the precache manifest carries a fresh revision hash per file — so keeping it
+# tracked meant every build left the working tree dirty and every diff carried
+# a regenerated artifact nobody reviews. Vercel builds these on deploy; there
+# is no path that serves them from git. (2026-07-31 P2-9 → 2026-09-03 P2-10.)
+/public/sw.js
+/public/sw.js.map
+/public/workbox-*.js
+/public/workbox-*.js.map
+/public/swe-worker-*.js

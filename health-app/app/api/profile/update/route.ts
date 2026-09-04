@@ -73,7 +73,6 @@ export async function POST(req: Request) {
       protein_g_target:     targets.protein_g_target,
       carbs_g_target:       targets.carbs_g_target,
       fat_g_target:         targets.fat_g_target,
-      ...(parsed.data.water_target_ml !== undefined ? { water_target_ml: parsed.data.water_target_ml } : {}),
       ...(pace_kg_per_week !== undefined ? { pace_kg_per_week } : {}),
     }
 
@@ -83,14 +82,15 @@ export async function POST(req: Request) {
       .eq('id', user.id)
 
     if (error) {
-      // Two columns can be missing here for the same reason — an unapplied
-      // migration — so the retry drops both rather than only water_target_ml.
+      // `body_focus` can be missing on a database that predates migration 040,
+      // so a failure naming it retries without it rather than losing the whole
+      // update. The retry used to also drop `water_target_ml`; that field no
+      // longer reaches this route at all (P2-3).
       const msg = String(error.message)
-      if (msg.includes('water_target_ml') || msg.includes('body_focus')) {
-        const { water_target_ml: _ignored, ...fallback } = payload as Record<string, unknown>
+      if (msg.includes('body_focus')) {
         const { error: retryError } = await supabase
           .from('profiles')
-          .update(fallback)
+          .update(payload)
           .eq('id', user.id)
         if (retryError) throw new Error(retryError.message)
       } else {

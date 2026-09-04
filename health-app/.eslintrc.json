@@ -14,6 +14,10 @@
       {
         "selector": "NewExpression[callee.object.name='Intl'][callee.property.name='DateTimeFormat']:not(:has(Property[key.name='timeZone'])):not(:has(Property[key.value='timeZone']))",
         "message": "An Intl.DateTimeFormat with no timeZone resolves to the runtime's zone. Use formatIst() from lib/dateUtils, or pass an explicit timeZone."
+      },
+      {
+        "selector": "CallExpression[callee.property.name=/^get(Hours|Minutes|Date|Day|Month|FullYear)$/]",
+        "message": "These read the RUNTIME's calendar fields, not IST — the same leak as a bare toLocaleDateString, and the one that filed a 9pm meal under the wrong meal. Use istHour / istDateStr / getIstDayRange from lib/dateUtils, or the getUTC* form when the date was built with Date.UTC."
       }
     ],
     "no-restricted-imports": [

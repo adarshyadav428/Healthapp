@@ -73,6 +73,18 @@ export function istDaysAgoStart(days: number, date: Date = new Date()): string {
 }
 
 /**
+ * Hour of the IST day (0–23) containing `date`. `Date.prototype.getHours()`
+ * reads the **runtime's** hour, which is the device's in a client component —
+ * so meal-of-day inference filed an NRI's 9pm dinner under whatever meal 9pm
+ * was where they were standing, while the log itself landed on the IST day.
+ * Shares the one offset constant rather than reaching for Intl, because a
+ * number is wanted here and `hourCycle` differs between h23 and h24 by locale.
+ */
+export function istHour(date: Date = new Date()): number {
+  return new Date(date.getTime() + IST_OFFSET_MS).getUTCHours()
+}
+
+/**
  * `YYYY-MM-DD` for the IST calendar date containing `date` (default: now).
  * This is the string the user thinks of as "the day" — use it for "today"
  * comparisons and date-param defaults instead of UTC calendar fields.

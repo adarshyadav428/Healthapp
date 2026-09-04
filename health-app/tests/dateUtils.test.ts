@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getIstDayRange, istDaysAgoStart, istDateStr, dateStrToUtcMidnight, clampHistoryStart } from '../lib/dateUtils'
+import { getIstDayRange, istDaysAgoStart, istDateStr, dateStrToUtcMidnight, clampHistoryStart, istHour } from '../lib/dateUtils'
 
 describe('getIstDayRange', () => {
   it('brackets the IST calendar day (IST midnight = 18:30 UTC previous day)', () => {
@@ -105,5 +105,35 @@ describe('clampHistoryStart (the free-tier history bound)', () => {
     const offset = '2026-08-29T18:30:00.000+14:00'
     expect(Date.parse(offset)).toBeLessThan(Date.parse(CUTOFF))
     expect(clampHistoryStart(offset, CUTOFF)).toBe(CUTOFF)
+  })
+})
+
+/**
+ * `istHour` exists because `Date.prototype.getHours()` reads the runtime's
+ * hour. Meal inference used it, so the meal a log was filed under came from the
+ * device's clock while the day it was filed on came from IST — two clocks
+ * deciding one row (audit 2026-09-03, P2-5).
+ */
+describe('istHour', () => {
+  it('is the IST hour, not the runtime hour', () => {
+    expect(istHour(new Date('2026-01-01T15:30:00Z'))).toBe(21) // 21:00 IST
+    expect(istHour(new Date('2026-01-01T18:30:00Z'))).toBe(0)  // IST midnight
+    expect(istHour(new Date('2026-01-01T19:30:00Z'))).toBe(1)  // next IST day
+  })
+
+  it('covers the half-hour offset, which a whole-hour zone would hide', () => {
+    // 18:00 UTC is 23:30 IST. A +5:00 offset would say 23:00 too, so this is
+    // the assertion that actually pins India rather than "some eastern zone".
+    expect(istHour(new Date('2026-01-01T18:00:00Z'))).toBe(23)
+    expect(istHour(new Date('2026-01-01T18:29:59Z'))).toBe(23)
+    expect(istHour(new Date('2026-01-01T18:30:01Z'))).toBe(0)
+  })
+
+  it('stays inside 0–23 across a full day of instants', () => {
+    for (let m = 0; m < 24 * 60; m += 7) {
+      const h = istHour(new Date(Date.UTC(2026, 0, 1) + m * 60_000))
+      expect(h).toBeGreaterThanOrEqual(0)
+      expect(h).toBeLessThan(24)
+    }
   })
 })

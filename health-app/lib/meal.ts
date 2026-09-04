@@ -14,11 +14,19 @@
  * Pure so it's unit-testable (tests/meal.test.ts).
  */
 
+import { istHour } from './dateUtils'
+
 export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
 /**
- * Hour-of-day boundaries for meal inference, in local time. One constant so
+ * Hour-of-day boundaries for meal inference, in **IST**. One constant so
  * inference and the Food screen's time-aware focus can never disagree.
+ *
+ * These read the IST hour, not the runtime's. They said "local time" until
+ * 2026-09-04, which meant the meal a log was filed under came from the device's
+ * clock while the *day* it was filed on came from IST — two clocks deciding one
+ * row. On any device outside IST those disagree, and near the boundary they
+ * disagree by a whole meal.
  */
 export const MEAL_WINDOWS = {
   /** Before this hour → breakfast. */
@@ -30,7 +38,7 @@ export const MEAL_WINDOWS = {
 } as const
 
 export function mealForTime(date: Date = new Date()): Meal {
-  const h = date.getHours()
+  const h = istHour(date)
   if (h < MEAL_WINDOWS.breakfastUntil) return 'breakfast'
   if (h < MEAL_WINDOWS.lunchUntil) return 'lunch'
   if (h < MEAL_WINDOWS.snackUntil) return 'snack'

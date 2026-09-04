@@ -48,10 +48,11 @@ elsewhere fail loudly on purpose.
 
 ---
 
-## 1a. Fix status — both P0s and all 13 P1s fixed the same day (2026-09-03)
+## 1a. Fix status — every finding fixed (2026-09-03 → 2026-09-04)
 
-Gates after the changes: **89 files / 1,334 tests** pass (+62), tsc clean, lint clean, tokens clean,
-build clean. `044` was applied to production by Adarsh on 2026-09-03.
+**2 P0s, 13 P1s, 14 P2s: all closed.** Gates after the changes: **90 files / 1,379 tests** pass
+(+107 over the audit's starting 1,272), tsc clean, lint clean, tokens clean, build clean — and the
+build no longer dirties the tree. `044` was applied to production by Adarsh on 2026-09-03.
 
 | ID | Status | How |
 |---|---|---|
@@ -105,7 +106,30 @@ correct*, so a reviewer will keep missing them. The durable half is a lint rule,
 `date-fns` is now unused in the shipped tree; the dependency is left in `package.json` deliberately
 (removing it is lockfile churn with no runtime effect), but the import is a lint error.
 
-**Still open:** every P2 except P2-4 and P2-11.
+### The remaining P2s — all closed 2026-09-04
+
+| ID | How |
+|---|---|
+| **P2-1** recap padlock over real data | `app/dashboard/page.tsx` now builds the recap row only `if (isPro)`. The card still renders its `ProLock` as the free empty state — but the padlock is no longer the gate, matching `/progress` and `lib/monthlyWrapped.ts`. Pinned in `tests/serverGating.test.ts`, including the ordering (`isPro` must be decided before the recap, or the gate reads `undefined` and passes everything). |
+| **P2-2** unordered candidate pool | Two ordered reads: the measured tier in full, `curated` filling only what is left. One query cannot express it — PostgREST has no `ORDER BY CASE` and `source` sorts alphabetically, putting `curated` above `ifct`. Tiers defined by **exclusion** (`NOT IN ('curated','estimate')`), because an allow-list of source names would silently drop any source added later. The swallowed `const { data: foods }` now 500s instead of returning a plausible-looking empty list. |
+| **P2-3** `water_target_ml` dead and load-bearing | Removed from all six sites — `/log`'s select, both components, the Zod schema, the payload and the update route's named error-recovery branch. The column remains and nothing writes it, so a `DROP COLUMN` is now safe whenever. |
+| **P2-5** duplicate meal inference | `useChatLog`'s private `inferMeal` deleted; it now calls `mealForTime`. The local `Meal` type is re-exported from `lib/meal.ts` rather than redeclared — the structural copy is what made the private rule look like it belonged there. **`mealForTime` also moved to the IST hour**: it read `getHours()`, so the meal came from the device's clock while the day came from IST. `tests/meal.test.ts`'s helper built *local* dates, so both halves moved together and the suite asserted nothing about the clock — it would have passed on an IST laptop and failed on a UTC runner. |
+| **P2-6** `/refunds` sells free features | §1 now names the actual Pro gates and states that logging by search is free and never capped. Guarded, since this is what a payment aggregator reads. |
+| **P2-7** latent UTC day in the deficit module | `istDateStr()`. Tested behaviourally, plus a narrow source assertion for `new Date().toISOString().slice(` — narrow because `weekStartOf` and `addDayKey` end the same way and are correct: they parse a date key as UTC midnight and format back, which never drifts. |
+| **P2-8** stepper ceiling overflows | `floor2q` instead of `round2q` for `max` only. A ceiling that rounds up is not a ceiling. Tested across every integer portion weight 1–500 g (226 of the first 500 overflowed before) and the observed 6 g case. |
+| **P2-9** doc rot ×5 | All five corrected. The self-verification grep is the interesting one: it documented "0 writes in `components/`/`hooks/`" and now returns **2**, both `URLSearchParams.delete()`. The invariant never broke — the grep was imprecise — so the fix documents the precise command *and* the two known non-matches, because a stale "0" invites the reader to conclude the rule broke. |
+| **P2-10** build dirties `sw.js` | The generated worker files are gitignored and untracked. Carried from the 2026-07-31 audit; the build now leaves the tree clean, which is what makes "run the five gates" a check rather than a diff. |
+| **P2-12** "three suggestions a day" | Copy corrected on both surfaces — there is no daily counter, and the number is cohort-keyed anyway. Added to the banned-copy guard. |
+| **P2-13** "500+ Indian dishes" | Now 850+, matching the landing page. Added to the banned-copy guard. |
+| **P2-14** unbounded body measurements | Shared `HEIGHT_CM` / `WEIGHT_KG` constants across all three schemas that write the column. `display_name` bounded at 80 while there. |
+
+**Two extras the fixes surfaced.** `components/home/MealGroup.tsx` carried the same clock bug as
+P2-4 on the diary's own list, and the ESLint rule was extended to ban local `Date` getters
+(`getHours`, `getDay`, …) — banning `toLocaleTimeString` while leaving `getHours()` would only have
+moved the leak. The /progress month calendar moved to `Date.UTC` arithmetic so that ban has zero
+exceptions.
+
+**Everything in this report is now fixed.**
 
 ---
 

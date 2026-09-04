@@ -86,6 +86,12 @@ describe('free-tier copy names no hardcoded cohort number', () => {
     [/Last 7 days only/i, 'cohort-varying; say "Recent days only"'],
     [/history beyond 7 days/i, 'cohort-varying; say "your full logging history"'],
     [/beyond the last 7 days/i, 'cohort-varying'],
+    // The free suggestion count is also cohort-keyed (3 legacy, 2 post-cutoff)
+    // — and it was never a *daily* cap in the first place. See below.
+    [/three suggestions a day/i, 'cohort-varying, and there is no daily counter (P2-12)'],
+    [/today's meal ideas/i, 'implies a daily cap the route does not enforce (P2-12)'],
+    // The in-app catalogue number must not disagree with the landing page's.
+    [/500\+\s*Indian/i, 'the catalogue is 850+; the landing page says so (P2-13)'],
   ]
 
   function walk(dir: string, out: string[] = []): string[] {

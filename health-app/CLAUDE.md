@@ -17,7 +17,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **89 files / 1,334 tests**. There is no `vitest.config.ts`; defaults apply.
+- **Tests:** Vitest 4.1 — **90 files / 1,379 tests**. There is no `vitest.config.ts`; defaults apply.
 - **Deploy:** Vercel **Hobby** plan, region `bom1`. The Hobby limits are load-bearing (see Hard rules).
 
 ## Architecture / directory map
@@ -78,7 +78,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (89 files / 1,334 tests)
+npm test                 # vitest run — the whole suite (90 files / 1,379 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
 npm run check:tokens     # design-token guard: no raw hex, no broken opacity modifiers
@@ -189,10 +189,31 @@ actively seeding.
   instructed undoing `019`; and `types/index.ts` still exported `WaterLog` and `MeasurementLog`, which a
   contributor grepping for the shape would reasonably read as evidence the tables exist. Both removed
   2026-09-03 (audit P1-11). Dead code that *describes* a dropped table is the same violation as live code
-  that reads one. **`profiles.water_target_ml` is the remaining stub** — no UI renders it, but it is
-  carried in `/log`'s select, echoed back by two components and has its own error-recovery branch in
-  `/api/profile/update`, so it is dead *and* load-bearing: removing the column without those five sites
-  going first would 500 every profile update.
+  that reads one. `profiles.water_target_ml` was the last stub of this kind — no UI rendered it, yet it
+  was carried in `/log`'s select, echoed back by two components, validated in Zod and given its own
+  named branch in `/api/profile/update`'s error recovery, so it was dead *and* load-bearing: dropping
+  the column would have 500'd every profile update. All six sites removed 2026-09-04 (audit P2-3). The
+  **column still exists** and nothing writes it; a `DROP COLUMN` migration can follow whenever, and is
+  now safe. Nothing about a dead field should be load-bearing — if removing it needs a checklist, it
+  isn't dead, it's undocumented.
+- **Every number a server recomputes from must be bounded on BOTH sides.** `z.number().positive()` is
+  not a bound: it has no ceiling and it accepts `Infinity`. `height_cm` and the three `*_weight_kg`
+  fields were declared that way in `onboardingSchema`, `profileUpdateSchema` and `weightLogSchema`,
+  and the routes feed them to `calculateTDEE` and **write the result back** — so the nonsense was
+  server-generated, not a client display glitch: 5,000 kg gave a `daily_calorie_target` of 78,421 and
+  an 8,000 g protein target; `height_cm: Infinity` made every macro target `Infinity`. Bounded by the
+  shared `HEIGHT_CM` / `WEIGHT_KG` constants in `lib/validations.ts` (2026-09-03, P2-14) — one constant
+  each, because the three schemas are three doors to the same column and a bound on two of them is the
+  same hole with an extra step. `customFoodSchema` already did this correctly; copy it.
+- **A capped read must be an ordered read.** Postgres applies `LIMIT` before any sort, so
+  `.limit(400)` with no `.order()` returns an arbitrary 400 rows that drift as the table grows and
+  after a `VACUUM`. `/api/foods/suggest` did exactly that under a comment claiming the pool was
+  "ordered by the measured sources first" — `grep -c "\.order(" ` returned **0** — so `suggestMeals`
+  could rank a pool with no measured IFCT rows in it at all (2026-09-03, P2-2). It now runs two
+  ordered reads, measured tier first, curated only filling the remainder, because PostgREST cannot
+  `ORDER BY` a `CASE` and `source` sorts alphabetically — which would put `curated` above `ifct`,
+  precisely backwards. Define the tiers by **exclusion**: a new source name missing from a hardcoded
+  allow-list would silently vanish from every suggestion.
 - **`SMART_PORTIONS` is ordered, specific before generic** (`lib/portion-units.ts`). It is scanned with
   `.find`, so the first matching pattern wins and a name can match two: "Moong Dal Namkeen" carries both
   a dish word and a snack word. With the dal rule first it pre-selected a 200 g katori and offered
@@ -285,6 +306,19 @@ actively seeding.
   1am snack under yesterday, listed a 00:30 IST weigh-in on the previous date, let Home's header name a
   day the diary beneath it disagreed with, and sent an NRI's 9pm dinner to the AI as 06:30, which came
   back tagged breakfast. Three of them survived two audits (2026-09-03: P1-8/P1-9/P2-4).
+- **`getHours()`, `getDay()`, `getDate()`, `getMonth()`, `getFullYear()` and `getMinutes()` are banned
+  too** — same rule, same reason. They read the **runtime's** calendar fields, and a ban on
+  `toLocaleTimeString` that left these alone would just move the leak. `lib/meal.ts` used `getHours()`,
+  so the meal a log was filed under came from the device's clock while the day it was filed on came
+  from IST: **two clocks deciding one row**, disagreeing by a whole meal near a boundary. Use
+  `istHour` / `istDateStr` / `getIstDayRange`, or the `getUTC*` form when the date was built with
+  `Date.UTC` (which is what the /progress month calendar does — its cell arithmetic is zone-free).
+- **`MEAL_WINDOWS` (`lib/meal.ts`) are IST hours**, not local ones, and `mealForTime` is the only
+  meal-inference rule. There were seven copies once; the last private one lived in `useChatLog` and
+  disagreed in *both* directions (17:00–18:00 → dinner where everything else says snack; 20:00–23:00 →
+  snack where everything else says dinner, the behaviour `lib/meal.ts` explicitly removed). It fired
+  only when the AI returned no meal, and its comment defended the gap by citing a boundary in
+  `mealForTime` that has never existed. Deleted 2026-09-04 (audit P2-5).
 - **`date-fns` is banned outright** (`no-restricted-imports`), and the dependency is now unused.
   `startOfDay`, `eachDayOfInterval`, `format` and `parseISO` all work in the runtime's **local** day —
   a second definition of "a day" competing with IST, and the one that made the Trends chart group a
@@ -399,9 +433,10 @@ All three were learned on **2026-08-26**, in one afternoon, on the live site.
   instantly rather than waiting for Vercel.
 - **A long-lived branch carries everything on it, not just the commit you want.** `feat/kelp-tokens`
   held a colour rebrand *and* several wanted features, so no build from it could ship one without the
-  other. To land one commit from such a branch, cherry-pick it onto a branch off `main` and PR that —
-  and drop `public/sw.js` from the cherry-pick, since its precache manifest lists chunk hashes from
-  the *source* branch's build and would point the service worker at files `main` never built.
+  other. To land one commit from such a branch, cherry-pick it onto a branch off `main` and PR that.
+  (This used to add "and drop `public/sw.js` from the cherry-pick", because its precache manifest lists
+  chunk hashes from the *source* branch's build. The generated worker files are gitignored as of
+  2026-09-04, so there is nothing to drop.)
 
 ## Behavioral / workflow principles
 
@@ -477,7 +512,7 @@ These are deep dives, kept out of this file on purpose. Read the relevant one **
 | `docs/growth-mechanics-plan-2026-07-29.md` | `components/story/`, `lib/streakRescue.ts`, `lib/mealSuggest.ts`, `lib/pushBudget.ts`, `lib/reminderSchedule.ts`, `lib/cronBatch.ts` — note Seasons was cut, see below |
 | `docs/refactor-safety-contract.md` | Any refactor — it maps each covered behavior to the test that pins it, and lists the accepted residual gaps |
 | `TESTING.md` | Shipping. The manual script for everything tests can't reach (auth, real phones, the day boundary) |
-| `docs/deep-dive-audit-2026-09-03.md` | Investigating a suspected systemic issue — the **latest** full audit. Both P0s, all 13 P1s and P2-4/P2-11 are fixed; **still open: every other P2** |
+| `docs/deep-dive-audit-2026-09-03.md` | Investigating a suspected systemic issue — the **latest** full audit. **Every finding is fixed** — both P0s, all 13 P1s, all 14 P2s |
 | `docs/deep-dive-audit-2026-07-31.md` | The previous full audit — read for the fixes it made and the false alarms it recorded |
 | `docs/growth-advice-audit-2026-08-25.md` | Anything about attribution, the paywall's placement, trial length, or adding an A/B mechanism — it scores the app against an external growth playbook, and §7 records where we disagree with it on purpose |
 | `docs/prompts/growth-advice-apply.md` | Re-running that audit, or holding any new growth book against the app |
@@ -507,8 +542,12 @@ Full rationale in `docs/growth-mechanics-plan-2026-07-29.md`.
   `/api/push/opened`, which stamps `push_sends.opened_at`. Keep that write in the handler's
   `event.waitUntil` alongside the focus, never instead of it — and note the route uses
   `createAdminClient()` on purpose, because `push_sends` has no UPDATE policy and shouldn't get one.
-  **`worker/index.js` is the source; `public/sw.js` and `public/worker-<hash>.js` are generated** — a
-  worker change is only shipped once the rebuilt files are committed with it, and the hash changes.
+  **`worker/index.js` is the source; `public/sw.js`, `public/workbox-<hash>.js` and
+  `public/swe-worker-<hash>.js` are generated and now gitignored.** Vercel builds them on deploy;
+  editing `worker/index.js` is the whole change. They were tracked until 2026-09-04, which meant every
+  `npm run build` left the working tree dirty — `sw.js`'s precache manifest carries a fresh revision
+  hash per file — so every branch carried a regenerated artifact nobody reviews, and the five gates
+  could not be run without producing a diff (2026-07-31 P2-9 → 2026-09-03 P2-10).
 - **The streak that ends gets a sentence.** Only ~0.9% of broken streaks restart unprompted, and the
   flame pill simply stops rendering — a twelve-day run vanishing without comment. `StreakRestartCard`
   fills that silence and has **no dismiss button** on purpose: it isn't a message to acknowledge, it

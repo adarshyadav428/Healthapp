@@ -39,7 +39,6 @@ export type Profile = {
   fat_g_target: number
   unit_system: 'metric' | 'imperial'
   pace_kg_per_week: number | null
-  water_target_ml: number | null
   created_at: string
   updated_at: string
 }

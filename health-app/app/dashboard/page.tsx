@@ -165,7 +165,17 @@ export default async function DashboardPage() {
     goal: profile.goal,
   })
 
-  const recapRow = recapResult.data
+  // Gated here, not in the card. `WeeklyRecapCard` renders a ProLock for a free
+  // account, but the row was built unconditionally and handed to the client
+  // regardless — a CSS padlock over data already sitting in the RSC flight
+  // payload, which is the exact shape CLAUDE.md forbids for the month deficit
+  // ("a free client never receives numbers a padlock is merely covering").
+  // The stats are the user's own and the cron writes free users the fallback
+  // message rather than the Gemini sentence, so the leak was narrow — a
+  // downgraded ex-Pro could still have an AI-written paragraph in the payload.
+  // `/progress` and `lib/monthlyWrapped.ts` both gate server-side; this now
+  // matches them (audit 2026-09-03, P2-1).
+  const recapRow = isPro ? recapResult.data : null
   const weeklyRecap: WeeklyRecap | null = recapRow
     ? {
         daysLogged: recapRow.days_logged as number,

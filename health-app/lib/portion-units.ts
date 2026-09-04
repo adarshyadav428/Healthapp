@@ -961,6 +961,8 @@ export function inferPortionSelection(units: Unit[], grams: number): { unit: Uni
 export const MAX_LOG_GRAMS = 10000
 
 const round2q = (n: number) => Math.round(n * 100) / 100
+/** Rounds *down* to 2dp. See quantityBounds — a ceiling must never round up. */
+const floor2q = (n: number) => Math.floor(n * 100) / 100
 
 /**
  * Bounds for the − / + quantity stepper shared by AddFoodModal and
@@ -970,12 +972,20 @@ const round2q = (n: number) => Math.round(n * 100) / 100
  * `max` is derived from MAX_LOG_GRAMS via the unit's own weight, so the stepper
  * physically cannot build a payload the server would reject — an oversized
  * portion used to reach the API and come back as a serialized Zod error.
+ *
+ * That claim was false until 2026-09-04: the 2dp tidy-up rounded to *nearest*,
+ * so a ceiling could round up past the limit it was derived from. A 6 g portion
+ * gave `max = 1666.67`, which is 10,000.02 g — a field showing a legal-looking
+ * number over a 400 saying "Grams cannot exceed 10,000". 226 of the first 500
+ * integer per-unit sizes overflowed this way. Rounding down cannot
+ * (`floor2q(x) <= x`), which is the whole reason this rounds differently from
+ * everything else in the file — audit 2026-09-03, P2-8.
  */
 export function quantityBounds(unit: Unit): { step: number; min: number; max: number } {
   const step = unit.key === 'g' ? 10 : unit.key === 'oz' ? 1 : 0.5
   const min = unit.key === 'g' ? 5 : 0.25
   const perUnit = unit.toGrams(1)
-  const max = perUnit > 0 ? Math.max(min, round2q(MAX_LOG_GRAMS / perUnit)) : min
+  const max = perUnit > 0 ? Math.max(min, floor2q(MAX_LOG_GRAMS / perUnit)) : min
   return { step, min, max }
 }
 

@@ -362,8 +362,8 @@ export function FoodLanding({ recentFoods, recentLogItems, frequentFoods, hasYes
         <ProLock.Card
           reason="meal_suggestions"
           track="meal_suggestions"
-          title="That's today's meal ideas"
-          body="Free gives you three suggestions a day. Pro keeps them coming — right through the evening, always tuned to the calories you have left."
+          title="That's your free ideas for now"
+          body="Free shows a few ideas at a time. Pro keeps them coming — right through the evening, always tuned to the calories you have left."
           cta="See what Pro adds"
         />
       )}

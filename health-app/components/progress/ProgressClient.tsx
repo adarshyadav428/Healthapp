@@ -214,8 +214,12 @@ export function ProgressClient({
   const isCurrentMonth = offset === 0
 
   const cal = useMemo(() => {
-    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
-    const firstWeekday = new Date(viewYear, viewMonth, 1).getDay()
+    // UTC arithmetic, read back with UTC getters. How many days a month has and
+    // which weekday it opens on do not depend on a timezone — but building the
+    // date locally and reading it locally only *happens* to agree, and it is
+    // the construct the day-boundary rule exists to keep out of this file.
+    const daysInMonth = new Date(Date.UTC(viewYear, viewMonth + 1, 0)).getUTCDate()
+    const firstWeekday = new Date(Date.UTC(viewYear, viewMonth, 1)).getUTCDay()
     const cells: ({ day: number; logged: boolean } | null)[] = []
     for (let i = 0; i < firstWeekday; i++) cells.push(null)
     let logged = 0

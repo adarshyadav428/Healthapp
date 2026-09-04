@@ -67,7 +67,7 @@ export default async function LogPage({
   const [profileResult, subResult, logSnapshotResult, yesterdayResult, dayLogsResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('height_cm, daily_calorie_target, protein_g_target, carbs_g_target, fat_g_target, current_weight_kg, water_target_ml, display_name, created_at')
+      .select('height_cm, daily_calorie_target, protein_g_target, carbs_g_target, fat_g_target, current_weight_kg, display_name, created_at')
       .eq('id', user.id)
       .maybeSingle(),
     supabase
