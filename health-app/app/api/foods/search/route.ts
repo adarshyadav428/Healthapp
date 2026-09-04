@@ -15,6 +15,7 @@ import { isPlausibleFood, SOURCE_RANK } from '../../../../lib/foodMatch'
 import {
   collapseDuplicateFoods,
   capOpenFoodFactsDominance,
+  dropForeignWhenIndianExists,
   MAX_OFF_WITHOUT_BRAND,
   MAX_SEARCH_RESULTS,
 } from '../../../../lib/mergeSearchResults'
@@ -230,12 +231,20 @@ async function searchGlobal(
   )
 
   // Merge: local IFCT → OFF India → OFF World. Drop physically-impossible
-  // rows (bad OFF data: 0-kcal solids, >100 g macros/100 g), collapse rows
-  // that are the same food (SOURCE_RANK decides which survives), then cap
-  // Open Food Facts dominance.
+  // rows (bad OFF data: 0-kcal solids, >100 g macros/100 g), hide products
+  // Open Food Facts doesn't list as sold in India when we have an Indian
+  // answer, collapse rows that are the same food (SOURCE_RANK decides which
+  // survives), then cap Open Food Facts dominance.
+  //
+  // The foreign filter runs before the cap on purpose: the cap's budget should
+  // be spent on rows a user here can actually buy, not on the British
+  // supermarket own-brands it would otherwise count first.
   const foods = collapseDuplicateFoods(
     capOpenFoodFactsDominance(
-      [...localResults, ...externalWithIds].filter(isPlausibleFood),
+      dropForeignWhenIndianExists(
+        [...localResults, ...externalWithIds].filter(isPlausibleFood),
+        query
+      ),
       queryNamesAnyBrand ? 10 : MAX_OFF_WITHOUT_BRAND
     ),
     SOURCE_RANK

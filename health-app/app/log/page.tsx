@@ -3,6 +3,7 @@ import nextDynamic from 'next/dynamic'
 import { FoodLanding } from '../../components/log/FoodLanding'
 import { LogProgressClient } from '../../components/log/LogProgressClient'
 import { TodayFoodLog } from '../../components/log/TodayFoodLog'
+import { PasteMealCard } from '../../components/log/PasteMealCard'
 import { FoodHeader } from '../../components/log/FoodHeader'
 import { SwipeDayNav } from '../../components/log/SwipeDayNav'
 import { BottomNav } from '../../components/layout/BottomNav'
@@ -216,6 +217,15 @@ export default async function LogPage({
               targets={{ kcal: profile.daily_calorie_target ?? 0, protein: profile.protein_g_target ?? 0 }}
               aiTrialRemaining={aiTrialRemaining}
             />
+          </div>
+        )}
+
+        {/* A meal copied from another day, waiting to be pasted onto this one.
+            Above the log because the day you paste into is usually the empty
+            one, and TodayFoodLog renders nothing when the day has no logs. */}
+        {isEditable && (
+          <div className="mt-4">
+            <PasteMealCard logDate={dateStr} />
           </div>
         )}
 

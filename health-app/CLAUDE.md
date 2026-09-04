@@ -37,6 +37,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   boundary), `logDates.ts` (the diary's date strings and hrefs — IST, delegating to `dateUtils`),
   `portion-units.ts` (`defaultPortionFor` — the one source of a food's serving amount; see Hard rules),
   `validations.ts` (Zod schemas shared by forms and routes), `nutrition.ts`,
+  `mealClipboard.ts` (copy-a-meal-to-another-day; see Hard rules),
   `subscription.ts` (the Pro gate).
 - **`lib/supabase/`** — three factories, never interchangeable: `createServerClient()` (cookie-bound,
   acts as the current user), `createAdminClient()` (service-role; trusted server-only routes),
@@ -154,6 +155,19 @@ actively seeding.
   halves (no write policy, SELECT kept) — and note the same file used to *assert* that `subscriptions`
   needed an UPDATE policy "for `app/api/razorpay/cancel`", a route that uses the admin client. That
   wrong entry passed, and a passing assertion is what hid the hole for two audits.
+- **The `source_id` prefix `offi_` vs `off_` records whether Open Food Facts lists a product as sold in
+  India, and it is the only surviving signal.** `lib/open-food-facts.ts` writes `offi_` for the India
+  endpoint and `off_` for the world one, but `offToExternal` in `app/api/foods/search/route.ts` flattens
+  `source` to `'off'` for **both**, so after a row is persisted the prefix is all that is left — which is
+  also what makes it answerable for the ~900 rows already cached, with no migration.
+  `dropForeignWhenIndianExists` (`lib/mergeSearchResults.ts`) hides `off_` rows whenever any Indian row
+  matched, because "boiled egg" was answering with five British and American supermarket own-brands a
+  user here cannot buy; `app/api/camera/barcode/route.ts` looks up both prefixes by hand. Renaming or
+  "tidying" either prefix silently breaks both. Its two escape hatches are load-bearing: nothing Indian
+  matched → return everything (an empty screen is worse than a foreign packet), and the query naming a
+  brand → keep that brand. It is **not** a cap and does not replace `capOpenFoodFactsDominance`, which
+  answers a different question (how many packaged rows crowd a page) and still must never suppress
+  Indian packaged rows.
 - **Never write a raw hex color** in `app/` or `components/` — reference a token (`bg-brand`, `text-ink`, …).
 - **Never use Tailwind's `/NN` opacity modifier on a token color.** Our tokens are plain `var(--x)`
   strings, so `bg-brand/40` is a **silent no-op** that renders full strength. Use a pre-mixed alpha
@@ -289,6 +303,15 @@ actively seeding.
   UTC offset is a *later* instant than its digits look. Pinned in both places on purpose
   (`tests/dateUtils.test.ts` for the function, `tests/routeEntitlements.test.ts` for each literal
   against the real route), and each defence fails independently under sabotage.
+- **The meal clipboard carries a *reference*, never nutrition.** "Copy Breakfast" (`lib/mealClipboard.ts`,
+  `components/log/PasteMealCard.tsx`) stores only the source IST day and meal slot in `localStorage`;
+  `/api/logs/copy-meal` re-reads those rows under the caller's RLS and re-inserts them wholesale, the
+  same way `copy-yesterday` does. Making the clipboard carry the items would put user-editable kcal on
+  the way back into `food_logs` — the one thing every logging route refuses — and would paste a stale
+  snapshot when the source meal was edited in between. A *deleted* source meal must 404, never paste
+  nothing and report success. It is `localStorage` and not React state because copy and paste happen on
+  two different days and changing the day is a navigation. `tests/mealClipboard.test.ts` pins both the
+  parse (a hand-edited or expired entry degrades to "no paste button", never a crash) and the wiring.
 - **The diary's day boundary is IST, everywhere, including the header.** `lib/logDates.ts` delegates to
   `istDateStr`; there is no UTC day helper left and none may come back. When the page resolved the day
   in IST and the header in UTC, everything between 00:00 and 05:30 IST — the late-dinner window — was
