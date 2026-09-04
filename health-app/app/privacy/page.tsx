@@ -32,6 +32,7 @@ export default function PrivacyPage() {
               <li><strong>Push notification token:</strong> if you enable meal reminders, your browser&apos;s push subscription endpoint and encryption keys — used only to deliver reminders, never shared or sold</li>
               <li><strong>Subscription data:</strong> plan type and billing status (handled by Razorpay, Stripe, or Google Play — we never see your card, UPI, or bank details)</li>
               <li><strong>Product analytics:</strong> in-app usage events (e.g. which features you use) via PostHog, to help us improve the app</li>
+              <li><strong>Diagnostics &amp; error reports:</strong> when something goes wrong, technical details about the failure — the error, the action that triggered it, and basic device and browser information — collected via Sentry so we can find and fix it. Used only to keep the app working, never for advertising or profiling.</li>
             </ul>
           </Section>
 
@@ -55,6 +56,7 @@ export default function PrivacyPage() {
               <li><strong>IFCT 2017 (NIN Hyderabad) &amp; Open Food Facts</strong> — food nutrition data</li>
               <li><strong>Google Gemini</strong> — AI photo and natural-language meal analysis</li>
               <li><strong>PostHog</strong> — in-app product analytics</li>
+              <li><strong>Sentry</strong> — error and diagnostic reporting, so faults get spotted and fixed</li>
             </ul>
             Each provider has their own privacy policy and security practices.
           </Section>
