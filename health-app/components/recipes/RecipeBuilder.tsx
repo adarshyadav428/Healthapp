@@ -210,7 +210,7 @@ export function RecipeBuilder() {
 
         {/* Search results dropdown */}
         {searchOpen && query.length > 1 && (
-          <div className="space-y-1 max-h-48 overflow-y-auto">
+          <div className="space-y-1 max-h-48 overflow-y-auto overscroll-contain">
             {searching ? (
               <div className="flex justify-center py-3">
                 <Loader2 className="h-4 w-4 animate-spin text-brand" />
