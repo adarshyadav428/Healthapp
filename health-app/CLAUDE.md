@@ -56,7 +56,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   `components/log/shortcuts.tsx` holds the one set of re-log / combo / copy-yesterday tiles that both
   `FoodLanding` and `FoodSearch` render — they used to be implemented twice, with different ordering
   and different meal-selection behaviour, which is how the same shortcut came to mean two things.
-- **`supabase/migrations/`** — `001`–`044`. Numbers are **not unique** (`002`, `004`, `005`, `009` and
+- **`supabase/migrations/`** — `001`–`045`. Numbers are **not unique** (`002`, `004`, `005`, `009` and
   `043` each appear twice) and there is **no `021`**. Always reference a migration by its exact filename.
   (`040_body_focus.sql` **is** on `main` — PR #46 merged; this line previously said otherwise.)
 - **`middleware.ts`** — self-contained (there is no `lib/supabase/middleware.ts`). Refreshes the
@@ -596,7 +596,10 @@ which is why the send back-off could only ever tighten.
 
 Migrations worth knowing: `001_initial.sql` (core schema) · `007_seed_indian_foods.sql`,
 `009_seed_indian_foods_v2.sql`, `010_seed_missing_foods.sql` (IFCT data) ·
-`019_drop_deprecated_tables.sql` (removed the four wellness tables) · `034_foods_rls_ownership.sql`
+`019_drop_deprecated_tables.sql` (removed the four wellness tables) ·
+`045_drop_water_target_ml.sql` (removes `profiles.water_target_ml`, the last trace of water tracking —
+`019` dropped the readings but left the target, which then spent a year dead *and* load-bearing; the six
+code sites went first in PR #60 so this file changes nothing at all) · `034_foods_rls_ownership.sql`
 (restricts `foods` writes to a user's own `source='user'` rows — before this, RLS checked only "are you
 logged in", so any account could delete a catalogue row and cascade it out of **every** user's diary) ·
 `044_subscriptions_rls_lockdown.sql` (the same defect on the **billing** table: drops
