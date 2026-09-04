@@ -21,8 +21,13 @@
   --ink-3:       #A6A099;
   --hairline:    rgba(23,21,15,.06);
 
-  /* Translucent — scrims and blurred chrome */
-  --scrim:       rgba(23,21,15,.38);
+  /* Translucent — scrims and blurred chrome.
+     The scrim is what makes a sheet read as a *layer* rather than a box drawn
+     on top of a page. At .38 the dashboard behind an open sheet stayed legible
+     — headings, numbers and the nav all readable — which is the single loudest
+     "this is a website" tell on the whole app. Matched to the dark theme's .55,
+     which was always right. */
+  --scrim:       rgba(23,21,15,.56);
   --header-bg:   rgba(255,255,255,.72);
   --glass-hair:  rgba(23,21,15,.05);
 

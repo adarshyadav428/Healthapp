@@ -14,7 +14,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'fixed inset-0 z-50 bg-scrim backdrop-blur-sm data-[state=open]:animate-[overlayShow_250ms_ease]',
+      'fixed inset-0 z-50 bg-scrim backdrop-blur-md data-[state=open]:animate-[overlayShow_250ms_ease]',
       className
     )}
     {...props}
