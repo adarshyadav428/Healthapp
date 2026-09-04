@@ -447,6 +447,31 @@ actively seeding.
   `next.config.js` `runtimeCaching` (like `/auth/callback` and `/api/foods/search`): the default
   `pages` `NetworkFirst` rule caches and replays a `redirected` response, which the browser rejects
   for a navigation — an intermittent blank page a hard refresh clears.
+- **An auto-growing textarea must add its border back, and its placeholder must fit one line.**
+  Both halves shipped broken in `ChatLogModal` and both were visible on Adarsh's phone. Tailwind
+  sets `box-sizing: border-box`, so `height` **includes** the border while `scrollHeight` does
+  **not** — `el.style.height = el.scrollHeight + 'px'` therefore leaves the box exactly
+  `border-top + border-bottom` short of its own text (2px here), which shaves the descenders off
+  the last line and leaves the field permanently, invisibly scrollable. Add the computed border
+  widths. Separately, the grow effect measures the **value**, which is empty when the surface
+  opens, so the box is one line tall at that moment: a placeholder that wraps is a placeholder
+  that gets **sliced in half**. Measured at 375px, the input offers 250px of text width while
+  "Describe what you ate — e.g. 4 roti, dal, sabzi..." renders at 363px. Put the long examples in
+  the body where they can be tapped; keep the placeholder short enough to fit the *collapsed*
+  box, not the grown one.
+- **A sheet is a stable surface with an opaque scrim, not a box that resizes around its
+  contents.** Two independent things made the chat sheet read as a web popup rather than an app
+  screen, and neither was a bug any gate could see. It had `max-h-[90vh]` and no height, so it
+  was ~40% tall when idle and ~90% after a scan — a box being pushed around by its own content.
+  Input-led surfaces get a **fixed** height (`h-[calc(80vh-var(--kb-inset,0px))]`, still
+  subtracting the inset per the rule below) with the empty state centred via `min-h-full` +
+  `justify-center`, which is safe inside a scroller because the height is a *minimum* — once the
+  content is taller the box grows and centring stops applying, so it can never clip its own top.
+  And `--scrim` was `rgba(23,21,15,.38)` in light with a 4px blur, which left the dashboard's
+  headings, numbers and nav plainly legible underneath; **the scrim is what makes a sheet read as
+  a layer**, so it is now `.56` against dark's `.55`, with a 12px blur. That token is shared by
+  `sheet.tsx`, `dialog.tsx`, `UnitPicker` and `LogMilestones` on purpose — every modal should
+  hide what is behind it by the same amount.
 - **An overlay's primary action must live outside its scroll container, and a flex child holding
   variable-length content needs `min-h-0` *and* `overflow-y-auto`.** A flex item defaults to
   `min-height: auto`, so it refuses to shrink below its content: the child does not clip, it
@@ -554,6 +579,25 @@ All three were learned on **2026-08-26**, in one afternoon, on the live site.
   this file exist because a reasonable-looking assumption produced a wrong answer in production.
 - **Simplicity first.** Minimum viable code. No feature, abstraction or config that today's task
   doesn't need.
+- **Prove the browser pane is measurable before believing anything it says.** Three separate
+  readings on 2026-09-04 were void, each looking exactly like a real defect, and each cost a full
+  round of debugging a bug that did not exist. Check all four before asserting on a measurement:
+  (1) **`innerWidth`/`innerHeight` are non-zero** — a collapsed pane reports `{0,0}`, which made a
+  full-width element measure **0px wide** and a sheet 40px; this is the same trap as the earlier
+  false `horizontalOverflow: true`, and the emulation does not survive a server restart, so
+  re-`resize_window` after one. (2) **No `_next/static` request 404'd** — running `npm run build`
+  while `npm run dev` is up on the same worktree overwrites that worktree's `.next`, after which
+  the dev server 404s every client chunk and throws `Cannot find module './8948.js'`. The page
+  still renders server-side so it *looks* fine, but **React never hydrates**: clicks do nothing
+  and every interaction test fails for reasons unrelated to the code. Never build against a
+  running dev server; recover with `rm -rf .next` and a restart. (3) **`requestAnimationFrame`
+  actually fires** — it is frozen in these tabs, so anything rAF-coalesced (`KeyboardInset`) never
+  runs, and CSS animations never advance; an unfinished animation **outranks inline styles** in
+  the cascade, which made a sheet's drag transform read back a constant `125px` forever. (4)
+  **`data-state` beats DOM presence** — Radix `Presence` keeps a closed dialog mounted until its
+  exit animation ends, so "the node is still there" is not "it is still open"; that false negative
+  made a working Back button look broken. When a check is genuinely unreachable, say which half
+  was proven and which needs a device — do not round it up to verified.
 - **Define the verifiable success criterion up front**, then loop until it's met. "The test I wrote
   passes" beats "the code looks right".
 - **Touching `lib/` means touching `tests/` in the same pass.** Those pure functions are the safety
