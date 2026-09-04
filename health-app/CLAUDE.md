@@ -494,6 +494,24 @@ actively seeding.
   users who bounced hardest. The sheet's swipe deliberately lives on the **grabber only**, not
   the whole sheet: a sheet-wide handler has to guess whether a downward swipe means "dismiss"
   or "scroll the list I started on".
+- **A keyboard inset needs a focused text field, not just a smaller viewport.** `KeyboardInset`
+  originally published `--kb-inset` from geometry alone (`innerHeight - (vv.height +
+  vv.offsetTop)` over a 40px noise floor), and geometry cannot tell a keyboard from anything else
+  that shrinks the visual viewport. On iOS a rubber-band scroll makes `vv.offsetTop` non-zero, and
+  because the formula *subtracts* `offsetTop` an overscroll **inflates** the result — so the app
+  published a keyboard that was never there, every sheet lifted off the bottom edge, and it stayed
+  lifted. That is the "sheet floats with a gap at the bottom" Adarsh reported on iPhone 2026-09-04,
+  in the **installed PWA**, where there are no browser toolbars to blame. Android Chrome never
+  showed it. `typingElementFocused()` now gates the write, which makes a phantom inset impossible
+  rather than unlikely — `<select>` counts (iOS's picker wheel occupies the same space);
+  checkbox/radio/range/button/submit/reset/file/color/image do not. **Listening to `visualViewport`
+  alone is also not enough**: `focusin`/`focusout` and `visibilitychange` are load-bearing, because
+  iOS can finish dismissing the keyboard without a final resize at the settled position (the inset
+  then sticks until something else happens to fire one), and an installed PWA is *resumed* rather
+  than reloaded, so a value measured before backgrounding otherwise survives into a session where
+  it is wrong. **None of this is testable in the browser pane** — `requestAnimationFrame` is frozen
+  there, so the rAF-coalesced write never runs at all; verify the predicate in isolation and say
+  plainly that the rest needs a device.
 - **`--kb-inset` is published by exactly one component and read only by sheet positioning.**
   `components/KeyboardInset.tsx` measures `visualViewport` and sets it on `<html>`; `sheet.tsx`
   offsets `bottom` by it. **A sheet that lifts must also shrink** — every `SheetContent` carrying a
