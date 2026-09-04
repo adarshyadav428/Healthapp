@@ -300,6 +300,22 @@ actively seeding.
   `tests/coachingWiring.test.ts` holds all of them to it: the payload date and the totals context must
   be the same day, or the coaching line describes a day the meal didn't land on — and it now also pins
   that both saved-combo call sites send a `date` and that the insert never falls back to the default.
+- **The camera photo scan logs the whole plate, and each detected food's edits live on the result row,
+  not on the screen.** When Gemini returns several foods, "Log food" writes *every* one of them through
+  `/api/logs/add-bulk` — the same route the chat flow uses, so it now has three callers, not two; a
+  single-food scan still uses `/api/logs/add`. The scar: `grams` and `customName` were one screen-level
+  value each and `selectResult` re-seeded them from the AI estimate on every chip tap, so editing Dal
+  Tadka to 150 g and then touching another chip silently discarded the 150 — tapping back showed the
+  250 g default and read as "the app reset my edit". The editable portion and name now sit on each
+  `results[]` item; `selected` / `grams` / `customName` are derived views of the focused one, and
+  `selectResult` only moves focus. **`/api/logs/add-bulk` is deliberately unit-agnostic** — it stores
+  each item's amount verbatim and scales with `amount / 100 × per-100`, which is correct for a `pcs`
+  food *only* because `/api/camera/analyze` already normalises that row to a per-100-**pieces** rate
+  before it is ever logged. Never add a unit branch there; a plate mixing weighed and counted foods is
+  fine because each item scales against its own row. `tests/routeLogsBulk.test.ts` pins the mixed
+  g + pcs write (and that every row carries `logged_at`, not the column default);
+  `tests/coachingWiring.test.ts` pins that the bulk path threads the viewed date, and the coaching line
+  then speaks to the combined total rather than the focused food.
 - **Never compare an untrusted timestamp as a string — parse it.** `/api/logs` and
   `/api/exercise/logs` clamped the free-tier history window with
   `if (!start || start < cutoff) start = cutoff`, over a `start` taken raw from the query
