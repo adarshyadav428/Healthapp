@@ -335,6 +335,13 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
       // One food goes through /api/logs/add unchanged; a plate with several
       // detected foods logs every one of them in a single /api/logs/add-bulk
       // write — the same route the chat flow uses for multi-item meals.
+      //
+      // `r.grams` carries whatever `r.unit` is measured in — grams/ml, or a
+      // piece count for a "pcs" food. That is correct for both routes without a
+      // unit branch: /api/camera/analyze already normalises a pcs row to a
+      // per-100-pieces rate, so the shared `amount / 100 × per-100` arithmetic
+      // lands on the right total. Mixed units in one plate are fine for the
+      // same reason — each item scales against its own row.
       const res = multi
         ? await fetch('/api/logs/add-bulk', {
             method: 'POST',
