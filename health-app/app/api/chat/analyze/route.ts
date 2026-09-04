@@ -136,7 +136,14 @@ export async function POST(req: Request) {
 
   const round1 = (v: number) => Math.round(v * 10) / 10
 
-  type EnrichedItem = { food: Record<string, unknown>; grams: number; portion_desc: string; confidence: 'low' | 'medium' | 'high' } | null
+  type EnrichedItem = {
+    food: Record<string, unknown>
+    grams: number
+    portion_desc: string
+    confidence: 'low' | 'medium' | 'high'
+    unit?: 'g' | 'pcs'
+    count?: number
+  } | null
   let enrichedItems: EnrichedItem[]
   try {
     enrichedItems = await Promise.all(
@@ -161,7 +168,7 @@ export async function POST(req: Request) {
         const existing = pickBestFoodMatch(candidates ?? [], item.name)
 
         if (existing) {
-          return { food: existing, grams: item.grams, portion_desc: item.portion_desc, confidence: item.confidence }
+          return { food: existing, grams: item.grams, portion_desc: item.portion_desc, confidence: item.confidence, unit: item.unit, count: item.count }
         }
 
         // item's macros are already plausibility-clamped by rebalanceChatItems
@@ -197,7 +204,7 @@ export async function POST(req: Request) {
           throw new Error(`DB upsert failed: ${upsertErr.message}`)
         }
 
-        return created ? { food: created, grams: item.grams, portion_desc: item.portion_desc, confidence: item.confidence } : null
+        return created ? { food: created, grams: item.grams, portion_desc: item.portion_desc, confidence: item.confidence, unit: item.unit, count: item.count } : null
       })
     )
   } catch (e) {
