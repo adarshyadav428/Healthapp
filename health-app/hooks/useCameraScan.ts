@@ -19,7 +19,23 @@ import { resolveAiGateAction } from '../lib/aiGateRedirect'
 import { recordAiVerificationBlock } from '../lib/verifyPromptStore'
 
 export type Mode = 'barcode' | 'photo' | 'manual'
-export type PhotoResult = { food: Food; estimated_grams: number; unit: string }
+export type PhotoResult = {
+  food: Food
+  /** The AI's original portion guess — kept so we can tell if the user changed it. */
+  estimated_grams: number
+  unit: string
+  /**
+   * User-editable portion, seeded from `estimated_grams`. Lives on the item, not
+   * the screen, so switching between detected foods no longer wipes an edit —
+   * that reset was the whole bug this shape fixes.
+   */
+  grams: number
+  /**
+   * User-editable label, seeded from `food.name`. Only labels the toast and the
+   * correction analytics; the logged row always references `food.id`.
+   */
+  name: string
+}
 
 type Params = {
   onClose: () => void
@@ -68,21 +84,37 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
   const [captured, setCaptured]             = useState<string | null>(null)
   const [analyzing, setAnalyzing]           = useState(false)
   const [results, setResults]               = useState<PhotoResult[] | null>(null)
-  const [selected, setSelected]             = useState<PhotoResult | null>(null)
+  // Index into `results` of the food currently being reviewed/edited. Every
+  // detected food is logged; this only picks which one the detail card shows.
+  const [selectedIdx, setSelectedIdx]       = useState(0)
   const [confidence, setConfidence]         = useState<string | null>(null)
   // Free AI scans left after the most recent scan. null = Pro, or not yet known
   // (the count only rides back on a scan response). See lib/aiTrial.
   const [scansLeft, setScansLeft]           = useState<number | null>(null)
-  const [grams, setGrams]                   = useState(100)
   const [photoContext, setPhotoContext]     = useState('')
   const [showContextInput, setShowContextInput] = useState(false)
   const [meal, setMeal]                     = useState<string>(mealForTime())
   const [logging, setLogging]               = useState(false)
   const [manualBarcode, setManualBarcode]   = useState('')
   const [manualLoading, setManualLoading]   = useState(false)
-  const [customName, setCustomName]         = useState('')
   const [editingName, setEditingName]       = useState(false)
   const queryClient = useQueryClient()
+
+  // The food currently in the detail card, and editable views of its portion
+  // and label. All three are derived from `results` so an edit persists on the
+  // item when the user taps another chip and comes back.
+  const selected   = results?.[selectedIdx] ?? null
+  const grams      = selected?.grams ?? 100
+  const customName = selected?.name ?? ''
+
+  const patchSelected = useCallback(
+    (patch: Partial<Pick<PhotoResult, 'grams' | 'name'>>) => {
+      setResults((rs) => (rs ? rs.map((r, i) => (i === selectedIdx ? { ...r, ...patch } : r)) : rs))
+    },
+    [selectedIdx],
+  )
+  const setGrams      = useCallback((v: number) => patchSelected({ grams: v }), [patchSelected])
+  const setCustomName = useCallback((v: string) => patchSelected({ name: v }), [patchSelected])
 
   // Start the clock for `seconds_to_log`: this surface opening is the moment
   // the user set out to log something. See markLogStart in lib/posthog/client.
@@ -224,6 +256,7 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
 
     setAnalyzing(true)
     setResults(null)
+    setSelectedIdx(0)
     setConfidence(null)
     fetch('/api/camera/analyze', {
       method: 'POST',
@@ -252,15 +285,21 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
           return
         }
         if (!res.ok) throw new Error(json.error ?? 'Analysis failed')
-        const items: PhotoResult[] = (json.foods as Array<Food & { estimated_grams: number; unit?: string }>).map((f) => ({
-          food: f,
-          estimated_grams: f.estimated_grams || f.serving_size_g || 100,
-          unit: f.unit === 'ml' || f.unit === 'pcs' ? f.unit : 'g',
-        }))
+        const items: PhotoResult[] = (json.foods as Array<Food & { estimated_grams: number; unit?: string }>).map((f) => {
+          const estimated_grams = f.estimated_grams || f.serving_size_g || 100
+          return {
+            food: f,
+            estimated_grams,
+            unit: f.unit === 'ml' || f.unit === 'pcs' ? f.unit : 'g',
+            // Seed the editable fields; both persist per item from here on.
+            grams: estimated_grams,
+            name: f.name,
+          }
+        })
         setResults(items)
+        setSelectedIdx(0)
         setConfidence(json.confidence ?? null)
         if (typeof json.remaining === 'number') setScansLeft(json.remaining)
-        if (items[0]) { setSelected(items[0]); setGrams(items[0].estimated_grams); setCustomName(items[0].food.name) }
       })
       .catch((e) => {
         toast({ title: 'Could not analyse photo', description: (e as Error).message, variant: 'error' })
@@ -270,57 +309,81 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
   }, [captured, photoContext, onClose, router, context, user?.id])
 
   const retake = useCallback(() => {
-    setCaptured(null); setResults(null); setSelected(null); setConfidence(null)
-    setCustomName(''); setEditingName(false); setPhotoContext(''); setShowContextInput(false)
+    setCaptured(null); setResults(null); setSelectedIdx(0); setConfidence(null)
+    setEditingName(false); setPhotoContext(''); setShowContextInput(false)
     lastBarcode.current = null; setBarcodeLoading(false)
     setManualBarcode(''); setManualLoading(false)
   }, [])
 
   const switchMode = useCallback((m: Mode) => { setMode(m); retake() }, [retake])
 
-  /** Choose one of several detected foods and reset the portion/name editors. */
-  const selectResult = useCallback((r: PhotoResult) => {
-    setSelected(r); setGrams(r.estimated_grams); setCustomName(r.food.name); setEditingName(false)
+  /**
+   * Bring one of the detected foods into the detail card. Edits made to the
+   * others stay put — they live on `results`, not on the screen — which is the
+   * behaviour the old `selectResult` broke by re-seeding grams/name every tap.
+   */
+  const selectResult = useCallback((idx: number) => {
+    setSelectedIdx(idx); setEditingName(false)
   }, [])
 
   // ── Log food ─────────────────────────────────────────────────────────────────
   const logFood = useCallback(async () => {
-    if (!selected || logging) return
+    if (logging || !results || !selected) return
     setLogging(true)
+    const multi = results.length > 1
     try {
-      const res = await fetch('/api/logs/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...logMetaHeaders('photo_scan') },
-        body: JSON.stringify({ food_id: selected.food.id, meal, servings: 1, grams, date: logDate }),
-      })
+      // One food goes through /api/logs/add unchanged; a plate with several
+      // detected foods logs every one of them in a single /api/logs/add-bulk
+      // write — the same route the chat flow uses for multi-item meals.
+      const res = multi
+        ? await fetch('/api/logs/add-bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...logMetaHeaders('photo_scan') },
+            body: JSON.stringify({
+              items: results.map((r) => ({ food_id: r.food.id, grams: r.grams, meal })),
+              date: logDate,
+            }),
+          })
+        : await fetch('/api/logs/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...logMetaHeaders('photo_scan') },
+            body: JSON.stringify({ food_id: selected.food.id, meal, servings: 1, grams, date: logDate }),
+          })
       const j = (await res.json().catch(() => ({}))) as { error?: string; milestone?: LogMilestone }
       if (!res.ok) throw new Error(j.error ?? 'Log failed')
       queryClient.invalidateQueries({ queryKey: ['food-logs'] })
       reportLogMilestone(j.milestone)
 
-      // Correction signal: did the user change what the AI suggested before confirming?
-      const amountCorrected = grams !== selected.estimated_grams
-      const nameCorrected = customName.trim() !== selected.food.name
-      captureEvent('ai_estimate_corrected', {
-        type: 'camera',
-        corrected: amountCorrected || nameCorrected,
-        original_name: selected.food.name,
-        corrected_name: customName.trim(),
-        original_amount: selected.estimated_grams,
-        corrected_amount: grams,
-        delta_amount: grams - selected.estimated_grams,
-        unit: selected.unit,
-        confidence,
-      })
+      // Correction signal, per food: did the user change what the AI suggested?
+      for (const r of results) {
+        captureEvent('ai_estimate_corrected', {
+          type: 'camera',
+          corrected: r.grams !== r.estimated_grams || r.name.trim() !== r.food.name,
+          original_name: r.food.name,
+          corrected_name: r.name.trim(),
+          original_amount: r.estimated_grams,
+          corrected_amount: r.grams,
+          delta_amount: r.grams - r.estimated_grams,
+          unit: r.unit,
+          confidence,
+        })
+      }
 
-      toast({ title: `Logged ${customName || selected.food.name}`, description: `${grams} ${selected.unit} · ${meal}`, duration: 2500 })
+      if (multi) {
+        const loggedKcal = Math.round(
+          results.reduce((s, r) => s + scaleMacrosRaw(r.food, r.grams).kcal, 0),
+        )
+        toast({ title: `Logged ${results.length} foods`, description: `${loggedKcal} kcal · ${meal}`, duration: 2500 })
+      } else {
+        toast({ title: `Logged ${selected.name || selected.food.name}`, description: `${grams} ${selected.unit} · ${meal}`, duration: 2500 })
+      }
       onClose()
     } catch (e) {
       toast({ title: 'Failed to log', description: (e as Error).message, variant: 'error' })
     } finally {
       setLogging(false)
     }
-  }, [selected, logging, meal, grams, customName, confidence, queryClient, onClose, logDate])
+  }, [results, selected, logging, meal, grams, confidence, queryClient, onClose, logDate])
 
   // ── Derived nutrition values ──────────────────────────────────────────────────
   const macros  = selected ? scaleMacrosRaw(selected.food, grams) : null
@@ -328,6 +391,21 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
   const protein = macros ? Math.round(macros.protein_g) : 0
   const carbs   = macros ? Math.round(macros.carbs_g) : 0
   const fat     = macros ? Math.round(macros.fat_g) : 0
+
+  // Combined total across every detected food — what "Log all" writes, and the
+  // figure the coaching line and the total card speak to when there's >1 item.
+  const multiItem = (results?.length ?? 0) > 1
+  const totalMacros = (results ?? []).reduce(
+    (a, r) => {
+      const m = scaleMacrosRaw(r.food, r.grams)
+      return { kcal: a.kcal + m.kcal, protein: a.protein + m.protein_g, carbs: a.carbs + m.carbs_g, fat: a.fat + m.fat_g }
+    },
+    { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+  )
+  const totalKcal    = Math.round(totalMacros.kcal)
+  const totalProtein = Math.round(totalMacros.protein)
+  const totalCarbs   = Math.round(totalMacros.carbs)
+  const totalFat     = Math.round(totalMacros.fat)
   // The day's existing totals are the "before this meal" figure the coaching
   // line needs. Without them the sentence talks about the
   // meal as a share of the whole day and cheerfully says "good room left" to
@@ -342,7 +420,7 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
   })
   const coaching = selected && profile
     ? coachingLine(
-        { kcal, protein },
+        multiItem ? { kcal: totalKcal, protein: totalProtein } : { kcal, protein },
         { kcal: profile.daily_calorie_target, protein: profile.protein_g_target },
         dayContext
       )
@@ -354,7 +432,7 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
     videoRef, canvasRef, galleryRef,
     // state
     barcodeSupport, mode, camError, barcodeLoading, captured, analyzing,
-    results, selected, confidence, scansLeft, grams, photoContext, showContextInput,
+    results, selected, selectedIdx, confidence, scansLeft, grams, photoContext, showContextInput,
     meal, logging, manualBarcode, manualLoading, customName, editingName,
     // setters exposed to the view
     setGrams, setPhotoContext, setShowContextInput, setMeal,
@@ -364,5 +442,6 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
     retake, switchMode, selectResult, logFood,
     // derived
     kcal, protein, carbs, fat, coaching, amountMin, amountMax, amountStep,
+    multiItem, totalKcal, totalProtein, totalCarbs, totalFat,
   }
 }

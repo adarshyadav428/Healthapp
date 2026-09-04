@@ -31,13 +31,14 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
   const {
     videoRef, canvasRef, galleryRef,
     barcodeSupport, mode, camError, barcodeLoading, captured, analyzing,
-    results, selected, confidence, scansLeft, grams, photoContext, showContextInput,
+    results, selected, selectedIdx, confidence, scansLeft, grams, photoContext, showContextInput,
     meal, logging, manualBarcode, manualLoading, customName, editingName,
     setGrams, setPhotoContext, setShowContextInput, setMeal,
     setManualBarcode, setCustomName, setEditingName,
     onGallerySelect, capturePhoto, analyzePhoto, submitManualBarcode,
     retake, switchMode, selectResult, logFood,
     kcal, protein, carbs, fat, coaching, amountMin, amountMax, amountStep,
+    multiItem, totalKcal, totalProtein, totalCarbs, totalFat,
   } = useCameraScan({ onClose, onFoodFound, logDate, context })
 
   const nameInputRef = useRef<HTMLInputElement>(null)
@@ -180,20 +181,25 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-3 pt-5">
             <div className="space-y-4">
 
-            {/* Multiple items chips */}
-            {results!.length > 1 && (
-              <div className="flex gap-2 flex-wrap">
-                {results!.map((r, i) => (
-                  <button
-                    key={i}
-                    onClick={() => selectResult(r)}
-                    className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors tap-scale ${
-                      selected === r ? 'bg-brand text-white' : 'bg-surface-2 text-ink-2'
-                    }`}
-                  >
-                    {r.food.name}
-                  </button>
-                ))}
+            {/* Multiple items — every one is logged; a chip picks which to edit */}
+            {multiItem && (
+              <div className="space-y-2">
+                <p className="text-[12px] text-ink-2">
+                  Tap a food to check its portion — all {results!.length} get logged.
+                </p>
+                <div className="flex gap-2 flex-wrap">
+                  {results!.map((r, i) => (
+                    <button
+                      key={i}
+                      onClick={() => selectResult(i)}
+                      className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors tap-scale ${
+                        selectedIdx === i ? 'bg-brand text-white' : 'bg-surface-2 text-ink-2'
+                      }`}
+                    >
+                      {r.name}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -245,8 +251,11 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
               )}
             </div>
 
-            {/* Kcal + macros */}
+            {/* Kcal + macros — this food (of the several detected, when multi) */}
             <div className="rounded-card bg-energy-soft border border-hairline p-4 space-y-3">
+              {multiItem && (
+                <p className="text-[11px] font-semibold text-ink-2">This food · {customName || selected!.food.name}</p>
+              )}
               {/* Kcal */}
               <div className="flex items-baseline gap-1.5">
                 <span className="font-display text-[36px] font-bold tabular-nums text-ink leading-none">{kcal}</span>
@@ -270,14 +279,33 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
               </div>
             </div>
 
+            {/* Combined total — what "Log all" will write */}
+            {multiItem && (
+              <div className="rounded-card bg-surface-2 border border-hairline p-4 space-y-2">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[11px] font-semibold text-ink-2">All {results!.length} foods · total</span>
+                  <span className="font-display text-[22px] font-bold tabular-nums text-ink leading-none">
+                    {totalKcal}<span className="text-[12px] font-medium text-ink-2"> kcal</span>
+                  </span>
+                </div>
+                <div className="flex gap-4 pt-2 border-t border-hairline text-[12px] font-bold tabular-nums">
+                  <span style={{ color: 'var(--protein)' }}>P {totalProtein}<span className="text-[10px] font-medium text-ink-2">g</span></span>
+                  <span style={{ color: 'var(--carbs)' }}>C {totalCarbs}<span className="text-[10px] font-medium text-ink-2">g</span></span>
+                  <span style={{ color: 'var(--fat)' }}>F {totalFat}<span className="text-[10px] font-medium text-ink-2">g</span></span>
+                </div>
+              </div>
+            )}
+
             {/* Post-scan coaching line — makes the AI feel like a coach */}
             {coaching && (
               <p className="px-1 text-[12.5px] leading-relaxed text-ink-2">💡 {coaching}</p>
             )}
 
-            {/* Portion: number input + slider */}
+            {/* Portion: number input + slider — edits the food in focus */}
             <div>
-              <p className="text-[12px] text-ink-2 mb-2">Portion size</p>
+              <p className="text-[12px] text-ink-2 mb-2">
+                {multiItem ? `Portion — ${customName || selected!.food.name}` : 'Portion size'}
+              </p>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1 shrink-0">
                   <input
@@ -327,7 +355,7 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
               </select>
               <Button onClick={logFood} disabled={logging} size="lg" className="flex-1 gap-1.5 tap-scale">
                 {logging ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                Log food
+                {multiItem ? `Log ${results!.length} foods` : 'Log food'}
               </Button>
             </div>
           </div>

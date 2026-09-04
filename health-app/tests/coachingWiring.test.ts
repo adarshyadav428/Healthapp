@@ -69,12 +69,21 @@ describe('useCameraScan scopes the day context to the day being logged to', () =
     expect(cameraScan).toContain('dateStrToUtcMidnight(logDate)')
   })
 
-  it('still sends that same date when it logs the meal', () => {
+  it('still sends that same date when it logs one detected food', () => {
     const logBody = /body: JSON\.stringify\(\{ food_id: selected\.food\.id[^}]*\}\)/.exec(
       cameraScan
     )?.[0]
     expect(logBody, 'the camera log payload moved or changed shape').toBeTruthy()
     expect(logBody).toMatch(/date: logDate/)
+  })
+
+  it('threads the date through the bulk path when a plate has several foods', () => {
+    // A multi-food scan logs every item via /api/logs/add-bulk. Same contract:
+    // the day it writes to must be the day the totals/coaching describe.
+    const at = cameraScan.indexOf("'/api/logs/add-bulk'")
+    expect(at, 'the camera must log a multi-food plate via /api/logs/add-bulk').toBeGreaterThan(-1)
+    const call = cameraScan.slice(at, at + 400)
+    expect(call).toMatch(/date: logDate/)
   })
 })
 
