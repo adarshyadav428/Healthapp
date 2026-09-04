@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveChatItemNutrition, type ChatItem } from '../lib/chat-nutrition'
+import { resolveChatItemNutrition, parseStatedTotal, type ChatItem } from '../lib/chat-nutrition'
 
 const base: ChatItem = {
   name: 'Dal',
@@ -51,5 +51,39 @@ describe('resolveChatItemNutrition()', () => {
   it('rejects energy that wildly mismatches the macros (Atwater check)', () => {
     const r = resolveChatItemNutrition({ ...base, kcal_per_100g: 700, protein_g_per_100g: 2, carbs_g_per_100g: 5, fat_g_per_100g: 1 })
     expect(r.plausible).toBe(false)
+  })
+})
+
+describe('parseStatedTotal()', () => {
+  it('reads a plain gram figure and the noun phrase after it', () => {
+    const r = parseStatedTotal('ate 200g paneer butter masala')
+    expect(r).toEqual({ grams: 200, anchorHint: 'paneer butter masala' })
+  })
+
+  it('converts kg to grams', () => {
+    expect(parseStatedTotal('1kg chicken curry')).toEqual({ grams: 1000, anchorHint: 'chicken curry' })
+  })
+
+  it('skips a leading "of" between the weight and the dish name', () => {
+    const r = parseStatedTotal('750g of Hyderabadi chicken biryani which contained chicken')
+    expect(r).toEqual({ grams: 750, anchorHint: 'Hyderabadi chicken biryani' })
+  })
+
+  it('stops the anchor hint at containment/list language, not mid-dish', () => {
+    expect(parseStatedTotal('500g rajma chawal with extra rice')?.anchorHint).toBe('rajma chawal')
+  })
+
+  it('understands Hinglish fractional-kg phrasing', () => {
+    expect(parseStatedTotal('aadha kg biryani')).toEqual({ grams: 500, anchorHint: 'biryani' })
+    expect(parseStatedTotal('pauna kg chicken curry')).toEqual({ grams: 750, anchorHint: 'chicken curry' })
+    expect(parseStatedTotal('dedh kg chicken biryani')).toEqual({ grams: 1500, anchorHint: 'chicken biryani' })
+  })
+
+  it('returns null when the message states no weight at all', () => {
+    expect(parseStatedTotal('2 roti, dal, bhindi sabzi')).toBeNull()
+  })
+
+  it('returns null when the message states more than one weight — ambiguous, so do nothing', () => {
+    expect(parseStatedTotal('500g biryani and 200g raita')).toBeNull()
   })
 })
