@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { istDateStr } from '../lib/dateUtils'
 import {
   calculateWeeklyDeficit,
   calculatePeriodDeficit,
@@ -448,5 +451,40 @@ describe('cumulativeSeries', () => {
 
   it('handles an empty period', () => {
     expect(cumulativeSeries([], tdee)).toEqual([])
+  })
+})
+
+/**
+ * The last UTC day helper in the deficit module.
+ *
+ * `period_start` fell back to `new Date().toISOString().slice(0, 10)` — a UTC
+ * calendar date, which between 00:00 and 05:30 IST names yesterday — inside the
+ * one module CLAUDE.md says has no UTC day helper left. All three callers pass
+ * a start, so it was unreachable; it is fixed anyway, because a latent
+ * wrong-day fallback is what a fourth caller reaches after trusting the file's
+ * header (audit 2026-09-03, P2-7).
+ */
+describe('period_start falls back to the IST day, not the UTC day', () => {
+  it('uses the IST date when nothing supplies a start', () => {
+    const summary = calculateWeeklyDeficit([], 2000, 0.5)
+    expect(summary.period_start).toBe(istDateStr())
+    expect(summary.week_start).toBe(istDateStr())
+  })
+
+  it('still prefers an explicit start over the fallback', () => {
+    const summary = calculateWeeklyDeficit([], 2000, 0.5, { weekStart: '2026-01-05' })
+    expect(summary.period_start).toBe('2026-01-05')
+  })
+
+  it('the module never reads NOW as a UTC day', () => {
+    const src = readFileSync(join(__dirname, '..', 'lib', 'deficit-calculator.ts'), 'utf8')
+    const stripped = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1')
+    // Narrow on purpose. `weekStartOf` and `addDayKey` also end in
+    // `.toISOString().slice(0, 10)`, and they are correct: they parse a
+    // YYYY-MM-DD key as UTC midnight, do UTC arithmetic and format back — a
+    // synthetic date standing in for an IST calendar date, which never drifts.
+    // `new Date()` with no argument is the different thing: it reads the
+    // current instant, and only then does the zone decide the answer.
+    expect(stripped).not.toMatch(/new Date\(\)\.toISOString\(\)\.slice\(/)
   })
 })

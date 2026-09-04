@@ -33,6 +33,13 @@ const SOURCES: { name: string; grams: number; portion: string }[] = [
   { name: 'milk',         grams: 8,  portion: 'a glass of milk' },
 ]
 
+/**
+ * How much of the gap a single portion must cover before the line may say it
+ * "covers it". Below this the copy names what the portion actually contributes
+ * instead of claiming closure it cannot deliver.
+ */
+const COVERS_IT_RATIO = 0.7
+
 /** The single source that most nearly closes `gap` without wild overshoot. */
 function bestSuggestion(gap: number): { portion: string; grams: number } {
   let best = SOURCES[0]
@@ -75,6 +82,20 @@ export function proteinCoachLine(
     return { tone: 'close', text: `${gap}g of protein to go — you're basically there.` }
   }
 
-  const { portion } = bestSuggestion(gap)
-  return { tone: 'gap', text: `${gap}g of protein to go — about ${portion} covers it.` }
+  const { portion, grams } = bestSuggestion(gap)
+
+  // Only claim closure when the suggestion actually closes it. `bestSuggestion`
+  // picks the NEAREST source with no ceiling, and the largest one here is 26g —
+  // so on a 100g gap the line used to read "about 50g of soya chunks covers it",
+  // which is 26g and flatly false. It fired on exactly the days a user was
+  // furthest behind, and this is the free tier's only coaching line, so for most
+  // users it is the only thing the app ever says about their food.
+  // Found by the 2026-09-03 audit (P2-11).
+  if (grams >= gap * COVERS_IT_RATIO) {
+    return { tone: 'gap', text: `${gap}g of protein to go — about ${portion} covers it.` }
+  }
+
+  // Still concrete and still actionable, just honest about the size of the gap:
+  // name the portion and what it actually contributes.
+  return { tone: 'gap', text: `${gap}g of protein to go — ${portion} gets you ${grams}g of that.` }
 }

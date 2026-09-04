@@ -89,7 +89,6 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
       // so this derives the tile to light up from their existing goal.
       body_focus: focusFromProfile(profile),
       pace_kg_per_week: profile.pace_kg_per_week ?? 0.5,
-      water_target_ml: profile.water_target_ml ?? 2500,
       custom_calorie_target: profile.daily_calorie_target,
       custom_protein_target: profile.protein_g_target,
       custom_carbs_target:   profile.carbs_g_target,
@@ -171,7 +170,6 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
           target_weight_kg: profile.target_weight_kg,
           activity_level: profile.activity_level,
           goal: profile.goal,
-          water_target_ml: profile.water_target_ml ?? 2500,
           custom_calorie_target: kcal,
           custom_protein_target: profile.protein_g_target,
           custom_carbs_target: profile.carbs_g_target,

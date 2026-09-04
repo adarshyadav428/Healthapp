@@ -26,6 +26,10 @@ describe('projectGoalDate', () => {
 
 describe('formatGoalDate', () => {
   it('formats a friendly date', () => {
-    expect(formatGoalDate(new Date('2026-12-04T00:00:00Z'))).toMatch(/Dec 2026/)
+    // Pinned to the day, not just the month: formatGoalDate renders in IST now,
+    // so this is deterministic on any runtime. It previously matched /Dec 2026/
+    // because the day it printed depended on the machine running the test —
+    // an assertion that could not have failed for the reason it was written.
+    expect(formatGoalDate(new Date('2026-12-04T00:00:00Z'))).toBe('4 Dec 2026')
   })
 })

@@ -23,6 +23,20 @@ export function shiftDateStr(dateStr: string, days: number): string {
   ].join('-')
 }
 
+/**
+ * The last `days` IST calendar dates, oldest first, ending on `todayStr`.
+ *
+ * The IST replacement for date-fns' `eachDayOfInterval({ start: subDays(...) })`,
+ * which walked *local* midnights: on a device outside IST the Trends chart drew
+ * a set of days that was off by one from the days its own bars were grouped
+ * into, so a bar could be labelled with a date whose food it did not contain.
+ * Built on shiftDateStr so there is still exactly one piece of date arithmetic
+ * here, not a second one that agrees with it until it doesn't.
+ */
+export function lastIstDateStrs(days: number, todayStr: string = istDateStr()): string[] {
+  return Array.from({ length: days }, (_, i) => shiftDateStr(todayStr, i - (days - 1)))
+}
+
 /** The /log href for a date — today gets the canonical bare URL. */
 export function logHref(dateStr: string, todayStr: string = istDateStr()): string {
   return dateStr === todayStr ? '/log' : `/log?date=${dateStr}`

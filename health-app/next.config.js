@@ -41,6 +41,12 @@ const withPWA = require('@ducanh2912/next-pwa').default({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  eslint: {
+    // `next lint` defaults to app/pages/components/lib/src only. hooks/ and
+    // store/ were never linted, which is how a timezone leak sat in
+    // useChatLog untouched — the rules that ban it have to reach it.
+    dirs: ['app', 'components', 'hooks', 'lib', 'store', 'worker'],
+  },
   images: {
     domains: [],
   },

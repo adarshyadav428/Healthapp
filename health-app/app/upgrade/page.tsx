@@ -37,7 +37,7 @@ const REASON_COPY: Record<string, { title: string; description: string }> = {
   // server-side on /wrapped, so this reason is deliberately absent from
   // PAYWALL_SOURCE_ONLY_HERE — it only needs the copy.
   wrapped:            { title: 'See your whole month', description: 'Your most-logged dish, your best day, your longest streak and your weight curve — your full Wrapped, with Pro.' },
-  meal_suggestions:   { title: 'More meal ideas, all day', description: 'Free gives you three suggestions a day. Pro keeps them coming, always tuned to the calories you have left.' },
+  meal_suggestions:   { title: 'More meal ideas, all day', description: 'Free shows a few ideas at a time. Pro keeps them coming, always tuned to the calories you have left.' },
 }
 
 /**

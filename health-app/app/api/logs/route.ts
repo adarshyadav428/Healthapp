@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient, getApiUser } from '../../../lib/supabase/server'
-import { istDaysAgoStart } from '../../../lib/dateUtils'
+import { istDaysAgoStart, clampHistoryStart } from '../../../lib/dateUtils'
 import { isProStatus } from '../../../lib/subscription'
 import { limitsForSignupDate } from '../../../lib/freeTier'
 import type { FoodLog } from '../../../types/index'
@@ -29,10 +29,18 @@ export async function GET(req: Request) {
       supabase.from('subscriptions').select('status').eq('user_id', user.id).maybeSingle(),
       supabase.from('profiles').select('created_at').eq('id', user.id).maybeSingle(),
     ])
+    // `start` is untrusted input and must be a real timestamp whatever the tier —
+    // an unparseable one would otherwise reach Postgres as a literal.
+    if (start && !Number.isFinite(Date.parse(start))) {
+      return NextResponse.json({ error: 'Invalid start date' }, { status: 400 })
+    }
+
     if (!isProStatus(sub?.status)) {
       const cutoff = istDaysAgoStart(limitsForSignupDate(profile?.created_at).historyDays)
-      // ISO-8601 UTC strings compare correctly as strings
-      if (!start || start < cutoff) start = cutoff
+      // Compares parsed instants, never strings — see clampHistoryStart for why
+      // `?start=epoch` used to defeat this entirely.
+      start = clampHistoryStart(start, cutoff)
+      if (start === null) return NextResponse.json({ error: 'Invalid start date' }, { status: 400 })
     }
 
     let query = supabase

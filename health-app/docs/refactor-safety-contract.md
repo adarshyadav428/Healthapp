@@ -7,9 +7,14 @@ then no behavior listed below can change without a failing check.
 ## Why this holds
 
 1. **All writes go through API routes.** Every `insert`/`update`/`upsert`/`delete` in the app
-   lives in `app/api/**` (48 call sites as of 2026-08-21, zero in `components/` or `hooks/` — the
+   lives in `app/api/**` (47 call sites as of 2026-09-04, zero in `components/` or `hooks/` — the
    zero is the load-bearing half; re-derive both with
-   `grep -rEc "\.(insert|update|upsert|delete)\(" app/api components hooks --include=*.ts --include=*.tsx`).
+   `grep -rE "\.(insert|update|upsert|delete)\(" app/api --include=*.ts | wc -l` and
+   `grep -rE "\.(insert|update|upsert|delete)\(" components hooks --include=*.ts --include=*.tsx | grep -v searchParams | wc -l`).
+   The `searchParams` filter is not a fudge: the unfiltered grep returns 2, and both are
+   `URLSearchParams.delete()` clearing a query param (`BottomNav.tsx`, `FoodLanding.tsx`) — not
+   database writes. Documented here because the raw grep's "0" went stale without the invariant
+   ever breaking, which is worse than a wrong number: it invites someone to conclude the rule broke.
    Components can only
    `fetch()` those routes; the routes validate input with Zod (`lib/validations.ts`) and recompute
    derived values (TDEE, macros) server-side, so a UI change cannot alter what gets stored.
@@ -55,7 +60,7 @@ then no behavior listed below can change without a failing check.
 ## Verification gates (run all before shipping)
 
 ```bash
-npm test           # 67 files / 917 tests
+npm test           # 89 files / 1,334 tests
 npx tsc --noEmit
 npm run lint
 npm run check:tokens
@@ -93,7 +98,9 @@ npm run build
 - `/api/logs/copy-yesterday` is not idempotent — a double-tap duplicates yesterday's logs
   (client disables the button in-flight; server-side guard would be nicer).
 - Migrations `012`/`022`/`023` (billing columns incl. `cancel_at_period_end`) are **applied in
-  prod** (verified 2026-07-17 via REST probe). The only unapplied migration that matters is
-  `015_chat_logs.sql` (until applied, the 10/day AI-chat limit is silently off). `011_weekly_calorie_view`
-  is unapplied but referenced nowhere in code (deliberately skipped). See
-  `docs/launch-plan-2026-07-17.md` §4 for the exact apply-and-verify playbook.
+  prod** (verified 2026-07-17 via REST probe). `015_chat_logs.sql` **was applied on 2026-07-18**;
+  this line claimed it was outstanding and that "the 10/day AI-chat limit is silently off" for over
+  a year after both facts stopped being true — the limit is now the lifetime AI trial in
+  `lib/aiTrial.ts`, not a daily cap. Migrations `001`–`044` are applied; see `CLAUDE.md` for the
+  authoritative list. `011_weekly_calorie_view` is unapplied but referenced nowhere in code
+  (deliberately skipped). See `docs/launch-plan-2026-07-17.md` §4 for the apply-and-verify playbook.

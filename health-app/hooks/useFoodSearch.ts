@@ -77,7 +77,11 @@ export function useFoodSearch({ recentFoods, recentLogItems, frequentFoods, logD
       const res = await fetch('/api/meals/log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...logMetaHeaders('meal_template') },
-        body: JSON.stringify({ meal_id: mealId, meal_type: mealType }),
+        // FoodSearch hides its combos row on past days, so this is today in
+        // practice — but every other log in this hook threads logDate, and the
+        // one that didn't is exactly how the FoodLanding copy of this row came
+        // to file past-day combos on today. Structural, not guarded.
+        body: JSON.stringify({ meal_id: mealId, meal_type: mealType, date: logDate }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Failed to log meal')

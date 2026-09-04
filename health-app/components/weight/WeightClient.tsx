@@ -8,6 +8,7 @@ import { BmiCard } from './BmiCard'
 import { useWeightLogs } from '../../hooks/useWeightLogs'
 import { projectGoalDate, formatGoalDate } from '../../lib/projection'
 import { formatKg } from '../../lib/formatWeight'
+import { formatIst } from '../../lib/dateUtils'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
 import { Button } from '../ui/button'
@@ -22,12 +23,17 @@ export function WeightClient({
   logs,
   profile,
   atFreeCap = false,
+  freeWeightRows,
 }: {
   logs: WeightLog[]
   profile: Profile
-  /** Free account whose weigh-in history has hit the 30-row cap — the chart and
-   *  trend stop there, and until now nothing said so. */
+  /** Free account whose weigh-in history has hit its cohort's row cap — the
+   *  chart and trend stop there, and until now nothing said so. */
   atFreeCap?: boolean
+  /** The account's cohort cap (lib/freeTier.ts). The caption used to say "30"
+   *  unconditionally, which is wrong for every account created on or after
+   *  FREE_TIER_CUTOFF — they get 14, and were shown 14 while being told 30. */
+  freeWeightRows?: number
 }) {
   const [open, setOpen] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -93,7 +99,9 @@ export function WeightClient({
           <WeightChart logs={sorted} />
           {atFreeCap && (
             <div className="mt-3 flex items-center justify-between gap-2 border-t border-hairline pt-3">
-              <p className="text-[12px] text-ink-3">Showing your last 30 weigh-ins</p>
+              <p className="text-[12px] text-ink-3">
+                {freeWeightRows ? `Showing your last ${freeWeightRows} weigh-ins` : 'Showing your recent weigh-ins'}
+              </p>
               <ProLock.Chip label="Full history" reason="history" />
             </div>
           )}
@@ -116,8 +124,9 @@ export function WeightClient({
         <div className="rounded-sheet border border-hairline bg-surface p-4 shadow-rest space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-ink-2">Recent entries</p>
           {recentEntries.map((log) => {
-            const date = new Date(log.measured_at)
-            const label = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', weekday: 'short' })
+            // measured_at is a timestamptz, so it must be read back in IST:
+            // in the device's zone, a weigh-in at 00:30 IST listed as yesterday.
+            const label = formatIst(log.measured_at, { day: 'numeric', month: 'short', weekday: 'short' })
             return (
               <div key={log.id} className="flex items-center justify-between rounded-control bg-surface-2 px-4 py-2.5">
                 <span className="text-sm text-ink-2">{label}</span>

@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'GetInShape Pro — Unlimited AI Logging & Full History',
   description:
-    'Pro unlocks unlimited AI photo & chat logging, your full history beyond 7 days, custom foods, advanced trends and the weekly AI recap. ₹299/month or ₹1,999/year.',
+    'Pro unlocks unlimited AI photo & chat logging, your full logging history, custom foods, advanced trends and the weekly AI recap. ₹299/month or ₹1,999/year.',
   alternates: { canonical: '/upgrade' },
 }
 

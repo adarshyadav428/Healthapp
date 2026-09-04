@@ -45,8 +45,15 @@ export const PRO_FEATURES = [
   'Full history — every day you’ve ever logged',
   'Custom foods & recipes — log your home-cooked dishes',
   'Advanced trends — full weight history, macro breakdown charts',
+  // The three below are enforced Pro gates that this list used to omit, so the
+  // paywall was hiding things people actually pay for:
+  //   streak rescue      app/api/streak/rescue/route.ts (403 for free)
+  //   month deficit      app/progress/page.tsx (withheld server-side)
+  //   meal suggestions   app/api/foods/suggest/route.ts (capped for free)
+  'Streak rescue — repair a broken streak once a month',
+  'Your month’s calorie deficit, not just the week',
+  'Unlimited meal suggestions, right through the evening',
   'Priority email support',
-  'No ads, ever',
 ] as const
 
 /**

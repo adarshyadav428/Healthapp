@@ -3,11 +3,11 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { format, parseISO, startOfDay, subDays, eachDayOfInterval, parse, isWithinInterval } from 'date-fns'
 import type { Profile, WeightLog } from '../../types/index'
 import { useUser } from '../../hooks/useUser'
 import { DayDiary } from './DayDiary'
-import { dateStrToUtcMidnight } from '../../lib/dateUtils'
+import { dateStrToUtcMidnight, formatIst, istDateStr, istDaysAgoStart } from '../../lib/dateUtils'
+import { lastIstDateStrs } from '../../lib/logDates'
 import { ShareProgressButton } from './ShareProgressButton'
 import { firstNameFrom } from '../../lib/shareCard'
 import { computeWeightTrend } from '../../lib/weightTrend'
@@ -53,7 +53,12 @@ type Props = {
 
 // IST calendar date (YYYY-MM-DD) for a timestamp — matches what the user sees.
 function istDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
+  return istDateStr(new Date(iso))
+}
+/** A YYYY-MM-DD IST date as a label. UTC midnight of that date is still that
+ *  same date in IST (+5:30 lands at 05:30), so no day can slip here. */
+function dayLabel(dateStr: string, options: Intl.DateTimeFormatOptions) {
+  return formatIst(dateStrToUtcMidnight(dateStr), options, 'en-US')
 }
 function pad(n: number) { return String(n).padStart(2, '0') }
 
@@ -115,13 +120,17 @@ export function ProgressClient({
   }
 
   // ── Multi-range, multi-metric chart data ────────────────────────────────────
+  // Both the day list and the grouping key are IST. They used to be date-fns'
+  // *local* day — correct only for a device already on IST, and silently off by
+  // one for every other, which put a meal in the wrong bar and mislabelled the
+  // bar it landed in (audit 2026-09-03, P1-8).
   const chartData: DayData[] = useMemo(() => {
-    const today = startOfDay(new Date())
-    const days = eachDayOfInterval({ start: subDays(today, range - 1), end: today })
+    const todayStr = istDateStr()
+    const days = lastIstDateStrs(range, todayStr)
 
     const byDay = new Map<string, { kcal: number; protein: number; carbs: number; fat: number }>()
     for (const log of logs) {
-      const key = format(startOfDay(parseISO(log.logged_at)), 'yyyy-MM-dd')
+      const key = istDate(log.logged_at)
       const existing = byDay.get(key) ?? { kcal: 0, protein: 0, carbs: 0, fat: 0 }
       byDay.set(key, {
         kcal: existing.kcal + log.kcal,
@@ -131,13 +140,14 @@ export function ProgressClient({
       })
     }
 
-    return days.map((day) => {
-      const key = format(day, 'yyyy-MM-dd')
+    return days.map((key) => {
       const data = byDay.get(key)
-      const isToday = key === format(today, 'yyyy-MM-dd')
+      const isToday = key === todayStr
       return {
         date: key,
-        label: range <= 7 ? format(day, 'EEE') : format(day, 'MMM d'),
+        label: range <= 7
+          ? dayLabel(key, { weekday: 'short' })
+          : dayLabel(key, { month: 'short', day: 'numeric' }),
         kcal: Math.round(data?.kcal ?? 0),
         protein: Math.round(data?.protein ?? 0),
         carbs: Math.round(data?.carbs ?? 0),
@@ -187,7 +197,7 @@ export function ProgressClient({
 
   // ── Month calendar ──────────────────────────────────────────────────────────
   const loggedSet = useMemo(() => new Set(loggedDates.map(istDate)), [loggedDates])
-  const istTodayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
+  const istTodayStr = istDateStr()
   const [ty, tm, td] = istTodayStr.split('-').map(Number)
 
   const minOffset = useMemo(() => {
@@ -204,8 +214,12 @@ export function ProgressClient({
   const isCurrentMonth = offset === 0
 
   const cal = useMemo(() => {
-    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
-    const firstWeekday = new Date(viewYear, viewMonth, 1).getDay()
+    // UTC arithmetic, read back with UTC getters. How many days a month has and
+    // which weekday it opens on do not depend on a timezone — but building the
+    // date locally and reading it locally only *happens* to agree, and it is
+    // the construct the day-boundary rule exists to keep out of this file.
+    const daysInMonth = new Date(Date.UTC(viewYear, viewMonth + 1, 0)).getUTCDate()
+    const firstWeekday = new Date(Date.UTC(viewYear, viewMonth, 1)).getUTCDay()
     const cells: ({ day: number; logged: boolean } | null)[] = []
     for (let i = 0; i < firstWeekday; i++) cells.push(null)
     let logged = 0
@@ -217,9 +231,11 @@ export function ProgressClient({
     }
     while (cells.length % 7 !== 0) cells.push(null)
     const elapsed = isCurrentMonth ? td : daysInMonth
-    const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString('en-US', {
+    // Date.UTC, not the local constructor: the calendar's own cells are built
+    // from IST fields, so its heading has to be read back in the same zone.
+    const monthLabel = formatIst(Date.UTC(viewYear, viewMonth, 1), {
       month: 'long', ...(viewYear !== ty ? { year: 'numeric' } : {}),
-    })
+    }, 'en-US')
     return { cells, logged, elapsed, monthLabel }
   }, [viewYear, viewMonth, isCurrentMonth, td, ty, loggedSet])
 
@@ -410,7 +426,7 @@ export function ProgressClient({
             <div className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4 text-brand" />
               <p className="text-[14px] font-bold text-ink">
-                {format(parse(selectedDate, 'yyyy-MM-dd', new Date()), 'EEEE, MMM d')}
+                {dayLabel(selectedDate, { weekday: 'long', month: 'short', day: 'numeric' })}
               </p>
             </div>
             <button type="button" onClick={() => setSelectedDate(null)} className="rounded-full p-1 tap-scale">
@@ -422,6 +438,7 @@ export function ProgressClient({
             userId={user.id}
             date={dateStrToUtcMidnight(selectedDate)}
             beyondFreeWindow={!isPro && selectedDate < freeWindowCutoff}
+            freeHistoryDays={freeHistoryDays}
           />
         </div>
       )}
@@ -528,8 +545,16 @@ function ExerciseSection({ exerciseLogs, range }: { exerciseLogs: ExerciseRow[];
   const [showAll, setShowAll] = useState(false)
 
   const filtered = useMemo(() => {
-    const cutoff = subDays(startOfDay(new Date()), range - 1)
-    return exerciseLogs.filter((e) => isWithinInterval(parseISO(e.logged_at), { start: cutoff, end: new Date() }))
+    // Same window the chart above draws, so the two can't disagree: the start
+    // of the IST day `range - 1` days back. Compared as parsed instants, never
+    // as strings — a lexicographic compare of timestamps is how the free-tier
+    // history clamp was bypassed (P1-1).
+    const cutoffMs = Date.parse(istDaysAgoStart(range))
+    const nowMs = Date.now()
+    return exerciseLogs.filter((e) => {
+      const t = Date.parse(e.logged_at)
+      return Number.isFinite(t) && t >= cutoffMs && t <= nowMs
+    })
   }, [exerciseLogs, range])
 
   const totalCalories = filtered.reduce((s, e) => s + (e.calories ?? 0), 0)
@@ -572,7 +597,7 @@ function ExerciseSection({ exerciseLogs, range }: { exerciseLogs: ExerciseRow[];
               <Flame className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--fat)' }} />
               <div className="min-w-0">
                 <p className="truncate text-[12px] font-semibold capitalize text-ink">{e.activity}</p>
-                <p className="text-[10px] text-ink-3">{format(parseISO(e.logged_at), 'MMM d')} · {e.duration_min} min</p>
+                <p className="text-[10px] text-ink-3">{formatIst(e.logged_at, { month: 'short', day: 'numeric' }, 'en-US')} · {e.duration_min} min</p>
               </div>
             </div>
             <span className="ml-2 shrink-0 text-[12px] font-bold tabular-nums" style={{ color: 'var(--fat)' }}>

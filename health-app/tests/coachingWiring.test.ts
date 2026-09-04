@@ -95,3 +95,111 @@ describe('neither hook builds the day context by hand', () => {
     expect(source).not.toMatch(/protein:\s*dailyTotals\.protein_g/)
   })
 })
+
+/**
+ * Every logging surface threads the date it is looking at.
+ *
+ * The two hooks above are not the whole set. `FoodLanding` renders on any
+ * EDITABLE day — app/log/page.tsx passes `isToday={isToday}` and mounts it
+ * whenever the day can be written to, "so a missed day can be backfilled" —
+ * and its "Your combos" row carried no isToday guard while `logSavedMeal` sent
+ * no date. `/api/meals/log` had no `date` in its schema at all, so every combo
+ * took `logged_at DEFAULT now()`: tapping a saved combo while viewing a past
+ * day filed the whole meal on TODAY, silently, and the viewed day's total
+ * never moved. Exactly the camera defect that made this a hard rule, on the
+ * one surface nothing here covered. Found by the 2026-09-03 audit (P0-2).
+ *
+ * Asserted against source for the same reason as the rest of this file: the
+ * defect lives in the seam between a component, a hook and a route, which is
+ * where neither a unit test nor a route test looks.
+ */
+describe('the saved-combo path threads its date too', () => {
+  const foodLanding = readFileSync(
+    join(__dirname, '..', 'components', 'log', 'FoodLanding.tsx'),
+    'utf8'
+  )
+  const foodSearchHook = readFileSync(join(HOOKS, 'useFoodSearch.ts'), 'utf8')
+  const mealsLogRoute = readFileSync(
+    join(__dirname, '..', 'app', 'api', 'meals', 'log', 'route.ts'),
+    'utf8'
+  )
+
+  it.each([
+    ['FoodLanding', foodLanding],
+    ['useFoodSearch', foodSearchHook],
+  ])('%s sends a date with the saved-meal log', (_name, source) => {
+    const at = source.indexOf("'/api/meals/log'")
+    expect(at, 'the /api/meals/log call moved or changed shape').toBeGreaterThan(-1)
+    // The fetch options object that follows the URL, comments and all.
+    const call = source.slice(at, at + 900)
+    const body = /body: JSON\.stringify\(([\s\S]*?)\),/.exec(call)?.[1]
+    expect(body, 'the /api/meals/log request body moved or changed shape').toBeTruthy()
+    expect(body).toContain('date:')
+  })
+
+  it('accepts the date server-side', () => {
+    expect(mealsLogRoute).toMatch(/date:\s*z\.string\(\)/)
+  })
+
+  it('resolves logged_at through the shared backfill gate', () => {
+    // Not `new Date()` inline: resolveLoggedAtForRequest also enforces the
+    // free-tier backfill window, so accepting a date here must not become a
+    // way around the limit that logs/add, add-bulk and quick-add all apply.
+    expect(mealsLogRoute).toContain('resolveLoggedAtForRequest')
+    expect(mealsLogRoute).toMatch(/logged_at,/)
+  })
+
+  it('does not let the row fall back to the column default', () => {
+    // The whole bug: no logged_at on the insert means DEFAULT now().
+    const insertBlock = /const logRows = items[\s\S]*?\}\)\)/.exec(mealsLogRoute)?.[0]
+    expect(insertBlock, 'the logRows builder moved or changed shape').toBeTruthy()
+    expect(insertBlock).toContain('logged_at')
+  })
+})
+
+/**
+ * The coaching line must reach the surface most logs actually use.
+ *
+ * `coachingLine` is pure, free and needs no AI call — but it was wired only
+ * into useCameraScan and useChatLog, both of which sit behind a 3-call lifetime
+ * AI trial that itself requires a verified email. So a free user logging by
+ * search — the overwhelming majority of all logs — never saw a coaching
+ * sentence at all: the app's best retention asset was attached to the one
+ * surface almost nobody can reach (audit 2026-09-03, P1-13).
+ *
+ * AddFoodModal is that surface. Same two rules as the hooks above apply to it:
+ * scope the day context to the day being logged to, and never pass raw totals.
+ */
+describe('AddFoodModal speaks after a search log', () => {
+  const addModal = readFileSync(
+    join(__dirname, '..', 'components', 'log', 'AddFoodModal.tsx'),
+    'utf8'
+  )
+
+  it('calls coachingLine', () => {
+    expect(addModal).toContain('coachingLine(')
+  })
+
+  it('routes the day context through dayContextFor', () => {
+    expect(addModal).toContain('dayContextFor({')
+  })
+
+  it('does not pass raw totals into coachingLine', () => {
+    expect(addModal).not.toMatch(/protein:\s*dailyTotals\.protein_g/)
+  })
+
+  it('scopes the totals to the day being logged to, not always today', () => {
+    // logDate is the viewed day; using `new Date()` unconditionally would
+    // describe today's budget while writing to a past day.
+    expect(addModal).toMatch(/logDate \? dateStrToUtcMidnight\(logDate\) : new Date\(\)/)
+  })
+
+  it('is reachable from the surfaces that have a profile', () => {
+    for (const file of ['FoodLanding.tsx', 'FoodSearch.tsx']) {
+      const src = readFileSync(join(__dirname, '..', 'components', 'log', file), 'utf8')
+      expect(src, `${file} must forward targets to AddFoodModal`).toMatch(/targets=\{targets\}/)
+    }
+    const page = readFileSync(join(__dirname, '..', 'app', 'log', 'page.tsx'), 'utf8')
+    expect(page).toMatch(/targets=\{\{\s*kcal:/)
+  })
+})

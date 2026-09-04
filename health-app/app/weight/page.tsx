@@ -56,6 +56,7 @@ export default async function WeightPage() {
             logs={weightLogs}
             profile={profile}
             atFreeCap={!isPro && weightLogs.length >= weightRows}
+            freeWeightRows={weightRows}
           />
         </div>
       </main>

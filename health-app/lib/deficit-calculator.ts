@@ -330,8 +330,14 @@ export function calculatePeriodDeficit(
       : `${n(calBehind)} kcal behind target. Need a ${n(neededPerDay)} kcal deficit each remaining day to hit your goal.`
   }
 
+  // `istDateStr()`, not `new Date().toISOString().slice(0, 10)`. That was a UTC
+  // day helper living inside the one module CLAUDE.md says has none left, and
+  // between 00:00 and 05:30 IST it named yesterday. Unreachable today — all
+  // three callers pass a start — but a latent wrong-day fallback in the deficit
+  // module is exactly the thing that gets reached later by a fourth caller
+  // written by someone who trusted the file's header (P2-7).
   const periodStart =
-    opts.periodStart ?? opts.weekStart ?? completedDays[0]?.date ?? new Date().toISOString().slice(0, 10)
+    opts.periodStart ?? opts.weekStart ?? completedDays[0]?.date ?? istDateStr()
 
   return {
     period_start: periodStart,

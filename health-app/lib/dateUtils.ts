@@ -11,6 +11,38 @@
 // Indian Standard Time = UTC + 5:30
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000
 
+/** The IANA zone every day boundary in this app is defined in. */
+export const IST_TZ = 'Asia/Kolkata'
+
+/**
+ * Render an instant as text a user reads, in IST. The one sanctioned way.
+ *
+ * `toLocaleDateString` / `toLocaleTimeString` with no explicit `timeZone`
+ * format in the **runtime's** zone: the device's in a client component, UTC on
+ * a Vercel server. Both are wrong here, because every other part of this app
+ * defines a day in IST — so a phone set to any other zone showed a weigh-in
+ * made at 00:30 IST under the previous date, listed a 1am snack under
+ * yesterday, and let Home's header name a day the diary below it disagreed
+ * with. Nothing looks wrong in the source: the call reads as correct, which is
+ * why three of these survived two audits before 2026-09-03 (P1-8/P1-9/P2-4).
+ * `.eslintrc.json` now bans the raw calls outright, so the next one can't ship.
+ *
+ * Deliberately built on `Intl.DateTimeFormat` rather than the `Date` methods,
+ * so this file needs no exemption from the rule it exists to satisfy — the ban
+ * has zero holes to imitate.
+ *
+ * `locale` stays per-call because it decides field ORDER ("Sep 3" in en-US,
+ * "3 Sep" in en-IN). That is a copy decision, not a timezone one, and forcing
+ * one locale here would silently restyle every date in the app.
+ */
+export function formatIst(
+  value: string | number | Date,
+  options: Intl.DateTimeFormatOptions,
+  locale = 'en-IN'
+): string {
+  return new Intl.DateTimeFormat(locale, { ...options, timeZone: IST_TZ }).format(new Date(value))
+}
+
 /**
  * Returns UTC ISO timestamps bounding the IST calendar day containing `date`.
  * Use this (not getUtcDayRange) for anything a user thinks of as "today" —
@@ -41,6 +73,18 @@ export function istDaysAgoStart(days: number, date: Date = new Date()): string {
 }
 
 /**
+ * Hour of the IST day (0–23) containing `date`. `Date.prototype.getHours()`
+ * reads the **runtime's** hour, which is the device's in a client component —
+ * so meal-of-day inference filed an NRI's 9pm dinner under whatever meal 9pm
+ * was where they were standing, while the log itself landed on the IST day.
+ * Shares the one offset constant rather than reaching for Intl, because a
+ * number is wanted here and `hourCycle` differs between h23 and h24 by locale.
+ */
+export function istHour(date: Date = new Date()): number {
+  return new Date(date.getTime() + IST_OFFSET_MS).getUTCHours()
+}
+
+/**
  * `YYYY-MM-DD` for the IST calendar date containing `date` (default: now).
  * This is the string the user thinks of as "the day" — use it for "today"
  * comparisons and date-param defaults instead of UTC calendar fields.
@@ -64,4 +108,32 @@ export function istDateStr(date: Date = new Date()): string {
 export function dateStrToUtcMidnight(dateStr: string): Date {
   const [y, m, d] = dateStr.split('-').map(Number)
   return new Date(Date.UTC(y, m - 1, d))
+}
+
+/**
+ * Clamp an untrusted `?start=` query param to the oldest instant a caller is
+ * entitled to read. Returns the cutoff when `start` is absent or older than it,
+ * `start` when it is newer, and **`null` when `start` is not a real timestamp** —
+ * callers must answer 400 rather than hand the value to Postgres.
+ *
+ * It compares **parsed instants, not strings.** The string comparison this
+ * replaces (`if (!start || start < cutoff) start = cutoff`) was only correct for
+ * ISO-8601 input, and nothing validated that the input was ISO-8601. PostgreSQL
+ * also accepts `epoch`, `today`, `now`, `yesterday` and `infinity` as timestamp
+ * literals, and `'epoch' > '2026-…'` lexicographically ('e' sorts above '2'), so
+ * `?start=epoch` sailed straight through the clamp, PostgREST forwarded it
+ * verbatim as `logged_at=gte.epoch`, and Postgres read it as 1970-01-01 — handing
+ * a free account its **entire** history through the app's own API. Found by the
+ * 2026-09-03 audit (P1-1); it had been the only thing standing between the free
+ * tier and unlimited history since the clamp was written.
+ *
+ * Parsing also fixes a quieter case the string compare got wrong in the other
+ * direction: an ISO string carrying a large positive UTC offset is a *later*
+ * instant than its digits suggest, so it could beat a cutoff it should not.
+ */
+export function clampHistoryStart(start: string | null | undefined, cutoff: string): string | null {
+  if (!start) return cutoff
+  const startMs = Date.parse(start)
+  if (!Number.isFinite(startMs)) return null
+  return startMs < Date.parse(cutoff) ? cutoff : start
 }

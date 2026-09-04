@@ -3,8 +3,8 @@
 import {
   AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceLine,
 } from 'recharts'
-import { format } from 'date-fns'
 import type { WeightLog } from '../../types/index'
+import { formatIst } from '../../lib/dateUtils'
 
 export function WeightChart({ logs }: { logs: WeightLog[] }) {
   if (logs.length === 0) {
@@ -36,7 +36,7 @@ export function WeightChart({ logs }: { logs: WeightLog[] }) {
           </defs>
           <XAxis
             dataKey="date"
-            tickFormatter={(v) => format(new Date(v), 'MMM d')}
+            tickFormatter={(v) => formatIst(v, { month: 'short', day: 'numeric' }, 'en-US')}
             tick={{ fontSize: 10, fill: 'var(--ink-3)' }}
             axisLine={false}
             tickLine={false}
@@ -54,7 +54,7 @@ export function WeightChart({ logs }: { logs: WeightLog[] }) {
               const d = payload[0]?.payload as { date: string; weight: number }
               return (
                 <div className="rounded-control border border-hairline bg-surface px-3 py-2 shadow-float text-xs">
-                  <p className="font-semibold text-ink-2">{format(new Date(d.date), 'MMM d, yyyy')}</p>
+                  <p className="font-semibold text-ink-2">{formatIst(d.date, { month: 'short', day: 'numeric', year: 'numeric' }, 'en-US')}</p>
                   <p className="font-bold text-good tabular-nums">{d.weight} kg</p>
                 </div>
               )

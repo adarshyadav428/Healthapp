@@ -7,13 +7,16 @@ import { toast } from '../components/ui/use-toast'
 import { captureEvent, logMetaHeaders, markLogStart } from '../lib/posthog/client'
 import { reportLogMilestone } from '../store/milestoneStore'
 import { coachingLine, dayContextFor } from '../lib/coaching'
-import { dateStrToUtcMidnight } from '../lib/dateUtils'
+import { dateStrToUtcMidnight, formatIst } from '../lib/dateUtils'
+import { mealForTime, type Meal } from '../lib/meal'
 import { useUser } from './useUser'
 import { useDailyTotals } from './useDailyTotals'
 import { resolveAiGateAction } from '../lib/aiGateRedirect'
 import { recordAiVerificationBlock } from '../lib/verifyPromptStore'
 
-export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+// Re-exported, not redeclared. This file held a structurally identical copy,
+// which is how the private `inferMeal` below looked like it belonged here.
+export type { Meal }
 
 export type FoodItem = {
   food: {
@@ -37,16 +40,14 @@ export type State =
   | { type: 'logging'; meal: Meal; items: FoodItem[]; message: string }
   | { type: 'done'; logged: number; kcal: number; meal: Meal }
 
-// NOTE: dinner cutoff is <20 here, unlike lib/meal's mealForTime (<21). This
-// long-standing discrepancy is preserved deliberately so the chat-log refactor
-// changes no behaviour; unifying it is a separate product decision.
-function inferMeal(): Meal {
-  const h = new Date().getHours()
-  if (h < 11) return 'breakfast'
-  if (h < 16) return 'lunch'
-  if (h < 20) return 'dinner'
-  return 'snack'
-}
+// A private `inferMeal` lived here until 2026-09-04 — a seventh copy of the
+// rule `lib/meal.ts` exists to hold, and it disagreed with that rule in BOTH
+// directions: 17:00–18:00 went to dinner where every other surface says snack,
+// and 20:00–23:00 went to snack where every other surface says dinner. The
+// second is the behaviour `lib/meal.ts` explicitly removed ("late night stays
+// dinner"). Its own comment defended the gap by citing a "<21 boundary" in
+// `mealForTime` that has never existed. Fires only when the model returns no
+// meal, which is why it survived — audit 2026-09-03, P2-5.
 
 type Params = {
   onClose: () => void
@@ -88,8 +89,10 @@ export function useChatLog({ onClose, logDate, context = 'standalone' }: Params)
     setInput('')
 
     try {
-      const now = new Date()
-      const currentTime = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+      // The clock the model infers a meal type from has to be the same clock
+      // the log is filed under — IST. In the device's zone an NRI's 9pm dinner
+      // arrived as 06:30, and came back tagged breakfast.
+      const currentTime = formatIst(new Date(), { hour: '2-digit', minute: '2-digit' })
       const res = await fetch('/api/chat/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -118,7 +121,7 @@ export function useChatLog({ onClose, logDate, context = 'standalone' }: Params)
         return
       }
       if (typeof data.remaining === 'number') setScansLeft(data.remaining)
-      const meal = (data.meal?.toLowerCase() ?? inferMeal()) as Meal
+      const meal = (data.meal?.toLowerCase() ?? mealForTime()) as Meal
       const items: FoodItem[] = (data.items as FoodItem[]).map((item) => ({ ...item, originalGrams: item.grams }))
       setState({ type: 'confirm', message, meal, items })
     } catch {

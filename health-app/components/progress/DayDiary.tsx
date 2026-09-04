@@ -56,13 +56,17 @@ function useDayExercise(userId: string | null, date: Date) {
 }
 
 export function DayDiary(
-  { userId, date, firstName, beyondFreeWindow = false }: {
+  { userId, date, firstName, beyondFreeWindow = false, freeHistoryDays }: {
     userId: string
     date: Date
     firstName?: string | null
     /** The selected day is older than the free history window — the API clamped
      *  it away, so an empty result means "Pro", not "nothing logged". */
     beyondFreeWindow?: boolean
+    /** The account's cohort window (lib/freeTier.ts), so the lock card can name
+     *  the real number. Hardcoding "7" here told post-cutoff accounts — who get
+     *  5 — the wrong thing at the exact moment they hit the gate. */
+    freeHistoryDays?: number
   }
 ) {
   const { data: logs, isLoading } = useDayLogs(userId, date)
@@ -106,7 +110,7 @@ export function DayDiary(
         <ProLock.Card
           reason="history"
           title="This day is beyond your free history"
-          body="Free shows the last 7 days in full. Pro opens every day you've ever logged — search back to any date."
+          body={`${freeHistoryDays ? `Free shows the last ${freeHistoryDays} days in full.` : 'Free shows your recent diary.'} Pro opens every day you've ever logged — search back to any date.`}
           cta="See what Pro adds"
         />
       )

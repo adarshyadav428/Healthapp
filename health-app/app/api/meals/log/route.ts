@@ -4,11 +4,21 @@ import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { scaleMacros } from '../../../../lib/nutrition'
 import { captureFoodLogged, captureServerEvent } from '../../../../lib/posthog/server'
 import { getLogActivationContext } from '../../../../lib/logActivation'
+import { resolveLoggedAtForRequest } from '../../../../lib/backfill'
 import { streakEventsForLog } from '../../../../lib/streakEvents'
 
 const schema = z.object({
   meal_id: z.string().uuid(),
   meal_type: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
+  // Optional backfill target — an IST calendar date (YYYY-MM-DD). Absent = today.
+  //
+  // This route had no date at all until 2026-09-03, so every combo took
+  // `logged_at DEFAULT now()`. FoodLanding renders on any *editable* day (see
+  // app/log/page.tsx — "so a missed day can be backfilled"), and its combos row
+  // carried no isToday guard, so tapping a combo while viewing a past day filed
+  // the whole meal on today, silently. Same shape as the camera bug that made
+  // "every logging surface threads the date it is looking at" a hard rule.
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 })
 
 export async function POST(req: Request) {
@@ -40,6 +50,13 @@ export async function POST(req: Request) {
     const items = (meal.saved_meal_items as unknown as MealItem[]) ?? []
     if (items.length === 0) return NextResponse.json({ error: 'Meal has no items' }, { status: 400 })
 
+    // Resolves and validates the target day, and enforces the free-tier
+    // backfill window server-side — the same gate logs/add, add-bulk and
+    // quick-add use, so accepting a date here cannot become a way around it.
+    const when = await resolveLoggedAtForRequest(supabase, user.id, parsed.data.date)
+    if (!when.ok) return NextResponse.json({ error: when.error, upgrade: when.upgrade }, { status: when.status })
+    const logged_at = when.logged_at
+
     const logRows = items
       .filter((item) => item.food !== null)
       .map((item) => ({
@@ -48,6 +65,7 @@ export async function POST(req: Request) {
         meal: parsed.data.meal_type,
         grams: item.grams,
         servings: item.servings,
+        logged_at,
         // grams is per-serving; totals must include the servings multiplier
         // (previously omitted — a 2-serving saved item logged half its kcal)
         ...scaleMacros(item.food!, item.grams, item.servings ?? 1),
@@ -67,7 +85,10 @@ export async function POST(req: Request) {
       items: logRows.length,
       isFirstLog: activation.is_first_log,
       daysSinceSignup: activation.days_since_signup,
-      streakEvents: streakEventsForLog(activation.logs_before, new Date().toISOString(), activation.rescued_dates),
+      // The day the log actually landed on, not "now" — backfilling a missed
+      // day changes what the streak did, and an analytics event describing a
+      // different day than the row it came from is worse than no event.
+      streakEvents: streakEventsForLog(activation.logs_before, logged_at, activation.rescued_dates),
     })
 
     return NextResponse.json({ ok: true, logged: logRows.length })

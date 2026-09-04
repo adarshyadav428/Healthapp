@@ -119,6 +119,33 @@ describe('GET /api/logs — the free tier’s 7-day history clamp', () => {
     expect(appliedStart(mock)).toBe(istDaysAgoStart(7))
   })
 
+  /**
+   * P1-1 (audit 2026-09-03). The clamp was a LEXICOGRAPHIC string compare
+   * against an ISO cutoff, and nothing validated that `start` was ISO. Postgres
+   * accepts these as timestamp literals, and every one of them sorts ABOVE
+   * '2026-…' ('e', 't', 'n', 'y' all beat '2'), so each sailed past the clamp
+   * and PostgREST forwarded it verbatim — `epoch` reading as 1970-01-01, i.e.
+   * a free account's entire history through the app's own API.
+   */
+  it.each(['epoch', 'today', 'now', 'yesterday', 'infinity', 'allballs'])(
+    'does not let the non-ISO literal %s defeat the clamp',
+    async (literal) => {
+      const mock = useSupabase({ tables: { subscriptions: NO_SUB, food_logs: { data: [] } } })
+      const res = await getLogs(new Request(`http://localhost/api/logs?start=${literal}`))
+      // Either rejected outright or clamped — never forwarded to Postgres.
+      expect(appliedStart(mock) ?? istDaysAgoStart(7)).not.toBe(literal)
+      if (res.status === 200) expect(appliedStart(mock)).toBe(istDaysAgoStart(7))
+      else expect(res.status).toBe(400)
+    }
+  )
+
+  it('rejects an unparseable start even for a Pro user', async () => {
+    const mock = useSupabase({ tables: { subscriptions: PRO_SUB, food_logs: { data: [] } } })
+    const res = await getLogs(new Request('http://localhost/api/logs?start=epoch'))
+    expect(res.status).toBe(400)
+    expect(appliedStart(mock)).toBeUndefined()
+  })
+
   it('scopes the read to the calling user', async () => {
     const mock = useSupabase({ tables: { subscriptions: NO_SUB, food_logs: { data: [] } } })
     await getLogs(new Request('http://localhost/api/logs'))

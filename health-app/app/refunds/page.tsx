@@ -30,9 +30,15 @@ export default function RefundsPage() {
 
         <div className="space-y-6 rounded-sheet border border-hairline bg-surface p-6 shadow-rest">
           <Section title="1. What you are paying for">
-            GetInShape Pro is a digital subscription that unlocks unlimited food
-            logging, photo and chat logging, advanced progress charts and
-            coaching insights. There is no physical product and nothing is
+            {/* Not "unlimited food logging" — logging by search is free and
+                uncapped for everyone, and "free is never capped on logging" is
+                a hard rule. This page is what a payment aggregator reads to
+                understand what is being sold, so it must describe the actual
+                Pro gates (audit 2026-09-03, P2-6). */}
+            GetInShape Pro is a digital subscription that unlocks your full
+            logging history, unlimited photo and chat logging, advanced progress
+            charts and coaching insights. Logging your food by search is free
+            and never capped. There is no physical product and nothing is
             shipped, so no delivery or shipping charges apply. Pro Monthly is{" "}
             {PRICE_MONTHLY} and Pro Annual is {PRICE_ANNUAL}, both inclusive of
             applicable taxes and billed in Indian Rupees.

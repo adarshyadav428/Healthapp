@@ -34,9 +34,12 @@ type Props = {
    *  rather than opening a modal they'd fill out and be ejected from — the same
    *  pre-emptive gate the dashboard chat FAB uses. */
   aiTrialRemaining?: number
+  /** The day's calorie + protein targets, forwarded to AddFoodModal so a log
+   *  answers with a coaching sentence instead of just a number (P1-13). */
+  targets?: { kcal: number; protein: number }
 }
 
-export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, hasYesterdayLogs, logDate, isToday = true, isPro = true, aiTrialRemaining = 0 }: Props) {
+export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, hasYesterdayLogs, logDate, isToday = true, isPro = true, aiTrialRemaining = 0, targets }: Props) {
   const router = useRouter()
   const canUseAi = isPro || aiTrialRemaining > 0
   // Start the clock for `seconds_to_log`: this surface opening is the moment
@@ -270,7 +273,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
         <div className="py-10 text-center">
           <p className="text-3xl mb-2">🍱</p>
           <p className="text-sm font-medium" style={{ color: 'var(--ink)' }}>Search for any food above</p>
-          <p className="text-xs mt-1 mb-4" style={{ color: 'var(--ink-3)' }}>Includes 500+ Indian dishes, staples &amp; global foods</p>
+          <p className="text-xs mt-1 mb-4" style={{ color: 'var(--ink-3)' }}>Includes 850+ Indian dishes, staples &amp; global foods</p>
           <button
             type="button"
             onClick={() => setShowCreateFood(true)}
@@ -284,7 +287,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
       )}
 
       {showChat ? <ChatLogModal onClose={() => setShowChat(false)} logDate={logDate} /> : null}
-      {selected ? <AddFoodModal food={selected} onClose={() => setSelected(null)} logDate={logDate} /> : null}
+      {selected ? <AddFoodModal food={selected} onClose={() => setSelected(null)} logDate={logDate} targets={targets} /> : null}
       {showCamera ? (
         <CameraModal
           logDate={logDate}

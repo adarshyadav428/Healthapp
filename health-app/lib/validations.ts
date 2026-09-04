@@ -3,6 +3,45 @@ import { MEAL_CONTEXTS } from './mealContext'
 import { MAX_LOG_GRAMS } from './portion-units'
 import { BODY_FOCUSES, BODY_TYPES } from './bodyType'
 
+/**
+ * Human bounds for the body measurements every calorie target is computed from.
+ *
+ * These were `z.number().positive()` — unbounded above, and `positive()` lets
+ * `Infinity` through. The server does not merely store these: it feeds them to
+ * `calculateTDEE` and writes the result back, so the nonsense was
+ * server-generated. Observed before this bound existed: 5,000 kg →
+ * `daily_calorie_target` **78,421** and a protein target of 8,000 g; 1e9 kg →
+ * a target of 15,500,000,921; `height_cm: Infinity` → every macro target
+ * `Infinity`. `age` (13–120) and `pace_kg_per_week` (0–2) were already bounded
+ * and `customFoodSchema` bounds everything, so this was an oversight rather
+ * than a policy — audit 2026-09-03, P2-14.
+ *
+ * The ranges are deliberately generous: wider than any real user, narrow
+ * enough that the arithmetic downstream stays finite. One constant each, so
+ * onboarding, the profile update and a weigh-in cannot disagree about what a
+ * plausible body is — they are three doors to the same column.
+ */
+export const HEIGHT_CM = { min: 50, max: 275 } as const
+export const WEIGHT_KG = { min: 20, max: 500 } as const
+
+const heightCm = z
+  .number()
+  .min(HEIGHT_CM.min, { message: `Height must be at least ${HEIGHT_CM.min} cm` })
+  .max(HEIGHT_CM.max, { message: `Height cannot exceed ${HEIGHT_CM.max} cm` })
+
+const weightKg = z
+  .number()
+  .min(WEIGHT_KG.min, { message: `Weight must be at least ${WEIGHT_KG.min} kg` })
+  .max(WEIGHT_KG.max, { message: `Weight cannot exceed ${WEIGHT_KG.max} kg` })
+
+/**
+ * A name, not a document. Unbounded before, which accepted 10,000 characters
+ * of HTML and RTL marks — React escapes the markup, so this was never XSS, but
+ * it is rendered in a fixed-width header and a share card that have no answer
+ * for it. Same finding's evidence column.
+ */
+const displayName = z.string().trim().min(1).max(80, { message: 'Name cannot exceed 80 characters' })
+
 export const signInSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
@@ -13,12 +52,12 @@ export const signInSchema = z.object({
 export const signUpSchema = signInSchema
 
 export const onboardingSchema = z.object({
-  display_name: z.string().min(1),
+  display_name: displayName,
   age: z.number().int().min(13).max(120),
   sex: z.enum(['male', 'female', 'other']),
-  height_cm: z.number().positive(),
-  current_weight_kg: z.number().positive(),
-  target_weight_kg: z.number().positive(),
+  height_cm: heightCm,
+  current_weight_kg: weightKg,
+  target_weight_kg: weightKg,
   // Stays three-valued. The four-value selector the user actually sees is
   // `body_focus` below; the routes derive this from it via `planForFocus`.
   goal: z.enum(['lose', 'maintain', 'gain']),
@@ -76,7 +115,7 @@ export const editFoodLogSchema = z.object({
 })
 
 export const weightLogSchema = z.object({
-  weight_kg: z.number().positive(),
+  weight_kg: weightKg,
   // Use Date constructor — more strict than Date.parse which accepts partial strings
   measured_at: z.string().refine(
     (s) => {
@@ -95,16 +134,22 @@ export const exerciseLogSchema = z.object({
 })
 
 export const profileUpdateSchema = z.object({
-  display_name: z.string().min(1),
-  height_cm: z.number().positive(),
-  current_weight_kg: z.number().positive(),
-  target_weight_kg: z.number().positive(),
+  display_name: displayName,
+  height_cm: heightCm,
+  current_weight_kg: weightKg,
+  target_weight_kg: weightKg,
   activity_level: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']),
   goal: z.enum(['lose', 'maintain', 'gain']),
   body_focus: z.enum(BODY_FOCUSES).optional(),
   body_type: z.enum(BODY_TYPES).optional(),
   pace_kg_per_week: z.number().min(0.25).max(1.0).optional(),
-  water_target_ml: z.number().min(500).max(8000).optional(),
+  // `water_target_ml` was accepted here until 2026-09-04. Nothing has rendered
+  // a water target since `019_drop_deprecated_tables.sql` removed `water_logs`,
+  // but the field kept making a full round trip — selected on /log's hot path,
+  // echoed back by two components, validated here, and with its own named
+  // branch in the update route's error recovery. Dead *and* load-bearing, which
+  // meant dropping the column would have 500'd profile updates (P2-3). The
+  // column itself is left in place; nothing writes it now.
   // Manual target overrides — when present, skip TDEE recalculation
   custom_calorie_target: z.number().int().min(500).max(10000).optional(),
   custom_protein_target: z.number().int().min(0).max(500).optional(),

@@ -221,10 +221,12 @@ describe('profileUpdateSchema', () => {
     expect(profileUpdateSchema.safeParse({ ...valid, custom_calorie_target: 1800 }).success).toBe(true)
   })
 
-  it('bounds pace to 0.25–1.0 and water target to 500–8000', () => {
+  // `water_target_ml` was bounded here too until 2026-09-04. The field is gone
+  // rather than re-bounded — see "no longer accepts water_target_ml" below.
+  it('bounds pace to 0.25–1.0', () => {
     expect(profileUpdateSchema.safeParse({ ...valid, pace_kg_per_week: 0.1 }).success).toBe(false)
     expect(profileUpdateSchema.safeParse({ ...valid, pace_kg_per_week: 1.5 }).success).toBe(false)
-    expect(profileUpdateSchema.safeParse({ ...valid, water_target_ml: 400 }).success).toBe(false)
+    expect(profileUpdateSchema.safeParse({ ...valid, pace_kg_per_week: 0.5 }).success).toBe(true)
   })
 })
 
@@ -256,5 +258,111 @@ describe('customFoodSchema', () => {
   it('defaults serving_description to "1 serving"', () => {
     const r = customFoodSchema.safeParse(valid)
     expect(r.success && r.data.serving_description).toBe('1 serving')
+  })
+})
+
+/**
+ * Body measurements are bounded, above and below.
+ *
+ * These were `z.number().positive()`: unbounded, and `positive()` lets
+ * `Infinity` through. The route does not merely store them — it feeds them to
+ * `calculateTDEE` and writes the result back — so a hostile or fat-fingered
+ * value produced *server-generated* nonsense. Observed before the bound:
+ * 5,000 kg → daily_calorie_target 78,421 and 8,000 g of protein; 1e9 kg →
+ * 15,500,000,921; height Infinity → every macro target Infinity.
+ *
+ * `age` and `pace_kg_per_week` were already bounded and `customFoodSchema`
+ * bounds everything, so this was an oversight, not a policy (2026-09-03, P2-14).
+ */
+describe('height and weight bounds', () => {
+  const onboarding = {
+    display_name: 'Test',
+    age: 30,
+    sex: 'male' as const,
+    height_cm: 175,
+    current_weight_kg: 80,
+    target_weight_kg: 70,
+    goal: 'lose' as const,
+    activity_level: 'moderate' as const,
+    pace_kg_per_week: 0.5,
+  }
+
+  it('accepts a real person', () => {
+    expect(onboardingSchema.safeParse(onboarding).success).toBe(true)
+  })
+
+  it.each([
+    ['height_cm', Infinity],
+    ['height_cm', 1e9],
+    ['height_cm', 400],
+    ['height_cm', 3],
+    ['current_weight_kg', Infinity],
+    ['current_weight_kg', 5000],
+    ['current_weight_kg', 1e9],
+    ['current_weight_kg', 0.5],
+    ['target_weight_kg', Infinity],
+    ['target_weight_kg', 5000],
+  ])('onboarding rejects %s = %s', (field, value) => {
+    const result = onboardingSchema.safeParse({ ...onboarding, [field]: value })
+    expect(result.success, `${field}=${value} must not reach calculateTDEE`).toBe(false)
+  })
+
+  it.each([
+    ['height_cm', Infinity],
+    ['height_cm', 5000],
+    ['current_weight_kg', Infinity],
+    ['current_weight_kg', 5000],
+    ['target_weight_kg', 1e9],
+  ])('the profile update rejects %s = %s too', (field, value) => {
+    // Both doors write the same column and both recompute targets, so a bound
+    // on one and not the other is the same hole with an extra step.
+    const base = {
+      display_name: 'Test',
+      height_cm: 175,
+      current_weight_kg: 80,
+      target_weight_kg: 70,
+      activity_level: 'moderate' as const,
+      goal: 'lose' as const,
+    }
+    expect(profileUpdateSchema.safeParse({ ...base, [field]: value }).success).toBe(false)
+  })
+
+  it('a weigh-in is bounded by the same constants', () => {
+    const at = (weight_kg: number) =>
+      weightLogSchema.safeParse({ weight_kg, measured_at: '2026-09-04T00:00:00Z' }).success
+    expect(at(80)).toBe(true)
+    expect(at(Infinity)).toBe(false)
+    expect(at(5000)).toBe(false)
+  })
+
+  it('a display name is a name, not a document', () => {
+    const base = {
+      display_name: 'x'.repeat(10_000),
+      height_cm: 175,
+      current_weight_kg: 80,
+      target_weight_kg: 70,
+      activity_level: 'moderate' as const,
+      goal: 'lose' as const,
+    }
+    expect(profileUpdateSchema.safeParse(base).success).toBe(false)
+    expect(profileUpdateSchema.safeParse({ ...base, display_name: 'Adarsh' }).success).toBe(true)
+  })
+
+  it('no longer accepts water_target_ml', () => {
+    // Dead since migration 019 removed water_logs, but it round-tripped through
+    // /log's hot-path select, two components and this schema, with its own named
+    // branch in the update route's error recovery — so the column could not be
+    // dropped without 500ing profile updates (P2-3).
+    const parsed = profileUpdateSchema.safeParse({
+      display_name: 'Test',
+      height_cm: 175,
+      current_weight_kg: 80,
+      target_weight_kg: 70,
+      activity_level: 'moderate' as const,
+      goal: 'lose' as const,
+      water_target_ml: 2500,
+    })
+    expect(parsed.success).toBe(true)
+    expect(parsed.success && 'water_target_ml' in parsed.data).toBe(false)
   })
 })
