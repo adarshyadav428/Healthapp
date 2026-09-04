@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import {
   X, ScanLine, Camera, Loader2, RefreshCw, CheckCircle2, AlertCircle,
   Hash, Search, AlertTriangle, Pencil, ImagePlus,
@@ -27,6 +27,49 @@ const MEAL_OPTIONS = [
   { value: 'dinner',    label: '🍲 Dinner' },
   { value: 'snack',     label: '🥜 Snack' },
 ] as const
+
+/**
+ * The portion number field. Backed by its own string so it tolerates an empty
+ * or half-typed value instead of snapping to the minimum on every keystroke —
+ * that snap made the trailing digit of "10" impossible to delete, since the
+ * moment it read "1" the old handler clamped it straight back to 10. The
+ * minimum is only enforced on blur; the ceiling still clamps live so a typed
+ * value can't sail past what the slider can express.
+ *
+ * Rendered with `key={selectedIdx}` by the caller so switching between
+ * detected foods reseeds this from that food's own (persisted) grams instead
+ * of carrying over a half-typed value meant for a different item.
+ */
+function PortionInput({
+  grams, min, max, step, unit, onChange,
+}: { grams: number; min: number; max: number; step: number; unit: string; onChange: (g: number) => void }) {
+  const [str, setStr] = useState(String(grams))
+  return (
+    <div className="flex items-center gap-1 shrink-0">
+      <input
+        type="number"
+        inputMode="numeric"
+        min={min} max={max} step={step}
+        value={str}
+        onChange={(e) => {
+          const cleaned = e.target.value.replace(/[^0-9]/g, '')
+          setStr(cleaned)
+          const n = parseInt(cleaned, 10)
+          if (Number.isFinite(n)) onChange(Math.min(n, max))
+        }}
+        onBlur={() => {
+          const n = parseInt(str, 10)
+          const safe = Number.isFinite(n) ? Math.min(Math.max(n, min), max) : min
+          setStr(String(safe))
+          onChange(safe)
+        }}
+        onFocus={(e) => e.target.select()}
+        className="w-[64px] text-center text-base font-bold text-ink rounded-control py-1.5 outline-none bg-surface-2 border border-hairline"
+      />
+      <span className="text-[12px] text-ink-2 font-medium">{unit}</span>
+    </div>
+  )
+}
 
 export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
   const {
@@ -309,20 +352,13 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
                 {multiItem ? `Portion — ${customName || selected!.food.name}` : 'Portion size'}
               </p>
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1 shrink-0">
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    min={amountMin} max={amountMax} step={amountStep}
-                    value={grams}
-                    onChange={(e) => {
-                      const v = Math.max(amountMin, Math.min(amountMax, Number(e.target.value) || amountMin))
-                      setGrams(v)
-                    }}
-                    className="w-[64px] text-center text-base font-bold text-ink rounded-control py-1.5 outline-none bg-surface-2 border border-hairline"
-                  />
-                  <span className="text-[12px] text-ink-2 font-medium">{selected?.unit ?? 'g'}</span>
-                </div>
+                <PortionInput
+                  key={selectedIdx}
+                  grams={grams}
+                  min={amountMin} max={amountMax} step={amountStep}
+                  unit={selected?.unit ?? 'g'}
+                  onChange={setGrams}
+                />
                 <input
                   type="range" min={amountMin} max={amountMax} step={amountStep} value={grams}
                   onChange={(e) => setGrams(Number(e.target.value))}
