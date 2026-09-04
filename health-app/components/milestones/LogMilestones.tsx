@@ -17,6 +17,7 @@ import { EVENTS } from '../../lib/posthog/events'
 import { buildShareCardOptions, shareProgressCard, type ShareTopic } from '../../lib/shareCard'
 import { toast } from '../ui/use-toast'
 import { useScrollLock } from '../ui/use-scroll-lock'
+import { useBackDismiss } from '../ui/use-back-dismiss'
 
 const celebrationKey = (uid: string) => `gis.firstLogCelebrated.${uid}`
 const paywallKey = (uid: string) => `gis.logPaywallSeen.${uid}`
@@ -208,12 +209,31 @@ export function LogMilestones() {
   // Both overlays below are hand-rolled `fixed inset-0`, not Radix, and this
   // component is mounted globally — so the gate has to mirror the two render
   // conditions exactly, and the call has to sit above their early returns.
-  useScrollLock(
+  const overlayOpen =
     active === 'first_log_celebration' ||
-      active === 'log_paywall' ||
-      weightKg != null ||
-      streakDays != null
-  )
+    active === 'log_paywall' ||
+    weightKg != null ||
+    streakDays != null
+
+  // Hoisted above the early returns so Back and the ✕ dismiss the paywall
+  // through the same path. A paywall closed with the device Back button is
+  // still a dismissal, and `paywall_dismissed` has to fire either way or the
+  // funnel under-counts exactly the users who bounced hardest.
+  const dismissPaywall = () => {
+    captureEvent('paywall_dismissed', { source: 'free_logs', has_projection: !!projectionHeadline })
+    setActive(null)
+  }
+
+  useScrollLock(overlayOpen)
+  useBackDismiss(overlayOpen, () => {
+    if (active === 'log_paywall') {
+      dismissPaywall()
+      return
+    }
+    setActive(null)
+    setWeightKg(null)
+    setStreakDays(null)
+  })
 
   if (active === 'first_log_celebration' || weightKg != null || streakDays != null) {
     const isWeight = weightKg != null
@@ -276,10 +296,6 @@ export function LogMilestones() {
   }
 
   if (active === 'log_paywall') {
-    const dismissPaywall = () => {
-      captureEvent('paywall_dismissed', { source: 'free_logs', has_projection: !!projectionHeadline })
-      setActive(null)
-    }
     return (
       <div className="fixed inset-0 z-[100] overflow-y-auto overscroll-contain bg-canvas">
         <div className="relative mx-auto flex min-h-full w-full max-w-md flex-col px-6 pb-8 pt-14">

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { X, ArrowRight } from 'lucide-react'
 import { Button } from '../ui/button'
 import { useScrollLock } from '../ui/use-scroll-lock'
+import { useBackDismiss } from '../ui/use-back-dismiss'
 import type { StoryCard } from './types'
 
 type Props = {
@@ -106,6 +107,10 @@ export function Story({ cards, ctaLabel, onCta, onClose, onCardView, onComplete 
   }, [advance, back, onClose])
 
   useScrollLock(!!card)
+  // Story has no close on its final card when the caller supplies none; gate
+  // on the handler existing so Back never becomes a no-op the user has to
+  // press twice.
+  useBackDismiss(!!card && !!onClose, () => onClose?.())
 
   if (!card) return null
 
