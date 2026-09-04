@@ -22,8 +22,15 @@ const POOL_COLUMNS =
  *
  * `estimate` stays out entirely, as everywhere else: those rows are one user's
  * AI guess written into the shared table, and only their author should see them.
+ *
+ * `user` (Pro-only custom foods, created via /api/foods/custom) is excluded
+ * for the identical reason, and it's the one this comment used to miss:
+ * `foods_select` RLS is open to every signed-in user for the shared
+ * catalogue, so without this a private custom food could be suggested — id,
+ * name and macros — to a completely different account, no name collision or
+ * known food_id required. Audit 2026-09-04 (P0-2 follow-up).
  */
-const NON_MEASURED = '("curated","estimate")'
+const NON_MEASURED = '("curated","estimate","user")'
 const POOL_SIZE = 400
 
 /**

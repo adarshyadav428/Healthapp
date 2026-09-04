@@ -5,8 +5,11 @@ import { foodIdentity, queryNamesBrand } from './searchRanking'
 // trustworthy for home food; branded/OFF are next. `curated` sits below every
 // measured source — it's the shared India-first catalogue whose values are
 // category estimates, so it should only win when nothing measured matches.
-// `estimate` rows (per-user AI guesses) never reach here — queries exclude
-// them — but rank lowest for safety.
+// `estimate` rows (per-user AI guesses) and `user` rows (Pro-only custom
+// foods) never reach here for another account — every query that builds a
+// candidate set now excludes both (see lib/foodOwnership.ts) — but both rank
+// lowest for safety regardless, the same defense-in-depth this table has
+// applied to `estimate` from the start.
 export const SOURCE_RANK: Record<string, number> = {
   ifct: 6,
   restaurant: 5,
@@ -16,6 +19,7 @@ export const SOURCE_RANK: Record<string, number> = {
   off_world: 2,
   curated: 1,
   estimate: 0,
+  user: 0,
 }
 
 /** Name-match quality: exact (4) > whole-string prefix (3) > word prefix (2) > substring (1). */

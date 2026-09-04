@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createServerClient, createAdminClient, getAuthedUser } from '../../../../lib/supabase/server'
+import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
 import { isProStatus } from '../../../../lib/subscription'
 import { findStreakRescue } from '../../../../lib/streak'
 import { rescuesRemaining } from '../../../../lib/streakRescue'
@@ -19,10 +19,27 @@ export const runtime = 'nodejs'
  * Insert goes through the service-role client because migration 028
  * deliberately grants users no insert policy — Pro status, the monthly
  * allowance and "is this day genuinely rescuable" are all checked here.
+ *
+ * Uses `supabase.auth.getUser()` directly rather than the `getAuthedUser()`
+ * wrapper (lib/supabase/server.ts) — that wrapper is built for Server
+ * Components/pages (it redirects on failure, which is meaningless in a route
+ * handler) and, like `getApiUser()`, only verifies the JWT locally via
+ * `getClaims()`, with no live revocation check. That's the right trade-off
+ * for a hot, low-stakes read path; it's the wrong one for a route that
+ * authorizes an RLS-bypassing admin-client write (`streak_rescues` has no
+ * user INSERT policy, so RLS provides no backstop here the way it does for
+ * every route using the user-scoped client). `getUser()` re-validates
+ * against the Supabase Auth server, matching every other admin-client route
+ * authorizing a sensitive write (camera/chat analyze, razorpay/verify,
+ * account/delete, foods/custom, …). Audit 2026-09-04, P2-3.
  */
 export async function POST() {
   const supabase = createServerClient()
-  const user = await getAuthedUser(supabase)
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+  if (userError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
 

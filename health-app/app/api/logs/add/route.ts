@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { addFoodSchema } from '../../../../lib/validations'
 import { zodErrorMessage } from '../../../../lib/apiError'
+import { isFoodReferenceableBy } from '../../../../lib/foodOwnership'
 import { captureFoodLogged } from '../../../../lib/posthog/server'
 import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
 import { resolveLoggedAtForRequest } from '../../../../lib/backfill'
@@ -27,12 +28,20 @@ export async function POST(req: Request) {
 
     const { data: food, error: foodError } = await supabase
       .from('foods')
-      .select('id, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g')
+      .select('id, source, source_id, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g')
       .eq('id', parsed.data.food_id)
       .maybeSingle()
 
     if (foodError) throw new Error(foodError.message)
-    if (!food) return NextResponse.json({ error: 'Food not found' }, { status: 404 })
+    // Same 404 for "doesn't exist" and "exists but is someone else's private
+    // custom food" — `foods_select` RLS can't tell those apart (it's open to
+    // every signed-in user by design, for the shared catalogue), so this is
+    // the only check standing between reading a row and logging against it.
+    // A distinct "forbidden" response would confirm to the caller that a
+    // food_id they don't own is real. See lib/foodOwnership.ts.
+    if (!food || !isFoodReferenceableBy(food, user.id)) {
+      return NextResponse.json({ error: 'Food not found' }, { status: 404 })
+    }
 
     const factor = parsed.data.grams / 100
     const servings = parsed.data.servings

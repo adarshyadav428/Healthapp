@@ -184,7 +184,7 @@ async function generateMonthlyWraps(
   const nextMonth = `${m === 12 ? y + 1 : y}-${String(m === 12 ? 1 : m + 1).padStart(2, '0')}-01`
   const to = istDayStartInstant(nextMonth)
 
-  const [{ data: logs }, { data: weights }, { data: done }] = await Promise.all([
+  const [logsRes, weightsRes, doneRes] = await Promise.all([
     admin.from('food_logs').select('user_id, kcal, protein_g, logged_at, food:foods(name)')
       .gte('logged_at', from).lt('logged_at', to),
     admin.from('weight_logs').select('user_id, weight_kg, measured_at')
@@ -192,6 +192,28 @@ async function generateMonthlyWraps(
     admin.from('monthly_wraps').select('user_id').eq('month_start', monthStart),
   ])
 
+  // Same reasoning as the weekly reads above this function: a swallowed error
+  // here turns a transient DB blip into a wrong answer instead of no answer.
+  //   - food_logs failing => logsByUser empty => candidates empty => the whole
+  //     month silently writes and pushes to nobody, reporting a clean 0/0/0
+  //   - monthly_wraps failing => alreadyWrapped empty => every already-wrapped
+  //     user becomes a candidate again and gets a SECOND "Your Month is ready"
+  //     push, with a snapshot that (per this function's own doc comment) is
+  //     meant to be written exactly once and never rewritten
+  // Throwing here fails the whole cron request; the weekly-recap half above
+  // has already completed and been reported by then, so only Monthly Wrapped
+  // is lost for this run — Vercel's cron retries the endpoint on its own
+  // schedule next week, and `alreadyWrapped` makes a retry resumable exactly
+  // like the weekly loop above.
+  for (const [label, res] of [
+    ['food_logs', logsRes], ['weight_logs', weightsRes], ['monthly_wraps', doneRes],
+  ] as const) {
+    if (res.error) throw new Error(`weekly-recap: monthly wrap ${label} read failed: ${res.error.message}`)
+  }
+
+  const logs = logsRes.data
+  const weights = weightsRes.data
+  const done = doneRes.data
   const alreadyWrapped = new Set((done ?? []).map((r) => r.user_id as string))
 
   const logsByUser = new Map<string, FoodLog[]>()

@@ -133,11 +133,18 @@ export async function POST(req: Request) {
         // list, no measured IFCT row is ever matched, and we write a fresh
         // estimate row instead — permanently, for a transient blip. The camera
         // route already learned this; report it and carry on rather than 500.
+        //
+        // Excludes `source='user'` too, same reasoning as camera/analyze: this
+        // runs under the CALLER's own session client against RLS that's open
+        // to every signed-in user for the shared catalogue, so an unfiltered
+        // name match could surface — and then log — another user's private
+        // custom food. See lib/foodOwnership.ts.
         const { data: candidates, error: candidatesError } = await supabase
           .from('foods')
           .select(FOOD_SELECT)
           .ilike('name', `%${item.name}%`)
           .neq('source', 'estimate')
+          .neq('source', 'user')
           .limit(10)
 
         if (candidatesError) {

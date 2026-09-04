@@ -84,12 +84,25 @@ describe('the suggestion candidate pool is ordered and measured-first', () => {
   it('defines the tiers by exclusion, not by listing source names', () => {
     // A source added to the table and not to a hardcoded allow-list here would
     // vanish from every suggestion — a worse bug than the one being fixed.
-    expect(route).toMatch(/NON_MEASURED = '\("curated","estimate"\)'/)
+    expect(route).toMatch(/NON_MEASURED = '\("curated","estimate","user"\)'/)
   })
 
   it('keeps per-user AI estimates out of the shared pool', () => {
     expect(route).toContain('estimate')
     expect(route).not.toMatch(/\.eq\('source', 'estimate'\)/)
+  })
+
+  /**
+   * `estimate` (a per-user AI guess) was always excluded here; a private
+   * `source='user'` custom food was not, until the 2026-09-04 P0-2 follow-up.
+   * `foods_select` RLS is open to every signed-in user for the shared
+   * catalogue, so without this exclusion the suggestion pool — not just
+   * search — could hand one account another's private food, id and macros
+   * included, with no name collision or known food_id needed.
+   */
+  it('keeps other users\' private custom foods out of the shared pool', () => {
+    expect(route).toContain('"user"')
+    expect(route).not.toMatch(/\.eq\('source', 'user'\)/)
   })
 
   it('does not swallow a failed read', () => {
