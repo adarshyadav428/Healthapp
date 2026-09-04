@@ -68,6 +68,11 @@ export const EVENTS = {
   // AI logging quality
   AI_SCAN_COMPLETED: 'ai_scan_completed',
   AI_ESTIMATE_CORRECTED: 'ai_estimate_corrected',
+  // Server-side: a user-stated total weight (chat only, e.g. "750g biryani")
+  // disagreed with the model's parsed item grams, and rebalanceChatItems
+  // (lib/chat-nutrition.ts) corrected or scaled the item list to match it.
+  // Watch this to see how often the double-count bug class still fires.
+  AI_PARSE_SUM_MISMATCH: 'ai_parse_sum_mismatch',
   // story surfaces (Pro welcome, Wrapped, onboarding plan).
   // `*_completed` means "read to the last card", NOT "acted" — the CTA has its
   // own event, so a story that lands but doesn't convert stays visible in the
