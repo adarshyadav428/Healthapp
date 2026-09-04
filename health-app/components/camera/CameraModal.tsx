@@ -289,7 +289,7 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
                       const v = Math.max(amountMin, Math.min(amountMax, Number(e.target.value) || amountMin))
                       setGrams(v)
                     }}
-                    className="w-[64px] text-center text-[15px] font-bold text-ink rounded-control py-1.5 outline-none bg-surface-2 border border-hairline"
+                    className="w-[64px] text-center text-base font-bold text-ink rounded-control py-1.5 outline-none bg-surface-2 border border-hairline"
                   />
                   <span className="text-[12px] text-ink-2 font-medium">{selected?.unit ?? 'g'}</span>
                 </div>
@@ -319,7 +319,7 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
               <select
                 value={meal}
                 onChange={(e) => setMeal(e.target.value)}
-                className="flex-1 rounded-control text-sm py-2.5 px-3 outline-none transition-colors bg-surface-2 border border-hairline text-ink"
+                className="flex-1 rounded-control text-base py-2.5 px-3 outline-none transition-colors bg-surface-2 border border-hairline text-ink"
               >
                 {MEAL_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -354,7 +354,7 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
                 onKeyDown={(e) => { if (e.key === 'Enter') analyzePhoto() }}
                 placeholder="e.g. 'no oil', 'diet version', '2 rotis not 1'"
                 maxLength={200}
-                className="w-full rounded-control bg-white/10 border border-white/20 text-white text-sm px-4 py-3 outline-none focus:border-[var(--energy)] placeholder:text-white/40 transition-colors"
+                className="w-full rounded-control bg-white/10 border border-white/20 text-white text-base px-4 py-3 outline-none focus:border-[var(--energy)] placeholder:text-white/40 transition-colors"
                 autoFocus
               />
             ) : (

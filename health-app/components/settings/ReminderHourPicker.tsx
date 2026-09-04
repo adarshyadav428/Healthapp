@@ -76,7 +76,7 @@ export function ReminderHourPicker({ initialHour }: { initialHour: number }) {
         disabled={saving}
         onChange={(e) => save(Number(e.target.value))}
         aria-label="Reminder time"
-        className="flex-shrink-0 rounded-control border border-hairline bg-surface px-3 py-2 text-sm font-medium text-ink disabled:opacity-50"
+        className="flex-shrink-0 rounded-control border border-hairline bg-surface px-3 py-2 text-base font-medium text-ink disabled:opacity-50"
       >
         {REMINDER_HOURS.map((h) => (
           <option key={h} value={h}>

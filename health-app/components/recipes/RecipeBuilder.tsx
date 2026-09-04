@@ -160,7 +160,7 @@ export function RecipeBuilder() {
             value={recipeName}
             onChange={(e) => setRecipeName(e.target.value)}
             placeholder="e.g. Dal Makhani, Palak Paneer..."
-            className="w-full rounded-control border border-hairline bg-surface-2 px-4 py-2.5 text-sm text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
+            className="w-full rounded-control border border-hairline bg-surface-2 px-4 py-2.5 text-base text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
           />
         </div>
         <div>
@@ -199,7 +199,7 @@ export function RecipeBuilder() {
             value={query}
             onChange={(e) => { setQuery(e.target.value); setSearchOpen(true) }}
             onFocus={() => setSearchOpen(true)}
-            className="w-full pl-9 pr-9 h-10 text-sm rounded-control border border-hairline bg-surface-2 text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
+            className="w-full pl-9 pr-9 h-10 text-base rounded-control border border-hairline bg-surface-2 text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
           />
           {query && (
             <button type="button" onClick={() => { setQuery(''); setSearchOpen(false) }} className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -253,7 +253,7 @@ export function RecipeBuilder() {
                     value={ing.grams}
                     min={1}
                     onChange={(e) => updateGrams(index, Math.max(1, Number(e.target.value)))}
-                    className="w-16 text-center text-xs font-bold rounded-control border border-hairline bg-surface text-ink px-2 py-1.5 outline-none focus:border-brand"
+                    className="w-16 text-center text-base font-bold rounded-control border border-hairline bg-surface text-ink px-2 py-1.5 outline-none focus:border-brand"
                   />
                   <span className="text-[10px] text-ink-2">g</span>
                   <button

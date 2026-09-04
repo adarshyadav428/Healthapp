@@ -147,7 +147,7 @@ export function QuickAddModal({ onClose, logDate }: { onClose: () => void; logDa
                   value={value}
                   onChange={(e) => set(e.target.value)}
                   placeholder="0"
-                  className="w-full rounded-control border border-hairline bg-surface-2 px-3 py-2.5 text-sm font-bold text-center text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
+                  className="w-full rounded-control border border-hairline bg-surface-2 px-3 py-2.5 text-base font-bold text-center text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring transition-all"
                 />
               </div>
             ))}

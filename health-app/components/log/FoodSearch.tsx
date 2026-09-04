@@ -64,7 +64,7 @@ export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, ha
           placeholder="Search dal makhani, roti, paneer..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full pl-10 pr-28 h-12 text-[14px] rounded-2xl outline-none transition-all"
+          className="w-full pl-10 pr-28 h-12 text-base rounded-2xl outline-none transition-all"
           style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', color: 'var(--ink)' }}
           onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--brand)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--brand-soft)' }}
           onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--hairline)'; e.currentTarget.style.boxShadow = 'none' }}
