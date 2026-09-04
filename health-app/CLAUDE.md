@@ -59,6 +59,12 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **`supabase/migrations/`** — `001`–`045`. Numbers are **not unique** (`002`, `004`, `005`, `009` and
   `043` each appear twice) and there is **no `021`**. Always reference a migration by its exact filename.
   (`040_body_focus.sql` **is** on `main` — PR #46 merged; this line previously said otherwise.)
+  `011_weekly_calorie_view.sql` is deliberately **unapplied** and referenced nowhere in code. `045` was
+  applied 2026-09-04 and verified against the live schema; `044` was applied 2026-09-03. Don't assume
+  the rest — **probe** rather than trusting any list, including this one: a `select=<column>` against
+  `/rest/v1/<table>` with the public anon key answers `42703` for a column that isn't there and `200`
+  for one that is, without reading a single row (RLS returns `[]`). Always probe a column you know
+  exists in the same breath, or a 400 for an unrelated reason reads as proof.
 - **`middleware.ts`** — self-contained (there is no `lib/supabase/middleware.ts`). Refreshes the
   session cookie on every request, redirects unauthenticated users to `/auth/sign-in?returnTo=…`, and
   bounces authenticated users off `/auth/*` to `/dashboard`. Public routes are `/`, `/privacy`,
@@ -206,10 +212,13 @@ actively seeding.
   that reads one. `profiles.water_target_ml` was the last stub of this kind — no UI rendered it, yet it
   was carried in `/log`'s select, echoed back by two components, validated in Zod and given its own
   named branch in `/api/profile/update`'s error recovery, so it was dead *and* load-bearing: dropping
-  the column would have 500'd every profile update. All six sites removed 2026-09-04 (audit P2-3). The
-  **column still exists** and nothing writes it; a `DROP COLUMN` migration can follow whenever, and is
-  now safe. Nothing about a dead field should be load-bearing — if removing it needs a checklist, it
-  isn't dead, it's undocumented.
+  the column would have 500'd every profile update. All six sites removed 2026-09-04 (audit P2-3), and
+  **`045_drop_water_target_ml.sql` then dropped the column — applied to production 2026-09-04 and
+  verified** (`select=water_target_ml` on `/rest/v1/profiles` answers `42703: column
+  profiles.water_target_ml does not exist`, while `height_cm` still answers 200). Water tracking now
+  has no trace in the schema, the types or the code. **The order was the whole trick**: code first,
+  column second, so the migration changed nothing. Nothing about a dead field should be load-bearing —
+  if removing it needs a checklist, it isn't dead, it's undocumented.
 - **Every number a server recomputes from must be bounded on BOTH sides.** `z.number().positive()` is
   not a bound: it has no ceiling and it accepts `Infinity`. `height_cm` and the three `*_weight_kg`
   fields were declared that way in `onboardingSchema`, `profileUpdateSchema` and `weightLogSchema`,
@@ -597,9 +606,10 @@ which is why the send back-off could only ever tighten.
 Migrations worth knowing: `001_initial.sql` (core schema) · `007_seed_indian_foods.sql`,
 `009_seed_indian_foods_v2.sql`, `010_seed_missing_foods.sql` (IFCT data) ·
 `019_drop_deprecated_tables.sql` (removed the four wellness tables) ·
-`045_drop_water_target_ml.sql` (removes `profiles.water_target_ml`, the last trace of water tracking —
-`019` dropped the readings but left the target, which then spent a year dead *and* load-bearing; the six
-code sites went first in PR #60 so this file changes nothing at all) · `034_foods_rls_ownership.sql`
+`045_drop_water_target_ml.sql` (**applied 2026-09-04** — removed `profiles.water_target_ml`, the last
+trace of water tracking. `019` dropped the readings but left the target, which then spent a year dead
+*and* load-bearing; the six code sites went first in PR #60, so this migration changed nothing) ·
+`034_foods_rls_ownership.sql`
 (restricts `foods` writes to a user's own `source='user'` rows — before this, RLS checked only "are you
 logged in", so any account could delete a catalogue row and cascade it out of **every** user's diary) ·
 `044_subscriptions_rls_lockdown.sql` (the same defect on the **billing** table: drops
