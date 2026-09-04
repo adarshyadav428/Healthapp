@@ -4,6 +4,7 @@ import { createServerClient, createAdminClient } from '../../../../lib/supabase/
 import { isProStatus } from '../../../../lib/subscription'
 import { CHAT_LOG_PROMPT, stripMarkdown } from '../../../../lib/chat-prompt'
 import { pickBestFoodMatch } from '../../../../lib/foodMatch'
+import { resolveChatItemNutrition } from '../../../../lib/chat-nutrition'
 import { captureServerEvent } from '../../../../lib/posthog/server'
 import { recordAiUsage } from '../../../../lib/usageCounter'
 import { AI_TRIAL_SCANS } from '../../../../lib/aiTrial'
@@ -120,46 +121,77 @@ export async function POST(req: Request) {
   const admin = createAdminClient()
   const FOOD_SELECT = 'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions'
 
-  const enrichedItems = await Promise.all(
-    parsed.items.slice(0, 8).map(async (item) => {
-      const { data: candidates } = await supabase
-        .from('foods')
-        .select(FOOD_SELECT)
-        .ilike('name', `%${item.name}%`)
-        .neq('source', 'estimate')
-        .limit(10)
-      const existing = pickBestFoodMatch(candidates ?? [], item.name)
+  const round1 = (v: number) => Math.round(v * 10) / 10
 
-      if (existing) {
-        return { food: existing, grams: item.grams, portion_desc: item.portion_desc }
-      }
+  type EnrichedItem = { food: Record<string, unknown>; grams: number; portion_desc: string } | null
+  let enrichedItems: EnrichedItem[]
+  try {
+    enrichedItems = await Promise.all(
+      parsed.items.slice(0, 8).map(async (item) => {
+        // A discarded error here degrades silently in a way that costs accuracy
+        // AND money: `candidates` becomes null, pickBestFoodMatch gets an empty
+        // list, no measured IFCT row is ever matched, and we write a fresh
+        // estimate row instead — permanently, for a transient blip. The camera
+        // route already learned this; report it and carry on rather than 500.
+        const { data: candidates, error: candidatesError } = await supabase
+          .from('foods')
+          .select(FOOD_SELECT)
+          .ilike('name', `%${item.name}%`)
+          .neq('source', 'estimate')
+          .limit(10)
 
-      const source_id = `est_${item.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 50)}`
-      const { data: created } = await admin
-        .from('foods')
-        .upsert(
-          {
-            source: 'estimate',
-            source_id,
-            name: item.name,
-            brand: null,
-            serving_size_g: item.grams || 100,
-            serving_description: item.portion_desc || `${item.grams}g`,
-            kcal_per_100g: Math.round((item.kcal_per_100g || 0) * 10) / 10,
-            protein_g_per_100g: Math.round((item.protein_g_per_100g || 0) * 10) / 10,
-            carbs_g_per_100g: Math.round((item.carbs_g_per_100g || 0) * 10) / 10,
-            fat_g_per_100g: Math.round((item.fat_g_per_100g || 0) * 10) / 10,
-            fiber_g_per_100g: null,
-            common_portions: null,
-          },
-          { onConflict: 'source,source_id' }
-        )
-        .select(FOOD_SELECT)
-        .single()
+        if (candidatesError) {
+          Sentry.captureException(new Error(`chat food match lookup failed: ${candidatesError.message}`), {
+            tags: { route: 'chat/analyze' },
+          })
+        }
+        const existing = pickBestFoodMatch(candidates ?? [], item.name)
 
-      return created ? { food: created, grams: item.grams, portion_desc: item.portion_desc } : null
-    })
-  )
+        if (existing) {
+          return { food: existing, grams: item.grams, portion_desc: item.portion_desc }
+        }
+
+        // Gemini's own numbers, clamped to what's physically possible before
+        // they're ever written — see lib/chat-nutrition.ts. Previously this
+        // trusted the raw values outright, so a hallucinated macro set (e.g.
+        // 900 kcal/100g dal) became a permanent shared `estimate` row.
+        const n = resolveChatItemNutrition(item)
+
+        const source_id = `est_${item.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 50)}`
+        const { data: created, error: upsertErr } = await admin
+          .from('foods')
+          .upsert(
+            {
+              source: 'estimate',
+              source_id,
+              name: item.name,
+              brand: null,
+              serving_size_g: item.grams || 100,
+              serving_description: item.portion_desc || `${item.grams}g`,
+              kcal_per_100g: round1(n.kcal_per_100g),
+              protein_g_per_100g: round1(n.protein_g_per_100g),
+              carbs_g_per_100g: round1(n.carbs_g_per_100g),
+              fat_g_per_100g: round1(n.fat_g_per_100g),
+              fiber_g_per_100g: null,
+              common_portions: null,
+            },
+            { onConflict: 'source,source_id' }
+          )
+          .select(FOOD_SELECT)
+          .single()
+
+        if (upsertErr) {
+          // An unwritten estimate row can't be logged anyway — surface it
+          // rather than silently dropping the item (matches camera/analyze).
+          throw new Error(`DB upsert failed: ${upsertErr.message}`)
+        }
+
+        return created ? { food: created, grams: item.grams, portion_desc: item.portion_desc } : null
+      })
+    )
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 })
+  }
 
   const validItems = enrichedItems.filter(Boolean) as { food: Record<string, unknown>; grams: number; portion_desc: string }[]
 
