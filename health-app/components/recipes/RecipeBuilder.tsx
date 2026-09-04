@@ -35,6 +35,39 @@ function useFoodSearch(query: string) {
 
 const round1 = (n: number) => Math.round(n * 10) / 10
 
+/**
+ * Grams field for one ingredient. Backed by its own string so it tolerates an
+ * empty or half-typed value instead of snapping to 1 on every keystroke (which
+ * made the trailing digit impossible to delete). Commits a clamped number live
+ * when the text parses, and repairs an empty / zero value on blur.
+ */
+function GramsField({ grams, onChange }: { grams: number; onChange: (g: number) => void }) {
+  const [str, setStr] = useState(String(grams))
+
+  return (
+    <input
+      type="number"
+      inputMode="numeric"
+      value={str}
+      min={1}
+      onChange={(e) => {
+        const cleaned = e.target.value.replace(/[^0-9]/g, '')
+        setStr(cleaned)
+        const n = parseInt(cleaned, 10)
+        if (Number.isFinite(n) && n > 0) onChange(n)
+      }}
+      onBlur={() => {
+        const n = parseInt(str, 10)
+        const safe = Number.isFinite(n) && n > 0 ? n : 1
+        setStr(String(safe))
+        onChange(safe)
+      }}
+      onFocus={(e) => e.target.select()}
+      className="w-16 text-center text-base font-bold rounded-control border border-hairline bg-surface text-ink px-2 py-1.5 outline-none focus:border-brand"
+    />
+  )
+}
+
 export function RecipeBuilder() {
   const [recipeName, setRecipeName] = useState('')
   const [servings, setServings] = useState(4)
@@ -248,13 +281,7 @@ export function RecipeBuilder() {
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <input
-                    type="number"
-                    value={ing.grams}
-                    min={1}
-                    onChange={(e) => updateGrams(index, Math.max(1, Number(e.target.value)))}
-                    className="w-16 text-center text-base font-bold rounded-control border border-hairline bg-surface text-ink px-2 py-1.5 outline-none focus:border-brand"
-                  />
+                  <GramsField grams={ing.grams} onChange={(g) => updateGrams(index, g)} />
                   <span className="text-[10px] text-ink-2">g</span>
                   <button
                     type="button"
