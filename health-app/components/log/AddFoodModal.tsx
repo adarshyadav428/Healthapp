@@ -17,6 +17,7 @@ import { userFacingApiError } from '../../lib/apiError'
 import { coachingLine, dayContextFor } from '../../lib/coaching'
 import { useDailyTotals } from '../../hooks/useDailyTotals'
 import { useScrollLock } from '../ui/use-scroll-lock'
+import { useBackDismiss } from '../ui/use-back-dismiss'
 import { UnitPicker } from './UnitPicker'
 
 const MEAL_OPTIONS = [
@@ -116,6 +117,7 @@ export function AddFoodModal(
   const [showUnitPicker, setShowUnitPicker] = useState(false)
 
   useScrollLock()
+  useBackDismiss(true, onClose)
 
   const quantityNum = Math.max(0, parseFloat(quantityStr) || 0)
   const grams = unit.toGrams(quantityNum)

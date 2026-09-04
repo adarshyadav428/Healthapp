@@ -9,6 +9,7 @@ import type { Food } from '../../types/index'
 import { Button } from '../ui/button'
 import { useCameraScan, type Mode } from '../../hooks/useCameraScan'
 import { useScrollLock } from '../ui/use-scroll-lock'
+import { useBackDismiss } from '../ui/use-back-dismiss'
 import { aiScansLeftLabel } from '../../lib/aiTrial'
 
 type Props = {
@@ -43,6 +44,7 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
   const nameInputRef = useRef<HTMLInputElement>(null)
 
   useScrollLock()
+  useBackDismiss(true, onClose)
 
   const tabs: { value: Mode; label: string; icon: React.ReactNode }[] = [
     ...(barcodeSupport ? [{ value: 'barcode' as Mode, label: 'Barcode', icon: <ScanLine className="h-4 w-4" /> }] : []),

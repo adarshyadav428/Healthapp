@@ -475,6 +475,25 @@ actively seeding.
   exact case of `UnitPicker` opening inside `EditFoodLogModal`'s Radix sheet. Inner scrollers also
   want `overscroll-contain`: the global `overscroll-behavior-y: contain` on `html`/`body`
   (`globals.css`) stops chaining *out of* the document, not *into* the body from a nested scroller.
+- **Every overlay must be dismissible by the device Back button** (`components/ui/
+  use-back-dismiss.ts`), and `SheetContent` must additionally be dismissible by dragging its
+  grabber. Every overlay in this app is React state, not a route, so to history an open camera
+  and a closed one are the same entry: in the **TWA**, where Back is the primary navigation
+  gesture and there is no browser chrome to explain where you went, pressing it with the camera
+  open left the screen entirely. The hook pushes **one** entry for the whole overlay stack and
+  treats the `popstate` that eats it as a close. Three details are load-bearing and mirror
+  `use-scroll-lock.ts`: the count is **module-level** (these nest — `UnitPicker` over
+  `AddFoodModal` — and one entry per overlay would need two Backs to leave one screen);
+  releasing is **deferred by a tick and cancelled by a new acquire**, because `reactStrictMode`
+  runs every effect mount → cleanup → mount and without it the resulting `popstate` lands on
+  the second mount's listener and closes the overlay the instant it opens; and cleanup **only
+  spends the entry if the marker is still in `history.state`**, because an overlay also
+  unmounts when the user *navigates*, and calling `history.back()` then drags them back to the
+  page they just left. A dismiss path that fires analytics (`LogMilestones`' `dismissPaywall`)
+  must be **hoisted above the early returns** and shared, or Back silently under-counts the
+  users who bounced hardest. The sheet's swipe deliberately lives on the **grabber only**, not
+  the whole sheet: a sheet-wide handler has to guess whether a downward swipe means "dismiss"
+  or "scroll the list I started on".
 - **`--kb-inset` is published by exactly one component and read only by sheet positioning.**
   `components/KeyboardInset.tsx` measures `visualViewport` and sets it on `<html>`; `sheet.tsx`
   offsets `bottom` by it. **A sheet that lifts must also shrink** — every `SheetContent` carrying a
