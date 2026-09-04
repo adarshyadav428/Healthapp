@@ -30,6 +30,12 @@ describe('CHAT_LOG_PROMPT', () => {
     expect(CHAT_LOG_PROMPT).toContain('"assumptions"')
   })
 
+  it('carries the counted-item (pcs/count) rule the piece-count stepper depends on', () => {
+    expect(CHAT_LOG_PROMPT).toContain('COUNTED ITEMS')
+    expect(CHAT_LOG_PROMPT).toContain('"unit": "pcs"')
+    expect(CHAT_LOG_PROMPT).toContain('"count"')
+  })
+
   it('still asks for the not_food escape hatch and the max-items cap', () => {
     expect(CHAT_LOG_PROMPT).toContain('not_food')
     expect(CHAT_LOG_PROMPT).toContain('Max 8 items')
