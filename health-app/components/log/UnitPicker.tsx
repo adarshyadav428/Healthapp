@@ -22,7 +22,7 @@ export function UnitPicker({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center">
-      <div className="absolute inset-0 bg-scrim backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-scrim backdrop-blur-md" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-t-sheet bg-surface px-4 pb-6 pt-3 shadow-float">
         <div className="mx-auto h-1 w-10 rounded-full bg-hairline mb-4" />
         <p className="text-center text-xs uppercase tracking-wide font-bold text-ink-2 mb-2">{foodName}</p>
