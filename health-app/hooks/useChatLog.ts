@@ -31,13 +31,21 @@ export type FoodItem = {
   /** AI's original suggestion — kept alongside `grams` so we can tell if the user corrected it. */
   originalGrams: number
   portion_desc: string
+  /** How sure the model was — surfaced as a "rough estimate" pill when 'low'. */
+  confidence?: 'low' | 'medium' | 'high'
+  /** Set only for a naturally-countable item (chicken pieces, paneer cubes) —
+   *  drives a "− N pieces +" stepper instead of a gram slider. `grams` stays
+   *  the source of truth for nutrition; `count` is a display/editing aid. */
+  unit?: 'g' | 'pcs'
+  count?: number
+  originalCount?: number
 }
 
 export type State =
   | { type: 'idle' }
   | { type: 'analyzing'; message: string }
-  | { type: 'confirm'; message: string; meal: Meal; items: FoodItem[] }
-  | { type: 'logging'; meal: Meal; items: FoodItem[]; message: string }
+  | { type: 'confirm'; message: string; meal: Meal; items: FoodItem[]; assumptions?: string | null }
+  | { type: 'logging'; meal: Meal; items: FoodItem[]; message: string; assumptions?: string | null }
   | { type: 'done'; logged: number; kcal: number; meal: Meal }
 
 // A private `inferMeal` lived here until 2026-09-04 — a seventh copy of the
@@ -122,8 +130,12 @@ export function useChatLog({ onClose, logDate, context = 'standalone' }: Params)
       }
       if (typeof data.remaining === 'number') setScansLeft(data.remaining)
       const meal = (data.meal?.toLowerCase() ?? mealForTime()) as Meal
-      const items: FoodItem[] = (data.items as FoodItem[]).map((item) => ({ ...item, originalGrams: item.grams }))
-      setState({ type: 'confirm', message, meal, items })
+      const items: FoodItem[] = (data.items as FoodItem[]).map((item) => ({
+        ...item,
+        originalGrams: item.grams,
+        originalCount: item.count,
+      }))
+      setState({ type: 'confirm', message, meal, items, assumptions: data.assumptions ?? null })
     } catch {
       toast({ title: 'Network error', description: 'Please try again.', variant: 'error' })
       setState({ type: 'idle' })
@@ -137,6 +149,20 @@ export function useChatLog({ onClose, logDate, context = 'standalone' }: Params)
     setState({ ...state, items })
   }
 
+  // Pieces-based editing for a "unit: pcs" item (e.g. chicken pieces). Grams
+  // stay the actual source of truth for nutrition — this just recomputes them
+  // from a stable per-piece weight, so "6 pieces" -> "8 pieces" scales the
+  // kcal the same way the slider would, without the user ever entering grams.
+  const updateCount = (idx: number, count: number) => {
+    if (state.type !== 'confirm') return
+    const items = state.items.map((item, i) => {
+      if (i !== idx || !item.originalCount) return item
+      const gramsPerUnit = item.originalGrams / item.originalCount
+      return { ...item, count, grams: Math.max(1, Math.round(gramsPerUnit * count)) }
+    })
+    setState({ ...state, items })
+  }
+
   const removeItem = (idx: number) => {
     if (state.type !== 'confirm') return
     const items = state.items.filter((_, i) => i !== idx)
@@ -146,8 +172,8 @@ export function useChatLog({ onClose, logDate, context = 'standalone' }: Params)
 
   const handleLog = async () => {
     if (state.type !== 'confirm') return
-    const { meal, items, message } = state
-    setState({ type: 'logging', meal, items, message })
+    const { meal, items, message, assumptions } = state
+    setState({ type: 'logging', meal, items, message, assumptions })
     try {
       const res = await fetch('/api/logs/add-bulk', {
         method: 'POST',
@@ -173,6 +199,7 @@ export function useChatLog({ onClose, logDate, context = 'standalone' }: Params)
           original_grams: item.originalGrams,
           corrected_grams: item.grams,
           delta_grams: item.grams - item.originalGrams,
+          confidence: item.confidence ?? null,
         })
       }
 
@@ -180,7 +207,7 @@ export function useChatLog({ onClose, logDate, context = 'standalone' }: Params)
       setState({ type: 'done', logged: items.length, kcal: totalKcal, meal })
     } catch (err) {
       toast({ title: 'Log failed', description: (err as Error).message, variant: 'error' })
-      setState(s => s.type === 'logging' ? { type: 'confirm', message: s.message, meal: s.meal, items: s.items } : s)
+      setState(s => s.type === 'logging' ? { type: 'confirm', message: s.message, meal: s.meal, items: s.items, assumptions: s.assumptions } : s)
     }
   }
 
@@ -212,7 +239,7 @@ export function useChatLog({ onClose, logDate, context = 'standalone' }: Params)
 
   return {
     state, setState, input, setInput, scansLeft,
-    handleSend, updateGrams, removeItem, handleLog,
+    handleSend, updateGrams, updateCount, removeItem, handleLog,
     totalKcal, coaching,
   }
 }

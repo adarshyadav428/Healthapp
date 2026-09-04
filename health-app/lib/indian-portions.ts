@@ -32,6 +32,7 @@ export const INDIAN_PORTION_REFERENCE = `INDIAN PORTION SIZE REFERENCE (grams un
 - Milk: 1 glass = 200ml
 - Ghee / oil: 1 tablespoon = 12g
 - Sugar / honey: 1 tablespoon = 15g
+- Chicken curry-cut piece (bone-in, medium): 1 piece = 55g
 - Egg: 1 = 50g
 - Banana (medium): 1 = 120g
 - Apple / orange (medium): 1 = 150g

@@ -1,7 +1,7 @@
 'use client'
 
 import { useLayoutEffect, useRef } from 'react'
-import { X, Send, Loader2, RotateCcw, CheckCircle, CornerDownLeft, MessageSquarePlus } from 'lucide-react'
+import { X, Send, Loader2, RotateCcw, CheckCircle, CornerDownLeft, MessageSquarePlus, Minus, Plus } from 'lucide-react'
 import { Sheet, SheetContent } from '../ui/sheet'
 import { Button } from '../ui/button'
 import { useChatLog, type Meal } from '../../hooks/useChatLog'
@@ -37,7 +37,7 @@ export function ChatLogModal({
 }) {
   const {
     state, setState, input, setInput, scansLeft,
-    handleSend, updateGrams, removeItem, handleLog,
+    handleSend, updateGrams, updateCount, removeItem, handleLog,
     totalKcal, coaching,
   } = useChatLog({ onClose, logDate, context })
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -140,6 +140,16 @@ export function ChatLogModal({
                 ))}
               </div>
 
+              {/* How the AI read the message — shown whenever it inferred or
+                  corrected something, e.g. folding "6 chicken pieces" back
+                  into a stated total instead of double-counting it. */}
+              {state.type === 'confirm' && state.assumptions && (
+                <div className="rounded-card border border-hairline bg-surface-2 p-3">
+                  <p className="text-caption font-semibold text-ink">How I read this</p>
+                  <p className="mt-0.5 text-caption leading-relaxed text-ink-2">{state.assumptions}</p>
+                </div>
+              )}
+
               {/* Item list */}
               <div className="space-y-2">
                 {state.type === 'confirm' && state.items.map((item, idx) => {
@@ -149,7 +159,14 @@ export function ChatLogModal({
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="text-body font-semibold text-ink truncate">{item.food.name}</p>
-                          <p className="text-caption text-ink-2 mt-0.5">{item.portion_desc}</p>
+                          <p className="mt-0.5 text-caption text-ink-2">
+                            {item.portion_desc}
+                            {item.confidence === 'low' && (
+                              <span className="ml-1.5 inline-block align-middle rounded-full border border-hairline px-1.5 py-0.5 text-[10px] font-semibold text-ink-2">
+                                rough estimate
+                              </span>
+                            )}
+                          </p>
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                           <span className="text-body font-bold text-brand-ink tabular-nums">{itemKcal} kcal</span>
@@ -162,20 +179,47 @@ export function ChatLogModal({
                           </button>
                         </div>
                       </div>
-                      {/* Grams slider */}
-                      <div className="mt-2.5 flex items-center gap-2.5">
-                        <input
-                          type="range"
-                          min={10}
-                          max={600}
-                          step={5}
-                          value={item.grams}
-                          onChange={(e) => updateGrams(idx, Number(e.target.value))}
-                          aria-label={`Grams of ${item.food.name}`}
-                          className="flex-1 accent-brand"
-                        />
-                        <span className="text-caption font-bold text-ink w-12 text-right tabular-nums">{item.grams}g</span>
-                      </div>
+                      {/* A naturally-countable item (chicken pieces, paneer cubes) gets a
+                          pieces stepper instead of a gram slider — editing "6" to "8" reads
+                          the way the user actually thinks about it. */}
+                      {item.unit === 'pcs' && item.count != null ? (
+                        <div className="mt-2.5 flex items-center justify-between gap-2.5">
+                          <div className="flex items-center gap-2.5">
+                            <button
+                              type="button"
+                              onClick={() => updateCount(idx, Math.max(1, item.count! - 1))}
+                              aria-label={`Fewer ${item.food.name}`}
+                              className="flex h-7 w-7 items-center justify-center rounded-full border border-hairline text-ink transition-colors hover:bg-hairline"
+                            >
+                              <Minus className="h-3.5 w-3.5" />
+                            </button>
+                            <span className="w-20 text-center text-body font-bold text-ink tabular-nums">{item.count} pieces</span>
+                            <button
+                              type="button"
+                              onClick={() => updateCount(idx, item.count! + 1)}
+                              aria-label={`More ${item.food.name}`}
+                              className="flex h-7 w-7 items-center justify-center rounded-full border border-hairline text-ink transition-colors hover:bg-hairline"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                          <span className="text-caption text-ink-2 tabular-nums">{item.grams}g</span>
+                        </div>
+                      ) : (
+                        <div className="mt-2.5 flex items-center gap-2.5">
+                          <input
+                            type="range"
+                            min={10}
+                            max={600}
+                            step={5}
+                            value={item.grams}
+                            onChange={(e) => updateGrams(idx, Number(e.target.value))}
+                            aria-label={`Grams of ${item.food.name}`}
+                            className="flex-1 accent-brand"
+                          />
+                          <span className="text-caption font-bold text-ink w-12 text-right tabular-nums">{item.grams}g</span>
+                        </div>
+                      )}
                       <div className="mt-1.5 flex gap-3 text-caption text-ink-2 tabular-nums">
                         <span style={{ color: 'var(--protein)' }}>P {round1(item.food.protein_g_per_100g * item.grams / 100)}g</span>
                         <span style={{ color: 'var(--carbs)' }}>C {round1(item.food.carbs_g_per_100g * item.grams / 100)}g</span>

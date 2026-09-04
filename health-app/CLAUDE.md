@@ -439,6 +439,21 @@ actively seeding.
   `AI_TRIAL_SCANS` (`lib/freeTier.ts` `LEGACY_LIMITS.aiScans`) calls, unlocked only after email
   verification (`lib/aiTrial.ts` + `lib/aiTrialServer.ts`, enforced with a 403 in the routes). The UI
   is never the boundary.
+- **An AI route never trusts the model to do arithmetic it can do itself.** `lib/camera-nutrition.ts`
+  learned this first (a label panel's "per 100g vs per serving" scaling produced wrong numbers when
+  Gemini did it — the model now only transcribes the four printed numbers, and `resolveNutrition`
+  does 100% of the maths). `lib/chat-nutrition.ts` needed the identical fix for a different shape:
+  "750g of Hyderabadi chicken biryani which contained 6 medium chicken pieces along with some gravy"
+  came back as three items summing to **1100g**, because the chicken and gravy are already inside
+  the 750g and the model added them on top instead. `CHAT_LOG_PROMPT` now has the model flag each
+  item `is_stated_component: true/false` (a classification, which models are good at) and
+  `rebalanceChatItems` subtracts components from a user-stated total to find the base item's real
+  weight (subtraction, which the model must never be trusted with) — confirmed necessary by a real
+  eval run against the live API where the rewritten prompt correctly classified components but
+  still reported the base at the *full* stated total. Both AI routes also share the same
+  plausibility guardrail (`isPlausible`/`clampToPlausible`, defined once in `camera-nutrition.ts`
+  and reused by `chat-nutrition.ts`) before anything is written to the shared `foods` `estimate`
+  catalogue. See `docs/ai-logging.md`.
 - **An OAuth / magic-link redirect must land on `/auth/callback`, and that route must stay out of the
   service-worker page cache.** Only `app/auth/callback/route.ts` calls `exchangeCodeForSession`; send a
   PKCE `?code=` anywhere else (`/onboarding`, `/dashboard`) and middleware sees no session, bounces to
@@ -661,6 +676,7 @@ These are deep dives, kept out of this file on purpose. Read the relevant one **
 | Read | Before touching |
 |---|---|
 | `docs/food-search.md` | `app/api/foods/search/`, `lib/searchRanking.ts`, `lib/searchFilter.ts`, `lib/food-synonyms.ts`, `lib/spelling-variants.ts`, `lib/typo-correction.ts`, `lib/mergeSearchResults.ts`, `lib/searchCache.ts` |
+| `docs/ai-logging.md` | `lib/chat-prompt.ts`, `lib/chat-nutrition.ts`, `app/api/chat/analyze/route.ts`, the inline prompt in `app/api/camera/analyze/route.ts` |
 | `docs/billing.md` | `app/api/razorpay/`, `app/api/play/`, `app/api/stripe/`, `lib/razorpay/`, `lib/play/`, `lib/stripe/`, `lib/subscription.ts`, `app/upgrade/` |
 | `docs/design-system.md` | `app/globals.css`, `tailwind.config.ts`, `components/ui/`, `components/layout/`, any screen styling |
 | `docs/growth-mechanics-plan-2026-07-29.md` | `components/story/`, `lib/streakRescue.ts`, `lib/mealSuggest.ts`, `lib/pushBudget.ts`, `lib/reminderSchedule.ts`, `lib/cronBatch.ts` — note Seasons was cut, see below |
