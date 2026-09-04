@@ -53,6 +53,10 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   single attention card Home leads with), `mealSuggest.ts`, `shareCard.ts`.
 - **`components/`** — `ui/` holds primitives; everything else is domain-scoped (`dashboard/`, `log/`,
   `story/`, `milestones/`, `camera/`, `chat/`, …). **`hooks/`** are fetch/TanStack wrappers only — no writes.
+  **UI hooks live beside the primitives in `components/ui/`, not in `hooks/`** — `use-toast.ts` and
+  `use-scroll-lock.ts`. They touch the DOM, so they are neither fetch wrappers nor the pure,
+  Vitest-testable modules `lib/` is for (there is no `vitest.config.ts`, so specs run in **node**
+  with no jsdom — a DOM hook has nothing to be pinned by).
   `components/log/shortcuts.tsx` holds the one set of re-log / combo / copy-yesterday tiles that both
   `FoodLanding` and `FoodSearch` render — they used to be implemented twice, with different ordering
   and different meal-selection behaviour, which is how the same shortcut came to mean two things.
@@ -443,6 +447,43 @@ actively seeding.
   `next.config.js` `runtimeCaching` (like `/auth/callback` and `/api/foods/search`): the default
   `pages` `NetworkFirst` rule caches and replays a `redirected` response, which the browser rejects
   for a navigation — an intermittent blank page a hard refresh clears.
+- **An overlay's primary action must live outside its scroll container, and a flex child holding
+  variable-length content needs `min-h-0` *and* `overflow-y-auto`.** A flex item defaults to
+  `min-height: auto`, so it refuses to shrink below its content: the child does not clip, it
+  *overflows past the bottom of the screen*, and with nothing scrollable the user cannot reach it.
+  This shipped twice. `ChatLogModal`'s scroll body had `flex-1` with no `min-h-0`, so a long
+  conversation pushed the input row out of the sheet — which is what made the AI chat logger look
+  broken on an iPhone. Worse, `CameraModal`'s result panel was `shrink-0` with **no scroller at
+  all** under a viewfinder pinned at `flex: 0 0 42%`, so everything past the portion slider —
+  including **"Log food"** — rendered below the viewport: the scan identified the food, priced it,
+  and offered no reachable way to log it, on the paid AI path. The panel now scrolls and the
+  meal + Log row sits in a `shrink-0` sibling below it. Both defects were invisible to all five
+  gates and to every test; only a phone showed them. Grep for the shape before adding a surface,
+  and ask the question the grep cannot: *can the user always reach the button this screen exists
+  for, with the most content it can ever hold?*
+- **Every hand-rolled `fixed inset-0` overlay must call `useScrollLock()`** (`components/ui/
+  use-scroll-lock.ts`), or the page behind it scrolls under the user's finger. Radix sheets are
+  already covered — `@radix-ui/react-dialog` ships `react-remove-scroll` — so **prefer
+  `SheetContent`**, as `sheet.tsx`'s own header already says, and reach for the hook only where a
+  dialog is genuinely wrong for the surface (a camera viewfinder, a story). Three details are
+  load-bearing and none is optional: the count is **module-level**, because these nest
+  (`UnitPicker` opens over `AddFoodModal`) and a per-component lock releases the body when the
+  inner overlay closes; the lock is **`position: fixed` + `top: -scrollY`**, because iOS Safari
+  scroll-chains straight through an `overflow: hidden` body; and it **defers when
+  `body[data-scroll-locked]` is set**, because `react-remove-scroll-bar` injects
+  `position: relative !important` and would silently beat a plain inline `position: fixed` — the
+  exact case of `UnitPicker` opening inside `EditFoodLogModal`'s Radix sheet. Inner scrollers also
+  want `overscroll-contain`: the global `overscroll-behavior-y: contain` on `html`/`body`
+  (`globals.css`) stops chaining *out of* the document, not *into* the body from a nested scroller.
+- **`--kb-inset` is published by exactly one component and read only by sheet positioning.**
+  `components/KeyboardInset.tsx` measures `visualViewport` and sets it on `<html>`; `sheet.tsx`
+  offsets `bottom` by it. **A sheet that lifts must also shrink** — every `SheetContent` carrying a
+  `max-h` subtracts the inset, or lifting pushes its top off-screen. Offset via `bottom`, never
+  `transform`, which would fight the `sheetUp`/`sheetDown` keyframes. `interactive-widget=
+  resizes-content` is deliberately **not** used: it resizes the initial containing block app-wide,
+  shrinking `100vh` on every `min-h-screen` page and floating `BottomNav` above the keyboard on
+  every Android text field. `viewportFit: 'cover'` is likewise still off on purpose — turning it on
+  activates ~15 dormant `env(safe-area-inset-*)` paddings at once and needs its own device pass.
 - **Surgical changes only.** No drive-by refactors, no unrelated cleanup, no speculative abstractions.
 - **All five gates green before declaring done.** Never report a change as working on the strength of a
   successful build alone.

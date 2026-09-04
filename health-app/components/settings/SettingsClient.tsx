@@ -227,7 +227,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
               <RowChevron />
             </button>
           </SheetTrigger>
-          <SheetContent className="max-h-[88vh] overflow-y-auto">
+          <SheetContent className="max-h-[calc(88vh-var(--kb-inset,0px))] overflow-y-auto overscroll-contain">
             <SheetTitle className="mb-4">Goals &amp; targets</SheetTitle>
 
             {/* Calorie quick-editor */}
@@ -295,14 +295,14 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
                   <select
                     value={heightFt}
                     onChange={(e) => { const ft = Number(e.target.value); setHeightFt(ft); form.setValue('height_cm', ftInToCm(ft, heightIn), { shouldValidate: true }) }}
-                    className="flex-1 rounded-control border border-hairline bg-surface px-3 py-2 text-sm font-bold text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
+                    className="flex-1 rounded-control border border-hairline bg-surface px-3 py-2 text-base font-bold text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
                   >
                     {[3,4,5,6,7,8].map(ft => <option key={ft} value={ft}>{ft} ft</option>)}
                   </select>
                   <select
                     value={heightIn}
                     onChange={(e) => { const inches = Number(e.target.value); setHeightIn(inches); form.setValue('height_cm', ftInToCm(heightFt, inches), { shouldValidate: true }) }}
-                    className="flex-1 rounded-control border border-hairline bg-surface px-3 py-2 text-sm font-bold text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
+                    className="flex-1 rounded-control border border-hairline bg-surface px-3 py-2 text-base font-bold text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
                   >
                     {[0,1,2,3,4,5,6,7,8,9,10,11].map(i => <option key={i} value={i}>{i} in</option>)}
                   </select>
@@ -322,7 +322,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
               <Field label="Activity level" error={form.formState.errors.activity_level?.message}>
                 <select
                   {...form.register('activity_level')}
-                  className="w-full rounded-control border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
+                  className="w-full rounded-control border border-hairline bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
                 >
                   {Object.entries(ACTIVITY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
@@ -355,7 +355,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
               <Field label="Weekly loss goal" error={form.formState.errors.pace_kg_per_week?.message}>
                 <select
                   {...form.register('pace_kg_per_week', { valueAsNumber: true })}
-                  className="w-full rounded-control border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
+                  className="w-full rounded-control border border-hairline bg-surface px-3 py-2.5 text-base text-ink outline-none focus:border-brand focus:ring-[3px] focus:ring-brand-ring"
                 >
                   <option value="0.25">0.25 kg/week — 275 kcal/day deficit</option>
                   <option value="0.5">0.50 kg/week — 550 kcal/day deficit</option>

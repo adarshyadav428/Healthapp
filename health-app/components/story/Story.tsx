@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { X, ArrowRight } from 'lucide-react'
 import { Button } from '../ui/button'
+import { useScrollLock } from '../ui/use-scroll-lock'
 import type { StoryCard } from './types'
 
 type Props = {
@@ -103,6 +104,8 @@ export function Story({ cards, ctaLabel, onCta, onClose, onCardView, onComplete 
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [advance, back, onClose])
+
+  useScrollLock(!!card)
 
   if (!card) return null
 

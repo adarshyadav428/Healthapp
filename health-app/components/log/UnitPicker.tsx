@@ -2,6 +2,7 @@
 
 import { Check } from 'lucide-react'
 import { Button } from '../ui/button'
+import { useScrollLock } from '../ui/use-scroll-lock'
 import type { Unit } from '../../lib/portion-units'
 
 /** Bottom-sheet measure picker shared by AddFoodModal and EditFoodLogModal. */
@@ -14,6 +15,11 @@ export function UnitPicker({
   onSelect: (u: Unit) => void
   onClose: () => void
 }) {
+  // Opens over AddFoodModal (nothing locked) and inside EditFoodLogModal's
+  // Radix sheet (already locked) — the refcount and the Radix deferral in
+  // useScrollLock are what let one component serve both.
+  useScrollLock()
+
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center">
       <div className="absolute inset-0 bg-scrim backdrop-blur-sm" onClick={onClose} />

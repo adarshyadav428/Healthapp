@@ -162,7 +162,7 @@ function MealGroup({ meal, logs, dateStr, onDelete, deletingId, onEdit }: {
                 value={mealName}
                 onChange={(e) => setMealName(e.target.value)}
                 placeholder={`Name (e.g. "${cfg.label} usual")`}
-                className="flex-1 rounded-control px-3 py-1.5 text-xs text-ink outline-none transition-all bg-surface-2 border border-hairline focus:border-brand"
+                className="flex-1 rounded-control px-3 py-1.5 text-base text-ink outline-none transition-all bg-surface-2 border border-hairline focus:border-brand"
                 onKeyDown={(e) => e.key === 'Enter' && saveMeal()}
                 autoFocus
               />

@@ -38,7 +38,11 @@ const SheetContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-lg rounded-t-sheet border-t border-hairline bg-surface px-5 pb-[calc(env(safe-area-inset-bottom,8px)+20px)] pt-3 shadow-float',
+        // `bottom`, not `transform`: sheetUp/sheetDown animate translateY, so an
+        // offset here composes with the entrance instead of fighting it. The
+        // transition matters because iOS fires visualViewport `resize` only once
+        // the keyboard animation has finished — without it the sheet snaps late.
+        'fixed inset-x-0 bottom-[var(--kb-inset,0px)] z-50 mx-auto w-full max-w-lg rounded-t-sheet border-t border-hairline bg-surface px-5 pb-[calc(env(safe-area-inset-bottom,8px)+20px)] pt-3 shadow-float transition-[bottom] duration-200 ease-out',
         'data-[state=open]:animate-[sheetUp_450ms_cubic-bezier(.32,.72,0,1)] data-[state=closed]:animate-[sheetDown_250ms_ease-in]',
         className
       )}

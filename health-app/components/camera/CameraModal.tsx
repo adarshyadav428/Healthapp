@@ -8,6 +8,7 @@ import {
 import type { Food } from '../../types/index'
 import { Button } from '../ui/button'
 import { useCameraScan, type Mode } from '../../hooks/useCameraScan'
+import { useScrollLock } from '../ui/use-scroll-lock'
 import { aiScansLeftLabel } from '../../lib/aiTrial'
 
 type Props = {
@@ -40,6 +41,8 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
   } = useCameraScan({ onClose, onFoodFound, logDate, context })
 
   const nameInputRef = useRef<HTMLInputElement>(null)
+
+  useScrollLock()
 
   const tabs: { value: Mode; label: string; icon: React.ReactNode }[] = [
     ...(barcodeSupport ? [{ value: 'barcode' as Mode, label: 'Barcode', icon: <ScanLine className="h-4 w-4" /> }] : []),
@@ -165,15 +168,17 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
         </div>
       )}
 
-      {/* ── Bottom panel ── */}
-      <div
-        className={`shrink-0 px-4 pb-6 pt-5 space-y-4 ${showResults ? 'bg-surface rounded-t-sheet' : ''}`}
-        style={!showResults ? { background: '#030712' } : undefined} // token-check-ignore — camera viewfinder chrome is intentionally near-black regardless of theme
-      >
-
-        {/* ── Result card (photo mode) ── */}
-        {showResults && (
-          <div className="space-y-4">
+      {/* ── Result panel ──
+          Owns its own scrolling, with the primary action pinned in a sibling
+          below it. The viewfinder above is fixed at 42% of the screen and this
+          panel's content is taller than what's left over — while it was
+          `shrink-0` with no scroller it could neither shrink nor scroll, so
+          everything past the portion slider (including "Log food") rendered
+          below the viewport with no way to reach it. */}
+      {showResults && (
+        <div className="flex-1 min-h-0 flex flex-col bg-surface rounded-t-sheet">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-3 pt-5">
+            <div className="space-y-4">
 
             {/* Multiple items chips */}
             {results!.length > 1 && (
@@ -284,7 +289,7 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
                       const v = Math.max(amountMin, Math.min(amountMax, Number(e.target.value) || amountMin))
                       setGrams(v)
                     }}
-                    className="w-[64px] text-center text-[15px] font-bold text-ink rounded-control py-1.5 outline-none bg-surface-2 border border-hairline"
+                    className="w-[64px] text-center text-base font-bold text-ink rounded-control py-1.5 outline-none bg-surface-2 border border-hairline"
                   />
                   <span className="text-[12px] text-ink-2 font-medium">{selected?.unit ?? 'g'}</span>
                 </div>
@@ -296,12 +301,25 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
               </div>
             </div>
 
-            {/* Meal + log */}
+            {/* Retake */}
+            <button
+              onClick={retake}
+              className="flex w-full items-center justify-center gap-1.5 py-1 text-[13px] font-medium text-ink-2 hover:text-ink transition-colors"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Retake photo
+            </button>
+            </div>
+          </div>
+
+          {/* Meal + log — deliberately outside the scroller, so the action this
+              whole screen exists for is on screen no matter how much the scan
+              returned. */}
+          <div className="shrink-0 border-t border-hairline bg-surface px-4 pb-6 pt-3">
             <div className="flex gap-2">
               <select
                 value={meal}
                 onChange={(e) => setMeal(e.target.value)}
-                className="flex-1 rounded-control text-sm py-2.5 px-3 outline-none transition-colors bg-surface-2 border border-hairline text-ink"
+                className="flex-1 rounded-control text-base py-2.5 px-3 outline-none transition-colors bg-surface-2 border border-hairline text-ink"
               >
                 {MEAL_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -312,16 +330,18 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
                 Log food
               </Button>
             </div>
-
-            {/* Retake */}
-            <button
-              onClick={retake}
-              className="flex w-full items-center justify-center gap-1.5 py-1 text-[13px] font-medium text-ink-2 hover:text-ink transition-colors"
-            >
-              <RefreshCw className="h-3.5 w-3.5" /> Retake photo
-            </button>
           </div>
-        )}
+        </div>
+      )}
+
+      {/* ── Capture chrome — the viewfinder states, which are mutually
+          exclusive with a result and keep the panel `shrink-0` so the
+          viewfinder above can take all remaining space. ── */}
+      {!showResults && (
+        <div
+          className="shrink-0 px-4 pb-6 pt-5 space-y-4"
+          style={{ background: '#030712' }} // token-check-ignore — camera viewfinder chrome is intentionally near-black regardless of theme
+        >
 
         {/* ── Review capture + optional context, before sending to AI (photo mode) ── */}
         {mode === 'photo' && captured && !analyzing && !results && (
@@ -334,7 +354,7 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
                 onKeyDown={(e) => { if (e.key === 'Enter') analyzePhoto() }}
                 placeholder="e.g. 'no oil', 'diet version', '2 rotis not 1'"
                 maxLength={200}
-                className="w-full rounded-control bg-white/10 border border-white/20 text-white text-sm px-4 py-3 outline-none focus:border-[var(--energy)] placeholder:text-white/40 transition-colors"
+                className="w-full rounded-control bg-white/10 border border-white/20 text-white text-base px-4 py-3 outline-none focus:border-[var(--energy)] placeholder:text-white/40 transition-colors"
                 autoFocus
               />
             ) : (
@@ -410,7 +430,8 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
             )}
           </>
         )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

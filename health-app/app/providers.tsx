@@ -7,6 +7,7 @@ import { ThemeProvider } from 'next-themes'
 import { Toaster } from '../components/ui/toaster'
 import { LogMilestones } from '../components/milestones/LogMilestones'
 import { SentryInit } from '../components/SentryInit'
+import { KeyboardInset } from '../components/KeyboardInset'
 import { capturePageview, markAppOpened, registerIdentitySuperProps } from '../lib/posthog/client'
 import { getBrowserSupabaseClient } from '../lib/supabase/client'
 import { isProStatus } from '../lib/subscription'
@@ -95,6 +96,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         </Suspense>
         {children}
         <SentryInit />
+        <KeyboardInset />
         <LogMilestones />
         <Toaster />
       </QueryClientProvider>
