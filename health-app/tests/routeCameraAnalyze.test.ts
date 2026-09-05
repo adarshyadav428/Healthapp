@@ -227,3 +227,47 @@ describe('/api/camera/analyze — excludes other users\' custom foods from name-
     expect(candidateQuery?.filters).toContainEqual(['neq', 'source', 'user'])
   })
 })
+
+/**
+ * `resolvable` and `plausible` (lib/camera-nutrition.ts) look interchangeable
+ * — both are `false` for the exact "pcs, no total, no label" fixture the P0-1
+ * tests above use — but they are not the same guard, and the route persists
+ * on one and not the other. A "g"/"ml" item can be implausible (Gemini's
+ * numbers clamped to something physically sane) while still being perfectly
+ * resolvable: it has a real per-100g reading, just not the one Gemini first
+ * guessed. If a future refactor collapsed the route's `n.unit === 'pcs' &&
+ * !n.resolvable` check into `!n.plausible`, this is the fixture that would
+ * catch it — every P0-1 test above uses a fixture where both flags happen to
+ * agree, so none of them would notice that swap. Audit 2026-09-04, P0-1
+ * follow-up (camera unresolved-state invariant review).
+ */
+describe('/api/camera/analyze — the unresolved guard checks resolvable, not plausible', () => {
+  it('still persists and logs an implausible-but-resolvable grams item (proves the guard is not `!n.plausible`)', async () => {
+    const { adminMock } = wire({
+      serverTables: { foods: { select: { data: [] } } },
+      adminTables: {
+        foods: { upsert: { data: { id: '88888888-8888-8888-8888-888888888888' }, error: null } },
+      },
+    })
+    // Physically impossible as reported (kcal/macros far exceed any real
+    // food) — isPlausible() is false and the route sets anyClamped, but this
+    // is a "g" item: resolveNutrition() always returns resolvable: true for
+    // the grams/label fallback path, clamping the numbers rather than
+    // refusing them. It must NOT be treated as unresolved.
+    fetchMock.mockResolvedValue(geminiFoods([
+      { name: 'Suspicious Curry', estimated_grams: 150, unit: 'g', kcal_per_100g: 2000, protein_g_per_100g: 90, carbs_g_per_100g: 150, fat_g_per_100g: 80 },
+    ]))
+
+    const res = await post({ imageBase64: 'abc' })
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json.foods).toHaveLength(1)
+    expect(json.unresolved).toBeUndefined()
+    // The clamp did fire (confidence downgraded), which is how we know this
+    // fixture actually exercises plausible: false rather than accidentally
+    // being plausible all along.
+    expect(json.confidence).toBe('low')
+
+    expect(adminMock.callsTo('foods').filter((c) => c.operation === 'upsert')).toHaveLength(1)
+  })
+})
