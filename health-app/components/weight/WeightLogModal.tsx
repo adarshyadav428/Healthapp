@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from '../ui/use-toast'
@@ -48,11 +48,24 @@ export function WeightLogModal({ onClose, defaultWeightKg }: { onClose: () => vo
   })
   const [date, setDate] = useState(today)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  // Generated once for this modal's lifetime (not per submit attempt), so a
+  // rapid double-tap or a retry of the SAME submission always carries the
+  // same key — closing the double-tap this modal used to have no guard
+  // against (2026-09-05 adversarial-audit F3). A ref, not state: it must be
+  // stable across the render that sets isSubmitting, not re-derived by it.
+  const clientRequestIdRef = useRef(crypto.randomUUID())
+  // Belt-and-suspenders alongside the server-side idempotency key: closes
+  // the same-tick race where two clicks both read isSubmitting as false
+  // before React re-renders with it true (the disabled attribute alone does
+  // not close this — see AddFoodModal's inFlightRef for the same pattern).
+  const inFlightRef = useRef(false)
   const queryClient = useQueryClient()
 
   const weight = form.watch('weight_kg')
 
   const handleSubmit = async (values: WeightLogData) => {
+    if (inFlightRef.current) return
+    inFlightRef.current = true
     try {
       if (!user) throw new Error('You must be signed in.')
       setIsSubmitting(true)
@@ -65,7 +78,12 @@ export function WeightLogModal({ onClose, defaultWeightKg }: { onClose: () => vo
       const res = await fetch('/api/weight/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ weight_kg: weightKg, measured_at: measuredAt, notes: values.notes ?? '' }),
+        body: JSON.stringify({
+          weight_kg: weightKg,
+          measured_at: measuredAt,
+          notes: values.notes ?? '',
+          client_request_id: clientRequestIdRef.current,
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to log weight')
@@ -87,6 +105,7 @@ export function WeightLogModal({ onClose, defaultWeightKg }: { onClose: () => vo
     } catch (err) {
       toast({ title: 'Failed to log weight', description: (err as Error).message, variant: 'error' })
     } finally {
+      inFlightRef.current = false
       setIsSubmitting(false)
     }
   }

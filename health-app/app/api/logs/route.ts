@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient, getApiUser } from '../../../lib/supabase/server'
 import { istDaysAgoStart, clampHistoryStart } from '../../../lib/dateUtils'
-import { isProStatus } from '../../../lib/subscription'
+import { getIsPro } from '../../../lib/subscription'
 import { limitsForSignupDate } from '../../../lib/freeTier'
 import type { FoodLog } from '../../../types/index'
 
@@ -25,8 +25,8 @@ export async function GET(req: Request) {
     // the API itself returned unlimited history to anyone who called it. The
     // free window is keyed on signup cohort (lib/freeTier.ts); profiles.created_at
     // rides the same round trip as the sub read.
-    const [{ data: sub }, { data: profile }] = await Promise.all([
-      supabase.from('subscriptions').select('status').eq('user_id', user.id).maybeSingle(),
+    const [isPro, { data: profile }] = await Promise.all([
+      getIsPro(supabase, user.id),
       supabase.from('profiles').select('created_at').eq('id', user.id).maybeSingle(),
     ])
     // `start` is untrusted input and must be a real timestamp whatever the tier —
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Invalid start date' }, { status: 400 })
     }
 
-    if (!isProStatus(sub?.status)) {
+    if (!isPro) {
       const cutoff = istDaysAgoStart(limitsForSignupDate(profile?.created_at).historyDays)
       // Compares parsed instants, never strings — see clampHistoryStart for why
       // `?start=epoch` used to defeat this entirely.

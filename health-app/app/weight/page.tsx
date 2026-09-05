@@ -5,7 +5,7 @@ import { BottomNav } from '../../components/layout/BottomNav'
 import { WeightClient } from '../../components/weight/WeightClient'
 import type { WeightLog } from '../../types/index'
 import { formatKg } from '../../lib/formatWeight'
-import { isProStatus } from '../../lib/subscription'
+import { getIsPro } from '../../lib/subscription'
 import { limitsForSignupDate } from '../../lib/freeTier'
 
 export const dynamic = 'force-dynamic'
@@ -18,9 +18,9 @@ export default async function WeightPage() {
   // Pro is sold "full weight history" on /upgrade, so the cap is free-tier only
   // — this used to be a flat .limit(60) for everyone. Free still gets enough
   // points to render a real trend line.
-  const [profileResult, subResult] = await Promise.all([
+  const [profileResult, isPro] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
-    supabase.from('subscriptions').select('status').eq('user_id', user.id).maybeSingle(),
+    getIsPro(supabase, user.id),
   ])
 
   let logsQuery = supabase
@@ -29,7 +29,6 @@ export default async function WeightPage() {
     .eq('user_id', user.id)
     .order('measured_at', { ascending: false })
 
-  const isPro = isProStatus(subResult.data?.status)
   const weightRows = limitsForSignupDate(profileResult.data?.created_at).weightRows
   if (!isPro) logsQuery = logsQuery.limit(weightRows)
 

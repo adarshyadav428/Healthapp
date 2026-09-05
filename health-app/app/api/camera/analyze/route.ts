@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
-import { isProStatus } from '../../../../lib/subscription'
+import { getIsPro, SubscriptionReadError } from '../../../../lib/subscription'
 import { pickBestFoodMatch } from '../../../../lib/foodMatch'
 import { captureServerEvent } from '../../../../lib/posthog/server'
 import { recordAiUsage } from '../../../../lib/usageCounter'
@@ -88,10 +88,19 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const userId = user.id
 
-  // Check Pro status
-  const { data: sub } = await supabase
-    .from('subscriptions').select('status').eq('user_id', userId).maybeSingle()
-  const isPro = isProStatus(sub?.status)
+  // Check Pro status. getIsPro throws on a failed read rather than silently
+  // returning false — a DB blip must never look like "genuinely free" and
+  // burn a paying user's Pro status or a free user's limited trial call for
+  // nothing. 2026-09-05 adversarial-audit F2.
+  let isPro: boolean
+  try {
+    isPro = await getIsPro(supabase, userId)
+  } catch (err) {
+    if (err instanceof SubscriptionReadError) {
+      return NextResponse.json({ error: err.message }, { status: 500 })
+    }
+    throw err
+  }
 
   // AI photo scan is Pro-only, minus a small lifetime trial for verified free
   // accounts (see lib/aiTrial). It was previously 5 free scans per IST day —

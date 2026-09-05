@@ -3,6 +3,8 @@ import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { weightLogSchema } from '../../../../lib/validations'
 import { calculateTDEE } from '../../../../lib/tdee'
 import { computeWeightMilestone } from '../../../../lib/weightMilestone'
+import { insertIdempotent } from '../../../../lib/requestIdempotency'
+import type { WeightLog } from '../../../../types/index'
 
 export async function POST(req: Request) {
   try {
@@ -34,18 +36,26 @@ export async function POST(req: Request) {
         .maybeSingle(),
     ])
 
-    const { data: row, error } = await supabase
-      .from('weight_logs')
-      .insert({
+    // A rapid double-tap, a race between two near-simultaneous requests, or a
+    // client retry after a timeout must not create a duplicate row — see
+    // migration 046 and lib/requestIdempotency.ts. client_request_id is
+    // generated once per modal-open, so a genuinely separate weigh-in (the
+    // user reopens the form) always gets a fresh key and still goes through.
+    const result = await insertIdempotent<WeightLog>(
+      supabase,
+      'weight_logs',
+      user.id,
+      {
         user_id: user.id,
         weight_kg: parsed.data.weight_kg,
         measured_at: parsed.data.measured_at,
         notes: parsed.data.notes ?? '',
-      })
-      .select()
-      .single()
-
-    if (error) throw new Error(error.message)
+        client_request_id: parsed.data.client_request_id ?? null,
+      },
+      '*'
+    )
+    if (!result.ok) throw new Error(result.error)
+    const row = result.data
 
     // Auto-recalculate calorie & macro targets when weight shifts ≥ 0.5 kg.
     // Awaited, not fire-and-forget: a serverless function can be frozen the

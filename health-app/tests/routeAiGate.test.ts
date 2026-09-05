@@ -139,7 +139,15 @@ describe.each(ROUTES)('POST /api/%s/analyze — the AI trial gate', (name, handl
     expect((await handler(request())).status).toBe(403)
   })
 
-  it('403s when the subscription read fails — an unreadable tier is not Pro', async () => {
+  /**
+   * 2026-09-05 adversarial-audit F2. Until this fix, a failed subscription
+   * read left `isPro` silently `false` — indistinguishable from "genuinely
+   * free", which meant a real Pro user got 403'd and their limited free
+   * trial burned on their own paid feature every time this read blipped.
+   * `getIsPro` (lib/subscription.ts) now throws instead, and both routes
+   * turn that into an explicit 500 — never a quiet 403, never a quiet pass.
+   */
+  it('500s when the subscription read fails, rather than silently 403ing a real Pro user', async () => {
     useSupabase({
       tables: {
         subscriptions: { data: null, error: DB_DOWN },
@@ -148,7 +156,7 @@ describe.each(ROUTES)('POST /api/%s/analyze — the AI trial gate', (name, handl
         chat_logs: { count: 0 },
       },
     })
-    expect((await handler(request())).status).toBe(403)
+    expect((await handler(request())).status).toBe(500)
   })
 
   it('spends nothing on a blocked request', async () => {

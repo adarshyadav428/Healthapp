@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
-import { isProStatus } from '../../lib/subscription'
+import { getIsPro } from '../../lib/subscription'
 import { limitsForSignupDate } from '../../lib/freeTier'
 import type { FoodLog, WeightLog } from '../../types/index'
 import { calculateStreakState, longestStreak } from '../../lib/streak'
@@ -108,13 +108,9 @@ export default async function ProgressPage() {
   const cutoff = new Date()
   cutoff.setUTCDate(cutoff.getUTCDate() - 90)
 
-  const [profileResult, subResult, streakResult, weightResult, logsResult, exerciseResult, logCountResult, weighInCountResult, savedMealCountResult] = await Promise.all([
+  const [profileResult, isPro, streakResult, weightResult, logsResult, exerciseResult, logCountResult, weighInCountResult, savedMealCountResult] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
-    supabase
-      .from('subscriptions')
-      .select('status')
-      .eq('user_id', user.id)
-      .maybeSingle(),
+    getIsPro(supabase, user.id),
     supabase
       .from('food_logs')
       .select('logged_at')
@@ -149,10 +145,6 @@ export default async function ProgressPage() {
   const { data: profile, error: profileError } = profileResult
   if (profileError) throw new Error(profileError.message)
   if (!profile || profile.height_cm === null) redirect('/onboarding')
-
-  // Pro status — free users only see the last 7 days of trend history
-  const sub = subResult.data
-  const isPro = isProStatus(sub?.status)
 
   if (logsResult.error) throw new Error(logsResult.error.message)
 

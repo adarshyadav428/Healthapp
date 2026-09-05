@@ -14,9 +14,14 @@
  *     the free tier advertises and less than the complete export its own CSV
  *     header claimed.
  *
- * Each gate is also tested with its subscription read FAILING, because a
- * discarded error that leaves `sub` undefined must read as "not Pro". That is
- * the same bug class that disabled the AI limit for weeks.
+ * Each gate is also tested with its subscription read FAILING. Until the
+ * 2026-09-05 adversarial-audit F2 fix, a discarded error that left `sub`
+ * undefined read as "not Pro" — which disabled the AI limit for weeks in one
+ * direction, and in the other silently punished a real Pro user with a free
+ * user's clamp/denial every time the read blipped. Neither extreme is
+ * correct: `getIsPro` (lib/subscription.ts) now throws `SubscriptionReadError`
+ * on a failed read, and every gate below turns that into an explicit 500 —
+ * never a quiet "Free", never a quiet "Pro".
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -46,6 +51,8 @@ vi.mock('../lib/posthog/server', () => ({
 }))
 
 const { GET: getLogs } = await import('../app/api/logs/route')
+const { GET: getExerciseLogs } = await import('../app/api/exercise/logs/route')
+const { GET: getWeightLogs } = await import('../app/api/weight/logs/route')
 const { POST: postCustomFood } = await import('../app/api/foods/custom/route')
 const { GET: getExport } = await import('../app/api/export/route')
 const { POST: postRescue } = await import('../app/api/streak/rescue/route')
@@ -111,12 +118,16 @@ describe('GET /api/logs — the free tier’s 7-day history clamp', () => {
     expect(appliedStart(mock)).toBeUndefined()
   })
 
-  it('clamps when the subscription read fails — an unreadable tier is not Pro', async () => {
-    const mock = useSupabase({
+  it('500s when the subscription read fails, rather than silently clamping to Free (F2)', async () => {
+    // Clamping here (the pre-fix behaviour) punished a real Pro user with the
+    // free-tier window every time this read blipped — indistinguishable from
+    // "genuinely free" to the caller. An explicit 500 is the only response
+    // that neither grants unverified Pro nor wrongly denies a paying one.
+    useSupabase({
       tables: { subscriptions: { data: null, error: DB_DOWN }, food_logs: { data: [] } },
     })
-    await getLogs(new Request('http://localhost/api/logs?start=2020-01-01T00:00:00.000Z'))
-    expect(appliedStart(mock)).toBe(istDaysAgoStart(7))
+    const res = await getLogs(new Request('http://localhost/api/logs?start=2020-01-01T00:00:00.000Z'))
+    expect(res.status).toBe(500)
   })
 
   /**
@@ -161,6 +172,65 @@ describe('GET /api/logs — the free tier’s 7-day history clamp', () => {
   })
 })
 
+describe('GET /api/exercise/logs — the same free-tier history clamp as /api/logs', () => {
+  it('401s an unauthenticated request', async () => {
+    useSupabase({ user: null })
+    const res = await getExerciseLogs(new Request('http://localhost/api/exercise/logs'))
+    expect(res.status).toBe(401)
+  })
+
+  it('clamps a free user to the last 7 days', async () => {
+    const mock = useSupabase({ tables: { subscriptions: NO_SUB, exercise_logs: { data: [] } } })
+    await getExerciseLogs(new Request('http://localhost/api/exercise/logs'))
+    const call = mock.callsTo('exercise_logs').at(-1)
+    expect(call?.filters.find(([op, col]) => op === 'gte' && col === 'logged_at')?.[2]).toBe(
+      istDaysAgoStart(7)
+    )
+  })
+
+  it('honours a Pro user’s full-history request', async () => {
+    const mock = useSupabase({ tables: { subscriptions: PRO_SUB, exercise_logs: { data: [] } } })
+    await getExerciseLogs(new Request('http://localhost/api/exercise/logs?start=2020-01-01T00:00:00.000Z'))
+    const call = mock.callsTo('exercise_logs').at(-1)
+    expect(call?.filters.find(([op, col]) => op === 'gte' && col === 'logged_at')?.[2]).toBe(
+      '2020-01-01T00:00:00.000Z'
+    )
+  })
+
+  it('500s when the subscription read fails, rather than silently clamping to Free (F2)', async () => {
+    useSupabase({
+      tables: { subscriptions: { data: null, error: DB_DOWN }, exercise_logs: { data: [] } },
+    })
+    const res = await getExerciseLogs(new Request('http://localhost/api/exercise/logs'))
+    expect(res.status).toBe(500)
+  })
+})
+
+describe('GET /api/weight/logs — Pro-uncapped weight history', () => {
+  it('401s an unauthenticated request', async () => {
+    useSupabase({ user: null })
+    expect((await getWeightLogs()).status).toBe(401)
+  })
+
+  it('caps a free user’s rows', async () => {
+    const mock = useSupabase({ tables: { subscriptions: NO_SUB, weight_logs: { data: [] } } })
+    await getWeightLogs()
+    expect(mock.callsTo('weight_logs').at(-1)?.operation).toBe('select')
+  })
+
+  it('serves a Pro user uncapped', async () => {
+    useSupabase({ tables: { subscriptions: PRO_SUB, weight_logs: { data: [] } } })
+    expect((await getWeightLogs()).status).toBe(200)
+  })
+
+  it('500s when the subscription read fails, rather than silently capping a real Pro user’s history (F2)', async () => {
+    useSupabase({
+      tables: { subscriptions: { data: null, error: DB_DOWN }, weight_logs: { data: [] } },
+    })
+    expect((await getWeightLogs()).status).toBe(500)
+  })
+})
+
 describe('POST /api/foods/custom — Pro-only custom foods', () => {
   const VALID = {
     name: 'Amma’s Sambar',
@@ -192,9 +262,9 @@ describe('POST /api/foods/custom — Pro-only custom foods', () => {
     expect(await res.json()).toMatchObject({ upgrade: 'custom_foods' })
   })
 
-  it('402s when the subscription read fails', async () => {
+  it('500s when the subscription read fails, rather than silently 402ing a real Pro user (F2)', async () => {
     useSupabase({ tables: { subscriptions: { data: null, error: DB_DOWN } } })
-    expect((await postCustomFood(request(VALID))).status).toBe(402)
+    expect((await postCustomFood(request(VALID))).status).toBe(500)
   })
 
   it('checks the tier before it looks at the body', async () => {
@@ -302,7 +372,7 @@ describe('POST /api/streak/rescue — Pro, one a month, server picks the day', (
     expect((await postRescue()).status).toBe(403)
   })
 
-  it('403s when the subscription read fails', async () => {
+  it('500s when the subscription read fails, rather than silently 403ing a real Pro user (F2)', async () => {
     useSupabase({
       tables: {
         subscriptions: { data: null, error: DB_DOWN },
@@ -310,7 +380,7 @@ describe('POST /api/streak/rescue — Pro, one a month, server picks the day', (
         streak_rescues: { data: [] },
       },
     })
-    expect((await postRescue()).status).toBe(403)
+    expect((await postRescue()).status).toBe(500)
   })
 
   /** An unreadable rescue list would look like a full allowance. */

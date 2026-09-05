@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isWithinFreeLogWindow, resolveLoggedAt } from '../lib/backfill'
+import { isWithinFreeLogWindow, resolveLoggedAt, resolveLoggedAtForRequest } from '../lib/backfill'
 import { istDateStr } from '../lib/dateUtils'
 
 // A fixed "now": 2026-07-17 08:00 UTC = 13:30 IST Jul 17.
@@ -28,5 +28,42 @@ describe('resolveLoggedAt', () => {
     expect(resolveLoggedAt('2026-07-15', NOW)).toBe('2026-07-15T06:30:00.000Z')
     // and its IST calendar date reads back as the same day
     expect(istDateStr(new Date(resolveLoggedAt('2026-07-15', NOW)))).toBe('2026-07-15')
+  })
+})
+
+/**
+ * 2026-09-05 adversarial-audit F2. The subscription/profile Promise.all used
+ * to drop both errors — a failed subscriptions read left `isPro` silently
+ * `false`, which applied the free-tier backfill window to a real Pro user
+ * with no indication anything went wrong. It must now fail the whole
+ * backfill decision explicitly instead.
+ */
+describe('resolveLoggedAtForRequest — subscription read failure', () => {
+  function supabaseWith(subResult: { data: unknown; error: unknown }) {
+    return {
+      from: (table: string) => ({
+        select: () => ({
+          eq: () => ({
+            maybeSingle: () =>
+              Promise.resolve(
+                table === 'subscriptions' ? subResult : { data: { created_at: '2020-01-01T00:00:00Z' }, error: null }
+              ),
+          }),
+        }),
+      }),
+    } as never
+  }
+
+  it('returns a 500 failure, never silently applying the free-tier window, when the subscription read fails', async () => {
+    const sb = supabaseWith({ data: null, error: { message: 'connection reset' } })
+    const result = await resolveLoggedAtForRequest(sb, 'user-1', '2026-01-01', NOW)
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.status).toBe(500)
+  })
+
+  it('still resolves normally for a Pro user when the read succeeds', async () => {
+    const sb = supabaseWith({ data: { status: 'active' }, error: null })
+    const result = await resolveLoggedAtForRequest(sb, 'user-1', '2020-06-01', NOW)
+    expect(result.ok).toBe(true)
   })
 })
