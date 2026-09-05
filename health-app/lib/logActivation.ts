@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { isProStatus } from './subscription'
+import { getIsPro } from './subscription'
 import { limitsForSignupDate } from './freeTier'
 import type { LogMilestone } from './logMilestones'
 
@@ -54,13 +54,22 @@ export async function getLogActivationContext(
 ): Promise<LogActivationContext> {
   const sixtyDaysAgo = new Date(Date.now() - 60 * 86_400_000).toISOString()
 
-  const [{ count }, { data: profileRow }, { data: subRow }, { data: logRows }, { data: rescueRows }] = await Promise.all([
+  const [{ count }, { data: profileRow }, isPro, { data: logRows }, { data: rescueRows }] = await Promise.all([
     supabase
       .from('food_logs')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId),
     supabase.from('profiles').select('created_at').eq('id', userId).maybeSingle(),
-    supabase.from('subscriptions').select('status').eq('user_id', userId).maybeSingle(),
+    // Unlike every gating call site fixed alongside this one (2026-09-05
+    // adversarial-audit F2), a subscription-read failure here must not
+    // reject the whole Promise.all — this context feeds the actual insert
+    // path of every logging route, and a blip on this one field must never
+    // block someone from logging food. It also must not silently resolve
+    // to "not Pro": is_pro only ever feeds analytics and the log-paywall
+    // interstitial (lib/logMilestones.ts), so resolving toward Pro on a
+    // failure costs at most one skipped upsell nudge — which self-corrects
+    // on the next log — versus wrongly nagging an already-paying user.
+    getIsPro(supabase, userId).catch(() => true),
     // logged_at only, and only 60 days: this runs on every log, so it has to
     // stay a narrow indexed read rather than pulling joined food rows.
     supabase
@@ -80,7 +89,7 @@ export async function getLogActivationContext(
     days_since_signup: daysSinceSignup,
     created_at: (profileRow?.created_at as string | null) ?? null,
     total_logs_before: count ?? 0,
-    is_pro: isProStatus(subRow?.status),
+    is_pro: isPro,
     logs_before: (logRows ?? []) as { logged_at: string }[],
     rescued_dates: (rescueRows ?? []).map((r) => (r as { rescued_date: string }).rescued_date),
   }

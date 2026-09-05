@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { istDateStr } from './dateUtils'
-import { isProStatus } from './subscription'
+import { getIsPro, SubscriptionReadError } from './subscription'
 import { LEGACY_LIMITS, limitsForSignupDate } from './freeTier'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -60,11 +60,22 @@ export async function resolveLoggedAtForRequest(
   // Past IST day — free users are limited to their cohort's history window.
   // profiles.created_at rides along in the same round trip as the sub read, so
   // resolving the cohort costs no extra wall time.
-  const [{ data: sub }, { data: profile }] = await Promise.all([
-    supabase.from('subscriptions').select('status').eq('user_id', userId).maybeSingle(),
-    supabase.from('profiles').select('created_at').eq('id', userId).maybeSingle(),
-  ])
-  const isPro = isProStatus(sub?.status)
+  let isPro: boolean
+  let profile: { created_at?: string | null } | null
+  try {
+    ;[isPro, { data: profile }] = await Promise.all([
+      getIsPro(supabase, userId),
+      supabase.from('profiles').select('created_at').eq('id', userId).maybeSingle(),
+    ])
+  } catch (err) {
+    // A read failure must block the backfill decision, not silently apply
+    // the free-tier window to a Pro user (or the reverse) — neither is a
+    // fact we can assert without the row. 2026-09-05 adversarial-audit F2.
+    if (err instanceof SubscriptionReadError) {
+      return { ok: false, status: 500, error: err.message }
+    }
+    throw err
+  }
   const historyDays = limitsForSignupDate(profile?.created_at).historyDays
   if (!isPro && !isWithinFreeLogWindow(dateStr, now, historyDays)) {
     return {

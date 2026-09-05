@@ -7,6 +7,7 @@ import { captureFoodLogged } from '../../../../lib/posthog/server'
 import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
 import { streakEventsForLog } from '../../../../lib/streakEvents'
 import { zodErrorMessage } from '../../../../lib/apiError'
+import { filterUncopiedToDay, insertFoodLogCopies } from '../../../../lib/requestIdempotency'
 
 export const runtime = 'nodejs'
 
@@ -71,16 +72,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'That meal is no longer there — it may have been edited or deleted.' }, { status: 404 })
     }
 
-    const rows = sourceLogs.map(({ id: _id, logged_at: _at, ...rest }) => ({ ...rest, logged_at }))
+    // A rapid double-tap, a race between two near-simultaneous requests, or a
+    // client retry after a timeout must not duplicate this same (meal,
+    // target day) paste — see migration 048 and lib/requestIdempotency.ts.
+    // Scoped to the target day (not a global "copied once, ever" rule): a
+    // saved meal pasted onto two different days is two separate, legitimate
+    // actions, and only a same-day repeat is a replay.
+    // 2026-09-05 QA follow-up (P2).
+    const filtered = await filterUncopiedToDay(supabase, userId, sourceLogs, logged_at)
+    if (!filtered.ok) throw new Error(filtered.error)
+    if (filtered.rows.length === 0) {
+      return NextResponse.json({ ok: true, copied: 0, alreadyCopied: true })
+    }
 
     const activation = await getLogActivationContext(supabase, userId)
 
-    const { error: insertError } = await supabase.from('food_logs').insert(rows)
-    if (insertError) throw new Error(insertError.message)
+    const result = await insertFoodLogCopies(supabase, filtered.rows, logged_at)
+    if (!result.ok) throw new Error(result.error)
+    if (result.copied === 0) {
+      return NextResponse.json({ ok: true, copied: 0, alreadyCopied: true })
+    }
 
     captureFoodLogged(userId, req, 'copy_meal', {
       meal,
-      items: rows.length,
+      items: result.copied,
       isFirstLog: activation.is_first_log,
       daysSinceSignup: activation.days_since_signup,
       streakEvents: streakEventsForLog(activation.logs_before, logged_at, activation.rescued_dates),
@@ -88,8 +103,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      copied: rows.length,
-      milestone: toLogMilestone(activation, rows.length),
+      copied: result.copied,
+      milestone: toLogMilestone(activation, result.copied),
     })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })

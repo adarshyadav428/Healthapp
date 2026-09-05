@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
-import { isProStatus } from '../../lib/subscription'
+import { isProStatus, getSubscription } from '../../lib/subscription'
 import { countAiTrialUsage } from '../../lib/aiTrialServer'
 import { computeWrappedStats } from '../../lib/wrappedStats'
 import { buildWelcomeCards } from '../../lib/welcomeCards'
@@ -33,8 +33,8 @@ export default async function WelcomePage() {
 
   const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
 
-  const [subResult, profileResult, logsResult, weightsResult, aiScans] = await Promise.all([
-    supabase.from('subscriptions').select('status, plan, provider').eq('user_id', user.id).maybeSingle(),
+  const [sub, profileResult, logsResult, weightsResult, aiScans] = await Promise.all([
+    getSubscription(supabase, user.id),
     supabase.from('profiles').select('display_name').eq('id', user.id).maybeSingle(),
     supabase
       .from('food_logs')
@@ -48,8 +48,6 @@ export default async function WelcomePage() {
       .order('measured_at', { ascending: true }),
     countAiTrialUsage(supabase, user.id),
   ])
-
-  const sub = subResult.data
 
   // Gate on the entitlement, not on how they arrived. `trialing` counts: inside
   // the TWA, Play grants a 3-day trial and the money doesn't move until it

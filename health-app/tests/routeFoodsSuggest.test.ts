@@ -101,4 +101,25 @@ describe('GET /api/foods/suggest — ownership (P0-2 follow-up)', () => {
     const ids = (json.suggestions as { food: { id: string } }[]).map((s) => s.food.id)
     expect(ids).toContain(RICE.id)
   })
+
+  /**
+   * 2026-09-05 adversarial-audit F2. `subResult.error` used to be dropped
+   * entirely — `isProStatus(subResult.data?.status)` on an `undefined` data
+   * read as "not Pro", silently capping a real Pro user's suggestions to the
+   * free limit. getIsPro() now throws on a failed read, so the whole route
+   * 500s instead.
+   */
+  it('500s when the subscription read fails, rather than silently treating a Pro user as free', async () => {
+    wire({
+      tables: {
+        profiles: { data: { daily_calorie_target: 2000, protein_g_target: 120, created_at: '2026-01-01T00:00:00Z' } },
+        food_logs: { data: [] },
+        subscriptions: { data: null, error: { message: 'connection reset' } },
+        food_dismissals: { data: [] },
+        foods: { select: { data: [] } },
+      },
+    })
+    const res = await GET()
+    expect(res.status).toBe(500)
+  })
 })

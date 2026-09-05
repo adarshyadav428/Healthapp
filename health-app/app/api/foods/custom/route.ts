@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient } from '../../../../lib/supabase/server'
-import { isProStatus } from '../../../../lib/subscription'
+import { getIsPro } from '../../../../lib/subscription'
 import { customFoodSchema } from '../../../../lib/validations'
 import { captureServerEvent } from '../../../../lib/posthog/server'
 
@@ -13,10 +13,11 @@ export async function POST(request: Request) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Pro-only feature: creating custom foods
-    const { data: sub } = await supabase
-      .from('subscriptions').select('status').eq('user_id', user.id).maybeSingle()
-    const isPro = isProStatus(sub?.status)
+    // Pro-only feature: creating custom foods. getIsPro throws on a failed
+    // read rather than silently returning false — a DB blip must never look
+    // like "genuinely free"; the catch block below turns the throw into a
+    // clean 500. 2026-09-05 adversarial-audit F2.
+    const isPro = await getIsPro(supabase, user.id)
     if (!isPro) {
       captureServerEvent(user.id, 'paywall_viewed', { source: 'custom_foods' })
       return NextResponse.json({ error: 'Pro required', upgrade: 'custom_foods' }, { status: 402 })

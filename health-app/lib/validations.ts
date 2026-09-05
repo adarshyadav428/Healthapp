@@ -133,6 +133,11 @@ export const weightLogSchema = z.object({
     { message: 'Invalid date' }
   ),
   notes: z.string().optional(),
+  // Generated once per modal-open on the client, not per HTTP call — lets the
+  // server collapse a rapid double-tap, a race, or a timeout-retry of the
+  // SAME submission into one row (see lib/requestIdempotency.ts). Optional:
+  // an older client or a caller that doesn't need this simply skips dedup.
+  client_request_id: z.string().uuid().optional(),
 })
 
 export const exerciseLogSchema = z.object({

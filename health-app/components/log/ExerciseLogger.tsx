@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useExerciseLogs } from '../../hooks/useExerciseLogs'
 import { useUser } from '../../hooks/useUser'
 import { Button } from '../ui/button'
@@ -37,6 +37,16 @@ export function ExerciseLogger({ weightKg = 70 }: Props) {
   const [durationStr, setDurationStr] = useState('30')
   const [caloriesStr, setCaloriesStr] = useState('')
   const [saving, setSaving] = useState(false)
+  // Stable across retries of the SAME unsent attempt, regenerated only after
+  // a successful log — so a rapid double-tap or a retry collapses into one
+  // row, but a genuinely separate exercise logged next still gets a fresh
+  // key. A ref, not state: it must not change on the render that sets
+  // `saving`. 2026-09-05 adversarial-audit F3.
+  const clientRequestIdRef = useRef(crypto.randomUUID())
+  // Belt-and-suspenders alongside the server-side idempotency key: closes
+  // the same-tick race where two taps both read `saving` as false before
+  // React re-renders with it true — see AddFoodModal's inFlightRef.
+  const inFlightRef = useRef(false)
 
   const selectedMet = COMMON_ACTIVITIES.find(a => a.name === activity)?.met ?? null
   const durationNum = parseInt(durationStr) || 0
@@ -61,13 +71,23 @@ export function ExerciseLogger({ weightKg = 70 }: Props) {
 
   const handleSubmit = async () => {
     if (!activity.trim() || durationNum <= 0 || caloriesNum <= 0) return
+    if (inFlightRef.current) return
+    inFlightRef.current = true
     setSaving(true)
-    await add(activity.trim(), durationNum, caloriesNum)
-    setActivity('')
-    setDurationStr('30')
-    setCaloriesStr('')
-    setOpen(false)
+    const ok = await add(activity.trim(), durationNum, caloriesNum, clientRequestIdRef.current)
+    if (ok) {
+      // A fresh key for whatever gets logged next. On failure the key is
+      // deliberately left as-is: the form stays open (below) so a retry of
+      // this SAME attempt reuses it, rather than risking a duplicate if the
+      // "failed" request had actually landed server-side.
+      clientRequestIdRef.current = crypto.randomUUID()
+      setActivity('')
+      setDurationStr('30')
+      setCaloriesStr('')
+      setOpen(false)
+    }
     setSaving(false)
+    inFlightRef.current = false
   }
 
   return (

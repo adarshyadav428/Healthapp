@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient, getAuthedUser } from '../../../../lib/supabase/server'
-import { isProStatus } from '../../../../lib/subscription'
+import { getIsPro, SubscriptionReadError } from '../../../../lib/subscription'
 import { getIstDayRange } from '../../../../lib/dateUtils'
 import { suggestMeals } from '../../../../lib/mealSuggest'
 import { limitsForSignupDate } from '../../../../lib/freeTier'
@@ -50,21 +50,32 @@ export async function GET() {
 
   const { start, end } = getIstDayRange()
 
-  const [profileResult, todayLogs, subResult, dismissedResult] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('daily_calorie_target, protein_g_target, created_at')
-      .eq('id', user.id)
-      .maybeSingle(),
-    supabase
-      .from('food_logs')
-      .select('kcal, protein_g')
-      .eq('user_id', user.id)
-      .gte('logged_at', start)
-      .lt('logged_at', end),
-    supabase.from('subscriptions').select('status').eq('user_id', user.id).maybeSingle(),
-    supabase.from('food_dismissals').select('food_id').eq('user_id', user.id),
-  ])
+  let profileResult, todayLogs, isPro, dismissedResult
+  try {
+    ;[profileResult, todayLogs, isPro, dismissedResult] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('daily_calorie_target, protein_g_target, created_at')
+        .eq('id', user.id)
+        .maybeSingle(),
+      supabase
+        .from('food_logs')
+        .select('kcal, protein_g')
+        .eq('user_id', user.id)
+        .gte('logged_at', start)
+        .lt('logged_at', end),
+      // getIsPro throws on a failed read rather than silently returning
+      // false — a DB blip must never look like "genuinely free" here.
+      // 2026-09-05 adversarial-audit F2.
+      getIsPro(supabase, user.id),
+      supabase.from('food_dismissals').select('food_id').eq('user_id', user.id),
+    ])
+  } catch (err) {
+    if (err instanceof SubscriptionReadError) {
+      return NextResponse.json({ error: err.message }, { status: 500 })
+    }
+    throw err
+  }
 
   const profile = profileResult.data
   if (!profile?.daily_calorie_target) {
@@ -83,8 +94,6 @@ export async function GET() {
     kcalRemaining: Math.round(profile.daily_calorie_target - eaten.kcal),
     proteinRemainingG: Math.max(0, Math.round((profile.protein_g_target ?? 0) - eaten.protein)),
   }
-
-  const isPro = isProStatus(subResult.data?.status)
 
   // Candidate pool. This comment used to claim the pool was "ordered by the
   // measured sources first and capped" — there was no `.order()` in the file at

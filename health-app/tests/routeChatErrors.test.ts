@@ -96,6 +96,19 @@ beforeEach(() => {
   process.env.GEMINI_API_KEY = 'test-key'
 })
 
+describe('POST /api/chat/analyze — subscription read failure (2026-09-05 F2)', () => {
+  it('500s when the subscription read fails, rather than silently treating a Pro user as free and burning their trial pool', async () => {
+    useSupabase({
+      tables: {
+        subscriptions: { data: null, error: DB_DOWN },
+        profiles: VERIFIED,
+      },
+    })
+    const res = await postChat(chatRequest())
+    expect(res.status).toBe(500)
+  })
+})
+
 describe('POST /api/chat/analyze — foods table error handling', () => {
   it('degrades gracefully when the candidate-match read fails, instead of crashing or silently duplicating', async () => {
     useSupabase({

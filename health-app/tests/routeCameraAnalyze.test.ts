@@ -95,6 +95,14 @@ beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock)
 })
 
+describe('/api/camera/analyze — subscription read failure (2026-09-05 F2)', () => {
+  it('500s when the subscription read fails, rather than silently treating a Pro user as free and burning their trial pool', async () => {
+    wire({ serverTables: { subscriptions: { data: null, error: { message: 'connection reset' } } } })
+    const res = await post({ imageBase64: 'abc' })
+    expect(res.status).toBe(500)
+  })
+})
+
 describe('/api/camera/analyze — pcs unit guard (P0-1)', () => {
   it('drops a pcs item with no valid total and no DB match, and reports it as unresolved instead of creating a wrong estimate', async () => {
     const { adminMock } = wire({ serverTables: { foods: { select: { data: [] } } } })

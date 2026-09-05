@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
-import { isProStatus } from '../../../../lib/subscription'
+import { getIsPro, SubscriptionReadError } from '../../../../lib/subscription'
 import { CHAT_LOG_PROMPT, stripMarkdown } from '../../../../lib/chat-prompt'
 import { pickBestFoodMatch } from '../../../../lib/foodMatch'
 import { parseStatedTotal, rebalanceChatItems, type ChatItem } from '../../../../lib/chat-nutrition'
@@ -25,9 +25,19 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const userId = user.id
 
-  const { data: sub } = await supabase
-    .from('subscriptions').select('status').eq('user_id', userId).maybeSingle()
-  const isPro = isProStatus(sub?.status)
+  // getIsPro throws on a failed read rather than silently returning false —
+  // a DB blip must never look like "genuinely free" and burn a paying
+  // user's Pro status or a free user's limited trial call for nothing.
+  // 2026-09-05 adversarial-audit F2.
+  let isPro: boolean
+  try {
+    isPro = await getIsPro(supabase, userId)
+  } catch (err) {
+    if (err instanceof SubscriptionReadError) {
+      return NextResponse.json({ error: err.message }, { status: 500 })
+    }
+    throw err
+  }
 
   // AI chat logging is Pro-only — same reasoning as the camera scan route, and
   // it draws on the same shared lifetime trial pool.

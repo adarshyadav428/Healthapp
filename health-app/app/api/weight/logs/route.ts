@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
-import { isProStatus } from '../../../../lib/subscription'
+import { getIsPro } from '../../../../lib/subscription'
 import { limitsForSignupDate } from '../../../../lib/freeTier'
 import type { WeightLog } from '../../../../types/index'
 
@@ -21,11 +21,10 @@ export async function GET() {
 
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const [{ data: sub }, { data: profile }] = await Promise.all([
-      supabase.from('subscriptions').select('status').eq('user_id', user.id).maybeSingle(),
+    const [isPro, { data: profile }] = await Promise.all([
+      getIsPro(supabase, user.id),
       supabase.from('profiles').select('created_at').eq('id', user.id).maybeSingle(),
     ])
-    const isPro = isProStatus(sub?.status)
 
     let query = supabase
       .from('weight_logs')

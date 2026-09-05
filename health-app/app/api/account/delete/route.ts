@@ -22,11 +22,24 @@ export async function POST() {
     if (userError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const admin = createAdminClient()
-    const { data: sub } = await admin
+    // A failed read here must never be treated as "no subscription" — that
+    // would silently skip the cancel-or-block branch below and let an active
+    // subscription's account be deleted while the provider keeps billing it,
+    // with nobody left able to manage or cancel it. Fail the whole request
+    // instead: no cancellation decision can be made without this row.
+    const { data: sub, error: subReadError } = await admin
       .from('subscriptions')
       .select('provider, status, razorpay_subscription_id, stripe_subscription_id')
       .eq('user_id', user.id)
       .maybeSingle()
+
+    if (subReadError) {
+      console.error('[account/delete] subscription read failed', subReadError)
+      return NextResponse.json(
+        { error: "We couldn't verify your subscription. Please try again." },
+        { status: 500 }
+      )
+    }
 
     if (sub && ACTIVE.has(sub.status as string)) {
       // Google Play subscriptions can only be cancelled by the user in Google
@@ -42,22 +55,53 @@ export async function POST() {
         )
       }
 
-      try {
-        if (sub.provider === 'razorpay' && sub.razorpay_subscription_id) {
-          // Immediate cancel (false) — the account is going away now.
-          await getRazorpayClient().subscriptions.cancel(sub.razorpay_subscription_id, false)
-        } else if (sub.provider === 'stripe' && sub.stripe_subscription_id) {
-          await getStripeClient().subscriptions.cancel(sub.stripe_subscription_id)
+      // sub.status is already 'canceled' locally means a PRIOR run of this
+      // route already cancelled the provider-side subscription and recorded
+      // it, but then failed before deleteUser() ran (see below) — retrying
+      // the provider cancel would just error against an already-cancelled
+      // subscription. Skip straight to deletion; ACTIVE.has('canceled') is
+      // false so this branch is only reached for a genuinely live status.
+      if (sub.provider === 'razorpay' || sub.provider === 'stripe') {
+        try {
+          if (sub.provider === 'razorpay' && sub.razorpay_subscription_id) {
+            // Immediate cancel (false) — the account is going away now.
+            await getRazorpayClient().subscriptions.cancel(sub.razorpay_subscription_id, false)
+          } else if (sub.provider === 'stripe' && sub.stripe_subscription_id) {
+            await getStripeClient().subscriptions.cancel(sub.stripe_subscription_id)
+          }
+        } catch (cancelErr) {
+          console.error('[account/delete] provider cancel failed', cancelErr)
+          return NextResponse.json(
+            {
+              error:
+                "We couldn't cancel your subscription automatically. Please cancel it from Settings → Manage Subscription first, then delete your account.",
+            },
+            { status: 502 }
+          )
         }
-      } catch (cancelErr) {
-        console.error('[account/delete] provider cancel failed', cancelErr)
-        return NextResponse.json(
-          {
-            error:
-              "We couldn't cancel your subscription automatically. Please cancel it from Settings → Manage Subscription first, then delete your account.",
-          },
-          { status: 502 }
-        )
+
+        // Persist the cancellation BEFORE deleting the user. If deleteUser()
+        // below then fails, the account survives with status already
+        // 'canceled' — so a retry of this route skips straight past the
+        // ACTIVE.has() check above instead of re-cancelling (and erroring
+        // against) an already-cancelled provider subscription. Skipping this
+        // write and deleting anyway would make it harmless *when deleteUser
+        // succeeds* (the cascade removes the row seconds later regardless),
+        // but leaves this exact retry-deadlock the one time it doesn't.
+        const { error: cancelWriteError } = await admin
+          .from('subscriptions')
+          .update({ status: 'canceled' })
+          .eq('user_id', user.id)
+        if (cancelWriteError) {
+          console.error('[account/delete] failed to record cancellation', cancelWriteError)
+          return NextResponse.json(
+            {
+              error:
+                'Your subscription was cancelled, but we could not finish deleting your account. Please try again — your card will not be charged again.',
+            },
+            { status: 500 }
+          )
+        }
       }
     }
 

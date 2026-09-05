@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
-import { isProStatus } from '../../../../lib/subscription'
+import { getIsPro, SubscriptionReadError } from '../../../../lib/subscription'
 import { findStreakRescue } from '../../../../lib/streak'
 import { rescuesRemaining } from '../../../../lib/streakRescue'
 import { captureServerEvent } from '../../../../lib/posthog/server'
@@ -43,13 +43,24 @@ export async function POST() {
 
   const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
 
-  const [subResult, logsResult, rescuesResult] = await Promise.all([
-    supabase.from('subscriptions').select('status').eq('user_id', user.id).maybeSingle(),
-    supabase.from('food_logs').select('logged_at').eq('user_id', user.id).gte('logged_at', sixtyDaysAgo),
-    supabase.from('streak_rescues').select('rescued_date, created_at').eq('user_id', user.id),
-  ])
+  let isPro: boolean, logsResult, rescuesResult
+  try {
+    // getIsPro throws on a failed read rather than silently returning false —
+    // a DB blip must never look like "genuinely free" and deny a paying
+    // user their rescue. 2026-09-05 adversarial-audit F2.
+    ;[isPro, logsResult, rescuesResult] = await Promise.all([
+      getIsPro(supabase, user.id),
+      supabase.from('food_logs').select('logged_at').eq('user_id', user.id).gte('logged_at', sixtyDaysAgo),
+      supabase.from('streak_rescues').select('rescued_date, created_at').eq('user_id', user.id),
+    ])
+  } catch (err) {
+    if (err instanceof SubscriptionReadError) {
+      return NextResponse.json({ error: err.message }, { status: 500 })
+    }
+    throw err
+  }
 
-  if (!isProStatus(subResult.data?.status)) {
+  if (!isPro) {
     return NextResponse.json({ error: 'Streak Rescue is a Pro feature.' }, { status: 403 })
   }
 
