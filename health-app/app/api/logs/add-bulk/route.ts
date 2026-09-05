@@ -5,6 +5,7 @@ import { captureFoodLogged } from '../../../../lib/posthog/server'
 import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
 import { resolveLoggedAtForRequest } from '../../../../lib/backfill'
 import { streakEventsForLog } from '../../../../lib/streakEvents'
+import { isFoodReferenceableBy } from '../../../../lib/foodOwnership'
 
 const bulkLogSchema = z.object({
   items: z.array(z.object({
@@ -31,12 +32,20 @@ export async function POST(req: Request) {
     const foodIds = parsed.data.items.map(i => i.food_id)
     const { data: foods, error: foodsError } = await supabase
       .from('foods')
-      .select('id, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g')
+      .select('id, source, source_id, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g')
       .in('id', foodIds)
 
     if (foodsError) throw new Error(foodsError.message)
 
-    const foodMap = new Map(foods?.map(f => [f.id, f]) ?? [])
+    // Same reasoning as /api/logs/add: `foods_select` RLS can't distinguish
+    // "doesn't exist" from "exists but is someone else's private custom
+    // food" (it's open to every signed-in user for the shared catalogue), so
+    // an unreferenceable match is treated identically to a missing one below.
+    const foodMap = new Map(
+      (foods ?? [])
+        .filter((f) => isFoodReferenceableBy(f, userId))
+        .map(f => [f.id, f])
+    )
 
     const when = await resolveLoggedAtForRequest(supabase, userId, parsed.data.date)
     if (!when.ok) return NextResponse.json({ error: when.error, upgrade: when.upgrade }, { status: when.status })

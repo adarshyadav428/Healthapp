@@ -6,6 +6,7 @@ import { captureFoodLogged, captureServerEvent } from '../../../../lib/posthog/s
 import { getLogActivationContext } from '../../../../lib/logActivation'
 import { resolveLoggedAtForRequest } from '../../../../lib/backfill'
 import { streakEventsForLog } from '../../../../lib/streakEvents'
+import { isFoodReferenceableBy } from '../../../../lib/foodOwnership'
 
 const schema = z.object({
   meal_id: z.string().uuid(),
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
     // Verify the meal belongs to this user and get its items
     const { data: meal, error: mealErr } = await supabase
       .from('saved_meals')
-      .select('id, saved_meal_items(food_id, grams, servings, food:foods(kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g))')
+      .select('id, saved_meal_items(food_id, grams, servings, food:foods(source, source_id, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g))')
       .eq('id', parsed.data.meal_id)
       .eq('user_id', user.id)
       .single()
@@ -45,9 +46,17 @@ export async function POST(req: Request) {
       food_id: string
       grams: number
       servings: number
-      food: { kcal_per_100g: number; protein_g_per_100g: number; carbs_g_per_100g: number; fat_g_per_100g: number } | null
+      food: { source: string; source_id: string | null; kcal_per_100g: number; protein_g_per_100g: number; carbs_g_per_100g: number; fat_g_per_100g: number } | null
     }
-    const items = (meal.saved_meal_items as unknown as MealItem[]) ?? []
+    const rawItems = (meal.saved_meal_items as unknown as MealItem[]) ?? []
+    // The combo itself is ownership-checked above, but /api/meals/saved is
+    // what's meant to stop an item pointing at someone else's private custom
+    // food from ever getting in — this is the second line of defence for a
+    // combo saved before that check existed. `.food !== null` already
+    // covered "the referenced food row was deleted"; a food that exists but
+    // isn't this caller's to reference gets the same silent-drop treatment,
+    // not a 500, since the caller can't fix someone else's food ownership.
+    const items = rawItems.filter((item) => item.food !== null && isFoodReferenceableBy(item.food, user.id))
     if (items.length === 0) return NextResponse.json({ error: 'Meal has no items' }, { status: 400 })
 
     // Resolves and validates the target day, and enforces the free-tier

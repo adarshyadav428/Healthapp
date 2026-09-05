@@ -22,13 +22,17 @@ describe('num()', () => {
 })
 
 describe('resolveNutrition()', () => {
-  it('falls back to model estimates when no label is present', () => {
+  it('falls back to model estimates when no label is present (grams-based food)', () => {
     const r = resolveNutrition(base)
     expect(r.fromLabel).toBe(false)
     expect(r.kcal_per_100g).toBe(180)
     expect(r.portion).toBe(150)
     expect(r.unit).toBe('g')
     expect(r.plausible).toBe(true)
+    // A grams-based fallback IS a safe per-100g number — only the "pcs" path
+    // that pairs this shape with a piece count is unsafe. See `resolvable`
+    // below.
+    expect(r.resolvable).toBe(true)
   })
 
   it('clamps a physically impossible freeform estimate and flags it implausible', () => {
@@ -80,7 +84,7 @@ describe('resolveNutrition()', () => {
     expect(r.kcal_per_100g).toBe(180)
   })
 
-  it('normalizes pcs totals to per-100 without inventing gram weights', () => {
+  it('normalizes pcs totals to per-100 without inventing gram weights (valid per-serving total)', () => {
     const r = resolveNutrition({
       ...base,
       estimated_grams: 6,
@@ -92,15 +96,26 @@ describe('resolveNutrition()', () => {
     expect(r.portion).toBe(6)
     // per-"100 pcs" so that portion/100 × value = the displayed total
     expect((r.kcal_per_100g * 6) / 100).toBeCloseTo(540, 6)
+    expect(r.resolvable).toBe(true)
   })
 
-  it('falls back (not null) for pcs items missing totals so the route can still try a DB match', () => {
+  it('refuses to resolve (not just "fall back") a pcs item with no totals, so the route cannot mistake a per-100g guess for a per-piece rate', () => {
     const r = resolveNutrition({ ...base, unit: 'pcs' })
     expect(r.fromServingTotal).toBe(false)
     expect(r.unit).toBe('pcs')
+    // P0-1: this used to return `fallback` unchanged — base's per-100-GRAM
+    // kcal_per_100g (180) carried through as if it were per-100-PIECE, which
+    // the route then wrote straight into a food row and priced a piece-count
+    // against. `resolvable: false` plus zeroed fields makes that impossible
+    // even if a caller forgets to check the flag.
+    expect(r.resolvable).toBe(false)
+    expect(r.kcal_per_100g).toBe(0)
+    expect(r.protein_g_per_100g).toBe(0)
+    expect(r.carbs_g_per_100g).toBe(0)
+    expect(r.fat_g_per_100g).toBe(0)
   })
 
-  it('rejects pcs totals whose energy contradicts their macros (Atwater on totals)', () => {
+  it('rejects pcs totals whose energy contradicts their macros (Atwater on totals) as unresolved, not a wrong estimate', () => {
     // energy copied from a whole bucket, macros from a single wing
     const r = resolveNutrition({
       ...base,
@@ -109,6 +124,21 @@ describe('resolveNutrition()', () => {
       total_kcal: 5400, total_protein_g: 4.8, total_carbs_g: 1.2, total_fat_g: 3.3,
     })
     expect(r.fromServingTotal).toBe(false) // fell back instead of trusting the totals
+    expect(r.resolvable).toBe(false)
+    expect(r.kcal_per_100g).toBe(0)
+  })
+
+  it('treats an all-zero pcs total as unresolved rather than a legitimate free food', () => {
+    // A hallucinated or empty totals block (kcal 0, macros 0) must not log as
+    // "6 pieces, 0 kcal" — that is silently wrong, not honestly zero.
+    const r = resolveNutrition({
+      ...base,
+      estimated_grams: 6,
+      unit: 'pcs',
+      total_kcal: 0, total_protein_g: 0, total_carbs_g: 0, total_fat_g: 0,
+    })
+    expect(r.fromServingTotal).toBe(false)
+    expect(r.resolvable).toBe(false)
   })
 })
 

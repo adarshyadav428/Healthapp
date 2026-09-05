@@ -39,6 +39,20 @@ export type ResolvedNutrition = {
   fromLabel: boolean
   fromServingTotal: boolean
   plausible: boolean
+  /**
+   * False only for a "pcs" item with no valid per-serving total (and no
+   * label): the four nutrition fields above are then meaningless — the
+   * generic `fallback` they'd otherwise carry is a per-100-GRAM estimate,
+   * and every "pcs" row this route persists is read downstream as
+   * per-100-PIECE (see app/api/camera/analyze/route.ts and
+   * app/api/logs/add-bulk/route.ts). Writing them through silently mispriced
+   * a piece-counted food by however many grams one piece weighs — e.g. "6 hot
+   * wings" at 250 kcal/100g logged as 15 kcal for the whole plate. Callers
+   * MUST refuse to persist a numeric result when this is false, unless they
+   * resolve nutrition another way (a same-name DB match derives its own
+   * per-piece rate and never reads these fields).
+   */
+  resolvable: boolean
 }
 
 /** Non-negative finite number, or null. Gemini sometimes returns numerals as strings. */
@@ -123,6 +137,7 @@ export function resolveNutrition(item: GeminiFood): ResolvedNutrition {
     fromLabel:          false,
     fromServingTotal:   false,
     plausible:          rawPlausible,
+    resolvable:         true,
   }
 
   // Food logs calculate nutrition from a per-100-unit value. Normalize the
@@ -157,12 +172,30 @@ export function resolveNutrition(item: GeminiFood): ResolvedNutrition {
           fromLabel: false,
           fromServingTotal: true,
           plausible: true,
+          resolvable: true,
         }
       }
     }
-    // Dropping a visibly-present food is worse than a clamped estimate — let
-    // it fall through to the DB-match/estimate path below like any other item.
-    return fallback
+    // No valid per-serving total: `fallback`'s numbers are a per-100-GRAM
+    // estimate and cannot be reinterpreted as per-100-PIECE (see the
+    // `resolvable` doc comment on ResolvedNutrition above), so they are not
+    // returned here at all — zeroed rather than left as rawKcal/etc., so a
+    // caller that forgets to check `resolvable` gets an inert 0, never a
+    // wrong-but-plausible number. The caller may still resolve this item via
+    // a same-name DB match, which derives its own per-piece rate independent
+    // of these fields — that's why this returns rather than throwing.
+    return {
+      kcal_per_100g: 0,
+      protein_g_per_100g: 0,
+      carbs_g_per_100g: 0,
+      fat_g_per_100g: 0,
+      portion,
+      unit: itemUnit,
+      fromLabel: false,
+      fromServingTotal: false,
+      plausible: false,
+      resolvable: false,
+    }
   }
 
   const label = item.label
@@ -206,5 +239,6 @@ export function resolveNutrition(item: GeminiFood): ResolvedNutrition {
     fromLabel:          true,
     fromServingTotal:   false,
     plausible:          true,
+    resolvable:         true,
   }
 }

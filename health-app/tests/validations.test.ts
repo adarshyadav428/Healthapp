@@ -175,6 +175,28 @@ describe('editFoodLogSchema', () => {
     expect(editFoodLogSchema.safeParse({ ...valid, kcal: -1 }).success).toBe(false)
     expect(editFoodLogSchema.safeParse({ ...valid, protein_g: -1 }).success).toBe(false)
   })
+
+  /**
+   * kcal/protein_g/carbs_g/fat_g were `nonnegative()` with no ceiling — the one
+   * macro-accepting path that neither recomputes server-side (add-bulk,
+   * meals/log) nor caps the client value (quick-add). Self-scoped to the
+   * caller's own row, but a corrupted value here still feeds their own
+   * deficit, streak, Trends, weekly-recap and Wrapped stats — the last of
+   * which is fed into a Gemini prompt. Bounds match quick-add's
+   * (app/api/logs/quick-add/route.ts), the closest existing precedent for a
+   * client-computed macro shape. Audit 2026-09-04, P2-2.
+   */
+  it('bounds kcal/protein_g/carbs_g/fat_g the same way quick-add does', () => {
+    expect(editFoodLogSchema.safeParse({ ...valid, kcal: 5000 }).success).toBe(true)
+    expect(editFoodLogSchema.safeParse({ ...valid, kcal: 5001 }).success).toBe(false)
+    expect(editFoodLogSchema.safeParse({ ...valid, kcal: 999999999 }).success).toBe(false)
+    expect(editFoodLogSchema.safeParse({ ...valid, protein_g: 500 }).success).toBe(true)
+    expect(editFoodLogSchema.safeParse({ ...valid, protein_g: 501 }).success).toBe(false)
+    expect(editFoodLogSchema.safeParse({ ...valid, carbs_g: 1000 }).success).toBe(true)
+    expect(editFoodLogSchema.safeParse({ ...valid, carbs_g: 1001 }).success).toBe(false)
+    expect(editFoodLogSchema.safeParse({ ...valid, fat_g: 500 }).success).toBe(true)
+    expect(editFoodLogSchema.safeParse({ ...valid, fat_g: 501 }).success).toBe(false)
+  })
 })
 
 describe('weightLogSchema', () => {

@@ -300,6 +300,16 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
         setSelectedIdx(0)
         setConfidence(json.confidence ?? null)
         if (typeof json.remaining === 'number') setScansLeft(json.remaining)
+        // Some detected items resolved; at least one didn't get a safe number
+        // and was dropped server-side (lib/camera-nutrition.ts) rather than
+        // logged wrong — say so, since the plate below no longer matches the photo.
+        if (Array.isArray(json.unresolved) && json.unresolved.length) {
+          toast({
+            title: `Couldn't estimate ${json.unresolved.join(', ')}`,
+            description: 'Add it by search instead for an accurate count.',
+            variant: 'error',
+          })
+        }
       })
       .catch((e) => {
         toast({ title: 'Could not analyse photo', description: (e as Error).message, variant: 'error' })

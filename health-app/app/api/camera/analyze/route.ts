@@ -203,6 +203,9 @@ export async function POST(req: Request) {
   // For each food: find in DB or create an estimate entry
   const admin = createAdminClient()
   const enrichedFoods = []
+  // Names of items dropped for lack of a safe number — see the guard below.
+  // Reported back to the client rather than silently vanishing from the plate.
+  const unresolvedNames: string[] = []
   let anyClamped = false
   const FOOD_SELECT = 'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions'
 
@@ -221,11 +224,20 @@ export async function POST(req: Request) {
       // list, no measured IFCT row is ever matched, and we write a fresh
       // per-user `estimate` row instead — permanently, for a transient blip. The
       // scan still succeeds, so nobody finds out. Report it and carry on.
+      //
+      // Excludes `source='user'` for the same reason `estimate` is excluded:
+      // this runs under the CALLER's own session client, and `foods_select`
+      // RLS is open to every signed-in user for the shared catalogue — so
+      // without this, a photo whose Gemini-guessed name happens to match
+      // another user's private custom food more closely than any catalogue
+      // row would surface (and then log) that private food for this caller.
+      // See lib/foodOwnership.ts.
       const { data: candidates, error: candidatesError } = await supabase
         .from('foods')
         .select(FOOD_SELECT)
         .ilike('name', `%${item.name}%`)
         .neq('source', 'estimate')
+        .neq('source', 'user')
         .limit(10)
 
       if (candidatesError) {
@@ -287,6 +299,19 @@ export async function POST(req: Request) {
       }
     }
 
+    // A "pcs" item resolveNutrition could not derive a safe per-piece rate for
+    // (no valid serving total, no label), and that didn't match an existing
+    // catalogue row above — the DB-match branch derives its own per-piece rate
+    // from existing.serving_size_g and never reaches here — has no defensible
+    // number to persist. `n`'s fields are per-100-GRAM at best, and this route
+    // always writes a "pcs" food as per-100-PIECE; writing them through would
+    // reintroduce the exact 10-100x error this guard exists to prevent. Refuse
+    // rather than guess, and tell the caller which item it was.
+    if (n.unit === 'pcs' && !n.resolvable) {
+      unresolvedNames.push(item.name)
+      continue
+    }
+
     // Upsert so we have a stable food_id to log against. Label-derived entries
     // overwrite any earlier estimate for the same product with the real values.
     const source_id = `est_${item.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 50)}`
@@ -322,7 +347,14 @@ export async function POST(req: Request) {
   }
 
   if (!enrichedFoods.length) {
-    return NextResponse.json({ error: 'Could not match identified food to database.' }, { status: 422 })
+    return NextResponse.json(
+      {
+        error: unresolvedNames.length
+          ? `Couldn't confidently estimate ${unresolvedNames.join(', ')}. Try adding it by search instead — that always works.`
+          : 'Could not match identified food to database.',
+      },
+      { status: 422 }
+    )
   }
 
   // Record the scan (for rate limiting)
@@ -337,5 +369,12 @@ export async function POST(req: Request) {
 
   // `trialRemaining` was the count before this scan; one has now been spent.
   const remaining = trialRemaining === null ? null : trialRemaining - 1
-  return NextResponse.json({ foods: enrichedFoods, confidence, remaining })
+  return NextResponse.json({
+    foods: enrichedFoods,
+    confidence,
+    remaining,
+    // Present only when at least one detected item was dropped for lack of a
+    // safe number — the common case (nothing dropped) omits the field.
+    ...(unresolvedNames.length ? { unresolved: unresolvedNames } : {}),
+  })
 }

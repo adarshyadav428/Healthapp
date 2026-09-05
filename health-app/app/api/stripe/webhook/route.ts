@@ -45,7 +45,14 @@ export async function POST(req: Request) {
           const status = isLifetime ? 'active' : plan === 'annual' ? 'trialing' : 'active'
           const current_period_end = isLifetime ? null : null // subscription events update this
 
-          await admin.from('subscriptions').upsert({
+          // supabase-js RESOLVES with { error } on a failed write, it does not
+          // throw — an un-destructured await here is why this route could
+          // answer 200 to Stripe on a write that never landed, unlike the
+          // Razorpay/Play webhooks, which already check every write for this
+          // exact reason (see app/api/razorpay/webhook/route.ts). A 200 tells
+          // Stripe never to retry, so a paid-for upgrade could silently never
+          // grant Pro. Audit 2026-09-04, P1-2.
+          const { error } = await admin.from('subscriptions').upsert({
             user_id: userId,
             stripe_customer_id: session.customer?.toString() ?? null,
             stripe_subscription_id: session.subscription?.toString() ?? null,
@@ -53,6 +60,7 @@ export async function POST(req: Request) {
             plan: normalizePlan(plan),
             current_period_end,
           })
+          if (error) throw new Error(`subscription upsert failed for ${userId}: ${error.message}`)
 
           captureServerEvent(userId, 'upgrade_completed', {
             provider: 'stripe',
@@ -71,7 +79,7 @@ export async function POST(req: Request) {
           if (event.type === 'customer.subscription.deleted') {
             captureServerEvent(userId, 'subscription_cancelled', { provider: 'stripe' })
           }
-          await admin.from('subscriptions').upsert({
+          const { error } = await admin.from('subscriptions').upsert({
             user_id: userId,
             stripe_customer_id: subscription.customer?.toString() ?? null,
             stripe_subscription_id: subscription.id,
@@ -81,6 +89,7 @@ export async function POST(req: Request) {
               ? new Date(subscription.current_period_end * 1000).toISOString()
               : null,
           })
+          if (error) throw new Error(`subscription upsert failed for ${userId}: ${error.message}`)
         }
         break
       }
@@ -88,7 +97,11 @@ export async function POST(req: Request) {
         const invoice = event.data.object as Stripe.Invoice
         const subscriptionId = invoice.subscription?.toString()
         if (subscriptionId) {
-          await admin.from('subscriptions').update({ status: 'past_due' }).eq('stripe_subscription_id', subscriptionId)
+          const { error } = await admin
+            .from('subscriptions')
+            .update({ status: 'past_due' })
+            .eq('stripe_subscription_id', subscriptionId)
+          if (error) throw new Error(`subscription update failed for ${subscriptionId}: ${error.message}`)
         }
         break
       }

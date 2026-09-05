@@ -104,10 +104,18 @@ export const editFoodLogSchema = z.object({
   grams: z.number().positive().max(MAX_LOG_GRAMS, { message: 'Grams cannot exceed 10,000' }),
   servings: z.number().positive().max(99, { message: 'Servings cannot exceed 99' }).default(1),
   meal: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
-  kcal: z.number().nonnegative(),
-  protein_g: z.number().nonnegative(),
-  carbs_g: z.number().nonnegative(),
-  fat_g: z.number().nonnegative(),
+  // Bounds match quick-add's (app/api/logs/quick-add/route.ts) — the same
+  // client-computed-macro shape, so the same ceilings apply. These were
+  // nonnegative() with no upper bound: the one macro-accepting path that
+  // neither recomputes server-side (add-bulk, meals/log) nor caps the client
+  // value (quick-add) — self-scoped to the caller's own row, but still able
+  // to corrupt their own deficit, streak, Trends, weekly-recap and Wrapped
+  // stats, the last of which feeds a number into a Gemini prompt. Audit
+  // 2026-09-04, P2-2.
+  kcal: z.number().nonnegative().max(5000, { message: 'Calories cannot exceed 5,000' }),
+  protein_g: z.number().nonnegative().max(500, { message: 'Protein cannot exceed 500g' }),
+  carbs_g: z.number().nonnegative().max(1000, { message: 'Carbs cannot exceed 1,000g' }),
+  fat_g: z.number().nonnegative().max(500, { message: 'Fat cannot exceed 500g' }),
   // Optional by design (migration 032). `null` is a real value here — it's how
   // a user clears a tag they set by mistake — so nullable rather than optional
   // alone, and `undefined` leaves the existing tag untouched.

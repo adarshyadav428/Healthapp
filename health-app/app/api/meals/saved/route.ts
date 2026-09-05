@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { captureServerEvent } from '../../../../lib/posthog/server'
+import { isFoodReferenceableBy } from '../../../../lib/foodOwnership'
 
 const createSchema = z.object({
   name: z.string().min(1).max(100),
@@ -45,6 +46,24 @@ export async function POST(req: Request) {
     const body = await req.json()
     const parsed = createSchema.safeParse(body)
     if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 })
+
+    // A saved combo persists its item food_ids indefinitely and every future
+    // "log this combo" tap (app/api/meals/log) re-reads and trusts them —
+    // `foods_select` RLS can't stop an item from pointing at someone else's
+    // private custom food (it's open to every signed-in user for the shared
+    // catalogue), so this is the only check that can. See lib/foodOwnership.ts.
+    const itemFoodIds = parsed.data.items.map((i) => i.food_id)
+    const { data: itemFoods, error: itemFoodsErr } = await supabase
+      .from('foods')
+      .select('id, source, source_id')
+      .in('id', itemFoodIds)
+    if (itemFoodsErr) throw new Error(itemFoodsErr.message)
+    const referenceableIds = new Set(
+      (itemFoods ?? []).filter((f) => isFoodReferenceableBy(f, user.id)).map((f) => f.id)
+    )
+    if (itemFoodIds.some((id) => !referenceableIds.has(id))) {
+      return NextResponse.json({ error: 'One or more foods could not be found' }, { status: 404 })
+    }
 
     const { data: meal, error: mealErr } = await supabase
       .from('saved_meals')

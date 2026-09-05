@@ -160,6 +160,19 @@ export function createSupabaseMock(options: MockOptions = {}) {
       }
     }
 
+    // PostgREST's or= filter — recorded as ['or', <filterString>, <referencedTable-or-null>]
+    // rather than evaluated, same as every other filter this double records.
+    chain.or = (filterString: string, opts?: { referencedTable?: string }) => {
+      record.filters.push(['or', filterString, opts?.referencedTable ?? null])
+      return chain
+    }
+
+    // PostgREST's negated filter — recorded as ['not', '<column>.<operator>', value].
+    chain.not = (column: string, operator: string, value: unknown) => {
+      record.filters.push(['not', `${column}.${operator}`, value])
+      return chain
+    }
+
     return chain
   }
 

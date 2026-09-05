@@ -26,8 +26,8 @@ import type { Food } from '../../../../types/index'
 export const runtime = 'nodejs'
 
 const rateMap = new Map<string, { count: number; reset: number }>()
-/** Slots held back for a user's own camera/chat foods so a full page of shared
- *  results can't squeeze them out entirely. */
+/** Slots held back for a user's own camera/chat/custom foods so a full page of
+ *  shared results can't squeeze them out entirely. */
 const RESERVED_OWN_FOOD_SLOTS = 3
 const searchCache = new TtlCache<Food[]>(200)
 const CACHE_TTL_MS = 120_000
@@ -174,15 +174,25 @@ async function searchGlobal(
   // USDA intentionally removed — US-centric data is inaccurate for Indian foods
   const [localResult, offIndia, offWorld] = await Promise.all([
     // Exclude `estimate` rows — those are per-user AI guesses written during
-    // chat/camera logging into the shared table; they must not surface in the
-    // shared results (the user's own ones are merged back in per-request below).
+    // chat/camera logging into the shared table — and `user` rows — those are
+    // Pro-only custom foods a single account created via /api/foods/custom.
+    // Neither may surface in the shared results (each user's own are merged
+    // back in per-request below, scoped to that user — see myOwnFoods).
+    // `user` was NOT excluded here before 2026-09-04: `foods_select`'s RLS
+    // policy is deliberately open to every signed-in user (it has to be, for
+    // the shared catalogue), so any other account's custom food surfaced on an
+    // ordinary partial-word search, badged "👤 Custom" — false for the finder
+    // — and could be logged by them. `food_logs.food_id` cascades off `foods`,
+    // so the *owner* later deleting their own food, completely ordinary
+    // behaviour, silently deleted the other account's diary entry too. Audit
+    // 2026-09-04, P0-2.
     // Fetch generously (200, not 20): Postgres applies LIMIT *before* our
     // sort below, so a tight limit hands back an arbitrary slice. Measured
     // at 60 against the live table, "rice" and "dal" returned a different
     // top result than at 200 purely because of where the slice fell.
     // Synonym expansion widens these queries further. The client still gets
     // 20 — `collapseDuplicateFoods` caps the response regardless.
-    supabase.from('foods').select(FOOD_SELECT).or(orFilter).neq('source', 'estimate').limit(200),
+    supabase.from('foods').select(FOOD_SELECT).or(orFilter).neq('source', 'estimate').neq('source', 'user').limit(200),
     shouldFetchExternal
       ? searchOpenFoodFactsIndia(synonymQueries[0])
       : Promise.resolve(OFF_NOT_FETCHED),
@@ -288,27 +298,49 @@ export async function GET(request: Request) {
     const orFilter = buildNameIlikeOrFilter(expandSearchQuery(query), 6)
     if (!orFilter) return NextResponse.json([])
 
-    // The current user's own AI-estimate foods they've logged before. Estimate
-    // rows are hidden from the shared results below (they're per-user AI guesses
-    // living in a shared table), but a food *you* scanned or chat-logged should be
-    // findable again — scoped to you via food_logs, never leaked to other users.
-    // Fetched fresh every request and deliberately NOT cached, since the query
-    // cache below is shared across all users.
-    const { data: myEstimateLogs } = await supabase
-      .from('food_logs')
-      .select(`food_id, food:foods!inner(${FOOD_SELECT})`)
-      .eq('user_id', user.id)
-      .eq('foods.source', 'estimate')
-      .or(orFilter, { referencedTable: 'foods' })
-      .order('logged_at', { ascending: false })
-      .limit(50)
+    // The current user's own AI-estimate foods they've logged before, and their
+    // own Pro-only custom foods (source='user', via /api/foods/custom). Both are
+    // excluded from the shared results above — estimate rows are per-user AI
+    // guesses living in a shared table, and custom rows are now excluded for the
+    // same reason a search must never leak them to a different account (P0-2,
+    // see the comment on the local query above) — but each must still be
+    // findable by the account that made it. They're scoped differently on
+    // purpose: an estimate only exists once logged, so it's scoped via
+    // food_logs; a custom food exists as soon as it's created, so it's scoped by
+    // ownership directly — the same `source_id LIKE 'user_<uid>_%'` predicate
+    // 034_foods_rls_ownership.sql's owns_custom_food() enforces at the database
+    // level. Fetched fresh every request and deliberately NOT cached, since the
+    // query cache below is shared across all users.
+    const [{ data: myEstimateLogs }, { data: myCustomFoods }] = await Promise.all([
+      supabase
+        .from('food_logs')
+        .select(`food_id, food:foods!inner(${FOOD_SELECT})`)
+        .eq('user_id', user.id)
+        .eq('foods.source', 'estimate')
+        .or(orFilter, { referencedTable: 'foods' })
+        .order('logged_at', { ascending: false })
+        .limit(50),
+      supabase
+        .from('foods')
+        .select(FOOD_SELECT)
+        .eq('source', 'user')
+        .like('source_id', `user_${user.id}_%`)
+        .or(orFilter)
+        .limit(50),
+    ])
 
-    const seenEstimateIds = new Set<string>()
-    const myEstimateFoods: Food[] = []
+    const seenOwnFoodIds = new Set<string>()
+    const myOwnFoods: Food[] = []
     for (const row of (myEstimateLogs ?? []) as unknown as { food_id: string; food: Food | null }[]) {
-      if (row.food && !seenEstimateIds.has(row.food_id)) {
-        seenEstimateIds.add(row.food_id)
-        myEstimateFoods.push(row.food)
+      if (row.food && !seenOwnFoodIds.has(row.food_id)) {
+        seenOwnFoodIds.add(row.food_id)
+        myOwnFoods.push(row.food)
+      }
+    }
+    for (const food of (myCustomFoods ?? []) as Food[]) {
+      if (!seenOwnFoodIds.has(food.id)) {
+        seenOwnFoodIds.add(food.id)
+        myOwnFoods.push(food)
       }
     }
 
@@ -339,20 +371,21 @@ export async function GET(request: Request) {
       )
     }
 
-    // Append the user's own estimate foods after the shared results. Global rows
-    // win a name+brand collision (an accurate IFCT/OFF row beats a rough
-    // estimate), so this only surfaces scans/chat foods the shared DB lacks.
+    // Append the user's own estimate/custom foods after the shared results.
+    // Global rows win a name+brand collision (an accurate IFCT/OFF row beats a
+    // rough estimate or a self-entered custom food), so this only surfaces
+    // scans/chat foods and custom foods the shared DB lacks.
     //
     // The slice matters: searchGlobal already caps at MAX_SEARCH_RESULTS and
     // this dedupe caps again, so on any query that filled the page the user's
     // own rows were appended past the limit and sliced straight back off —
     // making the whole per-user read above dead work. Give them a few reserved
     // slots inside the same budget instead.
-    const ownSlots = Math.min(myEstimateFoods.length, RESERVED_OWN_FOOD_SLOTS)
+    const ownSlots = Math.min(myOwnFoods.length, RESERVED_OWN_FOOD_SLOTS)
     const finalResult = collapseDuplicateFoods(
       [
         ...globalResults.slice(0, MAX_SEARCH_RESULTS - ownSlots),
-        ...myEstimateFoods,
+        ...myOwnFoods,
       ].filter(isPlausibleFood),
       SOURCE_RANK
     )

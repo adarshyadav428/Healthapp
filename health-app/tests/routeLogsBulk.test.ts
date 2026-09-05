@@ -109,3 +109,50 @@ describe('/api/logs/add-bulk unit handling', () => {
     }
   })
 })
+
+/**
+ * `foods_select` RLS is open to every signed-in user (the shared catalogue
+ * has to be readable by everyone), so nothing stops this route's
+ * `.in('id', foodIds)` lookup from returning another user's private
+ * `source='user'` custom food — the row's `error` field is null, it looks
+ * exactly like a legitimate match. `isFoodReferenceableBy`
+ * (lib/foodOwnership.ts) is what has to reject it. Audit 2026-09-04, P0-2
+ * follow-up.
+ */
+describe('/api/logs/add-bulk ownership (P0-2 follow-up)', () => {
+  const OTHER_USERS_CUSTOM_FOOD = {
+    id: '99999999-9999-9999-9999-999999999999',
+    source: 'user',
+    source_id: 'user_someone-else_1730000000000',
+    kcal_per_100g: 400,
+    protein_g_per_100g: 30,
+    carbs_g_per_100g: 10,
+    fat_g_per_100g: 20,
+  }
+  const MY_CUSTOM_FOOD = {
+    id: '88888888-8888-8888-8888-888888888888',
+    source: 'user',
+    source_id: `user_${USER.id}_1730000000000`,
+    kcal_per_100g: 210,
+    protein_g_per_100g: 18,
+    carbs_g_per_100g: 8,
+    fat_g_per_100g: 11,
+  }
+
+  it("500s (not-found error) rather than logging another user's private custom food", async () => {
+    const mock = wire({ tables: { foods: { data: [OTHER_USERS_CUSTOM_FOOD] } } })
+    const res = await post({ items: [{ food_id: OTHER_USERS_CUSTOM_FOOD.id, grams: 100, meal: 'lunch' }] })
+    expect(res.status).toBe(500)
+    const json = await res.json()
+    expect(json.error).toContain(`Food ${OTHER_USERS_CUSTOM_FOOD.id} not found`)
+    expect(mock.callsTo('food_logs').some((c) => c.operation === 'insert')).toBe(false)
+  })
+
+  it('still logs the caller\'s own custom food normally', async () => {
+    const mock = wire({ tables: { foods: { data: [MY_CUSTOM_FOOD] } } })
+    const res = await post({ items: [{ food_id: MY_CUSTOM_FOOD.id, grams: 100, meal: 'lunch' }] })
+    expect(res.status).toBe(200)
+    const rows = insertRows(mock)
+    expect(rows[0].kcal).toBe(210)
+  })
+})
