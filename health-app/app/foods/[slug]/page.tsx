@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Flame, ArrowLeft } from 'lucide-react'
-import { createAdminClient } from '../../../lib/supabase/server'
+import { createAdminClient, hasAdminEnv } from '../../../lib/supabase/server'
 import { generateFoodSummary, generateWeightLossVerdict, buildFoodJsonLd } from '../../../lib/foodPageCopy'
 import type { Food, FoodPortion } from '../../../types/index'
 
@@ -34,6 +34,17 @@ async function getFood(slug: string): Promise<Food | null> {
 }
 
 export async function generateStaticParams() {
+  // No Supabase env means this is a secretless build (CI). Generate nothing
+  // rather than throwing: with dynamicParams=false an empty set simply 404s
+  // every slug in that build, and getFood/generateMetadata are never reached.
+  // See hasAdminEnv() for why CI deliberately has no service-role key.
+  if (!hasAdminEnv()) {
+    console.warn(
+      '[foods/[slug]] No Supabase env — generating 0 food pages. Expected in CI; a bug anywhere else.'
+    )
+    return []
+  }
+
   const supabase = createAdminClient()
   const { data } = await supabase
     .from('foods')

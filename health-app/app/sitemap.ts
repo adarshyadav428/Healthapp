@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { createAdminClient } from '../lib/supabase/server'
+import { createAdminClient, hasAdminEnv } from '../lib/supabase/server'
 
 const BASE = process.env.NEXT_PUBLIC_APP_URL ?? 'https://healthapp-dun.vercel.app'
 
@@ -8,6 +8,14 @@ const BASE = process.env.NEXT_PUBLIC_APP_URL ?? 'https://healthapp-dun.vercel.ap
 // for the same reason it's safe in app/foods/[slug]/page.tsx: the query is
 // hardcoded to source = 'ifct', not driven by any caller input.
 async function getFoodPageUrls(): Promise<MetadataRoute.Sitemap> {
+  // No Supabase env means this is a secretless build (CI). Omit the food URLs
+  // rather than throwing; the static entries below still emit. See
+  // hasAdminEnv() for why CI deliberately has no service-role key.
+  if (!hasAdminEnv()) {
+    console.warn('[sitemap] No Supabase env — omitting food URLs. Expected in CI; a bug anywhere else.')
+    return []
+  }
+
   const supabase = createAdminClient()
   const { data } = await supabase
     .from('foods')

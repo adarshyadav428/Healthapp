@@ -1,0 +1,117 @@
+# The five gates, run on every pull request and every push to main.
+#
+# WHY THIS EXISTS
+# health-app/CLAUDE.md has required all five gates to pass before a change is
+# "done" since the beginning, but nothing enforced it — the only thing standing
+# between a broken commit and production was remembering to run them by hand.
+# `main` has no branch protection and merging a PR deploys to Vercel
+# immediately, so a single forgotten run shipped straight to users. This is the
+# thing that makes the rule real. Pair it with branch protection requiring the
+# `gates` check (see below) or it stays advisory.
+#
+# THIS WORKFLOW LIVES AT THE REPO ROOT BUT BELONGS TO THE APP
+# The root is the Bubblewrap/TWA wrapper; the app is health-app/. GitHub only
+# looks for workflows at the root, which is the same reason reminder-tick.yml
+# sits here. Every step runs with health-app/ as its working directory.
+#
+# IT DELIBERATELY HAS NO SECRETS
+# This repository is PUBLIC. SUPABASE_SERVICE_ROLE_KEY bypasses RLS on the
+# production database, so it must never be an Actions secret. `npm run build`
+# used to require it — generateStaticParams in app/foods/[slug]/page.tsx and
+# getFoodPageUrls in app/sitemap.ts both call createAdminClient() at build
+# time. Both now check hasAdminEnv() (lib/supabase/server.ts) first and degrade
+# to an empty list, which is what lets the build run here with nothing
+# configured. On Vercel the vars are always set, so production is unaffected.
+# `npm test` needs no env either: every spec sets its own process.env and mocks
+# fetch. If you ever find yourself adding a secret to make a gate pass, that is
+# the signal something now reaches the network at build time — fix that instead.
+#
+# STEP ORDER IS LOAD-BEARING
+# The three cheap gates run first so a typo fails in ~1 minute instead of ~5.
+# `npm run build` must come BEFORE `npx tsc --noEmit`: next-env.d.ts is
+# gitignored but listed in tsconfig.json's "include", so on a fresh checkout tsc
+# has nothing to read until next build generates it. Running tsc first fails
+# with a confusing "file not found" that has nothing to do with the change.
+# (This is the CI-side twin of the local stale-.next/types trap.)
+#
+# TO REQUIRE IT ON main (one time, needs admin on the repo)
+#   gh api -X PUT repos/adarshyadav428/Healthapp/branches/main/protection --input - <<'JSON'
+#   {
+#     "required_status_checks": { "strict": true, "contexts": ["gates"] },
+#     "enforce_admins": false,
+#     "required_pull_request_reviews": null,
+#     "restrictions": null
+#   }
+#   JSON
+# The context name must stay in sync with the job id below ("gates").
+
+name: Gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new push supersedes the run in flight for that ref. Nothing here writes
+# anywhere, so cancelling early is free.
+concurrency:
+  group: gates-${{ github.ref }}
+  cancel-in-progress: true
+
+# Read-only. This workflow never comments, pushes or deploys.
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: health-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # 24, and it is not a free choice. Two things fix it:
+          #
+          #   1. package-lock.json was written by npm 11 (which ships with
+          #      Node 24). Node 20 ships npm 10.8.2, whose resolver produces a
+          #      different tree — `npm ci` there fails outright with "can only
+          #      install packages when your package.json and package-lock.json
+          #      are in sync", naming rollup@4.63.1 and a handful of Linux
+          #      optional binaries. The lockfile is fine and genuinely
+          #      cross-platform (172 linux entries); the npm major is the
+          #      mismatch.
+          #   2. @supabase/supabase-js 2.110 and its five sub-packages declare
+          #      engines.node >= 22, so 20 warns EBADENGINE on every install.
+          #
+          # Deliberately NOT expressed as an .nvmrc or an engines field:
+          # Vercel reads both, and changing the Node version production builds
+          # with is not something this workflow should do as a side effect.
+          # If you bump this, bump it to whatever npm major wrote the lockfile.
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: health-app/package-lock.json
+
+      # ci, not install: the lockfile is authoritative, and a gate run must not
+      # silently resolve a different tree than the one that was committed.
+      - name: Install
+        run: npm ci
+
+      - name: Tests
+        run: npm test
+
+      - name: Design tokens
+        run: npm run check:tokens
+
+      - name: Lint
+        run: npm run lint
+
+      # Also generates next-env.d.ts and .next/types, which the typecheck needs.
+      - name: Build
+        run: npm run build
+
+      - name: Typecheck
+        run: npx tsc --noEmit
