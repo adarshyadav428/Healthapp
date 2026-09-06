@@ -743,6 +743,39 @@ Full rationale in `docs/growth-mechanics-plan-2026-07-29.md`.
 - **Downgrade rule:** things you *earned* persist, things you *hold* expire. Hence `monthly_wraps.was_pro` —
   a wrap unlocks on whether the user was Pro when it was written, not now.
 
+### Recipes is an input method for Custom Foods, not a feature
+
+There is **no `recipes` table** — no migration, no server action, no API route of its own. Don't go
+looking. `/recipes` (`app/recipes/page.tsx` → `components/recipes/RecipeBuilder.tsx`, the only file in
+that directory) is a client-side calculator: it searches the shared catalogue via `/api/foods/search`,
+sums ingredient macros, divides by a servings count, and POSTs the result to `/api/foods/custom` with
+`brand: 'My Recipe'`. The output is an ordinary `foods` row with `source='user'`, indistinguishable
+from one typed by hand in `CreateFoodModal`. The **ingredient list is not persisted**, so a saved
+recipe cannot be reopened or edited as a recipe — only as the flat custom food it became.
+
+So it is an alternate way to *obtain* macros (from parts, when you don't know them) for the same
+artifact Custom Foods produces (by typing them, when you do). What follows from that:
+
+- **Nothing depends on it.** The only inbound references are the single Settings link in
+  `components/settings/SettingsClient.tsx` — its sole entry point; `/recipes` is in neither `BottomNav`
+  nor the Log page, is `disallow`ed in `app/robots.ts` and is `noindex` — and three assertions in
+  `tests/proLock.test.ts`. Food logging, Custom Foods and search are all unaware of it.
+- **Deleting the route would not delete anyone's data.** Saved recipes are plain custom foods and keep
+  logging. Deleting the *rows* is a completely different act: `foods` cascades into `food_logs`,
+  `food_favourites`, `saved_meal_items` and `food_dismissals`, so it would erase diary history from
+  every affected user. See `034_foods_rls_ownership.sql`.
+- **Free users get the builder but not the save.** The calculator is deliberately free;
+  `/api/foods/custom` answers 402, and `RecipeBuilder` must keep handling that 402 by sending the user
+  to `/upgrade?reason=custom_foods` instead of throwing — a raw "Pro required" failure toast is an
+  error, not an upgrade path. Pinned by `tests/proLock.test.ts`.
+- It is the **only** place in the app that derives macros from ingredients rather than estimating a
+  finished dish (camera, chat) or asking the user to type them. The "Custom foods & recipes" Pro claim
+  in `lib/planFeatures.ts`, `lib/welcomeCards.ts`, `components/studio/StudioClient.tsx` and
+  `app/upgrade/page.tsx` is cashed out here and nowhere else — removing the route means rewriting that
+  copy, or the pitch outlives the mechanism.
+
+Traced end-to-end 2026-09-06 while weighing removal from v1. No decision recorded.
+
 ### Database tables
 
 `profiles`, `food_logs`, `foods`, `weight_logs`, `subscriptions`, `exercise_logs`, `food_favourites`,
