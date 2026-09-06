@@ -68,6 +68,31 @@ export async function getApiUser(supabase: SupabaseClient): Promise<AuthedUser |
 }
 
 /**
+ * Whether createAdminClient() can be constructed at all — i.e. whether both of
+ * its env vars are present.
+ *
+ * Two call sites run at BUILD time, outside any request: generateStaticParams
+ * in app/foods/[slug]/page.tsx and getFoodPageUrls in app/sitemap.ts. Both
+ * would throw here and fail `next build` outright when the vars are unset,
+ * which is exactly the state CI runs in: this repository is public, and the
+ * service-role key bypasses RLS on the production database, so it must never
+ * be held in GitHub Actions secrets. Those two call sites check this first and
+ * degrade to an empty list, which is what lets `npm run build` be a CI gate
+ * with no secrets at all. On Vercel the vars are always set, so neither guard
+ * is ever taken in production.
+ *
+ * Deliberately narrow: this reports only that the vars are ABSENT. A reachable
+ * Supabase that errors, or a network failure mid-build, must keep failing the
+ * deploy loudly rather than silently shipping a site with no food pages — so
+ * neither call site wraps its query in try/catch.
+ */
+export function hasAdminEnv(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+  )
+}
+
+/**
  * Create an admin Supabase client using the service role key. Only use this on trusted server routes
  * such as webhook handlers.
  */
