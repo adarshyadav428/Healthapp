@@ -69,6 +69,18 @@ describe('the gates workflow is wired to actually block a merge', () => {
     expect(body).toMatch(/branches:\s*\[main\]/)
   })
 
+  it('runs on a Node new enough for the dependency tree', () => {
+    // Not cosmetic. @supabase/supabase-js 2.110 and its five sub-packages
+    // declare engines.node >= 22, and package-lock.json was written by npm 11
+    // (Node 24) — on Node 20's npm 10.8.2 the resolver disagrees and `npm ci`
+    // fails outright before a single gate runs. Dropping this back below 22
+    // breaks CI in a way whose error message points at the lockfile rather
+    // than at the version.
+    const version = /node-version: '(\d+)'/.exec(body)?.[1]
+    expect(version, 'node-version pin not found in gates.yml').toBeTruthy()
+    expect(Number(version)).toBeGreaterThanOrEqual(22)
+  })
+
   it('runs every step from health-app/, not the repo root', () => {
     // The root is the TWA wrapper and has no meaningful package.json; every
     // npm command in this project belongs to health-app/.

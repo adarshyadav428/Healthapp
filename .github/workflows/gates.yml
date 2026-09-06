@@ -74,9 +74,24 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          # Nothing pins a Node version (no .nvmrc, no engines field); 20 is
-          # what @types/node@20 implies and what Vercel builds with.
-          node-version: '20'
+          # 24, and it is not a free choice. Two things fix it:
+          #
+          #   1. package-lock.json was written by npm 11 (which ships with
+          #      Node 24). Node 20 ships npm 10.8.2, whose resolver produces a
+          #      different tree — `npm ci` there fails outright with "can only
+          #      install packages when your package.json and package-lock.json
+          #      are in sync", naming rollup@4.63.1 and a handful of Linux
+          #      optional binaries. The lockfile is fine and genuinely
+          #      cross-platform (172 linux entries); the npm major is the
+          #      mismatch.
+          #   2. @supabase/supabase-js 2.110 and its five sub-packages declare
+          #      engines.node >= 22, so 20 warns EBADENGINE on every install.
+          #
+          # Deliberately NOT expressed as an .nvmrc or an engines field:
+          # Vercel reads both, and changing the Node version production builds
+          # with is not something this workflow should do as a side effect.
+          # If you bump this, bump it to whatever npm major wrote the lockfile.
+          node-version: '24'
           cache: npm
           cache-dependency-path: health-app/package-lock.json
 
