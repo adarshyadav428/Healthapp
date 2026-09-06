@@ -33,3 +33,6 @@ export const IconButton = forwardRef<
 ))
 
 IconButton.displayName = 'IconButton'
+
+// scratch: deliberate token violation to prove CI fails
+export const SCRATCH = "#ff0000"
