@@ -17,7 +17,9 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **90 files / 1,379 tests**. There is no `vitest.config.ts`; defaults apply.
+- **Tests:** Vitest 4.1 — **120 files / 1,589 tests**. There is no `vitest.config.ts`; defaults apply.
+  **CI runs all five gates on every PR** — `.github/workflows/gates.yml`, job id `gates`, pinned by
+  `tests/ciGates.test.ts`. See "The five gates" below for the two things about it that bite.
 - **Deploy:** Vercel **Hobby** plan, region `bom1`. The Hobby limits are load-bearing (see Hard rules).
 
 ## Architecture / directory map
@@ -28,8 +30,11 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   optimistic updates. Example: `app/dashboard/page.tsx` → `components/dashboard/DashboardClient.tsx`.
 - **`app/api/`** — **every database write in the app lives here.** There are zero
   `insert`/`update`/`upsert`/`delete` calls in `components/` or `hooks/`, and that invariant is what
-  makes `docs/refactor-safety-contract.md` hold — keep it true. Components may only `fetch()` these
-  routes; routes validate with Zod and recompute derived values server-side.
+  makes `docs/refactor-safety-contract.md` hold. It is no longer a thing to "keep true" by hand:
+  `tests/architectureInvariants.test.ts` fails the moment a component or hook writes to the database,
+  or reads a table directly outside the two documented exemptions (`useUser`, `useSubscription` —
+  both own-row, neither tier-gated). Components may only `fetch()` these routes; routes validate with
+  Zod and recompute derived values server-side.
 - **`lib/`** — pure domain logic, each module pinned by a matching `tests/*.test.ts`. Routes stay thin
   precisely so the logic stays testable. Key modules: `tdee.ts` (Mifflin-St Jeor → macro targets, plus
   `calculateMaintenance` — the one source of TDEE), `deficit-calculator.ts` (the one definition of
@@ -72,10 +77,19 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **`middleware.ts`** — self-contained (there is no `lib/supabase/middleware.ts`). Refreshes the
   session cookie on every request, redirects unauthenticated users to `/auth/sign-in?returnTo=…`, and
   bounces authenticated users off `/auth/*` to `/dashboard`. Public routes are `/`, `/privacy`,
-  `/terms`, `/delete-account`, `/upgrade`, `/studio`, `/foods/*`, plus `/auth/*`, `/api/*` and
-  `/_next/*`. **The onboarding gate is not here** — each protected page's Server Component does its own
-  `if (!profile || profile.height_cm === null) redirect('/onboarding')` (8 sites). A new protected page
-  must repeat that check; middleware will not do it for you.
+  `/terms`, `/refunds`, `/contact`, `/pricing`, `/delete-account`, `/upgrade`, `/studio`, `/foods/*`,
+  plus `/auth/*`, `/api/*` and `/_next/*` — **ten** entries in `isPublic`, and this prose said seven
+  for months while the code said ten. It is now pinned by `tests/architectureInvariants.test.ts`, so
+  the list and the code cannot drift again. **The onboarding gate is not here** — each protected
+  page's Server Component does its own
+  `if (!profile || profile.height_cm === null) redirect('/onboarding')`. A new protected page must
+  repeat that check; middleware will not do it for you. **Every page calling `getAuthedUser` must
+  carry it, with no exceptions** — the same test enforces that, the one structural exception being
+  `app/onboarding/page.tsx`, which carries the inverse guard. This used to be described as "8 sites"
+  and was really 9 pages carrying it and **2 without**: `/welcome` and `/wrapped` had gone their whole
+  lives ungated (`/upgrade` is public, so paying before finishing the wizard reached `/welcome` with
+  no height and narrated a plan the user had never seen). Both fixed 2026-09-06. Counting the sites
+  was the mistake — the rule is "all of them", and only a test can say that.
 - **The repo root is a different project** — a Bubblewrap-generated Android TWA wrapper. All npm
   commands below run from `health-app/`. See the root `CLAUDE.md`.
 
@@ -89,7 +103,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (90 files / 1,379 tests)
+npm test                 # vitest run — the whole suite (120 files / 1,589 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
 npm run check:tokens     # design-token guard: no raw hex, no broken opacity modifiers
@@ -110,6 +124,28 @@ npx vitest                                       # watch mode
 ```bash
 npm test && npx tsc --noEmit && npm run lint && npm run check:tokens && npm run build
 ```
+
+**CI runs them too**, on every PR and every push to `main` — `.github/workflows/gates.yml`. Two things
+about that file are load-bearing and neither is obvious:
+
+- **It runs on Node 24, and must stay ≥ 22.** `package-lock.json` was written by npm 11 (Node 24);
+  Node 20 ships npm 10.8.2, whose resolver disagrees and makes `npm ci` fail outright with a message
+  about the lockfile being out of sync (it isn't — it has 172 linux entries and regenerating it
+  produces no diff). `@supabase/supabase-js` 2.110 also declares `engines.node >= 22`. This is
+  deliberately **not** an `.nvmrc` or an `engines` field, because Vercel reads both and CI must not
+  change the Node version production builds with.
+- **In CI the order is build → tsc, the reverse of the line above.** `next-env.d.ts` is gitignored
+  but listed in `tsconfig.json`'s `include`, so on a fresh checkout tsc has nothing to read until the
+  build generates it. (Locally the same ordering already applies for a different reason — see the
+  stale `.next/types` trap.)
+
+**`npm run build` must stay runnable with no secrets at all.** The repo is public, so
+`SUPABASE_SERVICE_ROLE_KEY` can never be a CI secret — it bypasses RLS on production. The two
+build-time `createAdminClient()` call sites (`generateStaticParams` in `app/foods/[slug]/page.tsx`,
+`getFoodPageUrls` in `app/sitemap.ts`) check `hasAdminEnv()` first and degrade to an empty list.
+Keep that guard narrow — absent env only, **no `try`/`catch`** — so a reachable-but-failing Supabase
+still fails the Vercel deploy loudly instead of quietly shipping a site with no food pages. If a gate
+ever seems to need a secret, something started reaching the network at build time; fix that instead.
 
 **Migrations** are applied by hand in the Supabase SQL editor, or through the `SEED_SECRET`-guarded
 `/api/admin/run-migrations` route. There is **no Supabase CLI** in this toolchain, and

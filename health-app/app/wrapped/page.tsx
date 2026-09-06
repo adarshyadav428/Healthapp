@@ -26,7 +26,7 @@ export default async function WrappedPage() {
   const supabase = createServerClient()
   const user = await getAuthedUser(supabase)
 
-  const [wrapResult, subResult] = await Promise.all([
+  const [wrapResult, subResult, profileResult] = await Promise.all([
     supabase
       .from('monthly_wraps')
       .select('month_start, stats, message, was_pro')
@@ -35,7 +35,17 @@ export default async function WrappedPage() {
       .limit(1)
       .maybeSingle(),
     supabase.from('subscriptions').select('status').eq('user_id', user.id).maybeSingle(),
+    supabase.from('profiles').select('height_cm').eq('id', user.id).maybeSingle(),
   ])
+
+  // The onboarding gate, same as every other authenticated page — it is not in
+  // middleware, each page does its own. In practice a user with no profile also
+  // has no wrap, so the redirect below would usually catch them first; the
+  // check is here anyway because "usually" is not the invariant, and a rule
+  // with two silent exceptions is the kind that stops being true. Reads ride
+  // in the Promise.all above, so this is still one round trip.
+  const profile = profileResult.data
+  if (!profile || profile.height_cm === null) redirect('/onboarding')
 
   // No wrap yet — the first one lands on the first Sunday after a month with
   // enough logging in it. Nothing to show, so don't show an empty shell.

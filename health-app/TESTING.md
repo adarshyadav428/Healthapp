@@ -7,12 +7,16 @@ anything where the automated check passes but the experience is still wrong.
 Run the automated gates first — if any fail, stop:
 
 ```bash
-npm test            # 89 files / 1,334 tests
+npm test            # 120 files / 1,589 tests
 npx tsc --noEmit    # zero type errors
 npm run lint
 npm run check:tokens
 npm run build
 ```
+
+CI runs the same five on every PR (`.github/workflows/gates.yml`), so in practice this list is a
+faster local pre-check rather than the only thing standing between a change and production. What
+follows is still the part nothing automated reaches.
 
 ---
 

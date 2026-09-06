@@ -35,7 +35,7 @@ export default async function WelcomePage() {
 
   const [sub, profileResult, logsResult, weightsResult, aiScans] = await Promise.all([
     getSubscription(supabase, user.id),
-    supabase.from('profiles').select('display_name').eq('id', user.id).maybeSingle(),
+    supabase.from('profiles').select('display_name, height_cm').eq('id', user.id).maybeSingle(),
     supabase
       .from('food_logs')
       .select('kcal, protein_g, logged_at, food:foods(name)')
@@ -48,6 +48,16 @@ export default async function WelcomePage() {
       .order('measured_at', { ascending: true }),
     countAiTrialUsage(supabase, user.id),
   ])
+
+  // The onboarding gate, same as every other authenticated page. It is not in
+  // middleware — each page does its own — and this one went without for as long
+  // as it existed: /upgrade is a public route, so signing up and paying before
+  // finishing the wizard reaches here with no height, and computeWrappedStats
+  // below would then narrate a plan the user has never seen. Checked before the
+  // Pro gate because "you haven't set up yet" is the more useful answer of the
+  // two. height_cm rides along in the profiles select above — no extra query.
+  const profile = profileResult.data
+  if (!profile || profile.height_cm === null) redirect('/onboarding')
 
   // Gate on the entitlement, not on how they arrived. `trialing` counts: inside
   // the TWA, Play grants a 3-day trial and the money doesn't move until it
