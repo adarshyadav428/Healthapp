@@ -611,8 +611,13 @@ const STUDIO_CSS = `
 /* macros */
 #gis-studio .st-macros { display: flex; gap: 18px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--s-hair); }
 #gis-studio .st-macro { flex: 1; }
-#gis-studio .st-macro-lr { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
-#gis-studio .st-macro-lr b { font-size: 11.5px; font-weight: 500; color: var(--s-sec); font-variant-numeric: tabular-nums; }
+/* Label above value, not beside it. Three macros share a ~250px row inside the
+   phone frame, so each column gets ~74px — the label ("Protein", 11px uppercase
+   with .08em tracking) eats 54px and leaves ~22px for "92 / 140 g", which wrapped
+   to three lines. space-between also collapses to no gap once the two boxes fill
+   the line, so label and value read as one word: "PROTEIN92 / 140 g". */
+#gis-studio .st-macro-lr { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; margin-bottom: 6px; }
+#gis-studio .st-macro-lr b { font-size: 11.5px; font-weight: 500; color: var(--s-sec); font-variant-numeric: tabular-nums; white-space: nowrap; }
 #gis-studio .st-bar { height: 4px; border-radius: 2px; background: var(--s-track); overflow: hidden; }
 #gis-studio .st-bar i { display: block; height: 100%; border-radius: 2px; }
 
