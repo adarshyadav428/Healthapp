@@ -4,7 +4,7 @@ import { isProStatus } from '../../lib/subscription'
 import { PageHeader } from '../../components/layout/PageHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { RecipeBuilder } from '../../components/recipes/RecipeBuilder'
-import { ProLock } from '../../components/ui/ProLock'
+import { ProLockCard } from '../../components/ui/ProLock'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { robots: { index: false } }
@@ -32,7 +32,7 @@ export default async function RecipesPage() {
       >
         <PageHeader label="Nutrition for any home recipe" title="Recipes" back />
         {!isPro && (
-          <ProLock.Card
+          <ProLockCard
             className="mt-5"
             reason="custom_foods"
             track="custom_foods"

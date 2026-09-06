@@ -101,3 +101,13 @@ function Card({
 }
 
 export const ProLock = { Chip, Card }
+
+/**
+ * Server Components cannot dot into a client module: reaching `ProLock.Card`
+ * from a server file hits the client-reference proxy and throws "Cannot access
+ * ProLock.Card on the server" during the RSC render. Because the locked branch
+ * is what dots in (`{!isPro && <ProLock.Card ...>}`), the throw only fires for
+ * free users — the exact shape of the /recipes crash. Server callers import
+ * these flat named exports instead; client callers keep the `ProLock.*` object.
+ */
+export { Card as ProLockCard, Chip as ProLockChip }
