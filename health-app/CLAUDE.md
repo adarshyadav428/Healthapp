@@ -660,12 +660,19 @@ All three were learned on **2026-08-26**, in one afternoon, on the live site.
   deployment with a new URL, and nothing reattaches the domain. The fix, and the *only* way to roll
   back, is **Promote to Production** on a known-good deployment (Deployments → the row's `…` menu).
   Rolling back is a promote, never a delete.
-- **`main` has no branch protection, so merging a PR ships to production immediately.** There is no
-  gate, no required check, nothing to catch a wrong click. Merge from the GitHub UI only after the
-  preview has been looked at, and check the PR *number and title* first — with two PRs open, #31 was
+- **Merging a PR ships to production immediately.** Still true, and still the thing to respect —
+  but the second half of this rule changed on **2026-09-06**: `main` now **has** branch protection
+  requiring the `gates` check (`strict: true`, `enforce_admins: false` so an emergency bypass
+  remains). A PR can no longer merge without CI green, and `gh pr merge --auto` now genuinely waits
+  instead of merging instantly, which is what it was supposed to do all along.
+  What protection does **not** do is check that you picked the right PR. With two open, #31 was
   merged when #30 was meant, which put the kelp rebrand live and needed a revert (#32) plus a Vercel
-  promote to undo. `gh pr merge --auto` is worse than useless here: with no protection it merges
-  instantly rather than waiting for Vercel.
+  promote to undo — a green check would not have stopped that. Look at the preview, and check the PR
+  *number and title*, before merging.
+  Two consequences worth knowing: a branch created before the workflow existed has no `gates` run and
+  cannot merge until it is rebased (an empty commit to trigger CI is not the fix — rebase it); and if
+  protection is ever re-created, enable it only **after** `gates.yml` is on `main`, or a PR branched
+  off a workflow-less `main` can never produce the required check.
 - **A long-lived branch carries everything on it, not just the commit you want.** `feat/kelp-tokens`
   held a colour rebrand *and* several wanted features, so no build from it could ship one without the
   other. To land one commit from such a branch, cherry-pick it onto a branch off `main` and PR that.
