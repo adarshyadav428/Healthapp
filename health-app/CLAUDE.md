@@ -127,6 +127,18 @@ actively seeding.
 
 ## Hard rules — never violate
 
+- **Never dot into a `'use client'` module from a Server Component.** `components/ui/ProLock.tsx`
+  exports both the `ProLock = { Chip, Card }` object *and* flat `ProLockCard` / `ProLockChip`
+  aliases. Client components may use either; a Server Component must import the **flat** ones.
+  Reaching `ProLock.Card` from a server file hits React's client-reference proxy and throws
+  "An error occurred in the Server Components render" — a blank error boundary, with no useful
+  message in a production build. This shipped as a P1: `/recipes` crashed for every free user until
+  2026-09-06, and `app/deficit/page.tsx` carried the same bug latent, masked by the 3-day grace
+  window in `deficitAccess`. It is invisible in review because every gate passes — nothing renders
+  the page — and invisible in QA on a Pro account, because the throw sits inside the
+  `{!isPro && <ProLock.Card .../>}` branch that only a free user evaluates. **Any gate behind a plan
+  check must be exercised on a free account.** `tests/proLock.test.ts` fails if a server file dots
+  in again.
 - **No USDA data, ever.** It was removed permanently; US-centric nutrition data is wrong for Indian food.
 - **INR pricing only, never USD.** Pro Monthly ₹299, Pro Annual ₹1,999. The 3-day trial is a Play
   Console offer, so trial copy renders **only** inside the TWA.

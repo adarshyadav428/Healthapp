@@ -3,7 +3,7 @@ import { createServerClient, getAuthedUser } from '../../lib/supabase/server'
 import { PageHeader } from '../../components/layout/PageHeader'
 import { BottomNav } from '../../components/layout/BottomNav'
 import { DeficitPageClient, type WeekView } from '../../components/progress/DeficitPageClient'
-import { ProLock } from '../../components/ui/ProLock'
+import { ProLockCard } from '../../components/ui/ProLock'
 import { calculateMaintenance } from '../../lib/tdee'
 import { istDateStr } from '../../lib/dateUtils'
 import { isProStatus } from '../../lib/subscription'
@@ -60,7 +60,7 @@ export default async function DeficitPage() {
         >
           <PageHeader label="1 kg fat = 7,700 kcal deficit" title="Deficit" back />
           <div className="mt-5">
-            <ProLock.Card
+            <ProLockCard
               reason="history"
               title="Your calorie deficit is a Pro feature"
               body="You had 3 days to see how it works. Pro keeps the full picture — every week's deficit, what it's worth in fat, and where you're heading."

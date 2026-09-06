@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import type { PaywallSource } from '../lib/posthog/events'
 
@@ -96,5 +96,68 @@ describe('surfaces that used to render nothing now show a lock', () => {
 
   it('the recipe builder handles the 402 instead of throwing a raw error', () => {
     expect(read('components', 'recipes', 'RecipeBuilder.tsx')).toMatch(/res\.status === 402/)
+  })
+})
+
+
+/**
+ * The /recipes crash (P1, prod 2026-09-06): `app/recipes/page.tsx` is a Server
+ * Component that rendered `<ProLock.Card>`. Dotting into a `'use client'`
+ * module from the server hits React's client-reference proxy, which throws
+ * during the RSC render — so the page died with "An error occurred in the
+ * Server Components render". It only broke free users, because the locked
+ * branch (`{!isPro && ...}`) is the one that dots in; Pro never evaluated it.
+ * `app/deficit/page.tsx` carried the same latent bug, masked only by the 3-day
+ * free grace window in `deficitAccess`.
+ *
+ * Server files must import the flat `ProLockCard` / `ProLockChip` exports.
+ */
+describe('no Server Component dots into the ProLock client module', () => {
+  const dirs = ['app', 'components']
+  const files: string[] = []
+
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(join(ROOT, dir), { withFileTypes: true })) {
+      const rel = `${dir}/${entry.name}`
+      if (entry.isDirectory()) walk(rel)
+      else if (entry.name.endsWith('.tsx')) files.push(rel)
+    }
+  }
+  for (const d of dirs) walk(d)
+
+  const importsProLock = (src: string) => /from\s+['"][^'"]*\/ProLock['"]/.test(src)
+  const isClient = (src: string) => /^\s*['"]use client['"]/.test(src)
+
+  it('finds the call sites it means to guard', () => {
+    expect(files.length).toBeGreaterThan(20)
+    expect(files.filter((f) => importsProLock(norm(read(f))))).not.toHaveLength(0)
+  })
+
+  it.each(['app/recipes/page.tsx', 'app/deficit/page.tsx'])(
+    '%s imports ProLockCard flat, never ProLock.Card',
+    (path) => {
+      const src = norm(read(path))
+      expect(isClient(src), `${path} is expected to be a Server Component`).toBe(false)
+      expect(src).toMatch(/import \{ ProLockCard \}/)
+      expect(src).not.toMatch(/ProLock\./)
+    },
+  )
+
+  it('every server file importing ProLock uses the flat exports', () => {
+    const offenders = files.filter((f) => {
+      const src = norm(read(f))
+      return !isClient(src) && importsProLock(src) && /ProLock\./.test(src)
+    })
+    expect(offenders, `Server Components cannot dot into ProLock: ${offenders.join(', ')}`).toEqual(
+      [],
+    )
+  })
+
+  it('client call sites may still use the ProLock.* object', () => {
+    const clientDotters = files.filter((f) => {
+      const src = norm(read(f))
+      return isClient(src) && /ProLock\./.test(src)
+    })
+    expect(clientDotters.length).toBeGreaterThan(0)
   })
 })
