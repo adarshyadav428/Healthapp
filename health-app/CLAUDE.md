@@ -17,7 +17,12 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **120 files / 1,589 tests**. There is no `vitest.config.ts`; defaults apply.
+- **Tests:** Vitest 4.1 — **124 files / 1,612 tests**. `vitest.config.ts` exists but is deliberately
+  minimal: it pins `environment: 'node'` **explicitly** (so every pre-existing spec resolves exactly
+  as it did when there was no config at all), declares one setup file, and overrides the JSX
+  transform. **Render tests opt into jsdom per file** with a `// @vitest-environment jsdom` docblock —
+  chosen over `environmentMatchGlobs` so the environment is visible in the file rather than implied by
+  its directory. See "Render tests" below.
   **CI runs all five gates on every PR** — `.github/workflows/gates.yml`, job id `gates`, pinned by
   `tests/ciGates.test.ts`. See "The five gates" below for the two things about it that bite.
 - **Deploy:** Vercel **Hobby** plan, region `bom1`. The Hobby limits are load-bearing (see Hard rules).
@@ -60,8 +65,9 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   `story/`, `milestones/`, `camera/`, `chat/`, …). **`hooks/`** are fetch/TanStack wrappers only — no writes.
   **UI hooks live beside the primitives in `components/ui/`, not in `hooks/`** — `use-toast.ts` and
   `use-scroll-lock.ts`. They touch the DOM, so they are neither fetch wrappers nor the pure,
-  Vitest-testable modules `lib/` is for (there is no `vitest.config.ts`, so specs run in **node**
-  with no jsdom — a DOM hook has nothing to be pinned by).
+  Vitest-testable modules `lib/` is for. Specs default to **node**, so a DOM hook still has nothing
+  pinning it *by default* — but since the render layer landed it can be tested, by adding
+  `// @vitest-environment jsdom` to a spec under `tests/render/`.
   `components/log/shortcuts.tsx` holds the one set of re-log / combo / copy-yesterday tiles that both
   `FoodLanding` and `FoodSearch` render — they used to be implemented twice, with different ordering
   and different meal-selection behaviour, which is how the same shortcut came to mean two things.
@@ -103,15 +109,14 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (120 files / 1,589 tests)
+npm test                 # vitest run — the whole suite (124 files / 1,612 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
 npm run check:tokens     # design-token guard: no raw hex, no broken opacity modifiers
 npx tsc --noEmit         # typecheck (there is no `typecheck` script)
 ```
 
-**Running a single test** — there is no `vitest.config.ts`, so Vitest defaults apply and specs are
-picked up from `tests/`:
+**Running a single test** — specs are picked up from `tests/`:
 
 ```bash
 npx vitest run tests/streak.test.ts              # one file
@@ -124,6 +129,38 @@ npx vitest                                       # watch mode
 ```bash
 npm test && npx tsc --noEmit && npm run lint && npm run check:tokens && npm run build
 ```
+
+**Render tests** live in `tests/render/` and are the only specs that mount a component. They exist for
+one failure mode nothing else here catches: a restyle drops a prop or renames a field out of a
+payload, everything type-checks and builds, and the button quietly stops working. They assert on the
+**request**, not the markup.
+
+Six rules keep them from becoming the noise that gets deleted. Follow them or don't add the test:
+
+1. **Query by role + accessible name only.** Never `className`, never `container.querySelector`.
+   These components already carry the hooks (`aria-label="Quick add"`, `aria-pressed`), so restyling
+   Tailwind, reordering divs or swapping an icon changes nothing.
+2. **No snapshot tests, ever.** `toMatchSnapshot()` on markup fails on every restyle by construction —
+   that is the "so I disabled the tests" failure mode, automated.
+3. **Assert side effects, not copy.** `expectPosted(...)` and `toHaveBeenCalledWith(...)` over toast
+   strings. Copy passes rewrite toasts and must not fail a test guarding a POST contract.
+4. **One behaviour per `it()`**, so a renamed label fails a cosmetic assertion and not the important
+   one sitting next to it.
+5. **`findBy*`/`waitFor` for async, never sleeps** — and never node identity as a change signal
+   (React reuses DOM nodes between steps; use the rendered text that actually changed).
+6. **`tests/render/support/setup.ts` runs for EVERY spec**, node ones included, so every DOM branch
+   in it must be guarded on `typeof window`. An unguarded `window` there breaks the whole suite with
+   an error that looks nothing like its cause.
+
+`expectPosted` matches the **exact path**. It used to prefix-match, which made it unable to notice
+`/api/logs/add` being renamed to `/api/logs/added` — the single most obvious breakage there is — and
+the test written to catch exactly that went on passing. Found by sabotage; a green test that cannot
+fail is worse than no test. **Verify every new invariant by breaking the code first.**
+
+Camera (`CameraModal`/`useCameraScan`) and `ChatLogModal`'s Radix chrome are deliberately **not**
+rendered — five browser-API mocks for one journey, and the highest-risk camera invariant is already
+pinned by `tests/useCameraScanUnresolved.test.ts`. The eight ProLock branches stay with
+`tests/proLock.test.ts`'s source walk. Don't duplicate them.
 
 **CI runs them too**, on every PR and every push to `main` — `.github/workflows/gates.yml`. Two things
 about that file are load-bearing and neither is obvious:
