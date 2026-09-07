@@ -14,7 +14,13 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **Tailwind 3.4** + shadcn/ui pattern (Radix primitives, `clsx`/`tailwind-merge`). `next-themes` for light/dark.
 - **Zustand** (client auth state) + **TanStack Query** (server state) + **Recharts** + **react-hook-form** + **Zod**.
 - **Billing:** Razorpay (web) + Google Play Billing (TWA). Stripe is **legacy, read-only**.
-- **AI:** Google Gemini via `@google/generative-ai` — powers photo scan and chat logging.
+- **AI:** Google Gemini — powers photo scan, chat logging and the weekly recap. Called over **raw
+  REST**, not the SDK: `@google/generative-ai` is in `package.json` but **imported nowhere**
+  (`camera/analyze/route.ts:149` records why — SDK v1beta routing). The model id is a **hardcoded
+  string duplicated in three routes** — `app/api/camera/analyze/route.ts`,
+  `app/api/chat/analyze/route.ts`, `app/api/cron/weekly-recap/route.ts`, all `gemini-2.5-flash-lite`
+  today. Change one and you have silently forked the other two; grep
+  `generativelanguage.googleapis.com` to find them all.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
 - **Tests:** Vitest 4.1 — **124 files / 1,612 tests**. `vitest.config.ts` exists but is deliberately
@@ -679,6 +685,38 @@ All three were learned on **2026-08-26**, in one afternoon, on the live site.
   (This used to add "and drop `public/sw.js` from the cherry-pick", because its precache manifest lists
   chunk hashes from the *source* branch's build. The generated worker files are gitignored as of
   2026-09-04, so there is nothing to drop.)
+
+### Shipping the website vs. shipping to Play — they are not the same thing
+
+The Play bundle is a **TWA shell**: it contains no application logic, only a pointer at
+`www.getinshape.co.in` (see the root `CLAUDE.md`). Everything a user experiences is the website.
+The consequence is the single most useful release fact in this repo:
+
+- **Website / app code — never needs Play review.** Merge, Vercel deploys, users have it on next
+  launch. The camera prompt, the Gemini model, every route and component, the privacy and pricing
+  pages: none of it goes near Google. Do not delay app work waiting on Play.
+- **The bundle — needs review**, a `bubblewrap` rebuild and an `appVersionCode` bump. Only
+  `twa-manifest.json` territory: host, start URL, package id, icons, theme colours.
+- **Console metadata — needs review.** Store listing, screenshots, description, Data safety,
+  App content declarations.
+
+**While a Play submission is `In review`, freeze the paths a reviewer walks.** Google signs in with a
+real account and exercises the live site, so a mid-review regression reads to them as "the app is
+broken" and comes back as a rejection. For the duration, do not:
+
+- touch **auth**: OAuth redirect URIs, the Supabase auth host/custom domain, or anything under
+  `app/auth/`. A `redirect_uri_mismatch` means the reviewer cannot get in at all.
+- rotate the **Supabase service-role key** — `createAdminClient()` backs the camera route.
+- deploy risky changes to **headline features** (camera, chat logging) that a reviewer will try.
+- **upload a new AAB** — it replaces the release under review and restarts the clock.
+- edit anything in **Play Console** — it can pull an item back out of the queue.
+
+Safe during a review, because none of it is on a reviewer's path: opening PRs and running the gates
+(nothing deploys until merge), infrastructure that does not change behaviour, and any work that only
+produces test fixtures or documentation.
+
+Live submission status belongs in Play Console (Publishing overview → Submission activity), not in
+this file — what is written here is only the rule.
 
 ## Behavioral / workflow principles
 
