@@ -71,11 +71,15 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   `components/log/shortcuts.tsx` holds the one set of re-log / combo / copy-yesterday tiles that both
   `FoodLanding` and `FoodSearch` render — they used to be implemented twice, with different ordering
   and different meal-selection behaviour, which is how the same shortcut came to mean two things.
-- **`supabase/migrations/`** — `001`–`045`. Numbers are **not unique** (`002`, `004`, `005`, `009` and
+- **`supabase/migrations/`** — `001`–`048`. Numbers are **not unique** (`002`, `004`, `005`, `009` and
   `043` each appear twice) and there is **no `021`**. Always reference a migration by its exact filename.
   (`040_body_focus.sql` **is** on `main` — PR #46 merged; this line previously said otherwise.)
   `011_weekly_calorie_view.sql` is deliberately **unapplied** and referenced nowhere in code. `045` was
-  applied 2026-09-04 and verified against the live schema; `044` was applied 2026-09-03. Don't assume
+  applied 2026-09-04 and verified against the live schema; `044` was applied 2026-09-03. `046`–`048`
+  (the idempotency columns — see the hard rule on double-tappable inserts) landed 2026-09-05 in
+  commit `9ae0d6f`, whose message records **`048` as verified against production**; `046` and `047`
+  were applied in the same session but no probe result was written down, so probe them before
+  building on them (this file said `001`–`045` for a week after they landed). Don't assume
   the rest — **probe** rather than trusting any list, including this one: a `select=<column>` against
   `/rest/v1/<table>` with the public anon key answers `42703` for a column that isn't there and `200`
   for one that is, without reading a single row (RLS returns `[]`). Always probe a column you know
@@ -156,6 +160,17 @@ Six rules keep them from becoming the noise that gets deleted. Follow them or do
 `/api/logs/add` being renamed to `/api/logs/added` — the single most obvious breakage there is — and
 the test written to catch exactly that went on passing. Found by sabotage; a green test that cannot
 fail is worse than no test. **Verify every new invariant by breaking the code first.**
+
+**A spec that exercises a date window must freeze the clock.** `tests/routeCopyMeal.test.ts` pasted
+onto a hardcoded `2026-09-04` as a *free* account, and the route reads `now` from `new Date()` — so
+it passed the week it was written and, on 2026-09-11, failed 7 of 9 with "The free plan can log to the
+last 7 days" the moment that date aged out of the window. On a clean `main`, with branch protection
+requiring `gates`, that is every PR blocked by a test that nobody changed. Fixed by
+`vi.useFakeTimers({ toFake: ['Date'] })` + `vi.setSystemTime(...)` on the day the fixture dates were
+chosen — **`Date` only**, because these routes await mocked Supabase promises and faking the task
+queue stalls them. Anything that passes through `isWithinFreeLogWindow`, `clampHistoryStart`,
+`getIstDayRange(new Date())` or the streak maths with a literal date is the same bomb with a longer
+fuse; fixture dates that are only row payloads (`measured_at` on a weigh-in) are fine.
 
 Camera (`CameraModal`/`useCameraScan`) and `ChatLogModal`'s Radix chrome are deliberately **not**
 rendered — five browser-API mocks for one journey, and the highest-risk camera invariant is already
@@ -281,6 +296,45 @@ actively seeding.
   2026-09-03 (audit P1-4, P1-5). **The general rule: supabase-js *resolves* with `{ data, error }`, so
   `const { data } = await …` inside a `try` silently discards the failure and the `catch` never fires.
   Destructure `error` on every read whose emptiness means something.**
+- **A failed `subscriptions` read is not "free" — it throws.** `getIsPro` and `getSubscription`
+  (`lib/subscription.ts`) raise `SubscriptionReadError` when the read itself fails, and every route
+  that inlines the same query checks `error` before calling `isProStatus`. Before 2026-09-05 nine call
+  sites collapsed a DB blip into "not Pro", so a paying user could be refused their own AI trial,
+  streak rescue or history window — and `/api/account/delete` could skip cancelling a live
+  subscription because the read that would have found it failed quietly (adversarial audit F2). A
+  route that already holds the row in a `Promise.all` must still check that result's `error`; the
+  helper only exists for routes that don't.
+- **Every insert a user can double-tap carries an idempotency identity, server-side.** A
+  `useState` `disabled` flag does not close a same-tick double-tap or a retry after a timeout, and
+  neither `weight_logs` nor `exercise_logs` has a natural key (two weigh-ins a day are legitimate).
+  Single-row inserts send a `client_request_id` generated **once per modal-open** and go through
+  `insertIdempotent` (`lib/requestIdempotency.ts`), unique per `(user_id, client_request_id)` —
+  migration `046`; a `23505` is answered by re-reading the row that won, never by a 500. Bulk copies
+  (`copy-yesterday`, `copy-meal`) tag each copy with `copied_from_id` and go through
+  `filterUncopiedToDay` → `insertFoodLogCopies`, unique per **`(copied_from_id, target IST day)`** —
+  `047` then `048`. The day component is load-bearing: `047`'s global per-source uniqueness was right
+  for copy-yesterday (one possible target) and wrong for copy-meal, where pasting the same breakfast
+  onto two days is normal. Both columns are nullable and partial-indexed so every other insert path
+  (search, camera, chat, quick-add, combos) is untouched. Pinned by `tests/routeWeightAdd.test.ts`,
+  `routeExerciseAdd`, `routeCopyYesterday`, `routeCopyMeal` and `requestIdempotency.test.ts`.
+- **A `source='user'` food is visible to its owner only.** The shared search query excludes
+  `source='user'` outright (`.neq('source', 'user')`, `app/api/foods/search/route.ts`) and re-merges
+  the caller's own rows via `source_id LIKE 'user_<uid>_%'` — the same predicate
+  `034_foods_rls_ownership.sql`'s `owns_custom_food()` enforces — fetched fresh and **never cached**,
+  because the query cache is shared across users. Until PR #80 (2026-09-06) any account could find,
+  log and favourite another account's custom food on a partial-word match, badged "👤 Custom" as if
+  it were theirs; and because `food_logs.food_id` cascades, the owner deleting their own row silently
+  deleted the other user's diary entry (audit 2026-09-04, P0-2). `034` taught this for writes; this
+  is the same lesson for reads. Match, log, favourite and save paths all carry the check.
+- **A piece-counted camera item with no valid per-serving total is never persisted with numbers.**
+  `resolveNutrition` (`lib/camera-nutrition.ts`) returns `resolvable: false` and **zeroed** macros for
+  a `pcs` item whose per-serving figures are missing or implausible, because its `fallback` is a
+  per-100-**gram** estimate and every `pcs` row downstream is read as per-100-**piece** — "6 hot
+  wings" at 250 kcal/100 g was logging as 15 kcal for the plate, then cached by the upsert so every
+  repeat scan reused it (audit 2026-09-04, P0-1). The route drops such items into `unresolved` (the
+  UI already toasts "Couldn't estimate …") unless a same-name DB row resolves them independently.
+  The zeroing is deliberate: a caller that forgets to check `resolvable` gets an inert 0, never a
+  wrong-but-plausible number.
 - **The coaching line is free and belongs on every logging surface.** `coachingLine` (`lib/coaching.ts`)
   is pure, needs no AI call and costs nothing to run — but it was wired only into `useCameraScan` and
   `useChatLog`, both behind the 3-call lifetime AI trial, so a free user logging by search never saw a
@@ -316,7 +370,11 @@ actively seeding.
   an 8,000 g protein target; `height_cm: Infinity` made every macro target `Infinity`. Bounded by the
   shared `HEIGHT_CM` / `WEIGHT_KG` constants in `lib/validations.ts` (2026-09-03, P2-14) — one constant
   each, because the three schemas are three doors to the same column and a bound on two of them is the
-  same hole with an extra step. `customFoodSchema` already did this correctly; copy it.
+  same hole with an extra step. `customFoodSchema` already did this correctly; copy it. **One door is
+  still open:** `saved_meal_items.grams`/`servings` in `app/api/meals/saved/route.ts` are
+  `z.number().positive()` with no `.max()`, and `/api/meals/log` later feeds them to `scaleMacros`
+  unbounded (adversarial audit F5, 2026-09-05 — not fixed as of 2026-09-11). Bound them with
+  `MAX_LOG_GRAMS` and the `99` servings cap `foodLogSchema` already uses.
 - **A capped read must be an ordered read.** Postgres applies `LIMIT` before any sort, so
   `.limit(400)` with no `.order()` returns an arbitrary 400 rows that drift as the table grows and
   after a `VACUUM`. `/api/foods/suggest` did exactly that under a comment claiming the pool was
@@ -514,8 +572,9 @@ actively seeding.
   `FREE_TIER_CUTOFF` keep `LEGACY_LIMITS` forever (the "Free forever" promise is made to every
   visitor, so an existing user's entitlement never shrinks), accounts on/after get the tighter
   `POST_CUTOFF_LIMITS`. A null/unparseable `created_at` fails **open** to `LEGACY_LIMITS` — the
-  opposite of the "unreadable tier is not Pro" rule, on purpose: the one-way door is on the
-  tightening side. Pure and import-free so Client Components can read it; the server resolves the
+  opposite of the subscription read, which *throws* rather than guessing (see the
+  `SubscriptionReadError` rule), on purpose: the one-way door is on the tightening side. Pure and
+  import-free so Client Components can read it; the server resolves the
   cohort and passes limits down as props / on the `LogMilestone`.
 - **New capabilities added after the cutoff ship Pro-gated by default.** Moving one to free is a
   deliberate call, not the default. This is how the free/paid balance shifts over time without ever
@@ -774,8 +833,11 @@ These are deep dives, kept out of this file on purpose. Read the relevant one **
 | `docs/growth-mechanics-plan-2026-07-29.md` | `components/story/`, `lib/streakRescue.ts`, `lib/mealSuggest.ts`, `lib/pushBudget.ts`, `lib/reminderSchedule.ts`, `lib/cronBatch.ts` — note Seasons was cut, see below |
 | `docs/refactor-safety-contract.md` | Any refactor — it maps each covered behavior to the test that pins it, and lists the accepted residual gaps |
 | `TESTING.md` | Shipping. The manual script for everything tests can't reach (auth, real phones, the day boundary) |
-| `docs/deep-dive-audit-2026-09-03.md` | Investigating a suspected systemic issue — the **latest** full audit. **Every finding is fixed** — both P0s, all 13 P1s, all 14 P2s |
-| `docs/deep-dive-audit-2026-07-31.md` | The previous full audit — read for the fixes it made and the false alarms it recorded |
+| `docs/deep-dive-audit-2026-09-04.md` | Investigating a suspected systemic issue — the **latest** full audit. Its two P0s (camera `pcs` fallback, cross-user custom-food visibility) and P1-1/P1-2 (monthly-wrap reads, Stripe webhook writes) are **fixed** (PR #80, commit `9ae0d6f`). **Still open:** P1-3 (`BottomNav` ignores `--kb-inset` — a design call pending a device) and P1-4 ("Founder pricing — lock in ₹1,999/year", `app/upgrade/page.tsx`, has no mechanism behind it) |
+| `docs/adversarial-audit-2026-09-05.md` | Anything about double-submit, hostile input, swallowed errors or session expiry. F2/F3/F4 fixed (the `SubscriptionReadError` and idempotency rules below came from it). **Still open:** F5 (`saved_meal_items.grams`/`servings` unbounded — a known violation of the "bounded on both sides" rule), F7 (Razorpay SDK has no timeout), F11 (sign-in never renders `?error=oauth_callback_failed`) |
+| `docs/visual-audit-2026-09-04.md` | Anything that "looks like a website" on a phone — the first pass that judged screens at 375px rather than by the gates. The 2026-09-11 redesign audit (in the session transcript, not yet a doc) supersedes its remaining findings |
+| `docs/deep-dive-audit-2026-09-03.md` | The previous full audit. Every finding fixed — both P0s, all 13 P1s, all 14 P2s — and re-verified as holding by the 09-04 and 09-05 passes |
+| `docs/deep-dive-audit-2026-07-31.md` | The audit before that — read for the fixes it made and the false alarms it recorded |
 | `docs/growth-advice-audit-2026-08-25.md` | Anything about attribution, the paywall's placement, trial length, or adding an A/B mechanism — it scores the app against an external growth playbook, and §7 records where we disagree with it on purpose |
 | `docs/prompts/growth-advice-apply.md` | Re-running that audit, or holding any new growth book against the app |
 

@@ -23,7 +23,14 @@ under `health-app/`. This file covers only the root-level Android wrapper and th
   Keep `appVersionCode`, `appVersionName` and `appVersion` in sync (all `3` today).
 - **`.claude/skills/`** — checked in on purpose (the `!.claude/skills/` negation in `.gitignore`);
   the rest of `.claude/` is ignored. Shared skills such as the deep-dive audit live here and apply
-  to `health-app/` work.
+  to `health-app/` work. **Two third-party skills were installed on 2026-09-11 and are not yet
+  decided on:** `frontend-design` (from `anthropics/claude-code`) and `ui-ux-pro-max` (from
+  `nextlevelbuilder/ui-ux-pro-max-skill`, ~3.5 MB of reference data). The installer put the real
+  files under **`.agents/skills/<name>/`** and left NTFS **junctions** at `.claude/skills/<name>`
+  pointing at them, plus a root **`skills-lock.json`** (source + content hash per skill). Git for
+  Windows follows junctions as plain directories, so `git add .` would commit each skill **twice**.
+  None of the three paths is gitignored or committed — decide (commit `skills-lock.json` and ignore
+  `.agents/` + the two junctions, or commit the lot) before the next `git add` at the root.
 - **`package-lock.json`** (root) — a 15-byte stub with no accompanying `package.json`. It is not a
   real Node project; see the Hard rule below.
 - **`GetInShape-Roadmap.pdf`, `.vercel/`** — personal planning artifact and Vercel link data,

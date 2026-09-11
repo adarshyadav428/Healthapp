@@ -10,7 +10,7 @@
  * so uniqueness must be scoped per target day, not global per source row.
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSupabaseMock, NO_SUB, type MockOptions } from './helpers/supabaseMock'
 
 const createServerClient = vi.fn()
@@ -57,6 +57,22 @@ function request(body: unknown) {
     body: JSON.stringify(body),
   })
 }
+
+// Every request below pastes onto 2026-09-04 as a FREE account, which only
+// works while that day sits inside the 7-day backfill window
+// (isWithinFreeLogWindow, lib/backfill.ts). The route takes `now` from
+// `new Date()`, so with a real clock this spec passed the week it was written
+// and went red on 2026-09-11 — seven 403s, all "upgrade to edit older days".
+// Freeze the clock on the day the fixture dates were chosen. Only `Date` is
+// faked: the route awaits mocked Supabase promises, and faking the task queue
+// would stall them.
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-09-06T06:00:00.000Z'))
+})
+afterAll(() => {
+  vi.useRealTimers()
+})
 
 beforeEach(() => {
   vi.clearAllMocks()
