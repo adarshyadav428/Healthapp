@@ -58,7 +58,7 @@ export function NotificationPrimeCard() {
   }
 
   return (
-    <div className="mt-4 flex items-start gap-3 rounded-[20px] bg-surface p-4" style={{ boxShadow: 'var(--shadow-air)' }}>
+    <div className="mt-8 flex items-start gap-3 rounded-card border border-hairline bg-surface p-4 shadow-air">
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft">
         <Bell className="h-[18px] w-[18px] text-brand" strokeWidth={2} />
       </span>

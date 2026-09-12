@@ -1,8 +1,7 @@
 'use client'
 
 import { computeBadges, earnedCount, type BadgeStats } from '../../lib/badges'
-
-const AIR = { boxShadow: 'var(--shadow-air)' } as const
+import { BRAND_TILE } from '../log/shortcuts'
 
 /**
  * The ten-badge shelf.
@@ -17,48 +16,41 @@ export function BadgeShelf({ stats }: { stats: BadgeStats }) {
   const earned = earnedCount(badges)
 
   return (
-    <div className="mt-3 rounded-[24px] bg-surface p-5" style={AIR}>
+    <section aria-label="Badges">
       <div className="flex items-baseline justify-between">
-        <p className="text-[14px] font-bold text-ink">Badges</p>
-        <p className="text-[12px] font-semibold tabular-nums text-ink-3">{earned} of 10</p>
+        <h2 className="font-display text-title-sm font-semibold text-ink">Badges</h2>
+        <p className="text-caption tabular-nums text-ink-3">{earned} of {badges.length}</p>
       </div>
 
-      <div className="mt-4 grid grid-cols-5 gap-x-2 gap-y-4">
+      <ul className="mt-3 grid grid-cols-5 gap-x-2 gap-y-4">
         {badges.map((badge) => (
-          <div
+          <li
             key={badge.id}
             className="flex flex-col items-center text-center"
             title={badge.earned ? badge.name : `${badge.name} — ${badge.description}`}
           >
-            <div
+            <span
               className={
-                'flex h-11 w-11 items-center justify-center rounded-full text-[20px] ' +
-                (badge.earned ? 'bg-brand-soft' : 'bg-surface-2')
+                'grid h-12 w-12 place-items-center rounded-control text-title-sm ' +
+                (badge.earned ? '' : 'bg-surface-2 opacity-50 grayscale')
               }
-              style={badge.earned ? undefined : { opacity: 0.45 }}
+              style={badge.earned ? BRAND_TILE : undefined}
             >
               <span aria-hidden="true">{badge.emoji}</span>
-            </div>
-            <p
-              className={
-                'mt-1.5 text-[10.5px] leading-tight ' +
-                (badge.earned ? 'font-semibold text-ink' : 'text-ink-3')
-              }
-            >
+            </span>
+            <p className={'mt-1.5 text-micro leading-tight ' + (badge.earned ? 'font-semibold text-ink' : 'text-ink-3')}>
               {badge.name}
             </p>
             <span className="sr-only">
               {badge.earned ? `${badge.name}, earned.` : `${badge.name}, locked. ${badge.description}.`}
             </span>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
 
-      {earned < 10 && (
-        <p className="mt-4 text-[11px] text-ink-3">
-          Tap and hold a locked badge to see how to earn it.
-        </p>
+      {earned < badges.length && (
+        <p className="mt-3 text-micro text-ink-3">Hold a locked badge to see how to earn it.</p>
       )}
-    </div>
+    </section>
   )
 }

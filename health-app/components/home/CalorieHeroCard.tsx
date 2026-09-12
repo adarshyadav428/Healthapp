@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Drumstick, Wheat, Droplet } from 'lucide-react'
 
-// Ember Air hero (v2): a 132px calorie ring (ember, always — no red over-goal
-// state) with the eaten total centred, the three macros as icon-rings down the
-// right, and a "kcal left / goal" strip below a hairline.
+// The calorie hero: a 132px ring (ember, always — no red over-goal state)
+// with the eaten total centred, the three macros as icon-rings down the right,
+// and a "kcal left / goal" strip below a hairline. This is the one surface on
+// Home; everything below it sits on the canvas.
 
 const RING = 132
 const RING_R = 58
@@ -89,12 +90,14 @@ function MacroRow({ icon: Icon, label, eaten, target, color }: {
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <Icon className="h-[13px] w-[13px]" strokeWidth={2} style={{ color }} />
+          <Icon className="h-3.5 w-3.5" strokeWidth={2} style={{ color }} />
         </div>
       </div>
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-[15px] font-bold tabular-nums text-ink">{Math.round(eaten)}g</span>
-        <span className="text-[12px] text-ink-3">{label}</span>
+      {/* Stacked, and the value never breaks: at 390px the column beside the
+          ring is ~140px, and "48 g Protein" on one line split as "48 Protein / g". */}
+      <div className="min-w-0 leading-tight">
+        <span className="block whitespace-nowrap text-body font-semibold tabular-nums text-ink">{Math.round(eaten)} g</span>
+        <span className="block text-caption text-ink-3">{label}</span>
       </div>
     </div>
   )
@@ -112,8 +115,8 @@ export function CalorieHeroCard({
   const kcalLeft = target - eaten
 
   return (
-    <div className="rounded-[24px] bg-surface px-6 py-[26px]" style={{ boxShadow: 'var(--shadow-air)' }}>
-      <div className="flex items-center gap-5">
+    <div className="rounded-card-lg border border-hairline bg-surface px-6 py-6 shadow-air">
+      <div className="flex items-center gap-6">
         {/* Ring */}
         <div className="relative shrink-0" style={{ width: RING, height: RING }}>
           <svg width={RING} height={RING} viewBox={`0 0 ${RING} ${RING}`}>
@@ -126,15 +129,15 @@ export function CalorieHeroCard({
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="font-display text-[32px] font-bold tabular-nums leading-none text-ink" style={{ letterSpacing: '-0.03em' }}>
+            <span className="font-display text-title-lg font-semibold tabular-nums leading-none text-ink">
               {shown.toLocaleString('en-IN')}
             </span>
-            <span className="mt-1 text-[11.5px] text-ink-3">kcal eaten</span>
+            <span className="mt-1 text-micro text-ink-3">kcal eaten</span>
           </div>
         </div>
 
         {/* Macros down the right */}
-        <div className="flex flex-1 flex-col gap-3.5">
+        <div className="flex flex-1 flex-col gap-4">
           <MacroRow icon={Drumstick} label="Protein" eaten={proteinEaten} target={proteinTarget} color="var(--protein)" />
           <MacroRow icon={Wheat} label="Carbs" eaten={carbsEaten} target={carbsTarget} color="var(--carbs)" />
           <MacroRow icon={Droplet} label="Fat" eaten={fatEaten} target={fatTarget} color="var(--fat)" />
@@ -143,11 +146,11 @@ export function CalorieHeroCard({
 
       {/* kcal left / goal strip */}
       <div className="mt-5 flex items-baseline justify-between border-t border-hairline pt-4">
-        <span className="text-[12.5px] text-ink-3">
-          <b className="font-bold tabular-nums text-ink">{Math.abs(kcalLeft).toLocaleString('en-IN')}</b> kcal {kcalLeft >= 0 ? 'left' : 'over'}
+        <span className="text-caption text-ink-3">
+          <b className="font-semibold tabular-nums text-ink">{Math.abs(kcalLeft).toLocaleString('en-IN')}</b> kcal {kcalLeft >= 0 ? 'left' : 'over'}
         </span>
-        <span className="text-[12.5px] text-ink-3">
-          Goal <b className="font-bold tabular-nums text-ink">{target.toLocaleString('en-IN')}</b> kcal
+        <span className="text-caption text-ink-3">
+          Goal <b className="font-semibold tabular-nums text-ink">{target.toLocaleString('en-IN')}</b> kcal
         </span>
       </div>
     </div>

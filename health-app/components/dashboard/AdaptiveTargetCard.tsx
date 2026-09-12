@@ -10,8 +10,6 @@ import { Button } from '../ui/button'
 import { captureEvent } from '../../lib/posthog/client'
 import type { AdaptiveSuggestion } from '../../lib/adaptiveTarget'
 
-const AIR = { boxShadow: 'var(--shadow-air)' } as const
-
 /** One dismissal per ISO week, so declining doesn't mean declining forever. */
 function weekKey(uid: string): string {
   const now = new Date()
@@ -100,21 +98,21 @@ export function AdaptiveTargetCard({ profile }: { profile: Profile }) {
   }
 
   return (
-    <div className="mt-4 rounded-[24px] bg-surface p-5" style={AIR}>
+    <div className="mt-8 rounded-card border border-hairline bg-surface p-5 shadow-air">
       <div className="flex items-center gap-2">
         {isIncrease
           ? <TrendingUp className="h-4 w-4 text-brand" strokeWidth={2} />
           : <TrendingDown className="h-4 w-4 text-brand" strokeWidth={2} />}
-        <p className="text-[14px] font-bold text-ink">A suggested adjustment</p>
+        <p className="text-body font-semibold text-ink">A suggested adjustment</p>
       </div>
 
-      <p className="mt-1.5 text-[13px] text-ink-2">{suggestion.reason}</p>
+      <p className="mt-1 text-caption text-ink-2">{suggestion.reason}</p>
 
       <div className="mt-3 flex items-baseline gap-2">
-        <span className="font-display text-[22px] font-bold tabular-nums text-ink" style={{ letterSpacing: '-0.02em' }}>
+        <span className="font-display text-title-sm font-semibold tabular-nums text-ink">
           {suggestion.newTarget.toLocaleString()}
         </span>
-        <span className="text-[12px] font-semibold text-ink-3">
+        <span className="text-caption font-semibold text-ink-3">
           kcal/day ({isIncrease ? '+' : ''}{suggestion.deltaKcal})
         </span>
       </div>
@@ -127,7 +125,7 @@ export function AdaptiveTargetCard({ profile }: { profile: Profile }) {
         <button
           type="button"
           onClick={dismiss}
-          className="rounded-control px-4 text-[13px] font-semibold text-ink-3 tap-scale"
+          className="rounded-control px-4 text-caption font-semibold text-ink-3 tap-scale"
         >
           Not now
         </button>

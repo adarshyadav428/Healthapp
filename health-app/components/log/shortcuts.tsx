@@ -2,6 +2,7 @@
 
 import { Copy, Layers, Loader2, Plus, Trash2 } from 'lucide-react'
 import { foodEmoji, tintFor } from '../../lib/foodVisual'
+import { cn } from '../../lib/utils'
 
 /**
  * The repeat-logging shortcuts, in one place.
@@ -12,25 +13,35 @@ import { foodEmoji, tintFor } from '../../lib/foodVisual'
  * implementations of the fastest path in the app is two places for it to drift,
  * and it had already drifted.
  *
- * The Food tab's styling wins because it is what a user sees first: search now
- * matches the default screen rather than the other way round.
+ * Every row here is a list row, not a card: a 44px tile, name over one line of
+ * context, and a 44px "+" at the end. Rows sit on the canvas separated by
+ * hairlines — the still surface is the page; the data is what moves.
  */
 
-const AIR = { boxShadow: 'var(--shadow-air)' } as const
-
-export function EmojiTile({ name }: { name: string }) {
+/**
+ * A food's tile: its emoji on a soft, lit square. The tint is one of the macro
+ * tokens (lib/foodVisual), laid as a light-from-top-left gradient with a
+ * hairline of the same hue, so a column of tiles reads as small objects with
+ * depth rather than flat coloured boxes.
+ */
+export function EmojiTile({ name, className }: { name: string; className?: string }) {
+  const tint = tintFor(name)
   return (
     <div
-      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px]"
-      style={{ backgroundColor: `color-mix(in srgb, ${tintFor(name)} 14%, transparent)` }}
+      className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-control', className)}
+      style={{
+        backgroundImage: `linear-gradient(145deg, color-mix(in srgb, ${tint} 26%, var(--surface)) 0%, color-mix(in srgb, ${tint} 8%, var(--surface)) 100%)`,
+        boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${tint} 18%, transparent)`,
+      }}
     >
-      <span className="text-[22px] leading-none" aria-hidden="true">{foodEmoji(name)}</span>
+      <span className="text-title-sm leading-none" aria-hidden="true">{foodEmoji(name)}</span>
     </div>
   )
 }
 
-/** The gradient + affordance every shortcut row ends in. */
-function AddButton({ busy, label, onClick, disabled }: {
+/** The one add affordance every row ends in — 44px, soft ember so a column
+ *  of them reads as a list of actions, not a wall of buttons. */
+export function AddButton({ busy, label, onClick, disabled }: {
   busy: boolean
   label: string
   onClick: () => void
@@ -42,12 +53,15 @@ function AddButton({ busy, label, onClick, disabled }: {
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cta-grad tap-scale disabled:opacity-50"
-      style={{ boxShadow: 'var(--fab-shadow)' }}
+      className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-brand-text tap-scale transition-[opacity,filter] hover:brightness-95 disabled:opacity-40"
+      style={{
+        backgroundImage: 'linear-gradient(145deg, color-mix(in srgb, var(--brand) 18%, var(--surface)) 0%, color-mix(in srgb, var(--brand) 8%, var(--surface)) 100%)',
+        boxShadow: 'inset 0 0 0 1px var(--brand-ring)',
+      }}
     >
       {busy
-        ? <Loader2 className="h-4 w-4 animate-spin text-white" />
-        : <Plus className="h-[18px] w-[18px] text-white" strokeWidth={2.2} />}
+        ? <Loader2 className="h-5 w-5 animate-spin" />
+        : <Plus className="h-5 w-5" strokeWidth={2} />}
     </button>
   )
 }
@@ -64,20 +78,20 @@ export function ShortcutRow({ name, detail, tile, busy, disabled, actionLabel, o
   deleteLabel?: string
 }) {
   return (
-    <div className="flex items-center gap-3.5 rounded-[20px] bg-surface p-3" style={AIR}>
+    <div className="flex items-center gap-3 py-2.5">
       {tile}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[14.5px] font-semibold text-ink">{name}</p>
-        <p className="mt-[3px] text-[12px] text-ink-3">{detail}</p>
+        <p className="truncate text-body font-medium text-ink">{name}</p>
+        <p className="mt-0.5 truncate text-caption text-ink-3">{detail}</p>
       </div>
       {onDelete && (
         <button
           type="button"
           onClick={onDelete}
           aria-label={deleteLabel ?? `Delete ${name}`}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink-3 tap-scale"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink-3 tap-scale hover:bg-surface-2 hover:text-ink"
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-5 w-5" strokeWidth={1.75} />
         </button>
       )}
       <AddButton busy={busy} label={actionLabel} onClick={onAdd} disabled={disabled} />
@@ -85,11 +99,16 @@ export function ShortcutRow({ name, detail, tile, busy, disabled, actionLabel, o
   )
 }
 
+export const BRAND_TILE = {
+  backgroundImage: 'linear-gradient(145deg, color-mix(in srgb, var(--brand) 22%, var(--surface)) 0%, color-mix(in srgb, var(--brand) 8%, var(--surface)) 100%)',
+  boxShadow: 'inset 0 0 0 1px var(--brand-ring)',
+} as const
+
 /** A saved meal template. */
 export function ComboTile() {
   return (
-    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft">
-      <Layers className="h-5 w-5 text-brand" strokeWidth={2} />
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control" style={BRAND_TILE}>
+      <Layers className="h-5 w-5 text-brand" strokeWidth={1.75} />
     </div>
   )
 }
@@ -97,17 +116,18 @@ export function ComboTile() {
 /** A copied meal section, waiting to be pasted onto the day being viewed. */
 export function MealTile({ emoji }: { emoji: string }) {
   return (
-    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft">
-      <span className="text-[22px] leading-none" aria-hidden="true">{emoji}</span>
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control" style={BRAND_TILE}>
+      <span className="text-title-sm leading-none" aria-hidden="true">{emoji}</span>
     </div>
   )
 }
 
+/** A section title for a list of rows: sans, caption, ink-2 — never a card. */
 export function ShortcutHeading({ title, hint }: { title: string; hint?: React.ReactNode }) {
   return (
-    <div className="mb-2.5 flex items-baseline gap-2 px-0.5">
-      <p className="text-[16px] font-semibold text-ink">{title}</p>
-      {hint && <span className="text-[12.5px] text-ink-3">{hint}</span>}
+    <div className="flex items-baseline justify-between gap-3 px-1 pb-1 pt-4">
+      <p className="text-caption font-semibold text-ink-2">{title}</p>
+      {hint && <span className="truncate text-caption text-ink-3">{hint}</span>}
     </div>
   )
 }
@@ -118,13 +138,12 @@ export function CopyYesterdayButton({ copying, onClick }: { copying: boolean; on
       type="button"
       onClick={onClick}
       disabled={copying}
-      className="flex w-full items-center gap-3 rounded-[20px] bg-surface p-4 text-left tap-scale disabled:opacity-50"
-      style={AIR}
+      className="flex h-12 w-full items-center gap-3 rounded-control px-1 text-left text-body font-medium text-ink tap-scale transition-colors hover:bg-surface-2 disabled:opacity-40"
     >
-      <Copy className="h-[18px] w-[18px] shrink-0 text-brand" strokeWidth={2} />
-      <span className="text-[14px] font-semibold text-ink">
-        {copying ? 'Copying…' : "Copy yesterday's meals"}
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-control bg-surface-2 text-ink-2">
+        <Copy className="h-5 w-5" strokeWidth={1.75} />
       </span>
+      {copying ? 'Copying…' : "Copy yesterday's meals"}
     </button>
   )
 }

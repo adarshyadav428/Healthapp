@@ -128,12 +128,71 @@ describe('quick-adding a food', () => {
   })
 })
 
+describe('"+" on a food logged before vs one never logged', () => {
+  // The Food screen's one non-negotiable: a food you have eaten goes straight
+  // in at last time's portion; a food you have never logged asks for one.
+  // Both branches are exercised through the search-results list, where the
+  // food is not on any shelf and only the last-portion map can tell them apart.
+  const RAJMA = { ...POHA, id: 'food-rajma', name: 'Rajma Chawal' } as unknown as Food
+
+  it('logs a previously-logged result immediately, at the grams used last time', async () => {
+    const spy = installFetchSpy({
+      '/api/foods/search': [RAJMA],
+      '/api/foods/favourites': [],
+      '/api/meals/saved': [],
+      '/api/logs/add': { ok: true },
+    })
+    renderWithProviders(
+      <FoodSearch
+        recentFoods={[]}
+        frequentFoods={[]}
+        hasYesterdayLogs={false}
+        logDate={LOG_DATE}
+        lastPortions={{ 'food-rajma': { grams: 275, kcal: 360, meal: 'lunch' } }}
+      />
+    )
+
+    await userEvent.type(screen.getByPlaceholderText(/search dal makhani/i), 'rajma')
+    await userEvent.click(await screen.findByRole('button', { name: /quick add/i }, { timeout: 3000 }))
+
+    await waitFor(() => {
+      const body = spy.expectPosted('/api/logs/add').body as Record<string, unknown>
+      expect(body.food_id).toBe('food-rajma')
+      // Last time's amount, not the catalogue default.
+      expect(body.grams).toBe(275)
+      expect(body.date).toBe(LOG_DATE)
+    })
+    expect(screen.queryByRole('button', { name: /increase quantity/i })).toBeNull()
+  })
+
+  it('opens the portion sheet for a never-logged result instead of logging', async () => {
+    const spy = installFetchSpy({
+      '/api/foods/search': [RAJMA],
+      '/api/foods/favourites': [],
+      '/api/meals/saved': [],
+      '/api/logs/add': { ok: true },
+    })
+    renderWithProviders(
+      <FoodSearch recentFoods={[]} frequentFoods={[]} hasYesterdayLogs={false} logDate={LOG_DATE} lastPortions={{}} />
+    )
+
+    await userEvent.type(screen.getByPlaceholderText(/search dal makhani/i), 'rajma')
+    await userEvent.click(await screen.findByRole('button', { name: /quick add/i }, { timeout: 3000 }))
+
+    // The quantity stepper is the sheet; nothing was posted.
+    await screen.findByRole('button', { name: /increase quantity/i }, { timeout: 3000 })
+    expect(spy.urls().some((u) => u.includes('/api/logs/add'))).toBe(false)
+  })
+})
+
 describe('logging a saved combo', () => {
   it('POSTs /api/meals/log carrying the viewed date, not the server default', async () => {
     // /api/meals/log had no `date` in its schema at all once, so every combo
     // took logged_at DEFAULT now() and a past-day tap moved today's total.
     const { spy } = renderSearch()
 
+    // Combos live on the "My foods" shelf since the 2026-09-11 Food redesign.
+    await userEvent.click(await screen.findByRole('tab', { name: /my foods/i }))
     await userEvent.click(await screen.findByRole('button', { name: /Log Usual breakfast/i }))
 
     await waitFor(() => {

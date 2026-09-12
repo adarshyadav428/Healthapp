@@ -59,7 +59,10 @@ describe('FoodResult is wired to its callbacks', () => {
     render(<FoodResult food={FOOD} onSelect={onSelect} onQuickAdd={onQuickAdd} />)
 
     // The row body is its own button; its accessible name is the food's text.
-    await userEvent.click(screen.getByRole('button', { name: /poha/i }))
+    // The quick-add control is also named after the food ("Quick add Poha"),
+    // so pick the row by excluding it rather than by its first word.
+    const row = screen.getAllByRole('button', { name: /poha/i }).find((b) => !/quick add/i.test(b.getAttribute('aria-label') ?? ''))!
+    await userEvent.click(row)
 
     expect(onSelect).toHaveBeenCalledWith(FOOD)
     expect(onQuickAdd).not.toHaveBeenCalled()

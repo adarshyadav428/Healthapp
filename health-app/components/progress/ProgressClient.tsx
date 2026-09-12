@@ -14,17 +14,16 @@ import { computeWeightTrend } from '../../lib/weightTrend'
 import { contextInsight, contextInsightLine } from '../../lib/mealContext'
 import { BadgeShelf } from './BadgeShelf'
 import type { BadgeStats } from '../../lib/badges'
-import { formatGoalDate } from '../../lib/projection'
-import { formatKg } from '../../lib/formatWeight'
 import { DeficitTrendCard, type DeficitPeriodView } from './DeficitTrendCard'
-import {
-  Flame, Scale, ChevronLeft, ChevronRight, CalendarDays, X, Dumbbell, Lock, Crown,
-} from 'lucide-react'
+import { WeightHero } from './WeightHero'
+import { SegmentedControl } from '../ui/segmented-control'
+import { bmiCategory, computeBmi } from '../../lib/bmi'
+import { ChevronLeft, ChevronRight, X, Dumbbell, Lock, Flame } from 'lucide-react'
 
 // Defer recharts — saves ~95KB on initial /progress load.
 const TrendBarChart = dynamic(() => import('./TrendBarChart').then(m => m.TrendBarChart), {
   ssr: false,
-  loading: () => <div className="h-[180px] rounded-card bg-surface-2 animate-pulse" />,
+  loading: () => <div className="h-44 animate-shimmer rounded-card bg-surface-2" />,
 })
 
 type LogRow = { logged_at: string; kcal: number; protein_g: number; carbs_g: number; fat_g: number; meal: string; context?: string | null }
@@ -61,8 +60,6 @@ function dayLabel(dateStr: string, options: Intl.DateTimeFormatOptions) {
   return formatIst(dateStrToUtcMidnight(dateStr), options, 'en-US')
 }
 function pad(n: number) { return String(n).padStart(2, '0') }
-
-const AIR = { boxShadow: 'var(--shadow-air)' } as const
 
 const METRIC_CONFIG = {
   kcal:    { color: 'var(--energy)', label: 'Calories', unit: 'kcal' },
@@ -239,306 +236,274 @@ export function ProgressClient({
     return { cells, logged, elapsed, monthLabel }
   }, [viewYear, viewMonth, isCurrentMonth, td, ty, loggedSet])
 
+  // Supporting numbers — a glance, not a dashboard. BMI is the one body figure
+  // the app has; it reads off the same current weight the hero shows.
+  const bmi = profile.height_cm ? computeBmi(currentWeight ?? profile.current_weight_kg, profile.height_cm) : null
+  const bmiLabel = bmi != null ? BMI_LABEL[bmiCategory(bmi)] : null
+
+  // The last seven IST days as dots on the streak banner — the same set the
+  // calendar draws, just the tail of it.
+  const lastSeven = lastIstDateStrs(7, istTodayStr).map((key) => ({ key, logged: loggedSet.has(key), isToday: key === istTodayStr }))
+
   return (
     <>
       {/* ── Header ── */}
-      <div className="pt-2">
-        <p className="text-[13px] font-medium text-ink-3">Your trends over time</p>
-        <h1 className="font-display mt-[3px] text-[24px] font-bold tracking-[-0.02em] text-ink">Trends</h1>
-      </div>
-
-      {/* ── Free-tier banner ── */}
-      {!isPro && (
-        <div className="mt-4 flex items-center justify-between gap-3 rounded-[20px] p-4" style={{ backgroundColor: 'var(--brand-soft)' }}>
-          <div className="flex min-w-0 items-center gap-2.5">
-            <Lock className="h-4 w-4 shrink-0 text-brand-ink" />
-            <div className="min-w-0">
-              <p className="text-[12.5px] font-bold text-brand-ink">Showing last {freeHistoryDays} days</p>
-              <p className="text-[11px] text-brand-ink opacity-80">Pro unlocks full trends history</p>
-            </div>
-          </div>
+      <header className="flex items-end justify-between gap-4 pt-2">
+        <div>
+          <p className="text-caption font-medium text-ink-3">Your trends</p>
+          <h1 className="font-display mt-1 text-title font-semibold text-ink">Progress</h1>
+        </div>
+        {!isPro && (
           <Link
             href="/upgrade?reason=history"
-            className="flex shrink-0 items-center gap-1 rounded-full bg-cta-grad px-3 py-1.5 text-[11px] font-bold text-white tap-scale"
+            className="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-hairline bg-surface px-3.5 text-caption font-semibold text-ink tap-scale"
           >
-            <Crown className="h-3 w-3" /> Upgrade
+            <Lock className="h-3.5 w-3.5 text-ink-3" strokeWidth={1.75} /> Last {freeHistoryDays} days
           </Link>
-        </div>
-      )}
+        )}
+      </header>
 
-      {/* ── Stat cards: streak + weight ── */}
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <div className="rounded-[24px] bg-surface p-5" style={AIR}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-[12px]" style={{ backgroundColor: 'var(--brand-soft)' }}>
-            <Flame className="h-[18px] w-[18px] text-brand" strokeWidth={2} />
-          </div>
-          <p className="font-display mt-3.5 text-[34px] font-bold leading-none tabular-nums text-ink" style={{ letterSpacing: '-0.03em' }}>{streak}</p>
-          <p className="mt-[5px] text-[12px] text-ink-3">day streak</p>
-        </div>
-        <div className="rounded-[24px] bg-surface p-5" style={AIR}>
-          <div className="flex h-9 w-9 items-center justify-center rounded-[12px]" style={{ backgroundColor: 'color-mix(in srgb, var(--carbs) 15%, transparent)' }}>
-            <Scale className="h-[18px] w-[18px]" strokeWidth={2} style={{ color: 'var(--carbs)' }} />
-          </div>
-          <p className="font-display mt-3.5 text-[34px] font-bold leading-none tabular-nums text-ink" style={{ letterSpacing: '-0.03em' }}>
-            {formatKg(currentWeight)}
+      {/* ── Streak: the habit, in ember. The one loud object on the page. ── */}
+      <section
+        aria-label="Streak"
+        className="mt-5 flex items-center gap-4 rounded-card-lg bg-cta-grad px-4 py-4 text-white shadow-cta"
+      >
+        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-white/20">
+          <Flame className="h-7 w-7" strokeWidth={2} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="flex items-baseline gap-1.5">
+            <span className="font-display text-display font-semibold tabular-nums leading-none">{streak}</span>
+            <span className="text-body font-medium text-white/85">day streak</span>
           </p>
-          <p className="mt-[5px] text-[12px] text-ink-3">kg current</p>
-        </div>
-      </div>
-
-      {/* ── This week's deficit: the leading indicator, above the lagging one.
-             The scale confirms in a fortnight what this already knows today. ── */}
-      <DeficitTrendCard
-        week={weekView}
-        month={monthView}
-        goal={profile.goal}
-        isPro={isPro}
-      />
-
-      {/* ── Weight trend: the smoothed answer to "am I actually moving?" ── */}
-      {trend.kgPerWeek !== null && (
-        <div className="mt-3 rounded-[24px] bg-surface p-5" style={AIR}>
-          <p className="text-[14px] font-bold text-ink">Your trend</p>
-          <p className="mt-1.5 text-[13px] text-ink-2">
-            {Math.abs(trend.kgPerWeek) < 0.05
-              ? 'Holding steady over the last few weeks.'
-              : <>
-                  {trend.kgPerWeek < 0 ? 'Down' : 'Up'}{' '}
-                  <span className="font-semibold text-ink">
-                    {Math.abs(trend.kgPerWeek).toFixed(2)} kg/week
-                  </span>{' '}
-                  on a 4-week average.
-                </>}
-          </p>
-          {trend.projectedDate && (
-            <p className="mt-1.5 text-[13px] text-ink-2">
-              At this rate you&apos;ll reach{' '}
-              <span className="font-semibold text-ink">{formatKg(profile.target_weight_kg)} kg</span>{' '}
-              around {formatGoalDate(trend.projectedDate)}.
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <ul className="flex shrink-0 gap-1" aria-label="Last 7 days">
+              {lastSeven.map((d) => (
+                <li
+                  key={d.key}
+                  aria-label={d.logged ? 'Logged' : 'Not logged'}
+                  className={`h-2.5 w-2.5 rounded-full ${d.logged ? 'bg-white' : 'bg-white/30'} ${d.isToday ? 'ring-2 ring-white/50' : ''}`}
+                />
+              ))}
+            </ul>
+            <p className="text-caption text-white/80">
+              <span className="font-semibold text-white">{cal.logged} of {cal.elapsed}</span> days this month
             </p>
-          )}
-          {/* The smoothing is the point — say so, or the number looks wrong
-              next to a scale reading the user just took. */}
-          <p className="mt-2 text-[11px] text-ink-3">
-            Averaged over 4 weeks, so day-to-day water weight doesn&apos;t move it.
-          </p>
+          </div>
         </div>
-      )}
+      </section>
 
-      {/* ── Badges: free and lifetime, never Pro-gated ── */}
-      {contextLine && (
-        <div className="mt-3 rounded-[20px] bg-surface p-4" style={AIR}>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-3">Pattern</p>
-          <p className="mt-1.5 text-[14px] text-ink">{contextLine}</p>
-        </div>
-      )}
+      <div className="lg:grid lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-start lg:gap-10">
+        {/* ── Left: where you stand ── */}
+        <div className="mt-4 lg:sticky lg:top-6">
+          {/* The leading indicator first: the scale confirms in a fortnight
+              what this already knows today. */}
+          <div className="rounded-card-lg border-2 border-hairline-2 px-4 pb-4 pt-4">
+            <DeficitTrendCard
+              week={weekView}
+              month={monthView}
+              goal={profile.goal}
+              isPro={isPro}
+            />
+          </div>
 
-      {badgeStats && <BadgeShelf stats={badgeStats} />}
-
-      {/* Share progress card (WhatsApp/IG image) — hidden when nothing to show yet */}
-      <ShareProgressButton
-        streakDays={streak}
-        startWeightKg={startWeight}
-        currentWeightKg={currentWeight}
-        deficits={shareDeficits}
-        firstName={firstName}
-      />
-
-      {/* The "avg kcal · goal" and "N of 7 days logged" tiles used to sit here.
-          They measured a trailing window against the eat-goal while the deficit
-          card above measures a calendar week against maintenance, so the screen
-          answered "how many days?" and "what is a typical day?" twice, with
-          different numbers. Removed rather than reconciled: the deficit card
-          already answers both, and two answers is the confusion. */}
-
-      {/* ── Avg macros ── */}
-      <div className="mt-3 grid grid-cols-3 gap-2.5">
-        <MacroMiniCard label="Protein" value={avgProtein} color="var(--protein)" />
-        <MacroMiniCard label="Carbs" value={avgCarbs} color="var(--carbs)" />
-        <MacroMiniCard label="Fat" value={avgFat} color="var(--fat)" />
-      </div>
-
-      {/* ── Exercise ── */}
-      {exerciseLogs.length > 0 && <ExerciseSection exerciseLogs={exerciseLogs} range={range} />}
-
-      {/* ── Trend chart ── */}
-      <div className="mt-3 rounded-[24px] bg-surface p-[22px]" style={AIR}>
-        <div className="mb-4 flex items-center justify-between">
-          <p className="text-[15px] font-semibold text-ink">{cfg.label} trend</p>
-          <div className="flex gap-1 rounded-full bg-surface-2 p-0.5">
-            {ranges.map((r) => {
-              const locked = !isPro && r.days > freeHistoryDays
-              return locked ? (
-                <Link
-                  key={r.days}
-                  href="/upgrade?reason=history"
-                  className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-ink-3 opacity-70"
-                >
-                  <Lock className="h-2.5 w-2.5" /> {r.label}
-                </Link>
-              ) : (
-                <button
-                  key={r.days}
-                  type="button"
-                  onClick={() => setRange(r.days)}
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${range === r.days ? 'bg-surface text-ink' : 'text-ink-3'}`}
-                  style={range === r.days ? AIR : undefined}
-                >
-                  {r.label}
-                </button>
-              )
-            })}
+          <div className="mt-4 rounded-card-lg border-2 border-hairline-2 px-4 pb-4 pt-4">
+            <WeightHero weightLogs={weightLogs} profile={profile} trend={trend} bmi={bmi} bmiLabel={bmiLabel} />
           </div>
         </div>
 
-        <div className="mb-4 flex gap-1.5">
-          {(Object.keys(METRIC_CONFIG) as Array<keyof typeof METRIC_CONFIG>).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMetric(m)}
-              className={`rounded-full px-3 py-1.5 text-[11.5px] font-semibold transition-all ${metric === m ? 'text-white' : 'bg-surface-2 text-ink-2'}`}
-              style={metric === m ? { backgroundColor: METRIC_CONFIG[m].color } : undefined}
-            >
-              {METRIC_CONFIG[m].label}
-            </button>
-          ))}
-        </div>
-
-        <TrendBarChart
-          chartData={chartData}
-          range={range}
-          metric={metric}
-          metricTarget={metricTargets[metric]}
-          color={cfg.color}
-          unit={cfg.unit}
-          selectedDate={selectedDate}
-          onSelect={setSelectedDate}
-        />
-
-        <p className="mt-3 text-center text-[11px] text-ink-3">Tap a bar to view that day&apos;s food diary</p>
-      </div>
-
-      {/* ── Day diary panel ── */}
-      {selectedDate && user && (
-        <div className="mt-3 rounded-[24px] bg-surface p-5" style={AIR}>
-          <div className="mb-3.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-brand" />
-              <p className="text-[14px] font-bold text-ink">
-                {dayLabel(selectedDate, { weekday: 'long', month: 'short', day: 'numeric' })}
-              </p>
-            </div>
-            <button type="button" onClick={() => setSelectedDate(null)} className="rounded-full p-1 tap-scale">
-              <X className="h-4 w-4 text-ink-2" />
-            </button>
-          </div>
-          <DayDiary
-            firstName={firstName}
-            userId={user.id}
-            date={dateStrToUtcMidnight(selectedDate)}
-            beyondFreeWindow={!isPro && selectedDate < freeWindowCutoff}
-            freeHistoryDays={freeHistoryDays}
-          />
-        </div>
-      )}
-
-      {/* ── Calorie breakdown by day ── */}
-      {daysLoggedCount > 0 && (
-        <div className="mt-3 rounded-[24px] bg-surface p-5" style={AIR}>
-          <p className="mb-3.5 text-[13px] font-semibold text-ink">Calorie breakdown by day</p>
-          {/* Measured against maintenance, not the eat-goal. Against the goal, the
-              best day of a week — the one furthest under — rendered as a warning,
-              which inverted the story the deficit card above tells. */}
-          <div className="space-y-2">
-            {[...chartData].reverse().slice(0, 7).map((day) => {
-              const pct = maintenanceKcal > 0 ? Math.min((day.kcal / maintenanceKcal) * 100, 100) : 0
-              const barColor = day.kcal === 0 ? 'var(--surface-2)' : day.kcal > maintenanceKcal ? 'var(--bad)' : 'var(--good)'
-              const isSelected = selectedDate === day.date
-              return (
-                <button
-                  key={day.date}
-                  type="button"
-                  onClick={() => setSelectedDate(isSelected ? null : day.date)}
-                  className={`-mx-2 flex w-full items-center gap-3 rounded-[14px] px-2 py-1.5 transition-colors ${isSelected ? 'bg-brand-soft' : ''}`}
-                >
-                  <span className={`w-14 shrink-0 text-[11.5px] font-medium ${isSelected ? 'font-bold text-brand-ink' : 'text-ink-2'}`}>{day.label}</span>
-                  <div className="h-5 flex-1 overflow-hidden rounded-full bg-surface-2">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{ width: day.kcal === 0 ? '0%' : `${pct}%`, background: isSelected ? 'var(--brand)' : barColor }}
-                    />
-                  </div>
-                  <span className={`w-16 shrink-0 text-right text-[11.5px] font-bold tabular-nums ${isSelected ? 'text-brand-ink' : 'text-ink'}`}>
-                    {day.kcal > 0 ? `${day.kcal.toLocaleString()} kcal` : '—'}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-          {maintenanceKcal > 0 && (
-            <div className="mt-3.5 flex items-center gap-3 text-[10px] text-ink-3">
-              <div className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full" style={{ background: 'var(--good)' }} /> Under maintenance</div>
-              <div className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full" style={{ background: 'var(--bad)' }} /> Over maintenance</div>
-              <span className="ml-auto tabular-nums">{maintenanceKcal.toLocaleString('en-IN')} kcal</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Month calendar ── */}
-      <div className="mt-3 rounded-[24px] bg-surface p-[22px]" style={AIR}>
-        <div className="flex items-center justify-between">
-          <p className="text-[15px] font-semibold text-ink">{cal.monthLabel}</p>
-          <div className="flex gap-1">
-            <button
-              type="button"
-              onClick={() => setOffset((o) => Math.max(minOffset, o - 1))}
-              disabled={offset <= minOffset}
-              aria-label="Previous month"
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-surface-2 tap-scale disabled:opacity-35"
-            >
-              <ChevronLeft className="h-[13px] w-[13px] text-ink-2" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setOffset((o) => Math.min(0, o + 1))}
-              disabled={offset >= 0}
-              aria-label="Next month"
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-surface-2 tap-scale disabled:opacity-35"
-            >
-              <ChevronRight className="h-[13px] w-[13px] text-ink-2" />
-            </button>
-          </div>
-        </div>
-        <div className="mt-4 grid grid-cols-7 gap-1.5">
-          {cal.cells.map((c, i) => (
-            c === null ? (
-              <div key={i} className="aspect-square" />
-            ) : c.logged ? (
-              <div key={i} className="flex aspect-square items-center justify-center rounded-full bg-brand">
-                <Flame className="h-3 w-3 text-white" strokeWidth={2} />
+        {/* ── Right: what you ate, and the habit that got you here ── */}
+        <div className="mt-4">
+          <section aria-label="Calories and macros" className="rounded-card-lg border-2 border-hairline-2 px-4 pb-4 pt-4">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="font-display text-title-sm font-semibold text-ink">Intake</h2>
+              <div role="tablist" aria-label="Range" className="flex gap-1 rounded-control bg-surface-2 p-1">
+                {ranges.map((r) => {
+                  const locked = !isPro && r.days > freeHistoryDays
+                  const cls = 'flex h-10 items-center gap-1 rounded-lg px-3 text-caption font-semibold transition-colors'
+                  return locked ? (
+                    <Link key={r.days} href="/upgrade?reason=history" aria-label={`${r.label} — upgrade to Pro`} className={`${cls} text-ink-3`}>
+                      <Lock className="h-3 w-3" /> {r.days}d
+                    </Link>
+                  ) : (
+                    <button
+                      key={r.days}
+                      type="button"
+                      role="tab"
+                      aria-selected={range === r.days}
+                      onClick={() => setRange(r.days)}
+                      className={`${cls} ${range === r.days ? 'bg-surface text-ink shadow-air' : 'text-ink-2'}`}
+                    >
+                      {r.days}d
+                    </button>
+                  )
+                })}
               </div>
+            </div>
+
+            <SegmentedControl
+              className="mt-3"
+              aria-label="Metric"
+              value={metric}
+              onChange={setMetric}
+              options={(Object.keys(METRIC_CONFIG) as Array<keyof typeof METRIC_CONFIG>).map((m) => ({
+                value: m,
+                label: METRIC_CONFIG[m].label,
+              }))}
+            />
+
+            {daysLoggedCount === 0 ? (
+              <p className="mt-4 rounded-card border border-dashed border-hairline px-4 py-6 text-center text-body text-ink-2">
+                Nothing logged in the last {range} days. Log a meal and your days appear here.
+              </p>
             ) : (
-              <div key={i} className="aspect-square rounded-full bg-surface-2" />
-            )
-          ))}
+              <>
+                <div className="mt-4">
+                  <TrendBarChart
+                    chartData={chartData}
+                    range={range}
+                    metric={metric}
+                    metricTarget={metricTargets[metric]}
+                    color={cfg.color}
+                    unit={cfg.unit}
+                    selectedDate={selectedDate}
+                    onSelect={setSelectedDate}
+                  />
+                </div>
+
+                {/* Averages describe a typical day — today, with only breakfast in
+                    it, is left out (see completeDays). */}
+                <dl className="mt-3 grid grid-cols-3 divide-x divide-hairline text-center">
+                  {[
+                    { label: 'Protein', value: avgProtein, swatch: 'bg-protein' },
+                    { label: 'Carbs', value: avgCarbs, swatch: 'bg-carbs' },
+                    { label: 'Fat', value: avgFat, swatch: 'bg-fat' },
+                  ].map(({ label, value, swatch }) => (
+                    <div key={label}>
+                      <dt className="flex items-center justify-center gap-1.5 text-micro font-medium text-ink-3">
+                        <span className={`h-2 w-2 rounded-sm ${swatch}`} aria-hidden />{label} · avg
+                      </dt>
+                      <dd className="mt-0.5 text-body font-semibold tabular-nums text-ink">{value > 0 ? `${value} g` : '—'}</dd>
+                    </div>
+                  ))}
+                </dl>
+
+                {contextLine && <p className="mt-4 text-caption text-ink-2">{contextLine}</p>}
+                {!selectedDate && (
+                  <p className="mt-3 text-micro text-ink-3">
+                    {metricTargets[metric] > 0 && <>Dashed line is your {metricTargets[metric].toLocaleString('en-IN')} {cfg.unit} goal · </>}
+                    Tap a bar to open that day.
+                  </p>
+                )}
+              </>
+            )}
+
+            {/* ── Day diary — the one card on this half, because it is a thing
+                you opened, not a section of the page. ── */}
+            {selectedDate && user && (
+              <div className="mt-4 rounded-card-lg border border-hairline bg-surface px-4 pb-4 pt-3 shadow-air">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-body font-semibold text-ink">
+                    {dayLabel(selectedDate, { weekday: 'long', month: 'short', day: 'numeric' })}
+                  </h3>
+                  <button type="button" onClick={() => setSelectedDate(null)} aria-label="Close day" className="-mr-2 grid h-11 w-11 place-items-center rounded-full text-ink-3 tap-scale hover:bg-surface-2">
+                    <X className="h-5 w-5" strokeWidth={1.75} />
+                  </button>
+                </div>
+                <DayDiary
+                  firstName={firstName}
+                  userId={user.id}
+                  date={dateStrToUtcMidnight(selectedDate)}
+                  beyondFreeWindow={!isPro && selectedDate < freeWindowCutoff}
+                  freeHistoryDays={freeHistoryDays}
+                />
+              </div>
+            )}
+          </section>
+
+          {exerciseLogs.length > 0 && <ExerciseSection exerciseLogs={exerciseLogs} range={range} />}
+
+          {/* ── Month calendar: the habit, one dot a day ── */}
+          <section aria-label="Days logged" className="mt-4 rounded-card-lg border-2 border-hairline-2 px-4 pb-4 pt-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-title-sm font-semibold text-ink">{cal.monthLabel}</h2>
+              <nav aria-label="Change month" className="-mr-2 flex">
+                <button
+                  type="button"
+                  onClick={() => setOffset((o) => Math.max(minOffset, o - 1))}
+                  disabled={offset <= minOffset}
+                  aria-label="Previous month"
+                  className="grid h-11 w-11 place-items-center rounded-full text-ink-2 tap-scale hover:bg-surface-2 disabled:opacity-40"
+                >
+                  <ChevronLeft className="h-5 w-5" strokeWidth={1.75} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOffset((o) => Math.min(0, o + 1))}
+                  disabled={offset >= 0}
+                  aria-label="Next month"
+                  className="grid h-11 w-11 place-items-center rounded-full text-ink-2 tap-scale hover:bg-surface-2 disabled:opacity-40"
+                >
+                  <ChevronRight className="h-5 w-5" strokeWidth={1.75} />
+                </button>
+              </nav>
+            </div>
+            <div className="mt-2 grid grid-cols-7 gap-1.5 text-center text-micro font-medium text-ink-3" aria-hidden>
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => <span key={i}>{d}</span>)}
+            </div>
+            <div className="mt-1 grid grid-cols-7 gap-1.5">
+              {cal.cells.map((c, i) => {
+                if (c === null) return <div key={i} className="aspect-square" />
+                const future = isCurrentMonth && c.day > td
+                const today = isCurrentMonth && c.day === td
+                // Soft ember for a logged day, a quiet disc for a missed one,
+                // nothing at all for a day that has not happened yet.
+                const tone = c.logged
+                  ? 'bg-cta-grad font-semibold text-white'
+                  : future ? 'text-ink-3' : 'bg-surface-2 text-ink-3'
+                return (
+                  <div
+                    key={i}
+                    className={`grid aspect-square place-items-center rounded-full text-caption tabular-nums ${tone} ${today ? 'ring-2 ring-ink ring-offset-2 ring-offset-canvas' : ''}`}
+                    aria-label={c.logged ? `${c.day}, logged` : future ? String(c.day) : `${c.day}, not logged`}
+                  >
+                    {c.day}
+                  </div>
+                )
+              })}
+            </div>
+            <p className="mt-3 text-caption text-ink-2">
+              <span className="font-semibold text-ink">{cal.logged} of {cal.elapsed}</span> days logged this month
+            </p>
+          </section>
+
+          {/* ── Achievements: subordinate to the numbers above, never gated ── */}
+          {badgeStats && (
+            <div className="mt-4 rounded-card-lg border-2 border-hairline-2 px-4 pb-4 pt-4">
+              <BadgeShelf stats={badgeStats} />
+            </div>
+          )}
+
+          <div className="mt-4">
+            <ShareProgressButton
+              streakDays={streak}
+              startWeightKg={startWeight}
+              currentWeightKg={currentWeight}
+              deficits={shareDeficits}
+              firstName={firstName}
+            />
+          </div>
         </div>
-        <p className="mt-4 text-[12px] text-ink-3">
-          <b className="font-bold text-ink">{cal.logged} of {cal.elapsed}</b> days logged this month
-        </p>
       </div>
     </>
   )
 }
 
-function MacroMiniCard({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <div className="rounded-[18px] bg-surface p-3.5 text-center" style={AIR}>
-      <p className="text-[16px] font-bold tabular-nums" style={{ color }}>{value > 0 ? value : '—'}</p>
-      <p className="mt-0.5 text-[10.5px] text-ink-3">{label}</p>
-    </div>
-  )
+const BMI_LABEL: Record<ReturnType<typeof bmiCategory>, string> = {
+  underweight: 'Underweight',
+  healthy: 'Healthy',
+  overweight: 'Overweight',
+  obese: 'Obese',
 }
 
 function ExerciseSection({ exerciseLogs, range }: { exerciseLogs: ExerciseRow[]; range: number }) {
@@ -564,58 +529,39 @@ function ExerciseSection({ exerciseLogs, range }: { exerciseLogs: ExerciseRow[];
   if (totalSessions === 0) return null
 
   const displayed = showAll ? filtered : filtered.slice(0, 3)
+  const time = totalMinutes >= 60 ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m` : `${totalMinutes}m`
 
   return (
-    <div className="mt-3 rounded-[24px] bg-surface p-5" style={AIR}>
-      <div className="mb-3.5 flex items-center gap-2">
-        <Dumbbell className="h-4 w-4 text-brand" />
-        <p className="text-[13px] font-semibold text-ink">Exercise</p>
-      </div>
-
-      <div className="mb-3.5 grid grid-cols-3 gap-2">
-        <div className="rounded-[14px] bg-brand-soft p-2.5 text-center">
-          <p className="text-[10px] font-semibold text-ink-3">Sessions</p>
-          <p className="mt-0.5 text-[16px] font-bold tabular-nums text-brand-ink">{totalSessions}</p>
-        </div>
-        <div className="rounded-[14px] p-2.5 text-center" style={{ background: 'var(--bad-soft)' }}>
-          <p className="text-[10px] font-semibold text-ink-3">Burned</p>
-          <p className="mt-0.5 text-[16px] font-bold tabular-nums" style={{ color: 'var(--fat)' }}>{totalCalories.toLocaleString()}</p>
-          <p className="text-[9.5px] text-ink-3">kcal</p>
-        </div>
-        <div className="rounded-[14px] p-2.5 text-center" style={{ background: 'color-mix(in srgb, var(--protein) 8%, transparent)' }}>
-          <p className="text-[10px] font-semibold text-ink-3">Time</p>
-          <p className="mt-0.5 text-[16px] font-bold tabular-nums" style={{ color: 'var(--protein)' }}>
-            {totalMinutes >= 60 ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m` : `${totalMinutes}m`}
-          </p>
-        </div>
-      </div>
-
-      <div className="space-y-1.5">
+    <section aria-label="Exercise" className="mt-4 rounded-card-lg border-2 border-hairline-2 px-4 pb-4 pt-4">
+      <h2 className="font-display text-title-sm font-semibold text-ink">Exercise</h2>
+      <p className="mt-1 text-caption tabular-nums text-ink-2">
+        {totalSessions} {totalSessions === 1 ? 'session' : 'sessions'} · {totalCalories.toLocaleString('en-IN')} kcal · {time}
+      </p>
+      <ul className="mt-2 divide-y divide-hairline">
         {displayed.map((e, i) => (
-          <div key={i} className="flex items-center justify-between rounded-[12px] bg-surface-2 px-3 py-2">
-            <div className="flex min-w-0 items-center gap-2">
-              <Flame className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--fat)' }} />
-              <div className="min-w-0">
-                <p className="truncate text-[12px] font-semibold capitalize text-ink">{e.activity}</p>
-                <p className="text-[10px] text-ink-3">{formatIst(e.logged_at, { month: 'short', day: 'numeric' }, 'en-US')} · {e.duration_min} min</p>
-              </div>
+          <li key={i} className="flex items-center gap-3 py-2.5">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface-2 text-ink-2">
+              <Dumbbell className="h-4 w-4" strokeWidth={1.75} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-body font-medium capitalize text-ink">{e.activity}</p>
+              <p className="text-caption text-ink-3">{formatIst(e.logged_at, { month: 'short', day: 'numeric' }, 'en-US')} · {e.duration_min} min</p>
             </div>
-            <span className="ml-2 shrink-0 text-[12px] font-bold tabular-nums" style={{ color: 'var(--fat)' }}>
+            <span className="shrink-0 text-body font-semibold tabular-nums text-ink">
               {e.calories > 0 ? `${e.calories} kcal` : '—'}
             </span>
-          </div>
+          </li>
         ))}
-      </div>
-
+      </ul>
       {filtered.length > 3 && (
         <button
           type="button"
           onClick={() => setShowAll((v) => !v)}
-          className="mt-2.5 w-full text-[11px] font-semibold text-ink-3 tap-scale"
+          className="mt-1 flex h-11 items-center text-caption font-semibold text-brand-text tap-scale"
         >
           {showAll ? 'Show less' : `Show all ${filtered.length} sessions`}
         </button>
       )}
-    </div>
+    </section>
   )
 }

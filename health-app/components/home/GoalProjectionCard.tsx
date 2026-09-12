@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ChevronRight } from 'lucide-react'
 import type { GoalProjection } from '../../lib/goalProjection'
 import { goalProjectionCopy } from '../../lib/goalProjection'
 
@@ -16,8 +17,8 @@ import { goalProjectionCopy } from '../../lib/goalProjection'
  * planned states a condition). This component renders it and nothing more —
  * which is what keeps the honesty rules under test rather than under review.
  *
- * Ember Air surface rules: 20px radius, --shadow-air, ember reserved for data.
- * The date is the datum, so it is the only ember thing here.
+ * On Home it is a row in the feedback list, not a card: one sentence with
+ * somewhere to go (/weight). Ink throughout — it is a prompt, not a datum.
  */
 export function GoalProjectionCard({
   projection,
@@ -30,25 +31,13 @@ export function GoalProjectionCard({
   const copy = goalProjectionCopy(projection, targetKg)
   if (!copy) return null
 
-  const isMeasured = projection.kind === 'measured'
-
   return (
-    <Link
-      href="/weight"
-      className="flex w-full items-center gap-3.5 rounded-[20px] bg-surface p-3.5 text-left tap-scale"
-      style={{ boxShadow: 'var(--shadow-air)' }}
-    >
-      <div
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft"
-        aria-hidden="true"
-      >
-        <span className="text-[20px] leading-none">{isMeasured ? '🎯' : '🌱'}</span>
-      </div>
-
+    <Link href="/weight" className="flex w-full items-center gap-3 px-1 py-3.5 text-left tap-scale">
       <div className="min-w-0 flex-1">
-        <p className="text-[14.5px] font-semibold leading-snug text-ink">{copy.headline}</p>
-        <p className="mt-[3px] text-[12px] leading-snug text-ink-3">{copy.detail}</p>
+        <p className="text-body font-medium leading-snug text-ink">{copy.headline}</p>
+        <p className="mt-0.5 text-caption leading-snug text-ink-3">{copy.detail}</p>
       </div>
+      <ChevronRight className="h-4 w-4 shrink-0 text-ink-3" strokeWidth={1.75} aria-hidden="true" />
     </Link>
   )
 }

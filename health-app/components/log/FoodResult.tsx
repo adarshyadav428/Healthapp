@@ -1,5 +1,8 @@
 import type { Food } from '../../types/index'
-import { Loader2, Plus, Star } from 'lucide-react'
+import { Star } from 'lucide-react'
+import { defaultPortionFor, isLiquidFood } from '../../lib/portion-units'
+import type { LastPortion } from '../../lib/lastPortions'
+import { AddButton, EmojiTile } from './shortcuts'
 
 // Provenance (IFCT / Open Food Facts / branded / estimated) used to render as
 // a badge on every card here, asking the user to arbitrate which source to
@@ -9,8 +12,29 @@ import { Loader2, Plus, Star } from 'lucide-react'
 // showing more than one row for the same food, at different numbers, no
 // longer possible. `user` is the one badge kept: it names *ownership* ("a
 // food you made"), which the user can act on, not provenance they can't.
-const SOURCE_BADGE: Record<string, { label: string; color: string }> = {
-  user: { label: '👤 Custom', color: 'bg-brand-soft text-brand-ink' },
+const SOURCE_BADGE: Record<string, string> = {
+  user: 'Custom',
+}
+
+const unitFor = (name: string) => (isLiquidFood(name) ? 'ml' : 'g')
+
+/**
+ * The one line under a food's name: what "+" will log, and what it costs.
+ * A food logged before shows the portion it went in at last time — that is
+ * exactly what "+" re-logs. A new food shows the default portion the sheet
+ * will open on. Both are display only; the grams come from the same
+ * defaultPortionFor / last-log values the logging paths use.
+ */
+export function portionContext(food: Food, last?: LastPortion): string {
+  if (last) {
+    return `Last time ${Math.round(last.grams)} ${unitFor(food.name)} · ${Math.round(last.kcal)} kcal`
+  }
+  const { unit, quantity, grams } = defaultPortionFor(food)
+  const kcal = Math.round((food.kcal_per_100g * grams) / 100)
+  // "1 medium roti", not "1 medium roti (35g)" — the row has one line.
+  const label = unit.label.replace(/\s*\(.*\)\s*$/, '').toLowerCase()
+  const amount = unit.key === 'g' ? `${Math.round(grams)} ${unitFor(food.name)}` : `${quantity} ${label}`
+  return `${amount} · ${kcal} kcal`
 }
 
 export function FoodResult({
@@ -20,6 +44,7 @@ export function FoodResult({
   isQuickAdding,
   isFavourite,
   onToggleFavourite,
+  lastPortion,
 }: {
   food: Food
   onSelect: (food: Food) => void
@@ -27,62 +52,56 @@ export function FoodResult({
   isQuickAdding?: boolean
   isFavourite?: boolean
   onToggleFavourite?: (food: Food) => void
+  /** How this food was last logged, if ever — shown as the row's context line. */
+  lastPortion?: LastPortion
 }) {
   const badge = SOURCE_BADGE[food.source]
 
   return (
-    <div className="flex w-full items-center gap-2 rounded-card border border-hairline bg-surface px-4 py-3 shadow-rest hover:border-brand-ring transition-all">
-      <button type="button" className="flex-1 min-w-0 text-left" onClick={() => onSelect(food)}>
-        <div className="flex items-start gap-2">
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-ink truncate leading-tight">{food.name}</p>
-            {food.brand && <p className="text-[11px] text-ink-2 truncate">{food.brand}</p>}
-          </div>
-          {badge && (
-            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.color}`}>
-              {badge.label}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-          <span className="text-xs font-bold text-ink tabular-nums">{Math.round(food.kcal_per_100g)} kcal</span>
-          <span className="text-xs font-medium tabular-nums" style={{ color: 'var(--protein)' }}>P {Math.round(food.protein_g_per_100g)}g</span>
-          <span className="text-xs font-medium tabular-nums" style={{ color: 'var(--carbs)' }}>C {Math.round(food.carbs_g_per_100g)}g</span>
-          <span className="text-xs font-medium tabular-nums" style={{ color: 'var(--fat)' }}>F {Math.round(food.fat_g_per_100g)}g</span>
-          {food.fiber_g_per_100g != null && food.fiber_g_per_100g > 0 && (
-            <span className="text-xs font-medium text-good tabular-nums">Fi {Math.round(food.fiber_g_per_100g)}g</span>
-          )}
-          <span className="text-[10px] text-ink-2">per 100g</span>
-        </div>
+    <div className="flex items-center gap-3 py-2.5">
+      <button
+        type="button"
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-control text-left tap-scale"
+        onClick={() => onSelect(food)}
+      >
+        <EmojiTile name={food.name} />
+        <span className="min-w-0 flex-1">
+          <span className="flex items-baseline gap-2">
+            <span className="line-clamp-2 text-body font-medium leading-snug text-ink">{food.name}</span>
+            {badge && (
+              <span className="shrink-0 rounded-full bg-brand-soft px-2 text-micro font-semibold text-brand-text">
+                {badge}
+              </span>
+            )}
+          </span>
+          <span className="mt-0.5 block truncate text-caption text-ink-3">
+            {food.brand ? `${food.brand} · ` : ''}
+            {portionContext(food, lastPortion)}
+          </span>
+        </span>
       </button>
 
       {onToggleFavourite && (
         <button
           type="button"
           onClick={() => onToggleFavourite(food)}
-          className="h-8 w-8 flex-shrink-0 flex items-center justify-center rounded-control transition-colors hover:bg-energy-soft"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full tap-scale transition-colors hover:bg-surface-2"
           aria-label={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
         >
           <Star
-            className={`h-4 w-4 transition-colors ${
-              isFavourite
-                ? 'fill-energy text-energy'
-                : 'text-hairline hover:text-energy'
-            }`}
+            className={isFavourite ? 'h-5 w-5 fill-energy text-energy' : 'h-5 w-5 text-ink-3'}
+            strokeWidth={1.5}
           />
         </button>
       )}
 
       {onQuickAdd ? (
-        <button
-          type="button"
+        <AddButton
+          busy={Boolean(isQuickAdding)}
+          label={`Quick add ${food.name}`}
           onClick={() => onQuickAdd(food)}
-          disabled={isQuickAdding}
-          className="h-9 w-9 flex-shrink-0 rounded-control bg-brand text-white flex items-center justify-center hover:opacity-90 active:scale-90 disabled:opacity-50 transition-all shadow-rest"
-          aria-label="Quick add"
-        >
-          {isQuickAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-        </button>
+          disabled={Boolean(isQuickAdding)}
+        />
       ) : null}
     </div>
   )

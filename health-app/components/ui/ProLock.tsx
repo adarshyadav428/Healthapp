@@ -57,7 +57,7 @@ function Chip({
     <Link
       href={`/upgrade?reason=${reason}`}
       aria-label={`${label} — upgrade to Pro`}
-      className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold text-ink-3 opacity-70 tap-scale ${className ?? ''}`}
+      className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-micro font-semibold text-ink-3 opacity-70 tap-scale ${className ?? ''}`}
     >
       <Lock className="h-2.5 w-2.5" /> {label}
     </Link>
@@ -82,17 +82,16 @@ function Card({
   useTrack(track)
   return (
     <div
-      className={`rounded-[20px] p-4 ${className ?? ''}`}
-      style={{ backgroundColor: 'var(--brand-soft)' }}
+      className={`rounded-card bg-brand-soft p-4 ${className ?? ''}`}
     >
       <div className="flex items-center gap-2">
         <Lock className="h-4 w-4 shrink-0 text-brand-ink" />
-        <p className="text-[13px] font-bold text-brand-ink">{title}</p>
+        <p className="text-caption font-semibold text-brand-ink">{title}</p>
       </div>
-      <p className="mt-1 text-[12px] leading-relaxed text-brand-ink opacity-80">{body}</p>
+      <p className="mt-1 text-caption text-brand-ink opacity-80">{body}</p>
       <Link
         href={`/upgrade?reason=${reason}`}
-        className="mt-3 inline-flex items-center gap-1 rounded-full bg-cta-grad px-3.5 py-1.5 text-[11px] font-bold text-white tap-scale"
+        className="mt-3 inline-flex h-9 items-center gap-1 rounded-full bg-cta-grad px-3.5 text-caption font-semibold text-white tap-scale"
       >
         <Crown className="h-3 w-3" /> {cta}
       </Link>

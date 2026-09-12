@@ -11,8 +11,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Lose weight the Indian way. Track food, monitor progress, get AI insights.',
     start_url: '/dashboard',
     display: 'standalone',
-    background_color: '#F7F6F3',
-    theme_color: '#F7F6F3',
+    background_color: '#F4F5F7',
+    theme_color: '#F4F5F7',
     orientation: 'portrait',
     categories: ['health', 'fitness'],
     // Long-press the installed icon (Android) or right-click it (desktop) to

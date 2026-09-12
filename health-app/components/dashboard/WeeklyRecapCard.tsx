@@ -12,8 +12,6 @@ export type WeeklyRecap = {
   message: string
 }
 
-const AIR = { boxShadow: 'var(--shadow-air)' } as const
-
 /**
  * "Your week" card. Renders the latest stored weekly recap for Pro; a gentle
  * placeholder for a Pro user still waiting on their first Sunday; and — for a
@@ -38,7 +36,7 @@ export function WeeklyRecapCard({ recap, isPro, dailyTarget, streakDays }: {
   if (!isPro) {
     return (
       <ProLock.Card
-        className="mt-4"
+        className="mt-8"
         reason="ai_insights"
         track="recap_card"
         title="Your weekly recap"
@@ -50,12 +48,12 @@ export function WeeklyRecapCard({ recap, isPro, dailyTarget, streakDays }: {
 
   if (!recap) {
     return (
-      <div className="mt-4 rounded-[24px] bg-surface p-5" style={AIR}>
+      <div className="mt-8 rounded-card border border-hairline bg-surface p-5 shadow-air">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-brand" strokeWidth={2} />
-          <p className="text-[14px] font-bold text-ink">Your weekly recap</p>
+          <Sparkles className="h-4 w-4 text-brand" strokeWidth={2} aria-hidden="true" />
+          <p className="text-body font-semibold text-ink">Your weekly recap</p>
         </div>
-        <p className="mt-1.5 text-[13px] text-ink-3">Your first recap lands this Sunday — keep logging through the week.</p>
+        <p className="mt-1 text-caption text-ink-3">Your first recap lands this Sunday — keep logging through the week.</p>
       </div>
     )
   }
@@ -92,10 +90,10 @@ export function WeeklyRecapCard({ recap, isPro, dailyTarget, streakDays }: {
   }
 
   return (
-    <div className="mt-4 rounded-[24px] bg-surface p-5" style={AIR}>
+    <div className="mt-8 rounded-card border border-hairline bg-surface p-5 shadow-air">
       <div className="flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-brand" strokeWidth={2} />
-        <p className="text-[14px] font-bold text-ink">Your week</p>
+        <Sparkles className="h-4 w-4 text-brand" strokeWidth={2} aria-hidden="true" />
+        <p className="text-body font-semibold text-ink">Your week</p>
       </div>
 
       {/* Wraps rather than scrolls — a card that needs a swipe to discover
@@ -104,17 +102,17 @@ export function WeeklyRecapCard({ recap, isPro, dailyTarget, streakDays }: {
         {cards.map((card) => (
           <div key={card.label}>
             <p
-              className="font-display text-[22px] font-bold tabular-nums text-ink"
-              style={{ letterSpacing: '-0.02em', ...(card.color ? { color: card.color } : {}) }}
+              className="font-display text-title-sm font-semibold tabular-nums text-ink"
+              style={card.color ? { color: card.color } : undefined}
             >
               {card.value}
             </p>
-            <p className="text-[11px] text-ink-3">{card.label}</p>
+            <p className="text-micro text-ink-3">{card.label}</p>
           </div>
         ))}
       </div>
 
-      <p className="mt-3.5 text-[13px] leading-relaxed text-ink-2">{recap.message}</p>
+      <p className="mt-3.5 text-caption leading-relaxed text-ink-2">{recap.message}</p>
     </div>
   )
 }

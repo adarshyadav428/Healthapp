@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { CheckCircle, Flame } from 'lucide-react'
+import { Camera, Flame, TrendingUp, Utensils, Zap } from 'lucide-react'
 import { LEGAL_NAME } from '@/lib/merchant'
 import { FREE_FEATURES, PRO_FEATURES } from '@/lib/planFeatures'
+import { ProductScreens } from '@/components/landing/ProductScreens'
+import { Faq } from '@/components/landing/Faq'
 
 export const metadata: Metadata = {
   title: 'GetInShape — Calorie & Weight Tracker Built for Indian Food',
@@ -18,284 +20,202 @@ export const metadata: Metadata = {
   },
 }
 
+// The two button styles on this page. Azure is the site's accent (see
+// globals.css); the app's ember stays inside the product screens.
+const PRIMARY =
+  'inline-flex h-12 items-center justify-center gap-2 rounded-full bg-azure-grad px-6 text-body font-semibold text-white shadow-azure tap-scale transition-[filter] hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
+const SECONDARY =
+  'inline-flex h-12 items-center justify-center rounded-full border border-hairline bg-surface px-6 text-body font-semibold text-ink tap-scale transition-colors hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure focus-visible:ring-offset-2 focus-visible:ring-offset-canvas'
+
+const DIFFERENTIATORS = [
+  { icon: Utensils, title: '850+ Indian foods', body: 'Dal, roti, biryani, dosa — the everyday staples measured from IFCT 2017.' },
+  { icon: Zap, title: 'Log in seconds', body: 'Recent foods, one-tap re-log, copy yesterday. Never type the same meal twice.' },
+  { icon: Camera, title: 'Log with a photo', body: 'Point the camera at your plate and get an estimate you can edit before it lands.' },
+  { icon: TrendingUp, title: 'See the trend', body: 'Weight, calories and a streak that shows the habit forming.' },
+]
+
+const STEPS = [
+  { n: 1, title: 'Log what you ate', body: 'Search, tap a recent food, scan a barcode or take a photo.' },
+  { n: 2, title: 'See where you stand', body: 'Calories left today, macros, and how the week is going against maintenance.' },
+  { n: 3, title: 'Keep it going', body: 'A streak, a weekly recap and a weight trend that rewards consistency, not perfection.' },
+]
+
+const FAQ = [
+  {
+    q: 'Does it have Indian food data?',
+    a: 'Yes — 850+ Indian dishes. The everyday staples are measured values from IFCT 2017 (Indian Food Composition Tables); regional and restaurant dishes are category-based estimates, labelled as such in search. Packaged brands come from Open Food Facts.',
+  },
+  {
+    q: 'How is my calorie goal calculated?',
+    a: 'Mifflin-St Jeor BMR plus your activity level and goal (lose, maintain or gain). Protein is set at 1.6 g per kg of body weight, fat at 0.8 g per kg, and the rest goes to carbs.',
+  },
+  {
+    q: 'Can I install it like an app?',
+    a: "Yes. It's a web app you can add to your home screen, and it's on Google Play for Android. Either way it opens full-screen and you need a connection to log and sync.",
+  },
+  {
+    q: 'Is my data safe, and can I leave?',
+    a: 'Data is encrypted in transit and at rest, and only you can see yours. You can export everything or delete your account from Profile at any time.',
+  },
+  {
+    q: 'Can I cancel Pro?',
+    a: 'Anytime, from Profile → Pro subscription. There is no lock-in; you keep access until the end of the billing period.',
+  },
+]
+
+// The hero's one orchestrated moment: each line lands a beat after the last.
+const rise = (i: number) => ({ animationDelay: `${i * 90}ms` })
+
 export default function Home() {
   return (
-    <div className="min-h-screen overflow-x-hidden">
-      {/* Header */}
-      <header className="mx-auto flex w-full max-w-4xl items-center justify-between px-5 py-5">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-control bg-brand-soft">
-            <Flame className="h-[18px] w-[18px] text-brand" strokeWidth={2.2} />
-          </div>
-          <span className="font-display text-xl font-bold text-ink tracking-tight">GetInShape</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link href="/auth/sign-in" className="text-sm font-medium text-ink-2 hover:text-ink transition-colors">
-            Sign in
-          </Link>
-          <Link
-            href="/auth/sign-up"
-            className="rounded-full bg-brand px-4 py-2 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-rest"
-          >
-            Start free
-          </Link>
-        </div>
+    <div className="site min-h-screen overflow-x-hidden bg-azure-wash">
+      {/* ── Header ── */}
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-4 lg:px-8">
+        <Link href="/" className="flex items-center gap-2.5 rounded-full tap-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-azure focus-visible:ring-offset-2 focus-visible:ring-offset-canvas" aria-label="GetInShape home">
+          <span className="grid h-9 w-9 place-items-center rounded-control bg-brand-soft">
+            <Flame className="h-5 w-5 text-brand" strokeWidth={2} aria-hidden="true" />
+          </span>
+          <span className="font-display text-title-sm font-semibold text-ink">GetInShape</span>
+        </Link>
+        <nav aria-label="Site" className="flex items-center gap-1 sm:gap-2">
+          <a href="#pricing" className="hidden h-11 items-center px-3 text-body font-medium text-ink-2 hover:text-ink sm:inline-flex">Pricing</a>
+          <a href="#faq" className="hidden h-11 items-center px-3 text-body font-medium text-ink-2 hover:text-ink sm:inline-flex">FAQ</a>
+          <Link href="/auth/sign-in" className="inline-flex h-11 items-center whitespace-nowrap px-3 text-body font-medium text-ink-2 hover:text-ink">Sign in</Link>
+          <Link href="/auth/sign-up" className={`${PRIMARY} h-10 whitespace-nowrap px-4 text-caption sm:h-11 sm:px-5 sm:text-body`}>Start free<span className="hidden sm:inline">&nbsp;→</span></Link>
+        </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-4xl px-5 pb-24">
-        {/* Hero */}
-        <section className="py-10 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-hairline bg-surface px-3 py-1 text-xs font-semibold text-ink-2 mb-6">
-            🇮🇳 Built for Indian diets &middot; 850+ desi foods included
-          </div>
-          <h1 className="font-display text-4xl font-bold leading-tight text-ink sm:text-5xl">
-            Track calories the<br />
-            <span className="text-brand-ink">Indian way</span>
+      <main className="mx-auto w-full max-w-6xl px-5 lg:px-8">
+        {/* ── Hero ── */}
+        <section className="pb-10 pt-10 text-center sm:pt-16">
+          <p className="animate-fade-up text-caption font-semibold text-azure-text" style={rise(0)}>Built for India</p>
+          <h1 className="mx-auto mt-3 max-w-3xl animate-fade-up font-display text-display font-semibold text-ink sm:text-hero lg:text-hero-lg" style={rise(1)}>
+            Track your food.<br />
+            See your progress.<br />
+            <span className="text-azure-text">Stay consistent.</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-md text-base text-ink-2">
-            Dal, roti, biryani, dosa — with accurate IFCT 2017 nutrition data.
-            Log food in 5 seconds. See your macros, weight trend and calorie deficit — all in one place.
+          <p className="mx-auto mt-5 max-w-lg animate-fade-up text-body-lg text-ink-2" style={rise(2)}>
+            A simple calorie and weight tracker built for India. Log dal, roti or biryani in seconds, and watch the trend move.
           </p>
-          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Link
-              href="/auth/sign-up"
-              className="rounded-full bg-brand px-8 py-3 text-base font-bold text-white hover:opacity-90 transition-opacity shadow-float"
-            >
-              Start for free →
-            </Link>
-            <Link
-              href="/auth/sign-in"
-              className="rounded-full border border-hairline bg-surface px-8 py-3 text-base font-semibold text-ink hover:bg-surface-2 transition-colors"
-            >
-              Sign in
-            </Link>
+          <div className="mt-8 flex animate-fade-up flex-col items-center justify-center gap-3 sm:flex-row" style={rise(3)}>
+            <Link href="/auth/sign-up" className={`${PRIMARY} w-full sm:w-auto`}>Start for free</Link>
+            <Link href="/auth/sign-in" className={`${SECONDARY} w-full sm:w-auto`}>Sign in</Link>
           </div>
-          <p className="mt-3 text-xs text-ink-2">Free forever · No credit card · Installs like an app</p>
+          <p className="mt-4 animate-fade-up text-caption text-ink-3" style={rise(4)}>Free forever · No credit card · Web and Android</p>
         </section>
 
-        {/* App preview mockup */}
-        <section className="mx-auto max-w-sm">
-          <div className="rounded-sheet border border-hairline bg-surface p-5 shadow-float space-y-3">
-            {/* Calorie ring mock */}
-            <div className="rounded-card bg-surface border border-hairline p-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-ink-2 font-semibold uppercase tracking-wide">Calories today</p>
-                <p className="font-display text-3xl font-bold text-ink tabular-nums">1,420</p>
-                <p className="text-sm text-ink-2">of 1,800 goal</p>
-                <p className="text-sm font-bold text-good mt-1">380 kcal remaining</p>
-              </div>
-              <div className="relative h-24 w-24 flex-shrink-0">
-                <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="var(--surface-2)" strokeWidth="14" />
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="var(--energy)" strokeWidth="14"
-                    strokeDasharray="239" strokeDashoffset="62" strokeLinecap="round" />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-base font-bold text-energy-ink tabular-nums">380</span>
-                  <span className="text-[9px] text-ink-2">left</span>
-                </div>
-              </div>
-            </div>
-            {/* Macro cards mock */}
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: 'Protein', val: '95g', target: '/120g', color: 'var(--protein)', pct: '79%' },
-                { label: 'Carbs', val: '180g', target: '/200g', color: 'var(--carbs)', pct: '90%' },
-                { label: 'Fat', val: '42g', target: '/55g', color: 'var(--fat)', pct: '76%' },
-              ].map((m) => (
-                <div key={m.label} className="rounded-control bg-surface-2 p-2">
-                  <p className="text-[10px] font-semibold text-ink-2 uppercase">{m.label}</p>
-                  <p className="text-sm font-bold text-ink tabular-nums">{m.val}</p>
-                  <p className="text-[10px] text-ink-2">{m.target}</p>
-                  <div className="mt-1.5 h-1 rounded-full bg-surface overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: m.pct, background: m.color }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* Recent meals mock */}
-            <div className="rounded-card bg-surface-2 p-3 space-y-2">
-              <p className="text-xs font-bold text-ink-2 flex items-center gap-1">
-                🥣 Breakfast
-                <span className="ml-auto text-xs font-semibold text-ink">486 kcal</span>
-              </p>
-              {[
-                { name: 'Poha with peanuts', kcal: 286 },
-                { name: 'Chai with milk', kcal: 60 },
-                { name: 'Boiled egg', kcal: 140 },
-              ].map((f) => (
-                <div key={f.name} className="flex justify-between text-xs bg-surface rounded-control px-3 py-2">
-                  <span className="text-ink font-medium">{f.name}</span>
-                  <span className="text-ink-2 tabular-nums">{f.kcal} kcal</span>
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* ── The product ── */}
+        <section aria-label="The app" className="animate-fade-up pb-6 lg:pb-12" style={rise(5)}>
+          <ProductScreens />
         </section>
 
-        {/* Features */}
-        <section className="mt-16 grid gap-4 sm:grid-cols-2">
-          {[
-            { emoji: '🍛', title: '850+ Indian foods', desc: 'Dal makhani, biryani, idli, paratha — with 225 staples measured from IFCT 2017 and the long tail estimated and clearly labelled. Searched in Hindi and English.' },
-            { emoji: '⚡', title: 'Log in 5 seconds', desc: "Recent foods + quick-add button. Copy yesterday's meals with one tap. Never type the same food twice." },
-            { emoji: '🏋️', title: 'Exercise tracking', desc: 'Log workouts, walks and yoga with MET-based calorie estimates.' },
-            { emoji: '📸', title: 'AI photo scan', desc: 'Point your camera at your plate. Gemini identifies the dish and estimates portions, tuned for Indian home cooking.' },
-            { emoji: '📈', title: 'Weight trends', desc: 'Visualize your progress with a trend chart. See BMI, goal prediction, and weeks-to-target at a glance.' },
-            { emoji: '🔥', title: 'Daily streaks', desc: 'Build the logging habit with streak badges. Hit 7, 30, 100 days — with milestone celebrations.' },
-          ].map((f) => (
-            <div key={f.title} className="rounded-sheet border border-hairline bg-surface p-5 shadow-rest">
-              <span className="text-2xl">{f.emoji}</span>
-              <h3 className="mt-2 text-base font-bold text-ink">{f.title}</h3>
-              <p className="mt-1 text-sm text-ink-2">{f.desc}</p>
+        {/* ── Differentiators ── */}
+        <section aria-label="Why GetInShape" className="mx-auto grid max-w-5xl gap-8 py-16 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">
+          {DIFFERENTIATORS.map(({ icon: Icon, title, body }) => (
+            <div key={title} className="text-center sm:text-left">
+              <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-azure-soft text-azure sm:mx-0">
+                <Icon className="h-6 w-6" strokeWidth={1.75} aria-hidden="true" />
+              </span>
+              <h2 className="mt-4 text-title-sm font-semibold text-ink">{title}</h2>
+              <p className="mt-1.5 text-body text-ink-2">{body}</p>
             </div>
           ))}
         </section>
 
-        {/* Founder story */}
-        <section className="mt-16">
-          <div className="rounded-sheet border border-hairline bg-surface bg-hero-wash p-6 shadow-rest relative overflow-hidden">
-            <div className="relative">
-              <div className="inline-flex items-center gap-2 rounded-full border border-hairline bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-ink mb-4">
-                👤 Why I built this
-              </div>
-              <blockquote className="font-display text-lg font-bold text-ink leading-snug mb-4">
-                &ldquo;Every app I tried had generic food data. My dal, my roti, my sabzi — none of it was there.&rdquo;
-              </blockquote>
-              <p className="text-sm text-ink-2 leading-relaxed mb-4">
-                I&apos;m Adarsh — engineering student, running a medical store in UP, and on a personal mission to
-                lose weight the right way. HealthifyMe didn&apos;t have accurate data for the food I actually eat.
-                MyFitnessPal is built for the West. So I built GetInShape: 850+ Indian foods, with the 225
-                everyday staples measured from IFCT 2017 — the same database nutrition researchers use.
-              </p>
-              <p className="text-sm text-ink-2 leading-relaxed mb-5">
-                I&apos;m using this app every single day. Every bug I fix, every food I add — it&apos;s because
-                I need it myself. That&apos;s the only way to build something that actually works.
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-brand flex items-center justify-center text-white font-bold text-sm shrink-0">
-                  A
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-ink">Adarsh Yadav</p>
-                  <p className="text-xs text-ink-2">Founder · Azamgarh, UP 🇮🇳</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Free vs Pro comparison */}
-        <section className="mt-16">
-          <h2 className="font-display text-2xl font-bold text-ink text-center mb-8">Simple, honest pricing</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {/* Free */}
-            <div className="rounded-sheet border border-hairline bg-surface p-6 shadow-rest">
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink-2 mb-1">Free forever</p>
-              <p className="font-display text-3xl font-bold text-ink">₹0</p>
-              <p className="text-sm text-ink-2 mt-1 mb-5">No credit card required</p>
-              <ul className="space-y-2.5">
-                {FREE_FEATURES.map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-sm text-ink-2">
-                    <CheckCircle className="h-4 w-4 text-good flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/auth/sign-up"
-                className="mt-6 block w-full rounded-control border border-hairline bg-canvas py-3 text-sm font-bold text-ink text-center hover:bg-surface-2 transition-colors"
-              >
-                Start for free
-              </Link>
-            </div>
-            {/* Pro */}
-            <div className="rounded-sheet border-2 border-brand bg-brand-soft p-6 shadow-float relative overflow-hidden">
-              <div className="absolute top-4 right-4 rounded-full bg-energy px-2.5 py-1 text-[10px] font-bold text-energy-ink uppercase tracking-wide">Popular</div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-brand-ink mb-1">Pro</p>
-              <p className="font-display text-3xl font-bold text-ink">₹299<span className="text-base font-semibold text-ink-2">/mo</span></p>
-              <p className="text-sm text-ink-2 mt-1 mb-5">or ₹1,999/year · save 44%</p>
-              <ul className="space-y-2.5">
-                {['Everything in Free', ...PRO_FEATURES].map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-sm text-ink-2">
-                    <CheckCircle className="h-4 w-4 text-brand flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/upgrade"
-                className="mt-6 block w-full rounded-control bg-brand py-3 text-sm font-bold text-white text-center hover:opacity-90 transition-opacity shadow-rest"
-              >
-                Upgrade to Pro →
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section className="mt-16">
-          <h2 className="font-display text-2xl font-bold text-ink text-center mb-8">Frequently asked questions</h2>
-          <div className="space-y-3">
-            {[
-              {
-                q: 'Does it have Indian food data?',
-                a: 'Yes — 850+ Indian dishes. The 225 everyday staples are measured values from IFCT 2017 (Indian Food Composition Tables); the long tail of regional and restaurant dishes — idli, dhokla, pav bhaji, chhole, rajma, biryani — are category-based estimates, and we label those "📊 Estimated" in search so you always know which is which. Packaged brands come from Open Food Facts.',
-              },
-              {
-                q: 'How is my calorie goal calculated?',
-                a: 'Using the Mifflin-St Jeor BMR formula + your activity level and goal (lose/maintain/gain). Protein is set at 1.6g/kg body weight, fat at 0.8g/kg — the rest goes to carbs.',
-              },
-              {
-                q: 'Is my data safe?',
-                a: 'Yes. All data is encrypted at rest and in transit via Supabase (PostgreSQL). Each user can only see their own data. You can export or delete everything from Settings.',
-              },
-              {
-                q: 'Can I install it like an app?',
-                a: "Yes — it's a PWA (Progressive Web App), so you can add it to your phone's home screen and it opens full-screen like a native app. You'll need an internet connection to log and sync your data.",
-              },
-              {
-                q: 'Can I cancel my Pro subscription?',
-                a: 'Yes, anytime from Settings → Manage Subscription. No lock-in. You keep access until the end of the billing period.',
-              },
-            ].map((faq) => (
-              <details key={faq.q} className="group rounded-card border border-hairline bg-surface px-5 py-4 shadow-rest cursor-pointer">
-                <summary className="list-none flex items-center justify-between font-semibold text-sm text-ink">
-                  {faq.q}
-                  <span className="text-ink-2 text-lg leading-none group-open:rotate-45 transition-transform">+</span>
-                </summary>
-                <p className="mt-3 text-sm text-ink-2 leading-relaxed">{faq.a}</p>
-              </details>
+        {/* ── How it works ── */}
+        <section aria-label="How it works" className="border-t border-hairline py-16">
+          <h2 className="text-center font-display text-title-lg font-semibold text-ink">Three things, every day</h2>
+          <ol className="mx-auto mt-10 grid max-w-4xl gap-8 sm:grid-cols-3">
+            {STEPS.map((s) => (
+              <li key={s.n} className="text-center sm:text-left">
+                <span className="font-display text-display font-semibold tabular-nums leading-none text-azure-text">{s.n}</span>
+                <h3 className="mt-3 text-title-sm font-semibold text-ink">{s.title}</h3>
+                <p className="mt-1.5 text-body text-ink-2">{s.body}</p>
+              </li>
             ))}
+          </ol>
+        </section>
+
+        {/* ── Founder ── */}
+        <section aria-label="From the founder" className="border-t border-hairline py-16">
+          <figure className="mx-auto max-w-3xl">
+            <blockquote className="font-display text-title-lg font-semibold leading-tight text-ink">
+              &ldquo;Every app I tried had generic food data. My dal, my roti, my sabzi — none of it was there.&rdquo;
+            </blockquote>
+            <p className="mt-5 max-w-2xl text-body text-ink-2">
+              I&apos;m an engineering student running a medical store in UP, and I wanted to lose weight without guessing.
+              So I built the tracker I needed: 850+ Indian foods, the everyday staples measured from IFCT 2017, and I log
+              in it every day.
+            </p>
+            <figcaption className="mt-6 flex items-center gap-3">
+              <span className="grid h-11 w-11 place-items-center rounded-full bg-surface-2 font-display text-body-lg font-semibold text-ink" aria-hidden="true">A</span>
+              <span>
+                <span className="block text-body font-semibold text-ink">Adarsh Yadav</span>
+                <span className="block text-caption text-ink-3">Founder · Azamgarh, UP</span>
+              </span>
+            </figcaption>
+          </figure>
+        </section>
+
+        {/* ── Pricing ── */}
+        <section id="pricing" aria-label="Pricing" className="scroll-mt-6 border-t border-hairline py-16">
+          <h2 className="text-center font-display text-title-lg font-semibold text-ink">Simple pricing</h2>
+          <p className="mt-2 text-center text-body text-ink-2">Start free. Go Pro when you want the whole history and unlimited AI.</p>
+          <div className="mx-auto mt-10 grid max-w-4xl gap-4 sm:grid-cols-2">
+            <div className="rounded-card-lg border border-hairline bg-surface p-6 shadow-air">
+              <p className="text-caption font-semibold text-ink-2">Free</p>
+              <p className="mt-2 flex items-baseline gap-1">
+                <span className="font-display text-display font-semibold tabular-nums leading-none text-ink">₹0</span>
+                <span className="text-caption text-ink-3">forever</span>
+              </p>
+              <ul className="mt-6 divide-y divide-hairline border-t border-hairline">
+                {FREE_FEATURES.map((f) => <li key={f} className="py-2.5 text-caption text-ink-2">{f}</li>)}
+              </ul>
+              <Link href="/auth/sign-up" className={`${SECONDARY} mt-6 w-full`}>Start for free</Link>
+            </div>
+            <div className="rounded-card-lg border-2 border-azure bg-surface p-6 shadow-air">
+              <p className="text-caption font-semibold text-azure-text">Pro</p>
+              <p className="mt-2 flex items-baseline gap-1">
+                <span className="font-display text-display font-semibold tabular-nums leading-none text-ink">₹299</span>
+                <span className="text-caption text-ink-3">a month · or ₹1,999 a year</span>
+              </p>
+              <ul className="mt-6 divide-y divide-hairline border-t border-hairline">
+                <li className="py-2.5 text-caption font-semibold text-ink">Everything in Free, plus</li>
+                {PRO_FEATURES.map((f) => <li key={f} className="py-2.5 text-caption text-ink-2">{f}</li>)}
+              </ul>
+              <Link href="/upgrade" className={`${PRIMARY} mt-6 w-full`}>Go Pro</Link>
+            </div>
+          </div>
+          <p className="mt-6 text-center text-caption text-ink-3">Billed in ₹ through Razorpay on the web and Google Play on Android. Cancel anytime.</p>
+        </section>
+
+        {/* ── FAQ ── */}
+        <section id="faq" aria-label="Questions" className="mx-auto max-w-3xl scroll-mt-6 border-t border-hairline py-16">
+          <h2 className="font-display text-title-lg font-semibold text-ink">Questions</h2>
+          <div className="mt-8">
+            <Faq items={FAQ} />
           </div>
         </section>
 
-        {/* Final CTA */}
-        <section className="mt-16 rounded-sheet border border-hairline bg-surface p-8 text-center shadow-rest">
-          <h2 className="font-display text-2xl font-bold text-ink">Ready to start?</h2>
-          <p className="mt-2 text-sm text-ink-2">Join GetInShape and take control of your nutrition — the Indian way.</p>
-          <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Link
-              href="/auth/sign-up"
-              className="rounded-full bg-brand px-8 py-3 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-rest"
-            >
-              Start for free →
-            </Link>
-          </div>
-          <p className="mt-3 text-xs text-ink-2">No credit card · Cancel anytime</p>
+        {/* ── Final CTA ── */}
+        <section aria-label="Get started" className="border-t border-hairline py-20 text-center">
+          <h2 className="font-display text-title-lg font-semibold text-ink sm:text-display">Ready to get in shape?</h2>
+          <p className="mt-3 text-body-lg text-ink-2">Free to start. Takes a minute.</p>
+          <Link href="/auth/sign-up" className={`${PRIMARY} mt-8`}>Start for free</Link>
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-hairline bg-surface px-5 py-8 text-center text-xs text-ink-2">
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3">
-          <span>© 2026 GetInShape · Operated by {LEGAL_NAME} · Made with ❤️ for India</span>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/pricing" className="hover:text-ink transition-colors">Pricing</Link>
-            <Link href="/refunds" className="hover:text-ink transition-colors">Refunds</Link>
-            <Link href="/contact" className="hover:text-ink transition-colors">Contact Us</Link>
-            <Link href="/privacy" className="hover:text-ink transition-colors">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-ink transition-colors">Terms of Service</Link>
-          </div>
+      {/* ── Footer ── */}
+      <footer className="border-t border-hairline">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-5 py-8 text-caption text-ink-3 sm:flex-row sm:items-center sm:justify-between lg:px-8">
+          <p>© 2026 GetInShape · {LEGAL_NAME}</p>
+          <nav aria-label="Legal" className="flex flex-wrap gap-x-5 gap-y-2">
+            <Link href="/pricing" className="hover:text-ink">Pricing</Link>
+            <Link href="/contact" className="hover:text-ink">Contact</Link>
+            <Link href="/privacy" className="hover:text-ink">Privacy</Link>
+            <Link href="/terms" className="hover:text-ink">Terms</Link>
+            <Link href="/refunds" className="hover:text-ink">Refunds</Link>
+          </nav>
         </div>
       </footer>
     </div>

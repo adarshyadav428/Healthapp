@@ -133,14 +133,10 @@ export function ShareProgressButton({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="tap-scale mt-3 flex w-full items-center justify-center gap-2 rounded-card border border-dashed border-brand-ring py-[13px] text-caption font-semibold text-brand-ink"
-      >
-        <Share2 className="h-4 w-4" strokeWidth={2} />
+      <Button type="button" variant="outline" onClick={() => setOpen(true)} className="w-full">
+        <Share2 className="h-5 w-5" strokeWidth={1.75} />
         Share your progress
-      </button>
+      </Button>
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent>
