@@ -120,7 +120,7 @@ export function ShareDayButton(
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="tap-scale mt-3 flex w-full items-center justify-center gap-2 rounded-card border border-dashed border-brand-ring py-[13px] text-caption font-semibold text-brand-ink"
+        className="-ml-2 mt-3 flex h-11 items-center gap-2 rounded-control px-2 text-caption font-semibold text-brand-text tap-scale transition-colors hover:bg-surface-2"
       >
         <Share2 className="h-4 w-4" strokeWidth={2} />
         Share this day

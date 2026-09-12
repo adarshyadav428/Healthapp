@@ -5,17 +5,20 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { FoodLog, ExerciseLog } from '../../types/index'
 import { getIstDayRange } from '../../lib/dateUtils'
 import { isLiquidFood } from '../../lib/portion-units'
-import { Loader2, Dumbbell, Flame, Pencil, Trash2 } from 'lucide-react'
+import { Dumbbell, Pencil, Trash2 } from 'lucide-react'
+import { IconButton } from '../ui/IconButton'
 import { toast } from '../ui/use-toast'
 import { EditFoodLogModal } from '../log/EditFoodLogModal'
 import { ShareDayButton } from '../log/ShareDayButton'
 import { ProLock } from '../ui/ProLock'
 
+// Meal groups in reading order. Labels are ink, not a colour per meal — the
+// same row idiom as Home's "Today's meals" and the Food log.
 const MEAL_CONFIG = {
-  breakfast: { emoji: '🥣', label: 'Breakfast', color: 'text-energy-ink' },
-  lunch: { emoji: '🍛', label: 'Lunch', color: 'text-good' },
-  dinner: { emoji: '🍲', label: 'Dinner', color: 'text-brand-ink' },
-  snack: { emoji: '🥜', label: 'Snack', color: 'text-energy-ink' },
+  breakfast: { label: 'Breakfast' },
+  lunch: { label: 'Lunch' },
+  dinner: { label: 'Dinner' },
+  snack: { label: 'Snack' },
 }
 
 // Both hooks go through the server API (not the browser Supabase client) so
@@ -98,8 +101,10 @@ export function DayDiary(
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-6">
-        <Loader2 className="h-5 w-5 animate-spin text-brand" />
+      <div className="space-y-2 py-1" aria-busy="true">
+        <div className="h-6 w-40 animate-shimmer rounded bg-surface-2" />
+        <div className="h-11 animate-shimmer rounded-control bg-surface-2" />
+        <div className="h-11 animate-shimmer rounded-control bg-surface-2" />
       </div>
     )
   }
@@ -115,12 +120,7 @@ export function DayDiary(
         />
       )
     }
-    return (
-      <div className="py-6 text-center">
-        <p className="text-2xl mb-1">🍽️</p>
-        <p className="text-sm text-ink-2">Nothing logged on this day.</p>
-      </div>
-    )
+    return <p className="py-4 text-center text-body text-ink-2">Nothing logged on this day.</p>
   }
 
   const byMeal = (Object.keys(MEAL_CONFIG) as (keyof typeof MEAL_CONFIG)[]).reduce((acc, meal) => {
@@ -134,77 +134,60 @@ export function DayDiary(
   const totalF = logs.reduce((s, l) => s + l.fat_g, 0)
 
   return (
-    <div className="space-y-3">
-      {/* Day total */}
-      <div className="flex gap-2 flex-wrap">
-        <div className="rounded-control bg-energy-soft border border-hairline px-3 py-1.5 text-center">
-          <p className="text-sm font-bold text-energy-ink tabular-nums">{Math.round(totalKcal)}</p>
-          <p className="text-[10px] text-energy-ink opacity-80">kcal</p>
-        </div>
-        <div className="rounded-control border border-hairline px-3 py-1.5 text-center" style={{ background: 'color-mix(in srgb, var(--protein) 8%, transparent)' }}>
-          <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--protein)' }}>{Math.round(totalP)}g</p>
-          <p className="text-[10px] opacity-80" style={{ color: 'var(--protein)' }}>protein</p>
-        </div>
-        <div className="rounded-control border border-hairline px-3 py-1.5 text-center" style={{ background: 'color-mix(in srgb, var(--carbs) 10%, transparent)' }}>
-          <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--carbs)' }}>{Math.round(totalC)}g</p>
-          <p className="text-[10px] opacity-80" style={{ color: 'var(--carbs)' }}>carbs</p>
-        </div>
-        <div className="rounded-control border border-hairline px-3 py-1.5 text-center" style={{ background: 'color-mix(in srgb, var(--fat) 10%, transparent)' }}>
-          <p className="text-sm font-bold tabular-nums" style={{ color: 'var(--fat)' }}>{Math.round(totalF)}g</p>
-          <p className="text-[10px] opacity-80" style={{ color: 'var(--fat)' }}>fat</p>
-        </div>
-      </div>
+    <div>
+      {/* Day total — the numeral and the three macros, the way every other
+          surface says it. */}
+      <p className="flex items-baseline gap-1.5">
+        <span className="font-display text-title-lg font-semibold tabular-nums leading-none text-ink">{Math.round(totalKcal).toLocaleString('en-IN')}</span>
+        <span className="text-caption text-ink-2">kcal</span>
+      </p>
+      <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-caption">
+        {([['Protein', totalP, 'var(--protein)'], ['Carbs', totalC, 'var(--carbs)'], ['Fat', totalF, 'var(--fat)']] as const).map(([label, g, color]) => (
+          <div key={label} className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full" style={{ background: color }} aria-hidden="true" />
+            <dt className="text-ink-2">{label}</dt>
+            <dd className="font-semibold tabular-nums text-ink">{Math.round(g)} g</dd>
+          </div>
+        ))}
+      </dl>
 
-      {/* Meals */}
+      {/* Meals — a heading and hairline rows per group, no card in a card. */}
       {(Object.entries(byMeal) as [keyof typeof MEAL_CONFIG, FoodLog[]][])
         .filter(([, items]) => items.length > 0)
         .map(([meal, items]) => {
-          const cfg = MEAL_CONFIG[meal]
           const mealKcal = items.reduce((s, l) => s + l.kcal, 0)
           return (
-            <div key={meal}>
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1.5">
-                  <span>{cfg.emoji}</span>
-                  <span className={`text-xs font-bold ${cfg.color}`}>{cfg.label}</span>
-                </div>
-                <span className="text-[11px] text-ink-2 font-medium tabular-nums">{Math.round(mealKcal)} kcal</span>
+            <section key={meal} aria-label={MEAL_CONFIG[meal].label} className="mt-4">
+              <div className="flex items-baseline justify-between">
+                <h3 className="text-body font-semibold text-ink">{MEAL_CONFIG[meal].label}</h3>
+                <span className="text-caption tabular-nums text-ink-3">{Math.round(mealKcal)} kcal</span>
               </div>
-              <div className="space-y-1.5">
+              <ul className="mt-1 divide-y divide-hairline">
                 {items.map((log) => (
-                  <div key={log.id} className="flex items-center justify-between rounded-control bg-surface-2 border border-hairline px-3 py-2">
-                    <div className="min-w-0 flex-1 mr-2">
-                      <p className="text-xs font-semibold text-ink truncate">{log.food?.name ?? 'Food item'}</p>
-                      <p className="text-[10px] text-ink-2 tabular-nums">{Math.round(log.grams)}{log.food?.name && isLiquidFood(log.food.name) ? 'ml' : 'g'} · {Math.round(log.protein_g)}P {Math.round(log.carbs_g)}C {Math.round(log.fat_g)}F</p>
+                  <li key={log.id} className="flex min-h-[52px] items-center gap-3 py-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-body font-medium text-ink">{log.food?.name ?? 'Food item'}</p>
+                      <p className="text-caption tabular-nums text-ink-3">{Math.round(log.grams)}{log.food?.name && isLiquidFood(log.food.name) ? ' ml' : ' g'} · P {Math.round(log.protein_g)} · C {Math.round(log.carbs_g)} · F {Math.round(log.fat_g)}</p>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <span className="text-xs font-bold text-ink mr-1 tabular-nums">{Math.round(log.kcal)} kcal</span>
-                      <button
-                        type="button"
-                        onClick={() => setEditingLog(log)}
-                        className="rounded-full p-1 text-ink-2 hover:text-brand hover:bg-brand-soft transition-colors"
-                        aria-label="Edit"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => deleteLog(log.id)}
-                        disabled={deletingId === log.id}
-                        className="rounded-full p-1 text-ink-2 hover:text-danger hover:bg-danger-soft disabled:opacity-40 transition-colors"
-                        aria-label="Delete"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                    <span className="shrink-0 text-body font-semibold tabular-nums text-ink">{Math.round(log.kcal)}</span>
+                    <div className="flex shrink-0 items-center">
+                      <IconButton label={`Edit ${log.food?.name ?? 'entry'}`} onClick={() => setEditingLog(log)} className="text-ink-2 hover:bg-surface-2 hover:text-ink">
+                        <Pencil className="h-4 w-4" strokeWidth={1.75} />
+                      </IconButton>
+                      <IconButton label={`Delete ${log.food?.name ?? 'entry'}`} onClick={() => deleteLog(log.id)} disabled={deletingId === log.id} className="text-ink-2 hover:bg-danger-soft hover:text-danger disabled:opacity-40">
+                        <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+                      </IconButton>
                     </div>
-                  </div>
+                  </li>
                 ))}
-              </div>
-            </div>
+              </ul>
+            </section>
           )
         })}
 
-      <ShareDayButton logs={logs} date={date} firstName={firstName} />
+      <div className="mt-4">
+        <ShareDayButton logs={logs} date={date} firstName={firstName} />
+      </div>
 
       {editingLog && (
         <EditFoodLogModal
@@ -217,29 +200,27 @@ export function DayDiary(
 
       {/* Exercise for the day */}
       {exerciseLogs.length > 0 && (
-        <div>
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <Dumbbell className="h-3.5 w-3.5 text-brand" />
-            <span className="text-xs font-bold text-brand-ink">Exercise</span>
-            <span className="text-[11px] text-ink-2 font-medium ml-auto tabular-nums">
+        <section aria-label="Exercise" className="mt-4">
+          <div className="flex items-baseline justify-between">
+            <h3 className="flex items-center gap-1.5 text-body font-semibold text-ink">
+              <Dumbbell className="h-4 w-4 text-ink-2" strokeWidth={1.75} /> Exercise
+            </h3>
+            <span className="text-caption tabular-nums text-ink-3">
               −{exerciseLogs.reduce((s, e) => s + e.calories, 0)} kcal burned
             </span>
           </div>
-          <div className="space-y-1.5">
+          <ul className="mt-1 divide-y divide-hairline">
             {exerciseLogs.map((log) => (
-              <div key={log.id} className="flex items-center justify-between rounded-control bg-brand-soft border border-hairline px-3 py-2">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <Flame className="h-3 w-3 shrink-0" style={{ color: 'var(--fat)' }} />
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-ink capitalize truncate">{log.activity}</p>
-                    <p className="text-[10px] text-ink-2">{log.duration_min} min</p>
-                  </div>
+              <li key={log.id} className="flex min-h-[52px] items-center gap-3 py-2">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-body font-medium capitalize text-ink">{log.activity}</p>
+                  <p className="text-caption text-ink-3">{log.duration_min} min</p>
                 </div>
-                <span className="text-xs font-bold text-brand-ink shrink-0 tabular-nums">{log.calories} kcal</span>
-              </div>
+                <span className="shrink-0 text-body font-semibold tabular-nums text-ink">−{log.calories}</span>
+              </li>
             ))}
-          </div>
-        </div>
+          </ul>
+        </section>
       )}
     </div>
   )

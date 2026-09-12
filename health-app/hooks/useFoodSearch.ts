@@ -178,7 +178,10 @@ export function useFoodSearch({ recentFoods, recentLogItems, frequentFoods, logD
 
   // `method` is the analytics surface this tap came from: the search-results
   // list is a genuine search, while favourites/frequent/recent are re-logs.
-  const quickAdd = async (food: Food, method: FoodLogMethod = 'search') => {
+  // `gramsOverride` is the portion this food was last logged at (see
+  // lib/lastPortions.ts) — "+" on a food you have eaten before re-logs that
+  // amount rather than the catalogue default, in the current meal slot.
+  const quickAdd = async (food: Food, method: FoodLogMethod = 'search', gramsOverride?: number) => {
     if (quickAddingId) return
     setQuickAddingId(food.id)
     try {
@@ -186,7 +189,7 @@ export function useFoodSearch({ recentFoods, recentLogItems, frequentFoods, logD
       // Not food.serving_size_g: that disagreed with the amount AddFoodModal
       // opens on for the same food (180 g vs a 150 g katori of cooked rice),
       // and it logged 0 g for any row whose serving size was missing.
-      const { grams } = defaultPortionFor(food)
+      const grams = gramsOverride && gramsOverride > 0 ? gramsOverride : defaultPortionFor(food).grams
       const res = await fetch('/api/logs/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...logMetaHeaders(method) },

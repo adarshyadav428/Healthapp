@@ -46,9 +46,10 @@ const HEX = /#[0-9a-fA-F]{3,8}\b/g
 // hand — if you add a token there, add it here too, or this check goes blind
 // to opacity-modifier misuse on the new name.
 const TOKEN_NAMES = [
-  'canvas', 'surface', 'surface-2', 'ink', 'ink-2', 'ink-3', 'hairline', 'scrim', 'header-bg',
+  'canvas', 'surface', 'surface-2', 'ink', 'ink-2', 'ink-3', 'hairline', 'hairline-2', 'scrim', 'header-bg',
   'brand', 'brand-soft', 'brand-ink', 'brand-ring', 'energy', 'energy-ink', 'energy-soft', 'track',
-  'good', 'danger', 'danger-soft', 'protein', 'carbs', 'fat',
+  'good', 'good-soft', 'danger', 'danger-soft', 'protein', 'carbs', 'fat',
+  'azure', 'azure-text', 'azure-soft', 'azure-ring',
   'background', 'foreground', 'card', 'card-border', 'border', 'muted', 'secondary',
   'primary', 'accent', 'accent-soft', 'accent-ink', 'accent-line', 'accent-2',
   'success', 'warning', 'water', 'water-soft', 'water-border',
@@ -65,7 +66,18 @@ const OPACITY_MODIFIER = new RegExp(
 // it prints violations and fails only if the count rises above the baseline
 // below, so it ships green today and stops new ones without forcing a sweep.
 const ARB_SPACING = /\b(?:m[trblxy]?|p[trblxy]?|gap(?:-[xy])?|space-[xy])-\[[^\]]+\]/g
-const SPACING_BASELINE = 53
+const SPACING_BASELINE = 7
+
+// Arbitrary type sizes and radii — `text-[13px]`, `rounded-[20px]`. Same
+// ratchet, same reason: tailwind.config.ts names ten type steps and four radii
+// (2026-09-11), and an arbitrary value is a second scale drawn by hand. Both
+// ship at their current counts and may only fall. Tailwind's own `text-sm` /
+// `rounded-lg` are not counted — moving those is the page-by-page redesign's
+// job, not a guard's, until the sweep is done.
+const ARB_TEXT = /\btext-\[[^\]]+\]/g
+const TEXT_BASELINE = 118
+const ARB_RADIUS = /\brounded-(?:[trbl]{1,2}-)?\[[^\]]+\]/g
+const RADIUS_BASELINE = 1
 
 function walk(dir) {
   const out = []
@@ -100,6 +112,8 @@ function scanFile(file) {
   const hexHits = []
   const opacityHits = []
   const spacingHits = []
+  const textHits = []
+  const radiusHits = []
   lines.forEach((line, i) => {
     if (skip.has(i)) return
     const hex = line.match(HEX)
@@ -108,8 +122,12 @@ function scanFile(file) {
     if (opacity) opacityHits.push({ line: i + 1, count: opacity.length, sample: opacity.slice(0, 3).join(' ') })
     const spacing = line.match(ARB_SPACING)
     if (spacing) spacingHits.push({ line: i + 1, count: spacing.length, sample: spacing.slice(0, 3).join(' ') })
+    const text = line.match(ARB_TEXT)
+    if (text) textHits.push({ line: i + 1, count: text.length, sample: text.slice(0, 3).join(' ') })
+    const radius = line.match(ARB_RADIUS)
+    if (radius) radiusHits.push({ line: i + 1, count: radius.length, sample: radius.slice(0, 3).join(' ') })
   })
-  return { hexHits, opacityHits, spacingHits }
+  return { hexHits, opacityHits, spacingHits, textHits, radiusHits }
 }
 
 const report = process.argv.includes('--report')
@@ -117,17 +135,31 @@ const files = SCAN.flatMap(walk)
 
 let violations = 0
 let spacingTotal = 0
+let textTotal = 0
+let radiusTotal = 0
 const perFile = []
 const spacingPerFile = []
+const textPerFile = []
+const radiusPerFile = []
 
 for (const f of files) {
   const rel = relative(ROOT, join(ROOT, f)).replace(/\\/g, '/')
   if (ALLOWLIST_FILES.has(rel)) continue
-  const { hexHits, opacityHits, spacingHits } = scanFile(f)
+  const { hexHits, opacityHits, spacingHits, textHits, radiusHits } = scanFile(f)
   const spacingCount = spacingHits.reduce((n, h) => n + h.count, 0)
   if (spacingCount > 0) {
     spacingTotal += spacingCount
     spacingPerFile.push({ rel, count: spacingCount, spacingHits })
+  }
+  const textCount = textHits.reduce((n, h) => n + h.count, 0)
+  if (textCount > 0) {
+    textTotal += textCount
+    textPerFile.push({ rel, count: textCount, hits: textHits })
+  }
+  const radiusCount = radiusHits.reduce((n, h) => n + h.count, 0)
+  if (radiusCount > 0) {
+    radiusTotal += radiusCount
+    radiusPerFile.push({ rel, count: radiusCount, hits: radiusHits })
   }
   const count = hexHits.reduce((n, h) => n + h.count, 0) + opacityHits.reduce((n, h) => n + h.count, 0)
   if (count === 0) continue
@@ -166,6 +198,24 @@ if (spacingTotal > 0 || report) {
 }
 const spacingRegressed = spacingTotal > SPACING_BASELINE
 
+// ── Type + radius (advisory + ratchet) ──────────────────────────────────────
+function ratchet(label, total, perFileList, baseline) {
+  if (total > 0 || report) {
+    console.log(
+      `\n${label} (advisory): ${total} arbitrary value(s) across ${perFileList.length} file(s); baseline ${baseline}.`
+    )
+    if (report) {
+      for (const { rel, hits } of perFileList.sort((a, b) => b.count - a.count)) {
+        console.log(`  ${rel}`)
+        for (const h of hits) console.log(`    line ${h.line}: ${h.sample}`)
+      }
+    }
+  }
+  return total > baseline
+}
+const textRegressed = ratchet('Type', textTotal, textPerFile, TEXT_BASELINE)
+const radiusRegressed = ratchet('Radius', radiusTotal, radiusPerFile, RADIUS_BASELINE)
+
 if (violations > 0) {
   console.error('\n\x1b[31mFAIL\x1b[0m — use design tokens, not raw hex; and no opacity modifiers on token colors.')
   process.exit(1)
@@ -175,6 +225,20 @@ if (spacingRegressed) {
     `\n\x1b[31mFAIL\x1b[0m — arbitrary spacing values rose to ${spacingTotal} (baseline ${SPACING_BASELINE}). ` +
       `Use the 4px/8px scale, or run with --report to see the new ones. ` +
       `If a new arbitrary value is genuinely unavoidable, add a '// token-check-ignore' and bump SPACING_BASELINE.`
+  )
+  process.exit(1)
+}
+if (textRegressed) {
+  console.error(
+    `\n\x1b[31mFAIL\x1b[0m — arbitrary text sizes rose to ${textTotal} (baseline ${TEXT_BASELINE}). ` +
+      `Use a named step (text-micro … text-hero-lg in tailwind.config.ts), or run with --report to see the new ones.`
+  )
+  process.exit(1)
+}
+if (radiusRegressed) {
+  console.error(
+    `\n\x1b[31mFAIL\x1b[0m — arbitrary radii rose to ${radiusTotal} (baseline ${RADIUS_BASELINE}). ` +
+      `Use rounded-control / rounded-card / rounded-card-lg / rounded-sheet, or run with --report to see the new ones.`
   )
   process.exit(1)
 }

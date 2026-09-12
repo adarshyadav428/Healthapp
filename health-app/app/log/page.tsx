@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import nextDynamic from 'next/dynamic'
 import { FoodLanding } from '../../components/log/FoodLanding'
-import { LogProgressClient } from '../../components/log/LogProgressClient'
 import { TodayFoodLog } from '../../components/log/TodayFoodLog'
 import { PasteMealCard } from '../../components/log/PasteMealCard'
 import { FoodHeader } from '../../components/log/FoodHeader'
@@ -15,6 +14,7 @@ import { getIstDayRange, istDateStr, dateStrToUtcMidnight } from '../../lib/date
 import { isWithinFreeLogWindow } from '../../lib/backfill'
 import { limitsForSignupDate } from '../../lib/freeTier'
 import { shiftDateStr } from '../../lib/logDates'
+import { lastPortionsFrom } from '../../lib/lastPortions'
 
 // Below-fold widgets — split into separate chunks so they don't block initial JS parse.
 const SkeletonCard = () => <div className="h-32 rounded-2xl bg-card border border-border animate-pulse" />
@@ -91,7 +91,10 @@ export default async function LogPage({
     // initialLogs itself.
     supabase
       .from('food_logs')
-      .select(`id, meal, grams, servings, kcal, protein_g, carbs_g, fat_g, logged_at, food:foods(${FOOD_SELECT})`)
+      // food_id is load-bearing: TodayFoodLog reads it to tell a quick-add
+      // (no food) from a food row, and "Save as combo" filters on it — without
+      // it the server-rendered day saved combos with zero items.
+      .select(`id, food_id, meal, grams, servings, kcal, protein_g, carbs_g, fat_g, logged_at, food:foods(${FOOD_SELECT})`)
       .eq('user_id', user.id)
       .gte('logged_at', start)
       .lt('logged_at', end)
@@ -173,74 +176,79 @@ export default async function LogPage({
     .slice(0, 8)
     .map((entry) => entry.food)
 
+  // What "+" re-logs for a food seen before — derived from the same snapshot,
+  // newest first. See lib/lastPortions.ts.
+  const lastPortions = lastPortionsFrom(typedSnapshot)
+
   const hasYesterdayLogs = yesterdayCount > 0
 
   return (
     <div className="min-h-screen">
       <main
-        className="mx-auto w-full max-w-md px-6"
+        className="mx-auto w-full max-w-md px-3 lg:max-w-5xl lg:px-6"
         style={{
-          paddingTop: 'calc(20px + env(safe-area-inset-top))',
-          paddingBottom: 'calc(120px + env(safe-area-inset-bottom))',
+          paddingTop: 'calc(12px + env(safe-area-inset-top))',
+          paddingBottom: 'calc(var(--tab-bar-h, 72px) + 40px + env(safe-area-inset-bottom))',
         }}
       >
-        {/* Header — date + Food title + Today pill + prev/next day chips */}
+        {/* The page sits inside one hairline frame — a still surface holding
+            everything that moves. */}
+        <div className="rounded-sheet border-2 border-hairline-2 px-3 pb-6 pt-3 lg:px-8 lg:pb-8 lg:pt-6">
+        {/* Header — date + Food title + Today pill + prev/next day chevrons */}
         <FoodHeader dateStr={dateStr} prevDayLocked={prevDayLocked} />
 
         {/* Swipe left/right anywhere below the header to change days */}
         <SwipeDayNav dateStr={dateStr} prevDayLocked={prevDayLocked}>
+        {/* Two columns from lg: finding the next food on the left, the day's
+            log on the right. One column below that, log under the shelves. */}
+        <div className="lg:grid lg:grid-cols-[minmax(0,28rem)_minmax(0,1fr)] lg:items-start lg:gap-16">
+          <div className="mt-5 lg:sticky lg:top-6">
+            {/* Search + shelves + results. Renders on any editable day so a
+                missed day can be backfilled (P1-2). */}
+            {isEditable && (
+              <FoodLanding
+                recentFoods={recentFoods}
+                recentLogItems={recentLogItems}
+                frequentFoods={frequentFoods}
+                hasYesterdayLogs={hasYesterdayLogs}
+                logDate={dateStr}
+                isToday={isToday}
+                isPro={isPro}
+                targets={{ kcal: profile.daily_calorie_target ?? 0, protein: profile.protein_g_target ?? 0 }}
+                aiTrialRemaining={aiTrialRemaining}
+                lastPortions={lastPortions}
+              />
+            )}
+          </div>
 
-        {/* Calorie summary — live for today, static for past */}
-        <div className="mt-4">
-          <LogProgressClient
-            initialLogs={dayFoodLogs}
-            kcalTarget={profile.daily_calorie_target ?? 0}
-            proteinTarget={profile.protein_g_target ?? 0}
-            carbsTarget={profile.carbs_g_target ?? 0}
-            fatTarget={profile.fat_g_target ?? 0}
-            date={viewDate}
-          />
-        </div>
+          <div className="mt-10 lg:mt-5">
+            {/* A meal copied from another day, waiting to be pasted onto this one.
+                Above the log because the day you paste into is usually the empty
+                one. */}
+            {isEditable && (
+              <div className="mb-4">
+                <PasteMealCard logDate={dateStr} />
+              </div>
+            )}
 
-        {/* 1f landing: search pill + scan/quick-add + log again + copy yesterday.
-            Renders on any editable day so a missed day can be backfilled (P1-2). */}
-        {isEditable && (
-          <div className="mt-4">
-            <FoodLanding
-              recentFoods={recentFoods}
-              recentLogItems={recentLogItems}
-              frequentFoods={frequentFoods}
-              hasYesterdayLogs={hasYesterdayLogs}
-              logDate={dateStr}
-              isToday={isToday}
-              isPro={isPro}
-              targets={{ kcal: profile.daily_calorie_target ?? 0, protein: profile.protein_g_target ?? 0 }}
-              aiTrialRemaining={aiTrialRemaining}
+            {/* The selected day's log — live for today, editable on any day */}
+            <TodayFoodLog
+              initialLogs={dayFoodLogs}
+              date={viewDate}
+              displayName={profile.display_name}
+              kcalTarget={profile.daily_calorie_target ?? 0}
             />
-          </div>
-        )}
 
-        {/* A meal copied from another day, waiting to be pasted onto this one.
-            Above the log because the day you paste into is usually the empty
-            one, and TodayFoodLog renders nothing when the day has no logs. */}
-        {isEditable && (
-          <div className="mt-4">
-            <PasteMealCard logDate={dateStr} />
+            {/* Exercise — always today-specific */}
+            {isToday && (
+              <div className="mt-8">
+                <ExerciseLogger weightKg={profile.current_weight_kg ?? 70} />
+              </div>
+            )}
           </div>
-        )}
-
-        {/* Editable day log for the selected day (kept below the landing) */}
-        <div className="mt-6">
-          <TodayFoodLog initialLogs={dayFoodLogs} date={viewDate} displayName={profile.display_name} />
         </div>
-
-        {/* Exercise — always today-specific */}
-        {isToday && (
-          <div className="mt-4">
-            <ExerciseLogger weightKg={profile.current_weight_kg ?? 70} />
-          </div>
-        )}
         </SwipeDayNav>
+        </div>
       </main>
       <BottomNav />
     </div>

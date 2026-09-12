@@ -1,23 +1,36 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import type { Food } from '../../types/index'
 import { FoodResult } from './FoodResult'
-import { Clock, Star, Zap, PlusCircle, Search, X, ScanLine, MessageSquarePlus } from 'lucide-react'
+import { MessageCircle, PlusCircle, ScanLine, Zap } from 'lucide-react'
 import { useFoodSearch, type RecentLogItem } from '../../hooks/useFoodSearch'
 import { markLogStart } from '../../lib/posthog/client'
-import { isLiquidFood } from '../../lib/portion-units'
+import { mealForTime } from '../../lib/meal'
+import type { LastPortion } from '../../lib/lastPortions'
+import { SearchField } from '../ui/search-field'
+import { SegmentedControl } from '../ui/segmented-control'
+import { Button } from '../ui/button'
 import {
-  ComboTile, CopyYesterdayButton, EmojiTile, ShortcutHeading, ShortcutRow,
+  ComboTile, CopyYesterdayButton, ShortcutHeading, ShortcutRow,
 } from './shortcuts'
 
 // Modals are only opened on user action — defer their JS until then.
 const AddFoodModal    = dynamic(() => import('./AddFoodModal').then(m => m.AddFoodModal),       { ssr: false })
 const CreateFoodModal = dynamic(() => import('./CreateFoodModal').then(m => m.CreateFoodModal), { ssr: false })
+const QuickAddModal   = dynamic(() => import('./QuickAddModal').then(m => m.QuickAddModal),     { ssr: false })
 const CameraModal     = dynamic(() => import('../camera/CameraModal').then(m => m.CameraModal), { ssr: false })
 const ChatLogModal    = dynamic(() => import('../chat/ChatLogModal').then(m => m.ChatLogModal),  { ssr: false })
+
+type Tab = 'recent' | 'favourites' | 'mine'
+
+const TABS: { value: Tab; label: string }[] = [
+  { value: 'recent', label: 'Recent' },
+  { value: 'favourites', label: 'Favourites' },
+  { value: 'mine', label: 'My foods' },
+]
 
 type Props = {
   recentFoods: Food[]
@@ -32,262 +45,337 @@ type Props = {
   isPro?: boolean
   /** Free AI scans left. A spent free user's chat tap goes to the paywall
    *  rather than opening a modal they'd fill out and be ejected from — the same
-   *  pre-emptive gate the dashboard chat FAB uses. */
+   *  pre-emptive gate the dashboard chat bubble uses. */
   aiTrialRemaining?: number
   /** The day's calorie + protein targets, forwarded to AddFoodModal so a log
    *  answers with a coaching sentence instead of just a number (P1-13). */
   targets?: { kcal: number; protein: number }
+  /** How each food was last logged — decides what "+" does. See lib/lastPortions. */
+  lastPortions?: Record<string, LastPortion>
+  /** Focus the field on mount — set when Home's search pill deep-links here. */
+  autoFocus?: boolean
+  /** Rendered under the Recent tab, after the rows (the day's suggestion). */
+  idleExtras?: ReactNode
 }
 
-export function FoodSearch({ recentFoods, recentLogItems = [], frequentFoods, hasYesterdayLogs, logDate, isToday = true, isPro = true, aiTrialRemaining = 0, targets }: Props) {
+export function FoodSearch({
+  recentFoods, recentLogItems = [], frequentFoods, hasYesterdayLogs, logDate, isToday = true,
+  isPro = true, aiTrialRemaining = 0, targets, lastPortions = {}, autoFocus = false, idleExtras,
+}: Props) {
   const router = useRouter()
   const canUseAi = isPro || aiTrialRemaining > 0
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [tab, setTab] = useState<Tab>('recent')
+  const [showQuickAdd, setShowQuickAdd] = useState(false)
   // Start the clock for `seconds_to_log`: this surface opening is the moment
   // the user set out to log something. See markLogStart in lib/posthog/client.
   useEffect(() => { markLogStart() }, [])
+  // Programmatic focus after a navigation, for the Home → Food deep link. The
+  // `autoFocus` attribute alone is unreliable once the page is client-routed.
+  useEffect(() => { if (autoFocus) inputRef.current?.focus() }, [autoFocus])
+
   const {
     query, setQuery, debounced, isSearching, data, isLoading, error,
-    showRecent, showFrequent, defaultMeal,
+    defaultMeal,
     savedMeals, loggingMealId, deletingSavedMealId, logSavedMeal, deleteSavedMeal,
-    copying, copyYesterday, quickAddingId, quickAdd, reLogItem,
+    copying, copyYesterday, quickAddingId, quickAdd,
     favouriteFoods, favouriteIds, toggleFavourite,
     selected, setSelected, showCamera, setShowCamera, showChat, setShowChat,
     showCreateFood, setShowCreateFood,
   } = useFoodSearch({ recentFoods, recentLogItems, frequentFoods, logDate })
 
+  // The portion a food went in at last time. The server map covers 200 logs;
+  // the "Log again" items are the same data for the five most recent foods,
+  // so they fill in when the map is absent (older callers, tests).
+  const lastPortionFor = (food: Food): LastPortion | undefined => {
+    const fromMap = lastPortions[food.id]
+    if (fromMap) return fromMap
+    const item = recentLogItems.find((i) => i.food.id === food.id)
+    return item ? { grams: item.grams, kcal: item.kcal, meal: item.meal } : undefined
+  }
+
+  // The one "+" rule, everywhere on this screen: a food logged before goes
+  // straight in at last time's portion; a food never logged opens the portion
+  // sheet so the first amount is a chosen one. Recent and frequent foods are
+  // previously-logged by definition, so they always go straight in.
+  const addFromList = (food: Food, method: 'search' | 'log_again', knownLogged = false) => {
+    const last = lastPortionFor(food)
+    if (last) return quickAdd(food, method, last.grams)
+    if (knownLogged) return quickAdd(food, method)
+    setSelected(food)
+  }
+
+  // Items logged to this slot before lead the list — at 8am you want
+  // yesterday's breakfast, not last night's dinner. Everything else follows.
+  const currentMeal = mealForTime()
+  const orderedRecent = useMemo(() => {
+    const forSlot = recentFoods.filter((f) => lastPortions[f.id]?.meal === currentMeal
+      || recentLogItems.some((i) => i.food.id === f.id && i.meal === currentMeal))
+    const rest = recentFoods.filter((f) => !forSlot.includes(f))
+    return [...forSlot, ...rest]
+  }, [recentFoods, recentLogItems, lastPortions, currentMeal])
+
+  // A short shelf, not a catalogue: five recent, three often. The catalogue
+  // holds the same dish under more than one id ("Roti / Chapati (Wheat)" from
+  // two sources), so "Often" also skips anything whose name is already showing.
+  const RECENT_MAX = 5
+  const OFTEN_MAX = 3
+  const shownRecent = orderedRecent.slice(0, RECENT_MAX)
+  const shownNames = useMemo(
+    () => new Set(shownRecent.map((f) => f.name.trim().toLowerCase())),
+    [shownRecent]
+  )
+  const oftenFoods = frequentFoods
+    .filter((f) => !shownNames.has(f.name.trim().toLowerCase()))
+    .filter((f, i, arr) => arr.findIndex((g) => g.name.trim().toLowerCase() === f.name.trim().toLowerCase()) === i)
+    .slice(0, OFTEN_MAX)
+
+  const results = data ?? []
+
   return (
-    <div className="space-y-5">
-      {/* Search input */}
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none" style={{ color: 'var(--ink-3)' }} />
-        <input
-          placeholder="Search dal makhani, roti, paneer..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="w-full pl-10 pr-28 h-12 text-base rounded-2xl outline-none transition-all"
-          style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', color: 'var(--ink)' }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--brand)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--brand-soft)' }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--hairline)'; e.currentTarget.style.boxShadow = 'none' }}
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck={false}
-          autoFocus
-        />
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-          {query.length > 0 && (
-            <button type="button" onClick={() => setQuery('')} className="rounded-full p-1" style={{ color: 'var(--ink-3)' }}>
-              <X className="h-4 w-4" />
+    <div>
+      {/* ── Search: the one control this screen is for ── */}
+      <SearchField
+        ref={inputRef}
+        placeholder="Search dal makhani, roti…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onClear={() => { setQuery(''); inputRef.current?.focus() }}
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
+        enterKeyHint="search"
+        autoFocus={autoFocus}
+        actionCount={2}
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={() => canUseAi ? setShowChat(true) : router.push('/upgrade?reason=chat_scan_pro')}
+              className="grid h-11 w-11 place-items-center rounded-full text-brand tap-scale hover:bg-surface-2"
+              aria-label={canUseAi ? 'Log meal with AI chat' : 'AI meal logging — a Pro feature'}
+            >
+              <MessageCircle className="h-5 w-5" strokeWidth={1.75} />
             </button>
-          )}
-          <button
-            type="button"
-            onClick={() => canUseAi ? setShowChat(true) : router.push('/upgrade?reason=chat_scan_pro')}
-            className="rounded-full p-1.5 transition-colors"
-            style={{ color: 'var(--brand)' }}
-            aria-label={canUseAi ? 'Log meal with AI chat' : 'AI meal logging — a Pro feature'}
-          >
-            <MessageSquarePlus className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowCamera(true)}
-            className="rounded-full p-1.5 transition-colors"
-            style={{ color: 'var(--brand)' }}
-            aria-label="Scan barcode or take photo"
-          >
-            <ScanLine className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+            <button
+              type="button"
+              onClick={() => setShowCamera(true)}
+              className="grid h-11 w-11 place-items-center rounded-full text-ink-2 tap-scale hover:bg-surface-2 hover:text-ink"
+              aria-label="Scan barcode or take photo"
+            >
+              <ScanLine className="h-5 w-5" strokeWidth={1.75} />
+            </button>
+          </>
+        }
+      />
 
-      {/* Re-log — same rows as the Food tab, not a second chip language */}
-      {!isSearching && recentLogItems.length > 0 && (
-        <div className="space-y-2">
-          <ShortcutHeading title="Log again" hint="same portion as last time" />
-          <div className="flex flex-col gap-2.5">
-            {recentLogItems.map((item) => (
-              <ShortcutRow
-                key={item.food.id}
-                name={item.food.name}
-                detail={`${Math.round(item.grams)}${isLiquidFood(item.food.name) ? 'ml' : 'g'} · ${Math.round(item.kcal)} kcal`}
-                tile={<EmojiTile name={item.food.name} />}
-                busy={quickAddingId === item.food.id}
-                disabled={!!quickAddingId}
-                actionLabel={`Log ${item.food.name} again`}
-                onAdd={() => reLogItem(item)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Copy yesterday — only on today's view (it copies into today) */}
-      {isToday && hasYesterdayLogs && !isSearching && (
-        <CopyYesterdayButton copying={copying} onClick={copyYesterday} />
-      )}
-
-      {/* Saved meal templates — logging targets today, so hide on past-day views.
-          The meal-type <select> that used to live here is gone: it logged on
-          change, so brushing it filed a meal you never asked for. Combos land in
-          the current slot, matching the Food tab. */}
-      {isToday && !isSearching && savedMeals.length > 0 && (
-        <div className="space-y-2">
-          <ShortcutHeading title="Your combos" hint={`one tap → ${defaultMeal}`} />
-          <div className="flex flex-col gap-2.5">
-            {savedMeals.map((meal) => {
-              const totalKcal = meal.saved_meal_items.reduce((sum, item) => {
-                return sum + (item.food ? (item.food.kcal_per_100g * item.grams) / 100 : 0)
-              }, 0)
-              return (
-                <ShortcutRow
-                  key={meal.id}
-                  name={meal.name}
-                  detail={`${meal.saved_meal_items.length} items · ${Math.round(totalKcal)} kcal`}
-                  tile={<ComboTile />}
-                  busy={loggingMealId === meal.id}
-                  disabled={!!loggingMealId}
-                  actionLabel={`Log ${meal.name}`}
-                  onAdd={() => logSavedMeal(meal.id, defaultMeal)}
-                  onDelete={deletingSavedMealId === meal.id ? undefined : () => deleteSavedMeal(meal.id)}
-                  deleteLabel={`Delete saved meal ${meal.name}`}
-                />
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Favourites */}
-      {!isSearching && favouriteFoods.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--ink-3)' }}>
-            <Star className="h-3.5 w-3.5" style={{ fill: 'var(--carbs)', color: 'var(--carbs)' }} />
-            <span>Favourites</span>
-          </div>
-          <div className="space-y-2">
-            {favouriteFoods.map((food) => (
-              <FoodResult
-                key={food.id}
-                food={food}
-                onSelect={setSelected}
-                onQuickAdd={(f) => quickAdd(f, 'log_again')}
-                isQuickAdding={quickAddingId === food.id}
-                isFavourite={favouriteIds.has(food.id)}
-                onToggleFavourite={toggleFavourite}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Frequent foods */}
-      {showFrequent && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--ink-3)' }}>
-            <Zap className="h-3.5 w-3.5" />
-            <span>Frequent · tap + to quick add</span>
-          </div>
-          <div className="space-y-2">
-            {frequentFoods.map((food) => (
-              <FoodResult
-                key={food.id}
-                food={food}
-                onSelect={setSelected}
-                onQuickAdd={(f) => quickAdd(f, 'log_again')}
-                isQuickAdding={quickAddingId === food.id}
-                isFavourite={favouriteIds.has(food.id)}
-                onToggleFavourite={toggleFavourite}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recent foods */}
-      {showRecent && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--ink-3)' }}>
-            <Clock className="h-3.5 w-3.5" />
-            <span>Recent</span>
-          </div>
-          <div className="space-y-2">
-            {recentFoods.map((food) => (
-              <FoodResult
-                key={food.id}
-                food={food}
-                onSelect={setSelected}
-                onQuickAdd={(f) => quickAdd(f, 'log_again')}
-                isQuickAdding={quickAddingId === food.id}
-                isFavourite={favouriteIds.has(food.id)}
-                onToggleFavourite={toggleFavourite}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Search results */}
-      {isSearching && (
-        <div className="space-y-2">
+      {/* ── Results replace the shelves while a query is live ── */}
+      {isSearching ? (
+        <div className="mt-2" aria-live="polite">
           {isLoading ? (
-            <div className="space-y-2">
+            <ul className="divide-y divide-hairline">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-16 rounded-2xl animate-pulse" style={{ background: 'var(--hairline)' }} />
+                <li key={i} className="flex items-center gap-3 py-2.5">
+                  <div className="h-11 w-11 rounded-control bg-surface-2 animate-shimmer" />
+                  <div className="flex-1">
+                    <div className="h-4 w-2/5 rounded-full bg-surface-2 animate-shimmer" />
+                    <div className="mt-2 h-3 w-1/4 rounded-full bg-surface-2 animate-shimmer" />
+                  </div>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : error ? (
-            <p className="text-sm px-1" style={{ color: 'var(--fat)' }}>{(error as Error).message}</p>
-          ) : (data ?? []).length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-3xl mb-2">🔍</p>
-              <p className="text-sm font-medium" style={{ color: 'var(--ink)' }}>No results for &ldquo;{debounced}&rdquo;</p>
-              <p className="text-xs mt-1 mb-4" style={{ color: 'var(--ink-3)' }}>Try a different spelling or create a custom food</p>
-              <button
-                type="button"
-                onClick={() => setShowCreateFood(true)}
-                className="inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-bold text-white tap-scale transition-all"
-                style={{ background: 'var(--brand)' }}
-              >
-                <PlusCircle className="h-4 w-4" />
-                Create &ldquo;{debounced}&rdquo;
-              </button>
+            <p className="px-1 py-6 text-body text-danger">{(error as Error).message}</p>
+          ) : results.length === 0 ? (
+            <div className="px-1 py-10 text-center">
+              <p className="text-body font-medium text-ink">Nothing called &ldquo;{debounced}&rdquo;</p>
+              <p className="mt-1 text-caption text-ink-3">Try another spelling, or add it yourself.</p>
+              <div className="mt-5 flex flex-col items-center gap-2">
+                <Button type="button" variant="outline" onClick={() => setShowCreateFood(true)}>
+                  <PlusCircle className="h-5 w-5" strokeWidth={1.75} />
+                  Create &ldquo;{debounced}&rdquo;
+                </Button>
+                <Button type="button" variant="subtle" onClick={() => setShowQuickAdd(true)}>
+                  <Zap className="h-5 w-5" strokeWidth={1.75} />
+                  Quick add calories
+                </Button>
+              </div>
             </div>
           ) : (
-            (data ?? []).map((food) => (
-              <FoodResult
-                key={food.id}
-                food={food}
-                onSelect={setSelected}
-                onQuickAdd={quickAdd}
-                isQuickAdding={quickAddingId === food.id}
-                isFavourite={favouriteIds.has(food.id)}
-                onToggleFavourite={toggleFavourite}
-              />
-            ))
+            <ul className="divide-y divide-hairline">
+              {results.map((food) => (
+                <li key={food.id}>
+                  <FoodResult
+                    food={food}
+                    onSelect={setSelected}
+                    onQuickAdd={(f) => addFromList(f, 'search')}
+                    isQuickAdding={quickAddingId === food.id}
+                    isFavourite={favouriteIds.has(food.id)}
+                    onToggleFavourite={toggleFavourite}
+                    lastPortion={lastPortionFor(food)}
+                  />
+                </li>
+              ))}
+            </ul>
           )}
         </div>
-      )}
+      ) : (
+        // Outlined, not filled: the shelves are a frame around things you
+        // might log; the day's log below is the filled surface.
+        <div className="mt-4 rounded-card-lg border-2 border-hairline-2 px-4 pb-3 pt-4">
+          <SegmentedControl aria-label="Food shelves" options={TABS} value={tab} onChange={setTab} />
 
-      {/* Empty state when no query and no recent foods */}
-      {!isSearching && recentFoods.length === 0 && (
-        <div className="py-10 text-center">
-          <p className="text-3xl mb-2">🍱</p>
-          <p className="text-sm font-medium" style={{ color: 'var(--ink)' }}>Search for any food above</p>
-          <p className="text-xs mt-1 mb-4" style={{ color: 'var(--ink-3)' }}>Includes 850+ Indian dishes, staples &amp; global foods</p>
-          <button
-            type="button"
-            onClick={() => setShowCreateFood(true)}
-            className="inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold tap-scale transition-colors"
-            style={{ background: 'var(--brand-soft)', border: '1px solid var(--brand-ring)', color: 'var(--brand-text)' }}
-          >
-            <PlusCircle className="h-4 w-4" />
-            Create custom food
-          </button>
+          {/* ── Recent: what you actually eat, at the amounts you eat it. One
+              action per row — the star lives on search results and the
+              Favourites shelf, so this list stays a list of things to log. ── */}
+          {tab === 'recent' && (
+            <div className="mt-2">
+              {shownRecent.length > 0 ? (
+                <ul className="divide-y divide-hairline">
+                  {shownRecent.map((food) => (
+                    <li key={food.id}>
+                      <FoodResult
+                        food={food}
+                        onSelect={setSelected}
+                        onQuickAdd={(f) => addFromList(f, 'log_again', true)}
+                        isQuickAdding={quickAddingId === food.id}
+                        lastPortion={lastPortionFor(food)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="px-1 py-10 text-center">
+                  <p className="text-body font-medium text-ink">Nothing logged yet</p>
+                  <p className="mt-1 text-caption text-ink-3">
+                    Search above — 850+ Indian dishes, staples and packaged foods.
+                  </p>
+                </div>
+              )}
+
+              {oftenFoods.length > 0 && (
+                <>
+                  <ShortcutHeading title="Often" hint="tap + to log again" />
+                  <ul className="divide-y divide-hairline">
+                    {oftenFoods.map((food) => (
+                      <li key={food.id}>
+                        <FoodResult
+                          food={food}
+                          onSelect={setSelected}
+                          onQuickAdd={(f) => addFromList(f, 'log_again', true)}
+                          isQuickAdding={quickAddingId === food.id}
+                          lastPortion={lastPortionFor(food)}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+
+              {/* Copy yesterday — only on today's view (it copies into today) */}
+              {isToday && hasYesterdayLogs && (
+                <div className="mt-2 border-t border-hairline pt-2">
+                  <CopyYesterdayButton copying={copying} onClick={copyYesterday} />
+                </div>
+              )}
+
+              {idleExtras}
+            </div>
+          )}
+
+          {/* ── Favourites: the shelf the user curates by hand ── */}
+          {tab === 'favourites' && (
+            <div className="mt-2">
+              {favouriteFoods.length > 0 ? (
+                <ul className="divide-y divide-hairline">
+                  {favouriteFoods.map((food) => (
+                    <li key={food.id}>
+                      <FoodResult
+                        food={food}
+                        onSelect={setSelected}
+                        onQuickAdd={(f) => addFromList(f, 'log_again')}
+                        isQuickAdding={quickAddingId === food.id}
+                        isFavourite={favouriteIds.has(food.id)}
+                        onToggleFavourite={toggleFavourite}
+                        lastPortion={lastPortionFor(food)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="px-1 py-10 text-center">
+                  <p className="text-body font-medium text-ink">No favourites yet</p>
+                  <p className="mt-1 text-caption text-ink-3">Tap the star on any food to keep it here.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── My foods: saved combos and the things you made ── */}
+          {tab === 'mine' && (
+            <div className="mt-2">
+              {savedMeals.length > 0 && (
+                <>
+                  <ShortcutHeading title="Combos" hint={`one tap → ${defaultMeal}`} />
+                  <ul className="divide-y divide-hairline">
+                    {savedMeals.map((meal) => {
+                      const totalKcal = meal.saved_meal_items.reduce((sum, item) => {
+                        return sum + (item.food ? (item.food.kcal_per_100g * item.grams) / 100 : 0)
+                      }, 0)
+                      return (
+                        <li key={meal.id}>
+                          <ShortcutRow
+                            name={meal.name}
+                            detail={`${meal.saved_meal_items.length} items · ${Math.round(totalKcal)} kcal`}
+                            tile={<ComboTile />}
+                            busy={loggingMealId === meal.id}
+                            disabled={!!loggingMealId}
+                            actionLabel={`Log ${meal.name}`}
+                            onAdd={() => logSavedMeal(meal.id, defaultMeal)}
+                            onDelete={deletingSavedMealId === meal.id ? undefined : () => deleteSavedMeal(meal.id)}
+                            deleteLabel={`Delete saved meal ${meal.name}`}
+                          />
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </>
+              )}
+              {savedMeals.length === 0 && (
+                <p className="px-1 pb-2 pt-4 text-caption text-ink-3">
+                  Save any meal from your log as a combo and it lives here — one tap logs the whole thing.
+                </p>
+              )}
+              <div className={savedMeals.length > 0 ? 'mt-2 border-t border-hairline pt-2' : ''}>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateFood(true)}
+                  className="flex h-12 w-full items-center gap-3 rounded-control px-1 text-left text-body font-medium text-ink tap-scale transition-colors hover:bg-surface-2"
+                >
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-control bg-surface-2 text-ink-2">
+                    <PlusCircle className="h-5 w-5" strokeWidth={1.75} />
+                  </span>
+                  Create a custom food
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowQuickAdd(true)}
+                  className="flex h-12 w-full items-center gap-3 rounded-control px-1 text-left text-body font-medium text-ink tap-scale transition-colors hover:bg-surface-2"
+                >
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-control bg-surface-2 text-ink-2">
+                    <Zap className="h-5 w-5" strokeWidth={1.75} />
+                  </span>
+                  Quick add calories
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {showChat ? <ChatLogModal onClose={() => setShowChat(false)} logDate={logDate} /> : null}
       {selected ? <AddFoodModal food={selected} onClose={() => setSelected(null)} logDate={logDate} targets={targets} /> : null}
+      {showQuickAdd ? <QuickAddModal onClose={() => setShowQuickAdd(false)} logDate={logDate} /> : null}
       {showCamera ? (
         <CameraModal
           logDate={logDate}

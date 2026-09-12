@@ -225,12 +225,13 @@ export default async function ProgressPage() {
   return (
     <div className="min-h-screen">
       <main
-        className="mx-auto w-full max-w-md px-6"
+        className="mx-auto w-full max-w-md px-3 lg:max-w-5xl lg:px-6"
         style={{
-          paddingTop: 'calc(20px + env(safe-area-inset-top))',
-          paddingBottom: 'calc(120px + env(safe-area-inset-bottom))',
+          paddingTop: 'calc(12px + env(safe-area-inset-top))',
+          paddingBottom: 'calc(var(--tab-bar-h, 72px) + 40px + env(safe-area-inset-bottom))',
         }}
       >
+        <div className="rounded-sheet border-2 border-hairline-2 px-3 pb-6 pt-3 lg:px-8 lg:pb-8 lg:pt-6">
         <ProgressClient
           streak={streak}
           weightLogs={weightLogs}
@@ -245,6 +246,7 @@ export default async function ProgressPage() {
           monthView={monthView}
           maintenanceKcal={maintenance.tdee}
         />
+        </div>
       </main>
       <BottomNav />
     </div>

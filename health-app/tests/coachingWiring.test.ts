@@ -123,10 +123,10 @@ describe('neither hook builds the day context by hand', () => {
  * where neither a unit test nor a route test looks.
  */
 describe('the saved-combo path threads its date too', () => {
-  const foodLanding = readFileSync(
-    join(__dirname, '..', 'components', 'log', 'FoodLanding.tsx'),
-    'utf8'
-  )
+  // Since the 2026-09-11 Food redesign the combos row renders once, in
+  // FoodSearch, and its POST lives in useFoodSearch — FoodLanding no longer
+  // has a copy to drift. The it.each stays so a second call site is pinned
+  // the moment one appears.
   const foodSearchHook = readFileSync(join(HOOKS, 'useFoodSearch.ts'), 'utf8')
   const mealsLogRoute = readFileSync(
     join(__dirname, '..', 'app', 'api', 'meals', 'log', 'route.ts'),
@@ -134,7 +134,6 @@ describe('the saved-combo path threads its date too', () => {
   )
 
   it.each([
-    ['FoodLanding', foodLanding],
     ['useFoodSearch', foodSearchHook],
   ])('%s sends a date with the saved-meal log', (_name, source) => {
     const at = source.indexOf("'/api/meals/log'")

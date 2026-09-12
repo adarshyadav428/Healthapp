@@ -6,8 +6,6 @@ import { ChevronRight, Lock } from 'lucide-react'
 import type { WeeklyDeficitSummary } from '../../lib/deficit-calculator'
 import { CumulativeDeficitChart, type DeficitPoint } from './CumulativeDeficitChart'
 
-const AIR = { boxShadow: 'var(--shadow-air)' } as const
-
 const STATUS_LABEL: Record<WeeklyDeficitSummary['status'], string> = {
   ahead: 'Ahead',
   on_track: 'On track',
@@ -71,14 +69,14 @@ export function DeficitTrendCard({
   const daysInWindow = s.days_logged + s.days_unlogged
 
   return (
-    <div className="mt-3 rounded-[24px] bg-surface p-5" style={AIR}>
+    <section aria-label="Energy balance">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[13px] font-semibold text-ink">Calorie deficit</p>
+        <h2 className="font-display text-title-sm font-semibold text-ink">Energy balance</h2>
         <PeriodToggle kind={kind} onChange={setKind} monthUnlocked={!!month} isPro={isPro} />
       </div>
 
       {s.days_logged === 0 ? (
-        <p className="mt-2.5 text-[13px] text-ink-2">
+        <p className="mt-3 text-body text-ink-2">
           {todayKcal != null
             ? 'Today is still in progress — your first full day lands here tomorrow.'
             : 'Log a day and your deficit starts building here.'}
@@ -86,35 +84,34 @@ export function DeficitTrendCard({
       ) : (
         <>
           {/* Beat 1 — the number. */}
-          <div className="mt-2.5 flex items-baseline justify-between gap-2">
-            <p className="text-[11px] text-ink-3">{label}</p>
-            <p className="text-[11px] font-bold" style={{ color: statusColor }}>
-              {STATUS_LABEL[s.status]}
-            </p>
-          </div>
-
-          <div className="mt-1 flex items-baseline gap-1.5">
+          <p className="mt-3 flex items-center gap-2 text-caption text-ink-3">
+            {label}
             <span
-              className="font-display text-[32px] font-bold leading-none tabular-nums"
-              style={{ letterSpacing: '-0.02em', color: statusColor }}
+              className="rounded-full px-2.5 py-0.5 text-micro font-semibold"
+              style={{ color: statusColor, backgroundImage: `linear-gradient(145deg, color-mix(in srgb, ${statusColor} 22%, var(--surface)) 0%, color-mix(in srgb, ${statusColor} 8%, var(--surface)) 100%)` }}
             >
+              {STATUS_LABEL[s.status]}
+            </span>
+          </p>
+          <div className="mt-1 flex items-baseline gap-1.5">
+            <span className="font-display text-display font-semibold tabular-nums leading-none" style={{ color: statusColor }}>
               {magnitude.toLocaleString('en-IN')}
             </span>
-            <span className="text-[12px] text-ink-2">
+            <span className="text-body text-ink-2">
               kcal {under ? 'under' : 'over'} maintenance
             </span>
           </div>
 
           {/* Beat 2 — what it is worth. */}
           {under && fatKg > 0 && (
-            <p className="mt-1 text-[12px] text-ink-2">
+            <p className="mt-1 text-body text-ink-2">
               That&apos;s <span className="font-semibold text-ink">{fatLabel} of fat</span>.
             </p>
           )}
 
           {/* Beat 3 — the days that built it. */}
           {points.length >= 2 && (
-            <div className="mt-3.5">
+            <div className="mt-4">
               <CumulativeDeficitChart
                 points={points}
                 color={statusColor}
@@ -123,7 +120,7 @@ export function DeficitTrendCard({
             </div>
           )}
 
-          <p className="mt-2.5 text-[11px] text-ink-3">
+          <p className="mt-2 text-micro text-ink-3">
             {s.days_logged} of {daysInWindow} {daysInWindow === 1 ? 'day' : 'days'} logged
             {s.days_unlogged > 0 && ` · ${s.days_unlogged} not logged`}
             {isFallback
@@ -133,17 +130,17 @@ export function DeficitTrendCard({
                 : ''}
           </p>
 
-          <p className="mt-2 text-[12px] text-ink-2">{s.insight}</p>
+          <p className="mt-2 text-caption text-ink-2">{s.insight}</p>
         </>
       )}
 
       <Link
         href="/deficit"
-        className="mt-3 flex items-center gap-1 text-[12px] font-semibold text-brand-ink tap-scale"
+        className="mt-3 flex h-11 items-center gap-1 text-caption font-semibold text-brand-text tap-scale"
       >
-        How maintenance works <ChevronRight className="h-3.5 w-3.5" />
+        How maintenance works <ChevronRight className="h-4 w-4" strokeWidth={1.75} />
       </Link>
-    </div>
+    </section>
   )
 }
 
@@ -160,15 +157,16 @@ function PeriodToggle({
   monthUnlocked: boolean
   isPro: boolean
 }) {
-  const base = 'rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all'
+  const base = 'h-10 rounded-lg px-3 text-caption font-semibold transition-colors'
 
   return (
-    <div className="flex gap-1 rounded-full bg-surface-2 p-0.5">
+    <div role="tablist" aria-label="Period" className="flex gap-1 rounded-control bg-surface-2 p-1">
       <button
         type="button"
+        role="tab"
+        aria-selected={kind === 'week'}
         onClick={() => onChange('week')}
-        className={`${base} ${kind === 'week' ? 'bg-surface text-ink' : 'text-ink-3'}`}
-        style={kind === 'week' ? AIR : undefined}
+        className={`${base} ${kind === 'week' ? 'bg-surface text-ink shadow-air' : 'text-ink-2'}`}
       >
         Week
       </button>
@@ -176,9 +174,10 @@ function PeriodToggle({
       {monthUnlocked ? (
         <button
           type="button"
+          role="tab"
+          aria-selected={kind === 'month'}
           onClick={() => onChange('month')}
-          className={`${base} ${kind === 'month' ? 'bg-surface text-ink' : 'text-ink-3'}`}
-          style={kind === 'month' ? AIR : undefined}
+          className={`${base} ${kind === 'month' ? 'bg-surface text-ink shadow-air' : 'text-ink-2'}`}
         >
           Month
         </button>
@@ -186,9 +185,9 @@ function PeriodToggle({
         <Link
           href="/upgrade?reason=history"
           aria-label={isPro ? 'Month view' : 'Month view — upgrade to Pro'}
-          className={`${base} flex items-center gap-1 text-ink-3 opacity-70`}
+          className={`${base} flex items-center gap-1 text-ink-3`}
         >
-          <Lock className="h-2.5 w-2.5" /> Month
+          <Lock className="h-3 w-3" /> Month
         </Link>
       )}
     </div>

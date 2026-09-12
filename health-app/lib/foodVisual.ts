@@ -9,7 +9,9 @@ const EMOJI_RULES: [RegExp, string][] = [
   [/noodle|maggi|pasta|chowmein|hakka|spaghetti/i, '🍜'],
   [/dal|sambar|rasam|kadhi|soup/i, '🍲'],
   [/paneer|matar|sabzi|bhaji|curry|masala|gravy|kofta|chana|rajma|chole|korma/i, '🍛'],
-  [/egg|anda|omelet|bhurji/i, '🥚'],
+  // `anda` is word-bound: "Poha (Kanda)" and "Kanda Poha" are onion dishes and
+  // were getting an egg — the same hidden-substring class as SMART_PORTIONS.
+  [/egg|\banda\b|omelet|bhurji/i, '🥚'],
   [/chicken|mutton|kebab|tikka|meat|keema/i, '🍗'],
   [/fish|prawn|seafood/i, '🐟'],
   [/lassi|chaas|chaach|buttermilk|milk|shake|smoothie/i, '🥛'],

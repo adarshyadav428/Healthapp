@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import type { Food } from '../types/index'
 import { toast } from '../components/ui/use-toast'
 import { captureEvent, logMetaHeaders, markLogStart } from '../lib/posthog/client'
+import { EVENTS } from '../lib/posthog/events'
 import { useQueryClient } from '@tanstack/react-query'
 import { reportLogMilestone } from '../store/milestoneStore'
 import type { LogMilestone } from '../lib/logMilestones'
@@ -19,6 +20,22 @@ import { resolveAiGateAction } from '../lib/aiGateRedirect'
 import { recordAiVerificationBlock } from '../lib/verifyPromptStore'
 
 export type Mode = 'barcode' | 'photo' | 'manual'
+/** The one-tap verdict on a scan result. See EVENTS.AI_RESULT_FEEDBACK. */
+export type AiFeedback = 'accurate' | 'unsure' | 'off'
+/**
+ * What the confirmation screen shows once the write has landed. `dayKcal` is
+ * the day's total *including* this log, and is null whenever the day's totals
+ * were not known for certain (see dayContextFor) — the screen then says what
+ * was logged and nothing about the day.
+ */
+export type LoggedSummary = {
+  name: string
+  count: number
+  kcal: number
+  meal: string
+  dayKcal: number | null
+  dayTarget: number | null
+}
 export type PhotoResult = {
   food: Food
   /** The AI's original portion guess — kept so we can tell if the user changed it. */
@@ -98,6 +115,8 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
   const [manualBarcode, setManualBarcode]   = useState('')
   const [manualLoading, setManualLoading]   = useState(false)
   const [editingName, setEditingName]       = useState(false)
+  const [feedback, setFeedback]             = useState<AiFeedback | null>(null)
+  const [logged, setLogged]                 = useState<LoggedSummary | null>(null)
   const queryClient = useQueryClient()
 
   // The food currently in the detail card, and editable views of its portion
@@ -122,9 +141,11 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
 
   // ── Camera stream ────────────────────────────────────────────────────────────
   useEffect(() => {
-    const hasBarcode = 'BarcodeDetector' in window
-    setBarcodeSupport(hasBarcode)
-    setMode(hasBarcode ? 'barcode' : 'photo')
+    // Photo is the default on every device: the tab bar's camera action means
+    // "photograph my plate", and the barcode scanner is a mode you switch to.
+    // (It used to open in barcode mode wherever BarcodeDetector existed, which
+    // put Android users on a scanner they hadn't asked for.)
+    setBarcodeSupport('BarcodeDetector' in window)
 
     let cancelled = false
     navigator.mediaDevices
@@ -321,6 +342,7 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
   const retake = useCallback(() => {
     setCaptured(null); setResults(null); setSelectedIdx(0); setConfidence(null)
     setEditingName(false); setPhotoContext(''); setShowContextInput(false)
+    setFeedback(null); setLogged(null)
     lastBarcode.current = null; setBarcodeLoading(false)
     setManualBarcode(''); setManualLoading(false)
   }, [])
@@ -335,6 +357,38 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
   const selectResult = useCallback((idx: number) => {
     setSelectedIdx(idx); setEditingName(false)
   }, [])
+
+  /**
+   * "Was this right?" — one tap, recorded the moment it happens rather than
+   * folded into the log event, so a verdict on a result the user then abandons
+   * still counts. Tapping the same chip again clears it.
+   */
+  const rateResult = useCallback((rating: AiFeedback) => {
+    const next = feedback === rating ? null : rating
+    setFeedback(next)
+    if (!next || !results) return
+    captureEvent(EVENTS.AI_RESULT_FEEDBACK, {
+      type: 'camera',
+      rating: next,
+      confidence,
+      items: results.length,
+    })
+  }, [feedback, results, confidence])
+
+  // The day's existing totals are the "before this meal" figure the coaching
+  // line and the confirmation screen need. Without them the sentence talks
+  // about the meal as a share of the whole day and cheerfully says "good room
+  // left" to someone who is already 300 over.
+  //
+  // dayContextFor drops the context entirely while the totals are loading or if
+  // the read failed — see its comment for why zeros must not be passed through.
+  const dayContext = dayContextFor({
+    totals: dailyTotals,
+    isLoading: totalsLoading,
+    error: totalsError,
+  })
+  const dayKcalBefore = dayContext?.kcal ?? null
+  const dayTarget = profile?.daily_calorie_target ?? null
 
   // ── Log food ─────────────────────────────────────────────────────────────────
   const logFood = useCallback(async () => {
@@ -386,21 +440,25 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
         })
       }
 
-      if (multi) {
-        const loggedKcal = Math.round(
-          results.reduce((s, r) => s + scaleMacrosRaw(r.food, r.grams).kcal, 0),
-        )
-        toast({ title: `Logged ${results.length} foods`, description: `${loggedKcal} kcal · ${meal}`, duration: 2500 })
-      } else {
-        toast({ title: `Logged ${selected.name || selected.food.name}`, description: `${grams} ${selected.unit} · ${meal}`, duration: 2500 })
-      }
-      onClose()
+      // The confirmation lives on this screen now (a toast used to carry it):
+      // what went in, to which meal, and where that leaves the day.
+      const loggedKcal = Math.round(
+        results.reduce((s, r) => s + scaleMacrosRaw(r.food, r.grams).kcal, 0),
+      )
+      setLogged({
+        name: multi ? `${results.length} foods` : (selected.name.trim() || selected.food.name),
+        count: results.length,
+        kcal: loggedKcal,
+        meal,
+        dayKcal: dayKcalBefore === null ? null : Math.round(dayKcalBefore + loggedKcal),
+        dayTarget,
+      })
     } catch (e) {
       toast({ title: 'Failed to log', description: (e as Error).message, variant: 'error' })
     } finally {
       setLogging(false)
     }
-  }, [results, selected, logging, meal, grams, confidence, queryClient, onClose, logDate])
+  }, [results, selected, logging, meal, grams, confidence, queryClient, logDate, dayKcalBefore, dayTarget])
 
   // ── Derived nutrition values ──────────────────────────────────────────────────
   const macros  = selected ? scaleMacrosRaw(selected.food, grams) : null
@@ -423,18 +481,6 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
   const totalProtein = Math.round(totalMacros.protein)
   const totalCarbs   = Math.round(totalMacros.carbs)
   const totalFat     = Math.round(totalMacros.fat)
-  // The day's existing totals are the "before this meal" figure the coaching
-  // line needs. Without them the sentence talks about the
-  // meal as a share of the whole day and cheerfully says "good room left" to
-  // someone who is already 300 over.
-  //
-  // dayContextFor drops the context entirely while the totals are loading or if
-  // the read failed — see its comment for why zeros must not be passed through.
-  const dayContext = dayContextFor({
-    totals: dailyTotals,
-    isLoading: totalsLoading,
-    error: totalsError,
-  })
   const coaching = selected && profile
     ? coachingLine(
         multiItem ? { kcal: totalKcal, protein: totalProtein } : { kcal, protein },
@@ -450,13 +496,13 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
     // state
     barcodeSupport, mode, camError, barcodeLoading, captured, analyzing,
     results, selected, selectedIdx, confidence, scansLeft, grams, photoContext, showContextInput,
-    meal, logging, manualBarcode, manualLoading, customName, editingName,
+    meal, logging, manualBarcode, manualLoading, customName, editingName, feedback, logged,
     // setters exposed to the view
     setGrams, setPhotoContext, setShowContextInput, setMeal,
     setManualBarcode, setCustomName, setEditingName,
     // actions
     onGallerySelect, capturePhoto, analyzePhoto, submitManualBarcode,
-    retake, switchMode, selectResult, logFood,
+    retake, switchMode, selectResult, logFood, rateResult,
     // derived
     kcal, protein, carbs, fat, coaching, amountMin, amountMax, amountStep,
     multiItem, totalKcal, totalProtein, totalCarbs, totalFat,

@@ -188,13 +188,18 @@ export default async function DashboardPage() {
   return (
     // Transparent: the body paints canvas + the ambient light field
     <div className="min-h-screen">
+      {/* One column on a phone; from lg the client lays the same content out
+          in two, so the width opens up with it. */}
       <main
-        className="relative mx-auto w-full max-w-md px-6"
+        className="relative mx-auto w-full max-w-md px-3 lg:max-w-5xl lg:px-6"
         style={{
-          paddingTop: 'calc(20px + env(safe-area-inset-top))',
-          paddingBottom: 'calc(120px + env(safe-area-inset-bottom))',
+          paddingTop: 'calc(12px + env(safe-area-inset-top))',
+          paddingBottom: 'calc(var(--tab-bar-h, 72px) + 88px + env(safe-area-inset-bottom))',
         }}
       >
+        {/* The page sits inside one frame, the same as Food — a still surface
+            holding everything that moves. */}
+        <div className="rounded-sheet border-2 border-hairline-2 px-3 pb-6 pt-3 lg:px-8 lg:pb-8 lg:pt-6">
         <DashboardClient
           profile={profile}
           initialLogs={foodLogs}
@@ -209,6 +214,7 @@ export default async function DashboardPage() {
           projection={projection}
           plateau={plateau}
         />
+        </div>
       </main>
       <BottomNav />
     </div>

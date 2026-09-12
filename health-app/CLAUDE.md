@@ -68,9 +68,12 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   Vitest-testable modules `lib/` is for. Specs default to **node**, so a DOM hook still has nothing
   pinning it *by default* — but since the render layer landed it can be tested, by adding
   `// @vitest-environment jsdom` to a spec under `tests/render/`.
-  `components/log/shortcuts.tsx` holds the one set of re-log / combo / copy-yesterday tiles that both
-  `FoodLanding` and `FoodSearch` render — they used to be implemented twice, with different ordering
-  and different meal-selection behaviour, which is how the same shortcut came to mean two things.
+  `components/log/shortcuts.tsx` holds the one set of re-log / combo / copy-yesterday rows. They used
+  to be implemented twice — once on `FoodLanding` and again inside `FoodSearch`, with different
+  ordering and different meal-selection behaviour, which is how the same shortcut came to mean two
+  things. Since the 2026-09-11 Food redesign `FoodSearch` is the whole logging surface (field, the
+  Recent / Favourites / My foods shelves, results) and `FoodLanding` is a thin shell around it that
+  owns only the Home deep-link autofocus and the day's suggestion row.
 - **`supabase/migrations/`** — `001`–`048`. Numbers are **not unique** (`002`, `004`, `005`, `009` and
   `043` each appear twice) and there is **no `021`**. Always reference a migration by its exact filename.
   (`040_body_focus.sql` **is** on `main` — PR #46 merged; this line previously said otherwise.)
@@ -116,7 +119,7 @@ npm start                # serve the production build
 npm test                 # vitest run — the whole suite (124 files / 1,612 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
-npm run check:tokens     # design-token guard: no raw hex, no broken opacity modifiers
+npm run check:tokens     # design-token guard: no raw hex/opacity modifiers; ratchets arbitrary spacing, type, radius
 npx tsc --noEmit         # typecheck (there is no `typecheck` script)
 ```
 
@@ -172,10 +175,14 @@ queue stalls them. Anything that passes through `isWithinFreeLogWindow`, `clampH
 `getIstDayRange(new Date())` or the streak maths with a literal date is the same bomb with a longer
 fuse; fixture dates that are only row payloads (`measured_at` on a weigh-in) are fine.
 
-Camera (`CameraModal`/`useCameraScan`) and `ChatLogModal`'s Radix chrome are deliberately **not**
-rendered — five browser-API mocks for one journey, and the highest-risk camera invariant is already
-pinned by `tests/useCameraScanUnresolved.test.ts`. The eight ProLock branches stay with
-`tests/proLock.test.ts`'s source walk. Don't duplicate them.
+`useCameraScan` and `ChatLogModal`'s Radix chrome are deliberately **not** rendered — five
+browser-API mocks for one journey, and the highest-risk camera invariant is already pinned by
+`tests/useCameraScanUnresolved.test.ts`. `CameraModal` *is* rendered (`tests/render/cameraModal.test.tsx`),
+but with the hook mocked wholesale: the test hands the view a finished result and checks each
+control still reaches its hook action. `SettingsClient` is rendered the same way
+(`tests/render/settingsClient.test.tsx`, hooks mocked): the plan summary, the two profile POSTs, sign
+out and both subscription rows. The eight ProLock branches stay with `tests/proLock.test.ts`'s
+source walk. Don't duplicate them.
 
 **CI runs them too**, on every PR and every push to `main` — `.github/workflows/gates.yml`. Two things
 about that file are load-bearing and neither is obvious:
@@ -427,6 +434,15 @@ actively seeding.
   difference a user forgives. A smart match also **suppresses** the DB `common_portions` from migration
   `008` — that is deliberate and pinned (a bogus `999 g` label must stay out of the picker); if measured
   IFCT portions need to surface, fix the rows, not the precedence.
+- **"+" on the Food screen has one rule: logged before → straight in at last time's portion; never
+  logged → the portion sheet first.** `lastPortionsFrom` (`lib/lastPortions.ts`) derives the map from
+  the same 200-row snapshot `app/log/page.tsx` already fetches for "Log again" — no new persistence,
+  no extra query — and `FoodSearch.addFromList` applies it to every row (results, Recent, Often,
+  Favourites). Recent and Often foods are previously-logged by definition and always go straight in,
+  falling back to `defaultPortionFor` only when the map has no entry (a quick-add carries no grams).
+  The meal slot is always the *current* one (`mealForTime`), never the slot the food was last logged
+  to — yesterday's dinner tapped at 1pm is lunch. Pinned by `tests/render/foodSearch.test.tsx` (both
+  branches, sabotage-verified) and `tests/lastPortions.test.ts`.
 - **Every logging surface threads the date it is looking at — and "surface" includes the ones that
   don't open a modal.** `useChatLog`, search and quick-add all send `date` in the payload *and* scope
   `useDailyTotals` to the same day. The camera did neither, so scanning while viewing a past day filed
@@ -641,7 +657,7 @@ actively seeding.
   all** under a viewfinder pinned at `flex: 0 0 42%`, so everything past the portion slider —
   including **"Log food"** — rendered below the viewport: the scan identified the food, priced it,
   and offered no reachable way to log it, on the paid AI path. The panel now scrolls and the
-  meal + Log row sits in a `shrink-0` sibling below it. Both defects were invisible to all five
+  primary action (`Add to Lunch · 648 kcal`) sits in a `shrink-0` sibling below it. Both defects were invisible to all five
   gates and to every test; only a phone showed them. Grep for the shape before adding a surface,
   and ask the question the grep cannot: *can the user always reach the button this screen exists
   for, with the most content it can ever hold?*

@@ -68,6 +68,10 @@ export const EVENTS = {
   // AI logging quality
   AI_SCAN_COMPLETED: 'ai_scan_completed',
   AI_ESTIMATE_CORRECTED: 'ai_estimate_corrected',
+  // The one-tap "was this right?" on the camera result (accurate / unsure /
+  // off). `ai_estimate_corrected` only sees what the user *changed*; this sees
+  // what they *thought* — a plate logged untouched can still be wrong.
+  AI_RESULT_FEEDBACK: 'ai_result_feedback',
   // Server-side: a user-stated total weight (chat only, e.g. "750g biryani")
   // disagreed with the model's parsed item grams, and rebalanceChatItems
   // (lib/chat-nutrition.ts) corrected or scaled the item list to match it.

@@ -124,7 +124,7 @@ const SheetContent = React.forwardRef<
           onPointerCancel={onPointerEnd}
           aria-hidden="true"
         >
-          <div className="h-1 w-9 rounded-full bg-hairline" />
+          <div className="h-1 w-9 rounded-full bg-ink-3 opacity-40" />
         </div>
         {children}
       </DialogPrimitive.Content>
@@ -141,7 +141,7 @@ const SheetTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Title ref={ref} className={cn('font-display text-xl font-bold tracking-tight text-ink', className)} {...props} />
+  <DialogPrimitive.Title ref={ref} className={cn('font-display text-title-sm font-semibold text-ink', className)} {...props} />
 ))
 SheetTitle.displayName = 'SheetTitle'
 
@@ -149,7 +149,7 @@ const SheetDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Description ref={ref} className={cn('text-sm text-ink-2', className)} {...props} />
+  <DialogPrimitive.Description ref={ref} className={cn('text-body text-ink-2', className)} {...props} />
 ))
 SheetDescription.displayName = 'SheetDescription'
 

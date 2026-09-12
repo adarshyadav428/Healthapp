@@ -1,13 +1,12 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import {
-  X, ScanLine, Camera, Loader2, RefreshCw, CheckCircle2, AlertCircle,
-  Hash, Search, AlertTriangle, Pencil, ImagePlus,
-} from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { X, Loader2, Check, AlertCircle, Pencil, ImagePlus, Minus, Plus } from 'lucide-react'
 import type { Food } from '../../types/index'
 import { Button } from '../ui/button'
-import { useCameraScan, type Mode } from '../../hooks/useCameraScan'
+import { Chip } from '../ui/chip'
+import { cn } from '../../lib/utils'
+import { useCameraScan, type AiFeedback, type Mode } from '../../hooks/useCameraScan'
 import { useScrollLock } from '../ui/use-scroll-lock'
 import { useBackDismiss } from '../ui/use-back-dismiss'
 import { aiScansLeftLabel } from '../../lib/aiTrial'
@@ -21,12 +20,38 @@ type Props = {
   context?: 'standalone' | 'onboarding'
 }
 
-const MEAL_OPTIONS = [
-  { value: 'breakfast', label: '🥣 Breakfast' },
-  { value: 'lunch',     label: '🍛 Lunch' },
-  { value: 'dinner',    label: '🍲 Dinner' },
-  { value: 'snack',     label: '🥜 Snack' },
+const MEALS = [
+  { value: 'breakfast', label: 'Breakfast' },
+  { value: 'lunch',     label: 'Lunch' },
+  { value: 'dinner',    label: 'Dinner' },
+  { value: 'snack',     label: 'Snack' },
 ] as const
+
+const mealLabel = (meal: string) => MEALS.find((m) => m.value === meal)?.label ?? meal
+
+const FEEDBACK: { value: AiFeedback; label: string }[] = [
+  { value: 'accurate', label: 'Accurate' },
+  { value: 'unsure',   label: 'Not sure' },
+  { value: 'off',      label: 'Off' },
+]
+
+// One line while the photo is with the model. Cycled, not animated: the
+// words change because the work has stages, and that is the only motion the
+// wait needs besides the ring.
+const ANALYZING_LINES = ['Looking at your plate', 'Matching Indian foods', 'Working out the portion']
+
+// The −/+ step is a nudge, not the resolution: the number field still takes
+// any value inside portionRange. 25 g is one spoon of rice; a piece is a piece.
+const NUDGE: Record<string, number> = { pcs: 1 }
+const nudgeFor = (unit: string) => NUDGE[unit] ?? 25
+
+// Chrome over the viewfinder: glass discs and pills on the photo itself, so
+// the controls never compete with the food for the frame.
+const glass = 'bg-white/15 text-white backdrop-blur-md hover:bg-white/25'
+const glassDisc = `grid h-11 w-11 place-items-center rounded-full tap-scale transition-colors ${glass}`
+
+// Nested corners inside a control — smaller than their container (design-system.md).
+const segment = 'flex-1 rounded-lg text-caption font-semibold transition-colors'
 
 /**
  * The portion number field. Backed by its own string so it tolerates an empty
@@ -34,18 +59,19 @@ const MEAL_OPTIONS = [
  * that snap made the trailing digit of "10" impossible to delete, since the
  * moment it read "1" the old handler clamped it straight back to 10. The
  * minimum is only enforced on blur; the ceiling still clamps live so a typed
- * value can't sail past what the slider can express.
+ * value can't sail past the range.
  *
- * Rendered with `key={selectedIdx}` by the caller so switching between
- * detected foods reseeds this from that food's own (persisted) grams instead
- * of carrying over a half-typed value meant for a different item.
+ * Rendered with `key` by the caller so switching between detected foods, or a
+ * −/+ nudge, reseeds this from the item's own (persisted) grams instead of
+ * carrying over a half-typed value meant for a different item.
  */
 function PortionInput({
   grams, min, max, step, unit, onChange,
 }: { grams: number; min: number; max: number; step: number; unit: string; onChange: (g: number) => void }) {
   const [str, setStr] = useState(String(grams))
   return (
-    <div className="flex items-center gap-1 shrink-0">
+    <label className="flex items-baseline justify-center gap-1">
+      <span className="sr-only">Quantity</span>
       <input
         type="number"
         inputMode="numeric"
@@ -64,9 +90,40 @@ function PortionInput({
           onChange(safe)
         }}
         onFocus={(e) => e.target.select()}
-        className="w-[64px] text-center text-base font-bold text-ink rounded-control py-1.5 outline-none bg-surface-2 border border-hairline"
+        className="w-20 bg-transparent text-center font-display text-title-sm font-semibold tabular-nums text-ink outline-none"
       />
-      <span className="text-[12px] text-ink-2 font-medium">{unit}</span>
+      <span className="text-body text-ink-2">{unit}</span>
+    </label>
+  )
+}
+
+/** The wait between the shutter and the result — a ring and one changing line. */
+function AnalyzingState() {
+  const [i, setI] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => setI((n) => (n + 1) % ANALYZING_LINES.length), 1800)
+    return () => clearInterval(t)
+  }, [])
+  return (
+    <div role="status" className="absolute inset-0 grid place-items-center bg-black/60 px-8 text-center">
+      <div>
+        <span className="mx-auto block h-14 w-14 animate-spin rounded-full border-2 border-white/20 border-t-brand motion-reduce:animate-none" aria-hidden />
+        <p className="mt-5 text-body-lg font-medium text-white" aria-live="polite">{ANALYZING_LINES[i]}</p>
+        <p className="mt-1 text-caption text-white/60">Usually a few seconds</p>
+      </div>
+    </div>
+  )
+}
+
+/** Four thin corners: "put the food here", without saying so. */
+function FrameCorners({ className }: { className: string }) {
+  const tick = 'absolute h-7 w-7 border-white/70'
+  return (
+    <div className={cn('relative', className)} aria-hidden>
+      <span className={`${tick} left-0 top-0 rounded-tl-2xl border-l-2 border-t-2`} />
+      <span className={`${tick} right-0 top-0 rounded-tr-2xl border-r-2 border-t-2`} />
+      <span className={`${tick} bottom-0 left-0 rounded-bl-2xl border-b-2 border-l-2`} />
+      <span className={`${tick} bottom-0 right-0 rounded-br-2xl border-b-2 border-r-2`} />
     </div>
   )
 }
@@ -76,428 +133,404 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
     videoRef, canvasRef, galleryRef,
     barcodeSupport, mode, camError, barcodeLoading, captured, analyzing,
     results, selected, selectedIdx, confidence, scansLeft, grams, photoContext, showContextInput,
-    meal, logging, manualBarcode, manualLoading, customName, editingName,
+    meal, logging, manualBarcode, manualLoading, customName, editingName, feedback, logged,
     setGrams, setPhotoContext, setShowContextInput, setMeal,
     setManualBarcode, setCustomName, setEditingName,
     onGallerySelect, capturePhoto, analyzePhoto, submitManualBarcode,
-    retake, switchMode, selectResult, logFood,
+    retake, switchMode, selectResult, logFood, rateResult,
     kcal, protein, carbs, fat, coaching, amountMin, amountMax, amountStep,
-    multiItem, totalKcal, totalProtein, totalCarbs, totalFat,
+    multiItem, totalKcal,
   } = useCameraScan({ onClose, onFoodFound, logDate, context })
-
-  const nameInputRef = useRef<HTMLInputElement>(null)
 
   useScrollLock()
   useBackDismiss(true, onClose)
 
-  const tabs: { value: Mode; label: string; icon: React.ReactNode }[] = [
-    ...(barcodeSupport ? [{ value: 'barcode' as Mode, label: 'Barcode', icon: <ScanLine className="h-4 w-4" /> }] : []),
-    { value: 'photo',  label: 'Photo',     icon: <Camera className="h-4 w-4" /> },
-    { value: 'manual', label: 'Type Code', icon: <Hash   className="h-4 w-4" /> },
-  ]
+  // Bumped on every −/+ so the number field reseeds from the nudged value.
+  // Keyed on this rather than on `grams` itself: a keystroke also changes
+  // grams, and remounting mid-word would throw the cursor out of the field.
+  const [nudgeSeq, setNudgeSeq] = useState(0)
 
-  // Hidden file input for gallery uploads
-  const galleryInput = (
-    <input
-      ref={galleryRef}
-      type="file"
-      accept="image/*"
-      capture={undefined}
-      onChange={onGallerySelect}
-      className="hidden"
-      aria-hidden="true"
-    />
-  )
-
-  const showResults = !!(results && selected)
+  const showResults = !!(results && selected) && !logged
+  const sheetOpen = showResults || !!logged
+  const scansLine = aiScansLeftLabel(scansLeft)
+  const unit = selected?.unit ?? 'g'
+  const nudge = (dir: -1 | 1) => {
+    const next = Math.min(Math.max(grams + dir * nudgeFor(unit), amountMin), amountMax)
+    setGrams(next)
+    setNudgeSeq((n) => n + 1)
+  }
+  const addLabel = multiItem
+    ? `Add ${results!.length} foods to ${mealLabel(meal)} · ${totalKcal.toLocaleString('en-IN')} kcal`
+    : `Add to ${mealLabel(meal)} · ${kcal.toLocaleString('en-IN')} kcal`
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      {galleryInput}
+    // Full-bleed on a phone. From md up the tool keeps its phone shape in the
+    // middle of a scrim — a camera is a portrait object, and stretching the
+    // viewfinder across a monitor makes a small plate very large.
+    <div className="fixed inset-0 z-50 md:grid md:place-items-center md:bg-scrim md:backdrop-blur-md">
+      <div className="relative flex h-full w-full flex-col overflow-hidden bg-black text-white md:h-[min(56rem,94vh)] md:w-[26.875rem] md:rounded-sheet md:shadow-float">
+        <input
+          ref={galleryRef}
+          type="file"
+          accept="image/*"
+          onChange={onGallerySelect}
+          className="hidden"
+          aria-hidden="true"
+        />
 
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between px-4 py-3 shrink-0">
-        <button
-          onClick={onClose}
-          className="rounded-full p-2 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-        >
-          <X className="h-5 w-5" />
-        </button>
-        <span className="text-white text-sm font-semibold">
-          {mode === 'barcode' ? 'Scan Barcode' : mode === 'photo' ? 'Photo Scan' : 'Enter Barcode'}
-        </span>
-        <div className="w-9" />
-      </div>
-
-      {/* ── Viewport ── */}
-      {mode !== 'manual' && (
+        {/* ── Stage: the live camera, or the photo it took ── */}
         <div
-          className="relative overflow-hidden bg-black"
-          style={{ flex: showResults ? '0 0 42%' : '1 1 auto' }}
+          className="relative min-h-0 overflow-hidden bg-black transition-[flex-basis] duration-300 ease-out"
+          style={{ flex: sheetOpen ? '0 0 38%' : '1 1 auto' }}
         >
-          {camError ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-8 text-center">
-              <AlertCircle className="h-10 w-10" style={{ color: 'var(--bad)' }} />
-              <p className="text-white/80 text-sm">{camError}</p>
-            </div>
-          ) : (
-            <>
-              {captured ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={captured} alt="Captured food" className="absolute inset-0 w-full h-full object-cover" />
-              ) : (
-                <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
-              )}
-              <canvas ref={canvasRef} className="hidden" />
-
-              {/* Barcode targeting overlay */}
-              {mode === 'barcode' && !captured && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <div className="relative w-64 h-40">
-                    <div className="absolute top-0 left-0 w-7 h-7 border-t-2 border-l-2 rounded-tl-sm" style={{ borderColor: 'var(--energy)' }} />
-                    <div className="absolute top-0 right-0 w-7 h-7 border-t-2 border-r-2 rounded-tr-sm" style={{ borderColor: 'var(--energy)' }} />
-                    <div className="absolute bottom-0 left-0 w-7 h-7 border-b-2 border-l-2 rounded-bl-sm" style={{ borderColor: 'var(--energy)' }} />
-                    <div className="absolute bottom-0 right-0 w-7 h-7 border-b-2 border-r-2 rounded-br-sm" style={{ borderColor: 'var(--energy)' }} />
-                    {barcodeLoading
-                      ? <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--energy)' }} /></div>
-                      : <div className="absolute top-1/2 -translate-y-1/2 left-2 right-2 h-px animate-pulse" style={{ background: 'var(--energy)', opacity: 0.7 }} />
-                    }
-                  </div>
-                  <p className="mt-5 text-white/60 text-xs">{barcodeLoading ? 'Looking up product…' : 'Point camera at a barcode'}</p>
-                </div>
-              )}
-
-              {/* Analysing overlay */}
-              {mode === 'photo' && analyzing && (
-                <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-3">
-                  <Loader2 className="h-10 w-10 animate-spin" style={{ color: 'var(--energy)' }} />
-                  <p className="text-white font-medium text-sm">Identifying food…</p>
-                </div>
-              )}
-            </>
+          {/* The video stays mounted underneath the photo: the stream is
+              attached to this one element when the screen opens, and a Retake
+              that remounted it came back to a black viewfinder. */}
+          <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 h-full w-full object-cover" />
+          {captured && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={captured} alt="Your photo" className="absolute inset-0 h-full w-full object-cover" />
           )}
-        </div>
-      )}
+          <canvas ref={canvasRef} className="hidden" />
 
-      {/* ── Manual barcode input ── */}
-      {mode === 'manual' && (
-        <div className="flex-1 flex flex-col items-center justify-center px-8 gap-6">
-          <div className="text-center">
-            <Hash className="h-12 w-12 mx-auto mb-3" style={{ color: 'var(--energy)' }} />
-            <p className="text-white font-semibold text-base">Enter barcode number</p>
-            <p className="text-white/50 text-sm mt-1">Type or paste the barcode from any packaged product</p>
+          {camError && !captured && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-8 text-center">
+              <AlertCircle className="h-8 w-8 text-white/70" strokeWidth={1.75} />
+              <p className="text-body text-white/80">{camError}</p>
+              <button type="button" onClick={() => galleryRef.current?.click()} className={`h-11 rounded-full px-5 text-body font-semibold tap-scale ${glass}`}>
+                Choose a photo instead
+              </button>
+            </div>
+          )}
+
+          {!camError && !captured && mode === 'photo' && (
+            <div className="pointer-events-none absolute inset-0 grid place-items-center">
+              <FrameCorners className="aspect-square w-3/5 max-w-xs" />
+            </div>
+          )}
+
+          {!captured && mode === 'barcode' && (
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-5">
+              <FrameCorners className="h-40 w-64" />
+              {barcodeLoading
+                ? <Loader2 className="h-6 w-6 animate-spin text-white" />
+                : <span className="rounded-full bg-black/40 px-3 py-1 text-caption text-white">Point at a barcode</span>}
+            </div>
+          )}
+
+          {/* Top chrome — close, and once there is a photo, the way back. */}
+          <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4" style={{ paddingTop: 'calc(12px + env(safe-area-inset-top))' }}>
+            <button type="button" onClick={onClose} aria-label="Close camera" className={glassDisc}>
+              <X className="h-5 w-5" strokeWidth={1.75} />
+            </button>
+            {captured && !analyzing && !logged && (
+              <button type="button" onClick={retake} className={`h-10 rounded-full px-4 text-caption font-semibold tap-scale ${glass}`}>
+                Retake
+              </button>
+            )}
           </div>
-          <div className="w-full space-y-3">
+
+          {mode === 'photo' && analyzing && <AnalyzingState />}
+          {mode === 'manual' && <div className="absolute inset-0 bg-black/60" aria-hidden />}
+        </div>
+
+        {/* ── Capture chrome: what sits under the viewfinder before a result ── */}
+        {!sheetOpen && !analyzing && mode !== 'manual' && (
+          <div
+            className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-5 pt-16"
+            style={{ paddingBottom: 'calc(20px + env(safe-area-inset-bottom))' }}
+          >
+            {captured ? (
+              // Review: the photo is taken, the model has not seen it yet.
+              <div className="space-y-3">
+                {showContextInput ? (
+                  <input
+                    type="text"
+                    value={photoContext}
+                    onChange={(e) => setPhotoContext(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') analyzePhoto() }}
+                    placeholder="A note for the AI — 'no oil', '2 rotis'"
+                    maxLength={200}
+                    aria-label="Note for the AI"
+                    className="h-12 w-full rounded-control bg-white/15 px-4 text-body text-white outline-none backdrop-blur-md placeholder:text-white/50 focus:bg-white/25"
+                    autoFocus
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowContextInput(true)}
+                    className="flex h-9 items-center gap-1.5 text-caption font-medium text-white/70 hover:text-white"
+                  >
+                    <Pencil className="h-4 w-4" strokeWidth={1.75} /> Add a note
+                  </button>
+                )}
+                {scansLine && <p className="text-caption text-white/60 tabular-nums">{scansLine}</p>}
+                <Button onClick={analyzePhoto} size="lg" className="w-full">
+                  Analyse photo
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {barcodeSupport && (
+                  <div role="tablist" aria-label="Camera mode" className="mx-auto flex h-10 w-48 gap-1 rounded-control bg-white/15 p-1 backdrop-blur-md">
+                    {([['photo', 'Photo'], ['barcode', 'Barcode']] as [Mode, string][]).map(([value, label]) => (
+                      <button
+                        key={value}
+                        role="tab"
+                        aria-selected={mode === value}
+                        type="button"
+                        onClick={() => switchMode(value)}
+                        className={cn(segment, mode === value ? 'bg-white text-black' : 'text-white/80')}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {mode === 'photo' ? (
+                  <div className="grid grid-cols-3 items-center">
+                    <button type="button" onClick={() => galleryRef.current?.click()} aria-label="Choose a photo" className={`${glassDisc} justify-self-start`}>
+                      <ImagePlus className="h-5 w-5" strokeWidth={1.75} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={capturePhoto}
+                      disabled={!!camError}
+                      aria-label="Take photo"
+                      className="group grid h-[4.5rem] w-[4.5rem] place-items-center justify-self-center rounded-full border-4 border-white disabled:opacity-40"
+                    >
+                      <span className="h-14 w-14 rounded-full bg-white transition-transform group-active:scale-90" />
+                    </button>
+                    <span />
+                  </div>
+                ) : (
+                  <div className="grid h-[4.5rem] place-items-center">
+                    <button type="button" onClick={() => switchMode('manual')} className="h-11 text-caption font-medium text-white/70 hover:text-white">
+                      Type the code instead
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Manual barcode: a small sheet over the dimmed viewfinder ── */}
+        {mode === 'manual' && (
+          <div className="absolute inset-x-0 bottom-0 rounded-t-sheet bg-canvas px-5 pt-5 text-ink" style={{ paddingBottom: 'calc(20px + env(safe-area-inset-bottom))' }}>
+            <h2 className="font-display text-title-sm font-semibold">Enter the barcode</h2>
+            <p className="mt-1 text-caption text-ink-2">The number under the bars on the pack.</p>
             <input
               type="text"
               inputMode="numeric"
               value={manualBarcode}
               onChange={(e) => setManualBarcode(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') submitManualBarcode() }}
-              placeholder="e.g. 8901058851823"
-              className="w-full rounded-control bg-white/10 border border-white/20 text-white text-center text-lg font-mono px-4 py-3.5 outline-none focus:border-[var(--energy)] placeholder:text-white/30 transition-colors"
+              placeholder="8901058851823"
+              aria-label="Barcode number"
+              className="mt-4 h-12 w-full rounded-control border border-hairline bg-surface-2 px-4 text-center text-body-lg tabular-nums text-ink outline-none placeholder:text-ink-3 focus:border-brand focus:bg-surface"
               autoFocus
             />
-            <Button
-              onClick={submitManualBarcode}
-              disabled={!manualBarcode.trim() || manualLoading}
-              size="lg"
-              className="w-full gap-2 tap-scale"
-            >
-              {manualLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            <Button onClick={submitManualBarcode} disabled={!manualBarcode.trim() || manualLoading} size="lg" className="mt-3 w-full">
+              {manualLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
               {manualLoading ? 'Looking up…' : 'Look up product'}
             </Button>
+            <button type="button" onClick={() => switchMode(barcodeSupport ? 'barcode' : 'photo')} className="mt-1 flex h-11 w-full items-center justify-center text-caption font-medium text-ink-2">
+              Back to the camera
+            </button>
           </div>
-          <p className="text-white/30 text-xs text-center">
-            Can&apos;t find a barcode? Use Photo mode to snap your meal, or search by name in the food log.
-          </p>
-        </div>
-      )}
+        )}
 
-      {/* ── Result panel ──
-          Owns its own scrolling, with the primary action pinned in a sibling
-          below it. The viewfinder above is fixed at 42% of the screen and this
-          panel's content is taller than what's left over — while it was
-          `shrink-0` with no scroller it could neither shrink nor scroll, so
-          everything past the portion slider (including "Log food") rendered
-          below the viewport with no way to reach it. */}
-      {showResults && (
-        <div className="flex-1 min-h-0 flex flex-col bg-surface rounded-t-sheet">
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-3 pt-5">
-            <div className="space-y-4">
-
-            {/* Multiple items — every one is logged; a chip picks which to edit */}
-            {multiItem && (
-              <div className="space-y-2">
-                <p className="text-[12px] text-ink-2">
-                  Tap a food to check its portion — all {results!.length} get logged.
-                </p>
-                <div className="flex gap-2 flex-wrap">
-                  {results!.map((r, i) => (
-                    <button
-                      key={i}
-                      onClick={() => selectResult(i)}
-                      className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors tap-scale ${
-                        selectedIdx === i ? 'bg-brand text-white' : 'bg-surface-2 text-ink-2'
-                      }`}
-                    >
-                      {r.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Low-confidence warning */}
-            {confidence === 'low' && (
-              <div className="flex items-start gap-2 rounded-card bg-energy-soft border border-hairline px-3 py-2.5">
-                <AlertTriangle className="h-4 w-4 mt-[1px] flex-shrink-0 text-energy-ink" />
-                <p className="text-[12px] font-medium leading-snug text-energy-ink">
-                  AI isn&apos;t confident about this one — check the numbers before logging.
-                </p>
-              </div>
-            )}
-
-            {aiScansLeftLabel(scansLeft) && (
-              <p className="text-[12.5px] text-ink-2 tabular-nums">{aiScansLeftLabel(scansLeft)}</p>
-            )}
-
-            {/* Food name — tappable to edit */}
-            <div>
+        {/* ── Result: the sheet that rises over the photo ── */}
+        {showResults && (
+          <div className="relative -mt-6 flex min-h-0 flex-1 flex-col rounded-t-sheet bg-canvas text-ink">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4 pt-5">
+              {/* What it saw — the name is the headline and it is editable. */}
               {editingName ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <input
-                    ref={nameInputRef}
                     type="text"
                     value={customName}
                     onChange={(e) => setCustomName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') setEditingName(false) }}
-                    className="flex-1 font-display text-[20px] font-bold text-ink bg-transparent outline-none pb-0.5 border-b-2 border-brand"
+                    aria-label="Food name"
+                    className="min-w-0 flex-1 border-b-2 border-brand bg-transparent pb-1 font-display text-title font-semibold text-ink outline-none"
                     autoFocus
                   />
-                  <button
-                    onClick={() => setEditingName(false)}
-                    className="text-[13px] font-bold shrink-0 text-brand-ink"
-                  >
+                  <button type="button" onClick={() => setEditingName(false)} className="h-11 shrink-0 px-2 text-body font-semibold text-brand-text">
                     Done
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={() => setEditingName(true)}
-                  className="flex items-center gap-1.5 group text-left w-full"
-                >
-                  <p className="font-display text-[20px] font-bold text-ink leading-tight">{customName}</p>
-                  <Pencil className="h-3.5 w-3.5 text-ink-2 group-hover:text-ink transition-colors shrink-0" />
+                <button type="button" onClick={() => setEditingName(true)} className="group flex w-full items-start gap-2 text-left" aria-label={`Edit name: ${customName}`}>
+                  <span className="min-w-0 font-display text-title font-semibold leading-tight text-ink">{customName}</span>
+                  <Pencil className="mt-1.5 h-4 w-4 shrink-0 text-ink-3 group-hover:text-ink" strokeWidth={1.75} />
                 </button>
               )}
-              {selected!.food.brand && (
-                <p className="text-[12px] text-ink-2 mt-0.5">{selected!.food.brand}</p>
-              )}
-            </div>
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-ink-3">
+                {selected!.food.brand && <span>{selected!.food.brand}</span>}
+                {confidence === 'low' && <Chip tone="energy" size="sm">Check this one</Chip>}
+                {scansLine && <span className="tabular-nums">{scansLine}</span>}
+              </div>
 
-            {/* Kcal + macros — this food (of the several detected, when multi) */}
-            <div className="rounded-card bg-energy-soft border border-hairline p-4 space-y-3">
+              {/* The number, and what it is made of. */}
+              <div className="mt-4 rounded-card-lg border border-hairline bg-surface px-4 py-4 shadow-air">
+                {multiItem && <p className="mb-2 truncate text-caption font-medium text-ink-2">{customName}</p>}
+                <div className="flex items-baseline gap-1.5">
+                  <span className="font-display text-display font-semibold tabular-nums leading-none text-ink">{kcal.toLocaleString('en-IN')}</span>
+                  <span className="text-body text-ink-2">kcal</span>
+                </div>
+                <dl className="mt-3 grid grid-cols-3 gap-2 border-t border-hairline pt-3">
+                  {[
+                    { label: 'Protein', value: protein, swatch: 'bg-protein' },
+                    { label: 'Carbs',   value: carbs,   swatch: 'bg-carbs' },
+                    { label: 'Fat',     value: fat,     swatch: 'bg-fat' },
+                  ].map(({ label, value, swatch }) => (
+                    <div key={label}>
+                      <dt className="flex items-center gap-1.5 text-micro font-medium text-ink-3">
+                        <span className={`h-2 w-2 rounded-sm ${swatch}`} aria-hidden />{label}
+                      </dt>
+                      <dd className="mt-0.5 text-body font-semibold tabular-nums text-ink">{value} g</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+
+              {/* Several foods on one plate: all go in; tap one to edit it. */}
               {multiItem && (
-                <p className="text-[11px] font-semibold text-ink-2">This food · {customName || selected!.food.name}</p>
+                <div className="mt-5">
+                  <h3 className="text-caption font-semibold text-ink-2">On the plate</h3>
+                  <ul className="mt-1 divide-y divide-hairline">
+                    {results!.map((r, i) => (
+                      <li key={i}>
+                        <button
+                          type="button"
+                          onClick={() => selectResult(i)}
+                          aria-pressed={selectedIdx === i}
+                          className={cn('flex h-12 w-full items-center gap-3 rounded-control px-2 text-left tap-scale', selectedIdx === i ? 'bg-surface-2' : 'hover:bg-surface-2')}
+                        >
+                          <span className="min-w-0 flex-1 truncate text-body font-medium text-ink">{r.name || r.food.name}</span>
+                          <span className="text-caption tabular-nums text-ink-3">{Math.round(r.grams)} {r.unit}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 flex justify-between border-t border-hairline pt-2 text-caption text-ink-2">
+                    <span>All {results!.length} together</span>
+                    <span className="font-semibold tabular-nums text-ink">{totalKcal.toLocaleString('en-IN')} kcal</span>
+                  </p>
+                </div>
               )}
-              {/* Kcal */}
-              <div className="flex items-baseline gap-1.5">
-                <span className="font-display text-[36px] font-bold tabular-nums text-ink leading-none">{kcal}</span>
-                <span className="text-[14px] font-medium text-energy-ink">kcal</span>
+
+              {/* Quantity — the estimate is a starting point. */}
+              <div className="mt-5">
+                <h3 className="text-caption font-semibold text-ink-2">Quantity{multiItem ? ` · ${customName}` : ''}</h3>
+                <div className="mt-2 flex items-center justify-between rounded-card border border-hairline bg-surface px-2 py-2">
+                  <button type="button" onClick={() => nudge(-1)} disabled={grams <= amountMin} aria-label="Decrease quantity" className="grid h-11 w-11 place-items-center rounded-full bg-surface-2 text-ink tap-scale disabled:opacity-40">
+                    <Minus className="h-5 w-5" strokeWidth={2} />
+                  </button>
+                  <PortionInput
+                    key={`${selectedIdx}:${nudgeSeq}`}
+                    grams={grams}
+                    min={amountMin} max={amountMax} step={amountStep}
+                    unit={unit}
+                    onChange={setGrams}
+                  />
+                  <button type="button" onClick={() => nudge(1)} disabled={grams >= amountMax} aria-label="Increase quantity" className="grid h-11 w-11 place-items-center rounded-full bg-surface-2 text-ink tap-scale disabled:opacity-40">
+                    <Plus className="h-5 w-5" strokeWidth={2} />
+                  </button>
+                </div>
               </div>
 
-              {/* Macro row */}
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-hairline">
-                {[
-                  { label: 'Protein', value: protein, color: 'var(--protein)' },
-                  { label: 'Carbs',   value: carbs,   color: 'var(--carbs)' },
-                  { label: 'Fat',     value: fat,     color: 'var(--fat)' },
-                ].map(({ label, value, color }) => (
-                  <div key={label} className="flex flex-col gap-0.5">
-                    <span className="text-[11px] font-semibold text-ink-2">{label}</span>
-                    <span className="text-[15px] font-bold tabular-nums" style={{ color }}>
-                      {value}<span className="text-[11px] font-medium text-ink-2">g</span>
+              {/* Meal — today's slot is already picked. */}
+              <div className="mt-5">
+                <h3 className="text-caption font-semibold text-ink-2">Add to</h3>
+                <div role="radiogroup" aria-label="Meal" className="mt-2 grid grid-cols-4 gap-1.5">
+                  {MEALS.map((m) => (
+                    <button
+                      key={m.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={meal === m.value}
+                      onClick={() => setMeal(m.value)}
+                      className={cn('h-11 rounded-control text-caption font-semibold tap-scale transition-colors', meal === m.value ? 'bg-ink text-canvas' : 'bg-surface-2 text-ink-2 hover:text-ink')}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Feedback — one tap, optional. */}
+              <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2">
+                <h3 className="text-caption font-semibold text-ink-2">Was this right?</h3>
+                <div role="group" aria-label="Was this right?" className="flex gap-1.5">
+                  {FEEDBACK.map((f) => (
+                    <button
+                      key={f.value}
+                      type="button"
+                      aria-pressed={feedback === f.value}
+                      onClick={() => rateResult(f.value)}
+                      className={cn('h-10 rounded-full border px-4 text-caption font-semibold tap-scale transition-colors', feedback === f.value ? 'border-ink bg-ink text-canvas' : 'border-hairline bg-surface text-ink-2 hover:text-ink')}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {coaching && <p className="mt-4 text-caption leading-relaxed text-ink-2">{coaching}</p>}
+            </div>
+
+            {/* The one action, outside the scroller so it is always on screen. */}
+            <div className="shrink-0 border-t border-hairline bg-canvas px-5 pt-3" style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom))' }}>
+              <Button onClick={logFood} disabled={logging} size="lg" className="w-full">
+                {logging ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+                {addLabel}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Logged: what went in, and where the day stands ── */}
+        {logged && (
+          <div role="status" className="relative -mt-6 flex min-h-0 flex-1 flex-col rounded-t-sheet bg-canvas text-ink">
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-6 text-center">
+              <span className="animate-fade-up grid h-16 w-16 place-items-center rounded-full bg-good-soft text-good">
+                <Check className="h-8 w-8" strokeWidth={2} />
+              </span>
+              <h2 className="mt-4 font-display text-title font-semibold">Logged to {mealLabel(logged.meal)}</h2>
+              <p className="mt-1 text-body text-ink-2">
+                {logged.name} · <span className="font-semibold tabular-nums text-ink">{logged.kcal.toLocaleString('en-IN')} kcal</span>
+              </p>
+              {logged.dayKcal !== null && logged.dayTarget ? (
+                <div className="mt-6 w-full max-w-xs rounded-card-lg border border-hairline bg-surface px-4 py-4 text-left shadow-air">
+                  <p className="flex items-baseline justify-between text-caption text-ink-2">
+                    <span>Today</span>
+                    <span className="tabular-nums">
+                      <span className="text-body font-semibold tabular-nums text-ink">{logged.dayKcal.toLocaleString('en-IN')}</span> / {logged.dayTarget.toLocaleString('en-IN')} kcal
                     </span>
+                  </p>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-2" aria-hidden>
+                    <div className="h-full rounded-full bg-cta-grad" style={{ width: `${Math.min(100, Math.round((logged.dayKcal / logged.dayTarget) * 100))}%` }} />
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Combined total — what "Log all" will write */}
-            {multiItem && (
-              <div className="rounded-card bg-surface-2 border border-hairline p-4 space-y-2">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-[11px] font-semibold text-ink-2">All {results!.length} foods · total</span>
-                  <span className="font-display text-[22px] font-bold tabular-nums text-ink leading-none">
-                    {totalKcal}<span className="text-[12px] font-medium text-ink-2"> kcal</span>
-                  </span>
+                  <p className="mt-2 text-caption">
+                    {logged.dayKcal > logged.dayTarget
+                      ? <span className="font-semibold tabular-nums text-brand-text">{(logged.dayKcal - logged.dayTarget).toLocaleString('en-IN')} over</span>
+                      : <span className="font-semibold tabular-nums text-good">{(logged.dayTarget - logged.dayKcal).toLocaleString('en-IN')} left</span>}
+                    <span className="text-ink-3"> for the day</span>
+                  </p>
                 </div>
-                <div className="flex gap-4 pt-2 border-t border-hairline text-[12px] font-bold tabular-nums">
-                  <span style={{ color: 'var(--protein)' }}>P {totalProtein}<span className="text-[10px] font-medium text-ink-2">g</span></span>
-                  <span style={{ color: 'var(--carbs)' }}>C {totalCarbs}<span className="text-[10px] font-medium text-ink-2">g</span></span>
-                  <span style={{ color: 'var(--fat)' }}>F {totalFat}<span className="text-[10px] font-medium text-ink-2">g</span></span>
-                </div>
-              </div>
-            )}
-
-            {/* Post-scan coaching line — makes the AI feel like a coach */}
-            {coaching && (
-              <p className="px-1 text-[12.5px] leading-relaxed text-ink-2">💡 {coaching}</p>
-            )}
-
-            {/* Portion: number input + slider — edits the food in focus */}
-            <div>
-              <p className="text-[12px] text-ink-2 mb-2">
-                {multiItem ? `Portion — ${customName || selected!.food.name}` : 'Portion size'}
-              </p>
-              <div className="flex items-center gap-3">
-                <PortionInput
-                  key={selectedIdx}
-                  grams={grams}
-                  min={amountMin} max={amountMax} step={amountStep}
-                  unit={selected?.unit ?? 'g'}
-                  onChange={setGrams}
-                />
-                <input
-                  type="range" min={amountMin} max={amountMax} step={amountStep} value={grams}
-                  onChange={(e) => setGrams(Number(e.target.value))}
-                  className="flex-1 accent-brand"
-                />
-              </div>
+              ) : null}
             </div>
-
-            {/* Retake */}
-            <button
-              onClick={retake}
-              className="flex w-full items-center justify-center gap-1.5 py-1 text-[13px] font-medium text-ink-2 hover:text-ink transition-colors"
-            >
-              <RefreshCw className="h-3.5 w-3.5" /> Retake photo
-            </button>
-            </div>
-          </div>
-
-          {/* Meal + log — deliberately outside the scroller, so the action this
-              whole screen exists for is on screen no matter how much the scan
-              returned. */}
-          <div className="shrink-0 border-t border-hairline bg-surface px-4 pb-6 pt-3">
-            <div className="flex gap-2">
-              <select
-                value={meal}
-                onChange={(e) => setMeal(e.target.value)}
-                className="flex-1 rounded-control text-base py-2.5 px-3 outline-none transition-colors bg-surface-2 border border-hairline text-ink"
-              >
-                {MEAL_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-              <Button onClick={logFood} disabled={logging} size="lg" className="flex-1 gap-1.5 tap-scale">
-                {logging ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                {multiItem ? `Log ${results!.length} foods` : 'Log food'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Capture chrome — the viewfinder states, which are mutually
-          exclusive with a result and keep the panel `shrink-0` so the
-          viewfinder above can take all remaining space. ── */}
-      {!showResults && (
-        <div
-          className="shrink-0 px-4 pb-6 pt-5 space-y-4"
-          style={{ background: '#030712' }} // token-check-ignore — camera viewfinder chrome is intentionally near-black regardless of theme
-        >
-
-        {/* ── Review capture + optional context, before sending to AI (photo mode) ── */}
-        {mode === 'photo' && captured && !analyzing && !results && (
-          <div className="space-y-3">
-            {showContextInput ? (
-              <input
-                type="text"
-                value={photoContext}
-                onChange={(e) => setPhotoContext(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') analyzePhoto() }}
-                placeholder="e.g. 'no oil', 'diet version', '2 rotis not 1'"
-                maxLength={200}
-                className="w-full rounded-control bg-white/10 border border-white/20 text-white text-base px-4 py-3 outline-none focus:border-[var(--energy)] placeholder:text-white/40 transition-colors"
-                autoFocus
-              />
-            ) : (
-              <button
-                onClick={() => setShowContextInput(true)}
-                className="flex items-center gap-1.5 text-[13px] font-medium text-white/50 hover:text-white transition-colors"
-              >
-                <Pencil className="h-3.5 w-3.5" /> Add context (optional)
-              </button>
-            )}
-            {aiScansLeftLabel(scansLeft) && (
-              <p className="text-center text-[12px] font-medium text-white/40 tabular-nums">
-                {aiScansLeftLabel(scansLeft)}
-              </p>
-            )}
-            <div className="flex gap-2">
-              <button
-                onClick={retake}
-                className="flex items-center justify-center gap-1.5 rounded-control px-4 h-12 text-sm font-semibold text-white/60 hover:text-white bg-white/10 transition-colors tap-scale"
-              >
-                <RefreshCw className="h-4 w-4" /> Retake
-              </button>
-              <Button onClick={analyzePhoto} size="lg" className="flex-1 gap-2 tap-scale">
-                <Camera className="h-4 w-4" />
-                Analyze
-              </Button>
+            <div className="shrink-0 px-5 pt-3" style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom))' }}>
+              <Button onClick={onClose} size="lg" className="w-full">Done</Button>
+              <Button onClick={retake} variant="subtle" className="mt-1 w-full">Scan another</Button>
             </div>
           </div>
         )}
-
-        {/* ── Mode tabs + shutter (when no results) ── */}
-        {!results && !analyzing && !captured && (
-          <>
-            <div className="flex rounded-control bg-white/10 p-1 gap-0.5">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.value}
-                  onClick={() => switchMode(tab.value)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 rounded-[0.625rem] py-2 text-xs font-semibold transition-colors ${
-                    mode === tab.value ? 'bg-brand text-white' : 'text-white/50 hover:text-white'
-                  }`}
-                >
-                  {tab.icon}{tab.label}
-                </button>
-              ))}
-            </div>
-
-            {mode === 'photo' && (
-              <div className="flex items-center justify-center gap-6 pt-1">
-                {/* Gallery upload button */}
-                <button
-                  onClick={() => galleryRef.current?.click()}
-                  aria-label="Upload from gallery"
-                  className="flex flex-col items-center gap-1 group"
-                >
-                  <span className="flex items-center justify-center h-12 w-12 rounded-full bg-white/10 border-2 border-white/25 group-hover:border-white/50 group-active:scale-90 transition-all">
-                    <ImagePlus className="h-5 w-5 text-white/70 group-hover:text-white transition-colors" />
-                  </span>
-                  <span className="text-[10px] font-medium text-white/40 group-hover:text-white/60 transition-colors">Gallery</span>
-                </button>
-
-                {/* Shutter button */}
-                <button
-                  onClick={capturePhoto}
-                  disabled={!!camError}
-                  aria-label="Take photo"
-                  className="h-16 w-16 rounded-full bg-white border-4 border-brand active:scale-90 hover:scale-95 transition-transform disabled:opacity-40 shadow-lg"
-                />
-
-                {/* Spacer to keep shutter centered */}
-                <div className="w-12" />
-              </div>
-            )}
-          </>
-        )}
-        </div>
-      )}
+      </div>
     </div>
   )
 }

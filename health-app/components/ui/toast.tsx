@@ -11,8 +11,13 @@ const ToastViewport = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Viewport
     ref={ref}
+    // On a phone a toast belongs where the thumb just was — above the tab
+    // bar, centred — not in the top-right corner, which is a desktop-browser
+    // idiom. `--tab-bar-h` + the safe-area inset clears BottomNav; on wider
+    // screens it goes back to the corner.
     className={cn(
-      'fixed top-4 right-4 z-50 flex w-[90vw] max-w-sm flex-col gap-3 outline-none',
+      'fixed inset-x-0 z-50 mx-auto flex w-[calc(100vw-32px)] max-w-sm flex-col gap-3 outline-none',
+      'bottom-[calc(var(--tab-bar-h,76px)+env(safe-area-inset-bottom,0px)+12px)] sm:inset-x-auto sm:bottom-auto sm:right-4 sm:top-4',
       className
     )}
     {...props}
@@ -27,7 +32,7 @@ const Toast = React.forwardRef<
   <ToastPrimitives.Root
     ref={ref}
     className={cn(
-      'relative flex w-full items-start gap-3 rounded-card border border-hairline bg-surface p-4 shadow-float',
+      'relative flex w-full items-start gap-3 rounded-card border border-hairline bg-surface p-4 shadow-float data-[state=open]:animate-fade-up',
       className
     )}
     {...props}
@@ -39,7 +44,7 @@ const ToastTitle = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Title>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Title>
 >(({ className, ...props }, ref) => (
-  <ToastPrimitives.Title ref={ref} className={cn('text-sm font-semibold text-ink', className)} {...props} />
+  <ToastPrimitives.Title ref={ref} className={cn('text-body font-semibold text-ink', className)} {...props} />
 ))
 ToastTitle.displayName = ToastPrimitives.Title.displayName
 
@@ -49,7 +54,7 @@ const ToastDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Description
     ref={ref}
-    className={cn('text-sm text-ink-2', className)}
+    className={cn('text-caption text-ink-2', className)}
     {...props}
   />
 ))
@@ -62,7 +67,7 @@ const ToastAction = React.forwardRef<
   <ToastPrimitives.Action
     ref={ref}
     className={cn(
-      'inline-flex h-8 shrink-0 items-center justify-center rounded-control bg-brand-soft px-3 text-xs font-semibold text-brand-ink tap-scale transition-colors hover:brightness-95',
+      'inline-flex h-9 shrink-0 items-center justify-center rounded-control bg-brand-soft px-3 text-caption font-semibold text-brand-ink tap-scale transition-colors hover:brightness-95',
       className
     )}
     {...props}
@@ -76,7 +81,7 @@ const ToastClose = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Close
     ref={ref}
-    className={cn('absolute right-3 top-3 rounded-full p-1 text-ink-2 hover:text-ink', className)}
+    className={cn('absolute right-1.5 top-1.5 grid h-9 w-9 place-items-center rounded-full text-ink-2 tap-scale hover:text-ink', className)}
     {...props}
   >
     <X className="h-4 w-4" />

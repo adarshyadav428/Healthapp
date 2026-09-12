@@ -62,20 +62,17 @@ export function PlateauCard({
   }
 
   return (
-    <div
-      className="mt-4 rounded-[20px] bg-surface p-4"
-      style={{ boxShadow: 'var(--shadow-air)' }}
-    >
+    <div className="mt-8 rounded-card border border-hairline bg-surface p-4 shadow-air">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-[14.5px] font-semibold leading-snug text-ink">{copy.headline}</p>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-ink-2">{copy.body}</p>
+          <p className="text-body font-semibold leading-snug text-ink">{copy.headline}</p>
+          <p className="mt-1 text-caption leading-relaxed text-ink-2">{copy.body}</p>
         </div>
         <button
           type="button"
           onClick={dismiss}
           aria-label="Dismiss"
-          className="-mr-1 -mt-1 shrink-0 rounded-full p-1.5 text-ink-3 tap-scale"
+          className="-mr-2 -mt-2 grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-3 tap-scale"
         >
           <X className="h-4 w-4" />
         </button>

@@ -3,23 +3,34 @@
 @tailwind utilities;
 
 /* ==========================================================================
-   Ember — one accent, two material worlds.
-   :root  = Porcelain (light): warm porcelain, borderless cards on soft
-            3-layer shadows, ember accent, bloom behind the ring.
-   .dark  = Onyx (dark): warm near-black, elevation via lighter surfaces +
-            inner top highlight, luminous ember with real glow.
+   Ember — one accent, two material worlds. "Still surface, moving data."
+   :root  = Porcelain (light): a neutral, faintly cool canvas, white surfaces
+            separated by a whisper of shadow and a hairline, ember reserved
+            for data and actions.
+   .dark  = Onyx (dark): neutral near-black, elevation via a visibly lighter
+            surface step + inner top highlight, luminous ember.
    Theme class is stamped on <html> by next-themes (system default,
-   manual override persisted). Values sourced from the /studio directions.
+   manual override persisted). Values mirrored in /studio's WORLDS.
+
+   2026-09-11: the ground moved from warm (#F7F6F3 / #17150F) to neutral. A
+   warm cream canvas under an orange accent made the *interface* warm, and the
+   accent had nothing to stand against; on a neutral ground ember reads as the
+   only warm thing on screen, which is the whole point of one accent. The
+   accent values themselves are unchanged.
    ========================================================================== */
 :root {
   /* Surfaces */
-  --canvas:      #F7F6F3;
+  --canvas:      #F4F5F7;
   --surface:     #FFFFFF;
-  --surface-2:   #F2F0EB;
-  --ink:         #17150F;
-  --ink-2:       #6E6963;
-  --ink-3:       #A6A099;
-  --hairline:    rgba(23,21,15,.06);
+  --surface-2:   #EEF0F3;
+  --ink:         #15171C;
+  --ink-2:       #5C6270;
+  --ink-3:       #8B919E;
+  --hairline:    rgba(21,23,28,.07);
+  /* A frame, not a divider — the outline around a whole region (Food's page
+     frame and shelves), drawn 2px. Three times the hairline so it reads on a
+     bright screen. */
+  --hairline-2:  rgba(21,23,28,.22);
 
   /* Translucent — scrims and blurred chrome.
      The scrim is what makes a sheet read as a *layer* rather than a box drawn
@@ -27,53 +38,76 @@
      — headings, numbers and the nav all readable — which is the single loudest
      "this is a website" tell on the whole app. Matched to the dark theme's .55,
      which was always right. */
-  --scrim:       rgba(23,21,15,.56);
-  --header-bg:   rgba(255,255,255,.72);
-  --glass-hair:  rgba(23,21,15,.05);
+  --scrim:       rgba(21,23,28,.56);
+  --header-bg:   rgba(255,255,255,.78);
+  --glass-hair:  rgba(21,23,28,.06);
 
   /* Accent — ember (the single accent; brand/energy are aliases of it) */
   --brand:       #F1662E;
   --brand-soft:  rgba(241,102,46,.10);
-  --brand-text:  #C24E1E;
+  --brand-text:  #B3441A;
   --brand-ring:  rgba(241,102,46,.30);
   --accent-hi:   #FF8A50;
   --accent-lo:   #E8551C;
   --energy:      #F1662E;
   --energy-lite: #FF8A50;
-  --energy-ink:  #C24E1E;
+  --energy-ink:  #B3441A;
   --energy-soft: rgba(241,102,46,.10);
 
-  /* Semantic state */
-  --good:        #3E8A5C;
-  --bad:         #D64545;
-  --bad-soft:    rgba(214,69,69,.10);
+  /* Semantic state — text-safe (≥ 4.5:1 on every light surface) */
+  --good:        #24784C;
+  --good-soft:   rgba(36,120,76,.10);
+  --bad:         #C43838;
+  --bad-soft:    rgba(196,56,56,.10);
 
   /* Macros */
   --protein:     #4A7DE0;
   --carbs:       #E0961F;
   --fat:         #E05A4E;
 
-  /* Elevation — borders die; light separates surfaces */
-  --shadow-rest:  0 1px 1px rgba(23,21,15,.03), 0 8px 20px -8px rgba(23,21,15,.08), 0 24px 48px -24px rgba(23,21,15,.10);
-  --shadow-float: 0 2px 4px rgba(23,21,15,.04), 0 16px 32px -12px rgba(23,21,15,.12), 0 32px 64px -28px rgba(23,21,15,.14);
-  --cta-shadow:   0 10px 24px -8px rgba(241,102,46,.45);
-  --fab-shadow:   0 10px 24px -8px rgba(241,102,46,.5);
+  /* ── Azure — the public site's accent. The same blue the app already
+     carries as --protein / --ambient, promoted to a full family (fill,
+     text-safe, soft, ring, gradient, shadow) for www.getinshape.co.in only.
+     Inside the app ember stays the one accent; the landing page is blue-led
+     by decision (2026-09-12) so the product screenshots — ember — are the
+     warm thing on the page. ── */
+  --azure:        #4A7DE0;
+  --azure-text:   #2E5FBF;
+  --azure-soft:   rgba(74,125,224,.10);
+  --azure-ring:   rgba(74,125,224,.30);
+  --azure-grad:   linear-gradient(180deg, #5A8BEA 0%, #3F72D9 100%);
+  --azure-shadow: 0 6px 16px -6px rgba(74,125,224,.35);
+  --azure-wash:   radial-gradient(90% 60% at 50% 0%, rgba(74,125,224,.12), transparent 70%);
 
-  /* Materials */
-  --cta-grad:    linear-gradient(160deg, #FF8A50, #EB5A20);
-  --ava-grad:    linear-gradient(150deg, #FF9560, #E8551C);
-  --ava-halo:    rgba(241,102,46,.22);
-  --ambient:     linear-gradient(180deg, rgba(255,138,80,.30) 0%, rgba(255,138,80,.13) 20%, rgba(255,138,80,0) 46%);
-  --hero-wash:   linear-gradient(180deg, #FFF2E8 0%, rgba(255,255,255,0) 52%);
-  --ring-bloom:  radial-gradient(closest-side, rgba(241,102,46,.16), transparent 72%);
+  /* Elevation — a hairline separates, a whisper of shadow lifts.
+     rest = air: one flat card elevation for the whole app (the redesigned
+     core screens and the older secondary pages used to differ). float is for
+     things that genuinely hover — sheets, dialogs, the tab bar, toasts. */
+  --shadow-air:   0 1px 2px rgba(21,23,28,.04), 0 8px 24px -12px rgba(21,23,28,.08);
+  --shadow-rest:  var(--shadow-air);
+  --shadow-float: 0 2px 6px rgba(21,23,28,.05), 0 20px 48px -16px rgba(21,23,28,.16);
+  --cta-shadow:   0 6px 16px -6px rgba(241,102,46,.30);
+  --fab-shadow:   0 8px 20px -6px rgba(241,102,46,.35);
+
+  /* Materials — the CTA keeps its gradient shape but the stops sit close
+     enough to read as a flat ember with depth, not a sunset. */
+  --cta-grad:    linear-gradient(180deg, #F8743E 0%, #EC5F25 100%);
+  --ava-grad:    linear-gradient(150deg, #FF8A50, #EC5F25);
+  --ava-halo:    rgba(241,102,46,.18);
+  --ambient:     radial-gradient(120% 36% at 50% -8%, rgba(74,125,224,.07), transparent 62%);
+  --hero-wash:   linear-gradient(180deg, rgba(74,125,224,.05) 0%, rgba(255,255,255,0) 52%);
+  --ring-bloom:  radial-gradient(closest-side, rgba(241,102,46,.12), transparent 72%);
 
   /* Ring */
-  --track:       #EFEDE8;
-  --arc-glow:    .22;
-  --ring-drop:   drop-shadow(0 8px 16px rgba(241,102,46,.18));
+  --track:       #E8EAEE;
+  --arc-glow:    .18;
+  --ring-drop:   drop-shadow(0 6px 14px rgba(241,102,46,.16));
 
-  /* Ember Air — flatter card elevation for the redesigned core screens */
-  --shadow-air:  0 1px 2px rgba(23,21,15,.04), 0 12px 32px -16px rgba(23,21,15,.10);
+  /* Shared chrome geometry. The tab bar's height (content + its own bottom
+     padding, before the safe-area inset) so a page or a toast can clear it
+     without measuring. Not a theme value — declared here so it always
+     resolves. Read by toast.tsx; BottomNav is the thing it describes. */
+  --tab-bar-h:   72px;
 
   /* On-screen keyboard height, published by components/KeyboardInset.tsx and
      0 whenever no keyboard is up. Not a theme value — declared here only so it
@@ -83,17 +117,18 @@
 }
 
 .dark {
-  --canvas:      #0F0E0C;
-  --surface:     #171512;
-  --surface-2:   #201D19;
-  --ink:         #F5F2EC;
-  --ink-2:       #A8A199;
-  --ink-3:       #6E6860;
-  --hairline:    rgba(245,242,236,.07);
+  --canvas:      #0F1013;
+  --surface:     #181A1F;
+  --surface-2:   #22252B;
+  --ink:         #F2F3F5;
+  --ink-2:       #A3A8B3;
+  --ink-3:       #6E7482;
+  --hairline:    rgba(242,243,245,.08);
+  --hairline-2:  rgba(242,243,245,.24);
 
   --scrim:       rgba(0,0,0,.55);
-  --header-bg:   rgba(23,21,18,.55);
-  --glass-hair:  rgba(245,242,236,.08);
+  --header-bg:   rgba(24,26,31,.72);
+  --glass-hair:  rgba(242,243,245,.08);
 
   --brand:       #FF7A45;
   --brand-soft:  rgba(255,122,69,.14);
@@ -107,6 +142,7 @@
   --energy-soft: rgba(255,122,69,.14);
 
   --good:        #6FBE93;
+  --good-soft:   rgba(111,190,147,.14);
   --bad:         #FF6B5E;
   --bad-soft:    rgba(255,107,94,.14);
 
@@ -114,24 +150,33 @@
   --carbs:       #FFB454;
   --fat:         #FF7A6E;
 
-  /* Dark elevation: lighter surface + inner top highlight; true shadows sink */
-  --shadow-rest:  0 1px 0 rgba(255,255,255,.04) inset, 0 16px 40px -20px rgba(0,0,0,.6);
-  --shadow-float: 0 1px 0 rgba(255,255,255,.05) inset, 0 24px 60px -24px rgba(0,0,0,.75);
-  --cta-shadow:   0 10px 28px -8px rgba(255,92,31,.45);
-  --fab-shadow:   0 10px 26px -8px rgba(255,92,31,.55);
+  --azure:        #6E9BFF;
+  --azure-text:   #9DBBFF;
+  --azure-soft:   rgba(110,155,255,.14);
+  --azure-ring:   rgba(110,155,255,.35);
+  --azure-grad:   linear-gradient(180deg, #7AA3FF 0%, #5585F0 100%);
+  --azure-shadow: 0 6px 18px -6px rgba(110,155,255,.35);
+  --azure-wash:   radial-gradient(90% 60% at 50% 0%, rgba(110,155,255,.12), transparent 70%);
 
-  --cta-grad:    linear-gradient(160deg, #FF8A55, #F5551A);
+  /* Dark elevation: a lighter surface step does the separating (surface sits
+     1.09:1 above canvas — the old #171512 on #0F0E0C was near-invisible);
+     the inner top highlight is the edge light, true shadows sink. */
+  --shadow-air:   0 1px 0 rgba(255,255,255,.04) inset, 0 12px 32px -16px rgba(0,0,0,.5);
+  --shadow-rest:  var(--shadow-air);
+  --shadow-float: 0 1px 0 rgba(255,255,255,.05) inset, 0 24px 60px -24px rgba(0,0,0,.75);
+  --cta-shadow:   0 6px 18px -6px rgba(255,92,31,.35);
+  --fab-shadow:   0 8px 20px -6px rgba(255,92,31,.40);
+
+  --cta-grad:    linear-gradient(180deg, #FF8A55 0%, #F8601F 100%);
   --ava-grad:    linear-gradient(150deg, #FF9F6E, #F5551A);
-  --ava-halo:    rgba(255,122,69,.25);
-  --ambient:     linear-gradient(180deg, rgba(255,122,69,.18) 0%, rgba(255,122,69,.07) 20%, rgba(255,122,69,0) 46%);
-  --hero-wash:   linear-gradient(180deg, rgba(255,122,69,.05), rgba(255,122,69,0) 42%);
+  --ava-halo:    rgba(255,122,69,.22);
+  --ambient:     radial-gradient(120% 36% at 50% -8%, rgba(110,155,255,.07), transparent 62%);
+  --hero-wash:   linear-gradient(180deg, rgba(110,155,255,.05), rgba(110,155,255,0) 42%);
   --ring-bloom:  none;
 
-  --track:       rgba(245,242,236,.07);
-  --arc-glow:    .55;
-  --ring-drop:   drop-shadow(0 0 18px rgba(255,110,60,.25));
-
-  --shadow-air:  0 12px 32px -16px rgba(0,0,0,.5);
+  --track:       rgba(242,243,245,.08);
+  --arc-glow:    .45;
+  --ring-drop:   drop-shadow(0 0 16px rgba(255,110,60,.22));
 }
 
 @layer base {
@@ -159,9 +204,30 @@
     font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
     -webkit-tap-highlight-color: transparent;
   }
+  /* Headings: display face, semibold — bold at 24px+ shouts, and a calm
+     surface lets the numbers be the loud thing. `tracking-tight` is only the
+     legacy default for headings still on Tailwind's own sizes; a named type
+     step (`text-title`, …) carries its own tracking and, being a class,
+     wins over this element rule. */
   h1, h2, h3, h4 {
     font-family: var(--font-display, var(--font-sans, ui-sans-serif, system-ui, sans-serif));
-    @apply font-bold tracking-tight;
+    @apply font-semibold tracking-tight;
+  }
+  /* One keyboard focus ring for every tappable that does not draw its own:
+     the tab bar, the week strip, food rows, chips, segment tabs, calendar
+     discs. Keyboard-only (`focus-visible`) — a tap never draws it — and in
+     ember so it reads as the app's, not the browser's. Fields keep their
+     brand border + `brand-ring`; `Button` keeps its offset ring. */
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+  input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: none;
+  }
+  /* The public site is azure-led (see --azure), so its keyboard ring follows. */
+  .site :focus-visible {
+    outline-color: var(--azure);
   }
 }
 
@@ -277,5 +343,16 @@
     .ring-progress,
     .story-rise,
     .tap-scale { animation: none; transition: none; }
+    /* Everything else — the sheet slide, the overlay fade, the analysing
+       spinner, colour transitions — collapses to a cut. A state change is
+       still communicated (the sheet appears); only the travel is gone. The
+       durations are near-zero rather than none so Radix still receives its
+       animationend and unmounts closed dialogs. */
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

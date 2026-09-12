@@ -27,13 +27,13 @@ export function ThemeSegmented() {
             type="button"
             onClick={() => setTheme(m.value)}
             className={cn(
-              'flex flex-col items-center gap-1.5 rounded-control border py-3 text-xs font-semibold transition-all tap-scale',
+              'flex flex-col items-center gap-1.5 rounded-control border py-3 text-caption font-semibold transition-colors tap-scale',
               active
                 ? 'border-brand bg-brand-soft text-brand-ink'
                 : 'border-hairline bg-surface-2 text-ink-2 hover:border-brand-ring'
             )}
           >
-            <m.icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            <m.icon className="h-5 w-5" strokeWidth={1.75} />
             {m.label}
           </button>
         )

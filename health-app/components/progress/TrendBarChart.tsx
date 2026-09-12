@@ -25,23 +25,29 @@ export function TrendBarChart({
   onSelect: (date: string | null) => void
 }) {
   return (
-    <div className="h-[180px]">
+    <div className="h-44">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} barSize={range <= 7 ? 28 : range <= 14 ? 16 : 8}>
+        <BarChart data={chartData} barSize={range <= 7 ? 24 : range <= 14 ? 14 : 7} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id={`bar-${metric}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={1} />
+              <stop offset="100%" stopColor={color} stopOpacity={0.55} />
+            </linearGradient>
+          </defs>
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 10, fill: 'var(--ink-3)' }}
+            tick={{ fontSize: 11, fill: 'var(--ink-3)' }}
             axisLine={false}
             tickLine={false}
+            interval={range <= 7 ? 0 : range <= 14 ? 1 : 4}
           />
           <YAxis hide />
           {metricTarget > 0 && (
             <ReferenceLine
               y={metricTarget}
-              stroke={color}
-              strokeDasharray="4 2"
-              strokeWidth={1.5}
-              label={{ value: 'Goal', position: 'right', fontSize: 9, fill: color }}
+              stroke="var(--ink-3)"
+              strokeDasharray="4 4"
+              strokeWidth={1}
             />
           )}
           <Tooltip
@@ -50,9 +56,9 @@ export function TrendBarChart({
               if (!active || !payload?.length) return null
               const val = payload[0]?.value as number
               return (
-                <div className="rounded-control bg-surface px-3 py-2 text-xs" style={{ boxShadow: 'var(--shadow-air)' }}>
-                  <p className="font-semibold text-ink-2 mb-0.5">{label}</p>
-                  <p style={{ color }} className="font-bold">
+                <div className="rounded-control border border-hairline bg-surface px-3 py-2 shadow-float">
+                  <p className="text-micro font-medium text-ink-3">{label}</p>
+                  <p className="text-body font-semibold tabular-nums text-ink">
                     {val > 0 ? `${val.toLocaleString()} ${unit}` : 'Not logged'}
                   </p>
                 </div>
@@ -61,15 +67,15 @@ export function TrendBarChart({
           />
           <Bar
             dataKey={metric}
-            radius={[4, 4, 0, 0]}
+            radius={[6, 6, 6, 6]}
+            isAnimationActive={false}
             onClick={(data: DayData) => onSelect(data.date === selectedDate ? null : data.date)}
             style={{ cursor: 'pointer' }}
           >
             {chartData.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={entry.date === selectedDate ? 'var(--brand)' : entry.kcal === 0 ? 'var(--surface-2)' : color}
-                opacity={entry.kcal === 0 ? 1 : entry.date === selectedDate ? 1 : 0.85}
+                fill={entry.date === selectedDate ? 'var(--ink)' : entry.kcal === 0 ? 'var(--surface-2)' : `url(#bar-${metric})`}
               />
             ))}
           </Bar>

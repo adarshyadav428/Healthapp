@@ -21,6 +21,11 @@ function formatDisplay(dateStr: string): string {
   return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
+/**
+ * Date caption over the "Food" title, with the day controls on the right.
+ * Chrome casts no shadow: the chevrons are bare 44px targets and "Today" is a
+ * quiet pill, so the search field below is the first thing with any weight.
+ */
 export function FoodHeader({ dateStr, prevDayLocked = false }: Props) {
   const router = useRouter()
   const todayStr = istDateStr()
@@ -28,19 +33,21 @@ export function FoodHeader({ dateStr, prevDayLocked = false }: Props) {
 
   const go = (target: string) => router.push(logHref(target, todayStr))
 
+  const chevron =
+    'flex h-11 w-11 items-center justify-center rounded-full text-ink tap-scale transition-colors hover:bg-surface-2 disabled:opacity-40'
+
   return (
-    <div className="flex items-center justify-between pt-2">
-      <div>
-        <p className="text-[13px] font-medium text-ink-3">{formatDisplay(dateStr)}</p>
-        <h1 className="font-display mt-[3px] text-[24px] font-bold tracking-[-0.02em] text-ink">Food</h1>
+    <header className="flex items-end justify-between gap-4 pt-2">
+      <div className="min-w-0">
+        <p className="text-caption font-medium text-ink-3">{formatDisplay(dateStr)}</p>
+        <h1 className="font-display mt-1 text-title font-semibold text-ink">Food</h1>
       </div>
-      <div className="flex items-center gap-1">
+      <nav aria-label="Change day" className="-mr-2 flex shrink-0 items-center">
         {!isToday && (
           <button
             type="button"
             onClick={() => go(todayStr)}
-            className="tap-scale mr-1 flex h-9 items-center rounded-full bg-surface px-3.5 text-[12.5px] font-semibold text-ink"
-            style={{ boxShadow: 'var(--shadow-air)' }}
+            className="mr-1 flex h-9 items-center rounded-full border border-hairline bg-surface px-3.5 text-caption font-semibold text-ink tap-scale"
           >
             Today
           </button>
@@ -49,21 +56,19 @@ export function FoodHeader({ dateStr, prevDayLocked = false }: Props) {
           <Link
             href="/upgrade?reason=history"
             aria-label="Older days are a Pro feature — upgrade to Pro"
-            className="relative flex h-9 w-9 items-center justify-center rounded-full bg-surface tap-scale"
-            style={{ boxShadow: 'var(--shadow-air)' }}
+            className={`relative ${chevron} text-ink-3`}
           >
-            <ChevronLeft className="h-[15px] w-[15px] text-ink-3" strokeWidth={2} />
-            <Lock className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 text-brand-ink" strokeWidth={2.5} />
+            <ChevronLeft className="h-6 w-6" strokeWidth={1.75} />
+            <Lock className="absolute bottom-2 right-2 h-3 w-3 text-brand-text" strokeWidth={2.5} />
           </Link>
         ) : (
           <button
             type="button"
             onClick={() => go(shiftDateStr(dateStr, -1))}
             aria-label="Previous day"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-surface tap-scale"
-            style={{ boxShadow: 'var(--shadow-air)' }}
+            className={chevron}
           >
-            <ChevronLeft className="h-[15px] w-[15px] text-ink" strokeWidth={2} />
+            <ChevronLeft className="h-6 w-6" strokeWidth={1.75} />
           </button>
         )}
         <button
@@ -71,12 +76,11 @@ export function FoodHeader({ dateStr, prevDayLocked = false }: Props) {
           onClick={() => !isToday && go(shiftDateStr(dateStr, 1))}
           disabled={isToday}
           aria-label="Next day"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-surface tap-scale disabled:opacity-35"
-          style={{ boxShadow: 'var(--shadow-air)' }}
+          className={chevron}
         >
-          <ChevronRight className="h-[15px] w-[15px] text-ink" strokeWidth={2} />
+          <ChevronRight className="h-6 w-6" strokeWidth={1.75} />
         </button>
-      </div>
-    </div>
+      </nav>
+    </header>
   )
 }

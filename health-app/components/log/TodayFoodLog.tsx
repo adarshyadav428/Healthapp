@@ -7,19 +7,23 @@ import { useUser } from '../../hooks/useUser'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from '../ui/use-toast'
 import { getIstDayRange, istDateStr } from '../../lib/dateUtils'
-import { Trash2, ChevronDown, Pencil, BookmarkPlus, Check, X, ClipboardCopy } from 'lucide-react'
-import { IconButton } from '../ui/IconButton'
+import { isLiquidFood } from '../../lib/portion-units'
+import { Trash2, BookmarkPlus, Check, X, ClipboardCopy } from 'lucide-react'
 import { EditFoodLogModal } from './EditFoodLogModal'
 import { ShareDayButton } from './ShareDayButton'
+import { EmojiTile } from './shortcuts'
+import { cn } from '../../lib/utils'
 import { firstNameFrom } from '../../lib/shareCard'
 import { MEAL_CLIPBOARD_KEY, serializeMealClipboard } from '../../lib/mealClipboard'
 import type { Meal } from '../../lib/meal'
 
-const MEAL_CONFIG: Record<string, { label: string; emoji: string; dot: string }> = {
-  breakfast: { label: 'Breakfast', emoji: '🥣', dot: 'var(--brand)' },
-  lunch:     { label: 'Lunch',     emoji: '🍛', dot: 'var(--protein)' },
-  dinner:    { label: 'Dinner',    emoji: '🍲', dot: 'var(--fat)' },
-  snack:     { label: 'Snacks',    emoji: '🥜', dot: 'var(--carbs)' },
+// `swatch` is the small square beside the meal name — the four macro/brand
+// hues, so the day's shape is readable at a glance without a legend.
+const MEAL_CONFIG: Record<string, { label: string; emoji: string; swatch: string }> = {
+  breakfast: { label: 'Breakfast', emoji: '🥣', swatch: 'var(--brand)' },
+  lunch:     { label: 'Lunch',     emoji: '🍛', swatch: 'var(--protein)' },
+  dinner:    { label: 'Dinner',    emoji: '🍲', swatch: 'var(--fat)' },
+  snack:     { label: 'Snacks',    emoji: '🥜', swatch: 'var(--carbs)' },
 }
 
 function MealGroup({ meal, logs, dateStr, onDelete, deletingId, onEdit }: {
@@ -31,12 +35,11 @@ function MealGroup({ meal, logs, dateStr, onDelete, deletingId, onEdit }: {
   deletingId: string | null
   onEdit: (log: FoodLog) => void
 }) {
-  const [open, setOpen] = useState(true)
   const [saving, setSaving] = useState(false)
   const [savingName, setSavingName] = useState(false)
   const [mealName, setMealName] = useState('')
   const [copied, setCopied] = useState(false)
-  const cfg = MEAL_CONFIG[meal] ?? { label: meal, emoji: '🍽️', dot: 'var(--ink-3)' }
+  const cfg = MEAL_CONFIG[meal] ?? { label: meal, emoji: '🍽️', swatch: 'var(--ink-3)' }
   const totalKcal = logs.reduce((s, l) => s + l.kcal, 0)
 
   const saveMeal = async () => {
@@ -53,7 +56,7 @@ function MealGroup({ meal, logs, dateStr, onDelete, deletingId, onEdit }: {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Failed to save')
-      toast({ title: `"${name}" saved!`, description: 'Log it again anytime from the search screen.', duration: 3000 })
+      toast({ title: `"${name}" saved`, description: 'Find it under My foods, one tap to log.', duration: 3000 })
       setSavingName(false)
       setMealName('')
     } catch (err) {
@@ -92,129 +95,117 @@ function MealGroup({ meal, logs, dateStr, onDelete, deletingId, onEdit }: {
     })
   }
 
+  const iconAction =
+    'grid h-9 w-9 place-items-center rounded-full text-ink-3 tap-scale transition-colors hover:bg-surface-2 hover:text-ink'
+
   return (
-    <div className="rounded-card overflow-hidden bg-surface shadow-rest">
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-3 py-2.5 text-left"
-      >
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: cfg.dot }} />
-          <span className="text-sm">{cfg.emoji}</span>
-          <span className="text-[13px] font-semibold text-ink">{cfg.label}</span>
-          <span className="text-[12px] text-ink-3">· {logs.length} item{logs.length !== 1 ? 's' : ''}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[12px] font-medium text-ink-3 tabular-nums">{Math.round(totalKcal)} kcal</span>
-          <ChevronDown
-            className="h-3.5 w-3.5 text-ink-3 transition-transform"
-            style={{ transform: open ? 'rotate(180deg)' : 'none' }}
-          />
-        </div>
-      </button>
-
-      {open && (
-        <div className="px-3 pb-2 space-y-1.5 pt-1.5 border-t border-hairline">
-          {logs.map((log) => (
-            <div key={log.id} className="flex items-center justify-between rounded-control px-3 py-2 bg-surface-2">
-              <div className="min-w-0 flex-1 mr-2">
-                <p className="text-xs font-medium truncate text-ink">
-                  {log.food?.name ?? (log.food_id == null ? 'Quick Add' : 'Food item')}
-                </p>
-                <div className="flex gap-2 mt-0.5 flex-wrap tabular-nums">
-                  <span className="text-[10px] font-semibold text-ink">{Math.round(log.kcal)} kcal</span>
-                  <span className="text-[10px] font-medium" style={{ color: 'var(--protein)' }}>P{Math.round(log.protein_g)}g</span>
-                  <span className="text-[10px] font-medium" style={{ color: 'var(--carbs)' }}>C{Math.round(log.carbs_g)}g</span>
-                  <span className="text-[10px] font-medium" style={{ color: 'var(--fat)' }}>F{Math.round(log.fat_g)}g</span>
-                  {log.food?.fiber_g_per_100g != null && log.food.fiber_g_per_100g > 0 && (
-                    <span className="text-[10px] font-medium text-good">
-                      Fi{Math.round(log.food.fiber_g_per_100g * log.grams / 100)}g
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-0.5 flex-shrink-0">
-                <IconButton
-                  onClick={() => onEdit(log)}
-                  className="text-ink-3 hover:text-brand"
-                  label="Edit"
-                >
-                  <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} />
-                </IconButton>
-                <IconButton
-                  onClick={() => onDelete(log.id)}
-                  disabled={deletingId === log.id}
-                  className="text-ink-3 hover:text-danger disabled:opacity-40"
-                  label="Delete"
-                >
-                  <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} />
-                </IconButton>
-              </div>
-            </div>
-          ))}
-
-          {/* Save as meal */}
-          {savingName ? (
-            <div className="flex items-center gap-2 pt-1">
-              <input
-                type="text"
-                value={mealName}
-                onChange={(e) => setMealName(e.target.value)}
-                placeholder={`Name (e.g. "${cfg.label} usual")`}
-                className="flex-1 rounded-control px-3 py-1.5 text-base text-ink outline-none transition-all bg-surface-2 border border-hairline focus:border-brand"
-                onKeyDown={(e) => e.key === 'Enter' && saveMeal()}
-                autoFocus
-              />
-              <button
-                type="button"
-                onClick={saveMeal}
-                disabled={saving}
-                aria-label="Save meal name"
-                className="grid h-9 w-9 place-items-center rounded-control text-white disabled:opacity-50 transition-colors bg-brand"
-              >
-                <Check className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setSavingName(false)}
-                aria-label="Cancel"
-                className="grid h-9 w-9 place-items-center rounded-control text-ink-3 transition-colors"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={copyMeal}
-                className="flex flex-1 items-center gap-1.5 rounded-control px-3 py-1.5 text-[11px] font-semibold text-ink-3 transition-colors"
-              >
+    <section aria-label={cfg.label} className="pt-4">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="flex items-center gap-2 text-caption font-semibold text-ink-2">
+          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: cfg.swatch }} />
+          {cfg.label}
+        </h3>
+        <div className="flex items-center gap-1">
+          <span className="mr-1 text-caption tabular-nums text-ink-3">{Math.round(totalKcal).toLocaleString('en-IN')} kcal</span>
+          {/* Copy to another day / keep as a combo — icon targets on the header
+              row, so the group's rows stay just food. */}
+          {!savingName && (
+            <>
+              <button type="button" onClick={copyMeal} aria-label={copied ? `${cfg.label} copied` : `Copy ${cfg.label.toLowerCase()} to another day`} className={iconAction}>
                 {copied
-                  ? <Check className="h-3.5 w-3.5 text-good" strokeWidth={2} />
-                  : <ClipboardCopy className="h-3.5 w-3.5" strokeWidth={1.75} />}
-                {copied ? 'Copied' : `Copy ${cfg.label.toLowerCase()}`}
+                  ? <Check className="h-4 w-4 text-good" strokeWidth={2} />
+                  : <ClipboardCopy className="h-4 w-4" strokeWidth={1.75} />}
               </button>
-              <button
-                type="button"
-                onClick={() => setSavingName(true)}
-                className="flex flex-1 items-center gap-1.5 rounded-control px-3 py-1.5 text-[11px] font-semibold text-ink-3 transition-colors"
-              >
-                <BookmarkPlus className="h-3.5 w-3.5" strokeWidth={1.75} />
-                Save as meal template
+              <button type="button" onClick={() => setSavingName(true)} aria-label={`Save ${cfg.label.toLowerCase()} as a combo`} className={cn(iconAction, '-mr-2')}>
+                <BookmarkPlus className="h-4 w-4" strokeWidth={1.75} />
               </button>
-            </div>
+            </>
           )}
         </div>
+      </div>
+
+      <ul className="mt-1 divide-y divide-hairline">
+        {logs.map((log) => {
+          const name = log.food?.name ?? (log.food_id == null ? 'Quick add' : 'Food item')
+          const amount = log.food_id == null
+            ? null
+            : `${Math.round(log.grams)} ${isLiquidFood(name) ? 'ml' : 'g'}`
+          return (
+            <li key={log.id} className="flex items-center gap-1 py-2">
+              <button
+                type="button"
+                onClick={() => onEdit(log)}
+                aria-label={`Edit ${name}`}
+                className="flex min-w-0 flex-1 items-center gap-2.5 rounded-control text-left tap-scale"
+              >
+                <EmojiTile name={name} className="h-9 w-9 rounded-lg" />
+                <span className="min-w-0 flex-1">
+                  <span className="line-clamp-2 text-body font-medium leading-snug text-ink">{name}</span>
+                  <span className="mt-0.5 block truncate text-caption tabular-nums text-ink-3">
+                    {amount ? `${amount} · ` : ''}
+                    P{Math.round(log.protein_g)} C{Math.round(log.carbs_g)} F{Math.round(log.fat_g)}
+                  </span>
+                </span>
+                <span className="shrink-0 text-body font-semibold tabular-nums text-ink">{Math.round(log.kcal)}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onDelete(log.id)}
+                disabled={deletingId === log.id}
+                aria-label={`Delete ${name}`}
+                className="-mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink-3 tap-scale transition-colors hover:bg-surface-2 hover:text-danger disabled:opacity-40"
+              >
+                <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+
+      {/* Naming a combo — inline, replaces nothing but itself */}
+      {savingName && (
+        <div className="mt-2 flex items-center gap-2">
+          <input
+            type="text"
+            value={mealName}
+            onChange={(e) => setMealName(e.target.value)}
+            placeholder={`Name it (e.g. "${cfg.label} usual")`}
+            className="h-11 flex-1 rounded-control border border-hairline bg-surface-2 px-3 text-base text-ink outline-none transition-[border-color,box-shadow] placeholder:text-ink-3 focus:border-brand focus:bg-surface focus:ring-[3px] focus:ring-brand-ring"
+            onKeyDown={(e) => e.key === 'Enter' && saveMeal()}
+            autoFocus
+          />
+          <button
+            type="button"
+            onClick={saveMeal}
+            disabled={saving}
+            aria-label="Save meal name"
+            className="grid h-11 w-11 place-items-center rounded-full bg-brand text-white tap-scale disabled:opacity-40"
+          >
+            <Check className="h-5 w-5" strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setSavingName(false)}
+            aria-label="Cancel"
+            className="grid h-11 w-11 place-items-center rounded-full text-ink-3 tap-scale hover:bg-surface-2"
+          >
+            <X className="h-5 w-5" strokeWidth={1.75} />
+          </button>
+        </div>
       )}
-    </div>
+    </section>
   )
 }
 
+/**
+ * The day's log, grouped by meal. Live via useFoodLogs, so a "+" anywhere on
+ * the Food screen shows up here without a reload. The header carries the day's
+ * eaten / target total — the summary card that used to sit above the search
+ * answered the same question and is gone.
+ */
 export function TodayFoodLog(
-  { initialLogs, date = new Date(), displayName }:
-  { initialLogs: FoodLog[]; date?: Date; displayName?: string | null }
+  { initialLogs, date = new Date(), displayName, kcalTarget = 0 }:
+  { initialLogs: FoodLog[]; date?: Date; displayName?: string | null; kcalTarget?: number }
 ) {
   const { user } = useUser()
   const queryClient = useQueryClient()
@@ -308,35 +299,61 @@ export function TodayFoodLog(
     }
   }
 
-  if (logs.length === 0) return null
-
   const isToday = getIstDayRange(date).start === getIstDayRange(new Date()).start
+  const eaten = Math.round(totals.kcal)
+  const over = eaten - kcalTarget
+  const pct = kcalTarget > 0 ? Math.min((eaten / kcalTarget) * 100, 100) : 0
 
   return (
-    <div className="space-y-2">
-      {/* Summary row */}
-      <div className="flex items-center justify-between">
-        <p className="text-[10.5px] font-medium uppercase tracking-[.1em] text-ink-3">{isToday ? "Today's log" : 'Log'}</p>
-        <div className="flex gap-3 text-[11px] tabular-nums">
-          <span className="font-semibold text-ink">{Math.round(totals.kcal)} kcal</span>
-          <span className="font-medium" style={{ color: 'var(--protein)' }}>P{Math.round(totals.protein)}g</span>
-          <span className="font-medium" style={{ color: 'var(--carbs)' }}>C{Math.round(totals.carbs)}g</span>
-          <span className="font-medium" style={{ color: 'var(--fat)' }}>F{Math.round(totals.fat)}g</span>
-        </div>
+    <div className="rounded-card-lg border-2 border-hairline-2 bg-surface px-4 py-4 shadow-air">
+      {/* ── Header: the day's total against its target. The log is the one
+          surface on this screen: what you *ate* sits on white, what you
+          *might* log sits on the canvas with a "+" — the two must never read
+          as the same list. ── */}
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="font-display text-title-sm font-semibold text-ink">{isToday ? "Today's log" : 'Log'}</h2>
+        <p className="text-caption tabular-nums text-ink-3">
+          <span className="text-body font-semibold text-ink">{eaten.toLocaleString('en-IN')}</span>
+          {kcalTarget > 0 ? ` / ${kcalTarget.toLocaleString('en-IN')} kcal` : ' kcal'}
+        </p>
       </div>
-      {byMeal.map(({ meal, logs: mealLogs }) => (
-        <MealGroup
-          key={meal}
-          meal={meal}
-          logs={mealLogs}
-          dateStr={istDateStr(date)}
-          onDelete={deleteLog}
-          deletingId={deletingId}
-          onEdit={setEditingLog}
-        />
-      ))}
+      {kcalTarget > 0 && (
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-2" role="presentation">
+          <div className="h-full rounded-full bg-cta-grad transition-[width] duration-700" style={{ width: `${pct}%` }} />
+        </div>
+      )}
+      {logs.length > 0 && (
+        <div className="mt-2 flex items-baseline justify-between gap-3 text-caption tabular-nums text-ink-3">
+          <p>P {Math.round(totals.protein)} g · C {Math.round(totals.carbs)} g · F {Math.round(totals.fat)} g</p>
+          {kcalTarget > 0 && (
+            <p className={over > 0 ? 'font-semibold text-brand-text' : 'font-semibold text-good'}>
+              {over > 0 ? `${over.toLocaleString('en-IN')} over` : `${Math.abs(over).toLocaleString('en-IN')} left`}
+            </p>
+          )}
+        </div>
+      )}
 
-      <ShareDayButton logs={logs} date={date} firstName={firstNameFrom(displayName)} />
+      {logs.length === 0 ? (
+        <p className="mt-3 text-caption text-ink-3">
+          {isToday ? 'Nothing logged yet. Search above, or tap + on something you ate recently.' : 'Nothing was logged this day.'}
+        </p>
+      ) : (
+        <>
+          {byMeal.map(({ meal, logs: mealLogs }) => (
+            <MealGroup
+              key={meal}
+              meal={meal}
+              logs={mealLogs}
+              dateStr={istDateStr(date)}
+              onDelete={deleteLog}
+              deletingId={deletingId}
+              onEdit={setEditingLog}
+            />
+          ))}
+
+          <ShareDayButton logs={logs} date={date} firstName={firstNameFrom(displayName)} />
+        </>
+      )}
 
       {editingLog && (
         <EditFoodLogModal

@@ -48,7 +48,7 @@ export function VerifyEmailCard() {
   if (!visible || !user?.id || !user.email) return null
 
   return (
-    <div className="mt-4 rounded-[20px] bg-surface p-4" style={{ boxShadow: 'var(--shadow-air)' }}>
+    <div className="mt-8 rounded-card border border-hairline bg-surface p-4 shadow-air">
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
           <MailCheck size={18} strokeWidth={2} />
