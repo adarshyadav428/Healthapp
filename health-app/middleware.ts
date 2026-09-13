@@ -7,11 +7,6 @@ import {
   serializeFirstTouch,
 } from './lib/attribution'
 
-// How long we'll wait for Supabase to revalidate the session before treating
-// it as a network failure rather than an auth failure. On a healthy connection
-// this resolves in well under a second; this is a ceiling, not a target.
-const AUTH_TIMEOUT_MS = 5000
-
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const publicFiles = ['/sw.js', '/manifest.webmanifest', '/robots.txt', '/sitemap.xml', '/opengraph-image']
@@ -67,33 +62,23 @@ export async function middleware(request: NextRequest) {
   // and a policy page behind a sign-in wall reads to them as "missing".
   const isPublic = pathname === '/' || pathname === '/privacy' || pathname === '/terms' || pathname === '/refunds' || pathname === '/contact' || pathname === '/pricing' || pathname === '/delete-account' || pathname === '/upgrade' || pathname === '/studio' || pathname.startsWith('/foods/')
 
-  // getUser() re-validates the session against the Supabase Auth server over
-  // the network — unlike getSession(), it can't be spoofed by a tampered
-  // cookie, which is exactly why it's the right check here. But that also
-  // means it can fail for reasons that have nothing to do with whether the
-  // user is actually logged in: a slow or dropped connection on the user's
-  // end. Without this distinction, a flaky network and an expired session
-  // look identical and both force a logout — which is what "sometimes
-  // nothing happens, have to sign in again" actually was.
-  let user: { id: string } | null = null
-  let networkFailure = false
-  try {
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('auth check timed out')), AUTH_TIMEOUT_MS)
-    )
-    const { data, error } = await Promise.race([supabase.auth.getUser(), timeout])
-    // A clean response (even an error one) means Supabase's Auth server was
-    // reached and gave an authoritative answer — trust it.
-    user = error ? null : data.user
-  } catch {
-    // Thrown = the network call itself failed (timeout, DNS, connection
-    // reset) — Supabase never actually said "this session is invalid". Fail
-    // open: let the request through rather than force a logout for a purely
-    // local network hiccup. The destination page still authenticates via its
-    // own session read, and every data query is still enforced by Postgres
-    // RLS regardless — this only affects whether we redirect on a guess.
-    networkFailure = true
-  }
+  // getClaims() verifies the JWT's signature locally (WebCrypto, against the
+  // project's public JWKS) instead of getUser()'s network round trip to the
+  // Auth server. lib/supabase/server.ts already made this exact switch for
+  // every page (getAuthedUser) and every API route (getApiUser) for the same
+  // reason: getUser() here added a Vercel(bom1)-to-Supabase(Tokyo) network
+  // hop to every single page navigation, which was pure duplicate latency —
+  // both of those callers already ran one hop behind this one and were
+  // re-verifying a token this check had just verified. getClaims() only
+  // checks the token's signature and expiry, not live server-side
+  // revocation, but that's fine here for the same reason it's fine there:
+  // a page render is not the security boundary, Postgres RLS is, and every
+  // actual data read still goes through its own authenticated Supabase call
+  // regardless of what this returns. A bonus of dropping the network call:
+  // a flaky connection can no longer masquerade as an expired session, since
+  // there's no longer a network round trip left to fail.
+  const { data, error } = await supabase.auth.getClaims()
+  const user: { id: string } | null = error || !data?.claims ? null : { id: data.claims.sub as string }
 
   // First-touch attribution — stamp `gis_attr` once and never overwrite it, so
   // a later visit through a different campaign can't rewrite where this visitor
@@ -120,8 +105,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!user) {
-    if (networkFailure) return response
-    // Genuinely unauthenticated: allow public pages and auth routes, redirect everything else
+    // Unauthenticated: allow public pages and auth routes, redirect everything else
     if (isPublic || isAuthRoute) return response
     const signInUrl = new URL('/auth/sign-in', origin)
     signInUrl.searchParams.set('returnTo', pathname)
