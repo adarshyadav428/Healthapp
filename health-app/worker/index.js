@@ -4,6 +4,15 @@
 // tsconfig (DOM lib only) doesn't type, and .js files aren't swept into the
 // project-wide `tsc --noEmit` check.
 
+// AppUpdatePrompt posts this once the user taps "Reload" on the update
+// toast — skipWaiting lets this worker activate immediately instead of
+// waiting for every tab on the old version to close.
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING' || event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
+})
+
 self.addEventListener('push', (event) => {
   if (!event.data) return
 

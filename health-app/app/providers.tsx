@@ -8,6 +8,7 @@ import { Toaster } from '../components/ui/toaster'
 import { LogMilestones } from '../components/milestones/LogMilestones'
 import { SentryInit } from '../components/SentryInit'
 import { KeyboardInset } from '../components/KeyboardInset'
+import { AppUpdatePrompt } from '../components/pwa/AppUpdatePrompt'
 import { capturePageview, markAppOpened, registerIdentitySuperProps } from '../lib/posthog/client'
 import { getBrowserSupabaseClient } from '../lib/supabase/client'
 import { isProStatus } from '../lib/subscription'
@@ -98,6 +99,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         <SentryInit />
         <KeyboardInset />
         <LogMilestones />
+        <AppUpdatePrompt />
         <Toaster />
       </QueryClientProvider>
     </ThemeProvider>
