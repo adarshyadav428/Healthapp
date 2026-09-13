@@ -211,149 +211,163 @@ export async function POST(req: Request) {
 
   // For each food: find in DB or create an estimate entry
   const admin = createAdminClient()
-  const enrichedFoods = []
-  // Names of items dropped for lack of a safe number — see the guard below.
-  // Reported back to the client rather than silently vanishing from the plate.
-  const unresolvedNames: string[] = []
-  let anyClamped = false
   const FOOD_SELECT = 'id, source, source_id, name, brand, serving_size_g, serving_description, kcal_per_100g, protein_g_per_100g, carbs_g_per_100g, fat_g_per_100g, fiber_g_per_100g, common_portions'
+  const round1 = (v: number) => Math.round(v * 10) / 10
 
-  for (const item of geminiResult.foods.slice(0, 3)) {
-    const n = resolveNutrition(item)
-    if (!n.plausible) anyClamped = true
-    const round1 = (v: number) => Math.round(v * 10) / 10
-
-    // A readable printed panel is authoritative for that exact product — never
-    // let a fuzzy name match against a generic DB food override it. A pcs-total
-    // or freeform estimate is just Gemini's own guess, so it still gets a
-    // chance at the accurate seeded IFCT/restaurant data.
-    if (!n.fromLabel) {
-      // A discarded error here degrades silently in a way that costs accuracy
-      // AND money: `candidates` becomes null, pickBestFoodMatch gets an empty
-      // list, no measured IFCT row is ever matched, and we write a fresh
-      // per-user `estimate` row instead — permanently, for a transient blip. The
-      // scan still succeeds, so nobody finds out. Report it and carry on.
-      //
-      // Excludes `source='user'` for the same reason `estimate` is excluded:
-      // this runs under the CALLER's own session client, and `foods_select`
-      // RLS is open to every signed-in user for the shared catalogue — so
-      // without this, a photo whose Gemini-guessed name happens to match
-      // another user's private custom food more closely than any catalogue
-      // row would surface (and then log) that private food for this caller.
-      // See lib/foodOwnership.ts.
-      const { data: candidates, error: candidatesError } = await supabase
-        .from('foods')
-        .select(FOOD_SELECT)
-        .ilike('name', `%${item.name}%`)
-        .neq('source', 'estimate')
-        .neq('source', 'user')
-        .limit(10)
-
-      if (candidatesError) {
-        Sentry.captureException(new Error(`food match lookup failed: ${candidatesError.message}`), {
-          tags: { route: 'camera/analyze' },
-        })
-      }
-      const existing = pickBestFoodMatch(candidates ?? [], item.name)
-
-      if (existing) {
-        if (n.unit === 'pcs' && existing.serving_size_g > 0) {
-          // DB rows are per-100g; a "pcs" item needs a per-100-pieces rate.
-          // Convert and cache the derived row so repeat scans of the same
-          // branded item reuse it instead of re-deriving (or drifting on
-          // Gemini's inconsistent phrasing) each time. Gemini's own visible
-          // count (n.portion) stays authoritative — how many pieces are in
-          // the photo varies per scan, but the menu item's per-piece
-          // nutrition doesn't.
-          const gramsPerPiece = existing.serving_size_g / piecesInServing(existing.serving_description)
-          const pcsSourceId = `est_pcs_${existing.source}_${existing.source_id}`
-          const { data: converted, error: convertErr } = await admin
-            .from('foods')
-            .upsert(
-              {
-                source: 'estimate',
-                source_id: pcsSourceId,
-                name: existing.name,
-                brand: existing.brand,
-                serving_size_g: Math.round(n.portion),
-                serving_description: `${Math.round(n.portion)} pcs`,
-                kcal_per_100g: round1(existing.kcal_per_100g * gramsPerPiece),
-                protein_g_per_100g: round1(existing.protein_g_per_100g * gramsPerPiece),
-                carbs_g_per_100g: round1(existing.carbs_g_per_100g * gramsPerPiece),
-                fat_g_per_100g: round1(existing.fat_g_per_100g * gramsPerPiece),
-                fiber_g_per_100g: existing.fiber_g_per_100g != null ? round1(existing.fiber_g_per_100g * gramsPerPiece) : null,
-                common_portions: null,
-              },
-              { onConflict: 'source,source_id' }
-            )
-            .select(FOOD_SELECT)
-            .single()
-
-          if (convertErr) {
-            return NextResponse.json({ error: `DB upsert failed: ${convertErr.message}` }, { status: 500 })
-          }
-          if (converted) {
-            enrichedFoods.push({ ...converted, estimated_grams: n.portion, unit: 'pcs' })
-            continue
-          }
-          // Fall through to the generic estimate upsert below if this failed.
-        } else if (n.unit !== 'pcs') {
-          enrichedFoods.push({
-            ...existing,
-            estimated_grams: n.portion || existing.serving_size_g || 100,
-            unit: n.unit,
-          })
-          continue
-        }
-      }
-    }
-
-    // A "pcs" item resolveNutrition could not derive a safe per-piece rate for
-    // (no valid serving total, no label), and that didn't match an existing
-    // catalogue row above — the DB-match branch derives its own per-piece rate
-    // from existing.serving_size_g and never reaches here — has no defensible
-    // number to persist. `n`'s fields are per-100-GRAM at best, and this route
-    // always writes a "pcs" food as per-100-PIECE; writing them through would
-    // reintroduce the exact 10-100x error this guard exists to prevent. Refuse
-    // rather than guess, and tell the caller which item it was.
-    if (n.unit === 'pcs' && !n.resolvable) {
-      unresolvedNames.push(item.name)
-      continue
-    }
-
-    // Upsert so we have a stable food_id to log against. Label-derived entries
-    // overwrite any earlier estimate for the same product with the real values.
-    const source_id = `est_${item.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 50)}`
-    const { data: created, error: upsertErr } = await admin
-      .from('foods')
-      .upsert(
-        {
-          source: 'estimate',
-          source_id,
-          name: item.name,
-          brand: null,
-          serving_size_g: Math.round(n.portion),
-          serving_description: `${Math.round(n.portion)}${n.unit}`,
-          kcal_per_100g: round1(n.kcal_per_100g),
-          protein_g_per_100g: round1(n.protein_g_per_100g),
-          carbs_g_per_100g: round1(n.carbs_g_per_100g),
-          fat_g_per_100g: round1(n.fat_g_per_100g),
-          fiber_g_per_100g: null,
-          common_portions: null,
-        },
-        { onConflict: 'source,source_id' }
-      )
-      .select(FOOD_SELECT)
-      .single()
-
-    if (upsertErr) {
-      return NextResponse.json({ error: `DB upsert failed: ${upsertErr.message}` }, { status: 500 })
-    }
-
-    if (created) {
-      enrichedFoods.push({ ...created, estimated_grams: n.portion, unit: n.unit })
-    }
+  type ItemOutcome = {
+    clamped: boolean
+    enriched?: Record<string, unknown>
+    unresolvedName?: string
   }
+
+  // A DB write failure inside the loop below used to end the whole route with
+  // a 500 — thrown here to keep that behavior after parallelizing.
+  class UpsertFailedError extends Error {}
+
+  // Each item's DB lookup/upsert is independent of every other item's — this
+  // used to run one at a time, stacking up to 6 sequential Supabase round
+  // trips (2 per item x up to 3 items) on top of the Gemini call that already
+  // dominates this route's latency. chat/analyze already parallelizes the
+  // same per-item work; this brings camera in line with it.
+  let outcomes: ItemOutcome[]
+  try {
+    outcomes = await Promise.all(
+      geminiResult.foods.slice(0, 3).map(async (item): Promise<ItemOutcome> => {
+        const n = resolveNutrition(item)
+        const clamped = !n.plausible
+
+        // A readable printed panel is authoritative for that exact product — never
+        // let a fuzzy name match against a generic DB food override it. A pcs-total
+        // or freeform estimate is just Gemini's own guess, so it still gets a
+        // chance at the accurate seeded IFCT/restaurant data.
+        if (!n.fromLabel) {
+          // A discarded error here degrades silently in a way that costs accuracy
+          // AND money: `candidates` becomes null, pickBestFoodMatch gets an empty
+          // list, no measured IFCT row is ever matched, and we write a fresh
+          // per-user `estimate` row instead — permanently, for a transient blip. The
+          // scan still succeeds, so nobody finds out. Report it and carry on.
+          //
+          // Excludes `source='user'` for the same reason `estimate` is excluded:
+          // this runs under the CALLER's own session client, and `foods_select`
+          // RLS is open to every signed-in user for the shared catalogue — so
+          // without this, a photo whose Gemini-guessed name happens to match
+          // another user's private custom food more closely than any catalogue
+          // row would surface (and then log) that private food for this caller.
+          // See lib/foodOwnership.ts.
+          const { data: candidates, error: candidatesError } = await supabase
+            .from('foods')
+            .select(FOOD_SELECT)
+            .ilike('name', `%${item.name}%`)
+            .neq('source', 'estimate')
+            .neq('source', 'user')
+            .limit(10)
+
+          if (candidatesError) {
+            Sentry.captureException(new Error(`food match lookup failed: ${candidatesError.message}`), {
+              tags: { route: 'camera/analyze' },
+            })
+          }
+          const existing = pickBestFoodMatch(candidates ?? [], item.name)
+
+          if (existing) {
+            if (n.unit === 'pcs' && existing.serving_size_g > 0) {
+              // DB rows are per-100g; a "pcs" item needs a per-100-pieces rate.
+              // Convert and cache the derived row so repeat scans of the same
+              // branded item reuse it instead of re-deriving (or drifting on
+              // Gemini's inconsistent phrasing) each time. Gemini's own visible
+              // count (n.portion) stays authoritative — how many pieces are in
+              // the photo varies per scan, but the menu item's per-piece
+              // nutrition doesn't.
+              const gramsPerPiece = existing.serving_size_g / piecesInServing(existing.serving_description)
+              const pcsSourceId = `est_pcs_${existing.source}_${existing.source_id}`
+              const { data: converted, error: convertErr } = await admin
+                .from('foods')
+                .upsert(
+                  {
+                    source: 'estimate',
+                    source_id: pcsSourceId,
+                    name: existing.name,
+                    brand: existing.brand,
+                    serving_size_g: Math.round(n.portion),
+                    serving_description: `${Math.round(n.portion)} pcs`,
+                    kcal_per_100g: round1(existing.kcal_per_100g * gramsPerPiece),
+                    protein_g_per_100g: round1(existing.protein_g_per_100g * gramsPerPiece),
+                    carbs_g_per_100g: round1(existing.carbs_g_per_100g * gramsPerPiece),
+                    fat_g_per_100g: round1(existing.fat_g_per_100g * gramsPerPiece),
+                    fiber_g_per_100g: existing.fiber_g_per_100g != null ? round1(existing.fiber_g_per_100g * gramsPerPiece) : null,
+                    common_portions: null,
+                  },
+                  { onConflict: 'source,source_id' }
+                )
+                .select(FOOD_SELECT)
+                .single()
+
+              if (convertErr) throw new UpsertFailedError(`DB upsert failed: ${convertErr.message}`)
+              if (converted) {
+                return { clamped, enriched: { ...converted, estimated_grams: n.portion, unit: 'pcs' } }
+              }
+              // Fall through to the generic estimate upsert below if this failed.
+            } else if (n.unit !== 'pcs') {
+              return {
+                clamped,
+                enriched: { ...existing, estimated_grams: n.portion || existing.serving_size_g || 100, unit: n.unit },
+              }
+            }
+          }
+        }
+
+        // A "pcs" item resolveNutrition could not derive a safe per-piece rate for
+        // (no valid serving total, no label), and that didn't match an existing
+        // catalogue row above — the DB-match branch derives its own per-piece rate
+        // from existing.serving_size_g and never reaches here — has no defensible
+        // number to persist. `n`'s fields are per-100-GRAM at best, and this route
+        // always writes a "pcs" food as per-100-PIECE; writing them through would
+        // reintroduce the exact 10-100x error this guard exists to prevent. Refuse
+        // rather than guess, and tell the caller which item it was.
+        if (n.unit === 'pcs' && !n.resolvable) {
+          return { clamped, unresolvedName: item.name }
+        }
+
+        // Upsert so we have a stable food_id to log against. Label-derived entries
+        // overwrite any earlier estimate for the same product with the real values.
+        const source_id = `est_${item.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 50)}`
+        const { data: created, error: upsertErr } = await admin
+          .from('foods')
+          .upsert(
+            {
+              source: 'estimate',
+              source_id,
+              name: item.name,
+              brand: null,
+              serving_size_g: Math.round(n.portion),
+              serving_description: `${Math.round(n.portion)}${n.unit}`,
+              kcal_per_100g: round1(n.kcal_per_100g),
+              protein_g_per_100g: round1(n.protein_g_per_100g),
+              carbs_g_per_100g: round1(n.carbs_g_per_100g),
+              fat_g_per_100g: round1(n.fat_g_per_100g),
+              fiber_g_per_100g: null,
+              common_portions: null,
+            },
+            { onConflict: 'source,source_id' }
+          )
+          .select(FOOD_SELECT)
+          .single()
+
+        if (upsertErr) throw new UpsertFailedError(`DB upsert failed: ${upsertErr.message}`)
+
+        return created ? { clamped, enriched: { ...created, estimated_grams: n.portion, unit: n.unit } } : { clamped }
+      })
+    )
+  } catch (e) {
+    if (e instanceof UpsertFailedError) {
+      return NextResponse.json({ error: e.message }, { status: 500 })
+    }
+    throw e
+  }
+
+  const enrichedFoods = outcomes.flatMap(o => (o.enriched ? [o.enriched] : []))
+  const unresolvedNames = outcomes.flatMap(o => (o.unresolvedName ? [o.unresolvedName] : []))
+  const anyClamped = outcomes.some(o => o.clamped)
 
   if (!enrichedFoods.length) {
     return NextResponse.json(

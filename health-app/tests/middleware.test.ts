@@ -2,29 +2,25 @@
  * Middleware redirects.
  *
  * This is the app's front door: it decides, for every navigation, whether a
- * request reaches a page or bounces to sign-in. It had no test, and it has
- * already been the site of a user-visible bug — "sometimes nothing happens,
- * have to sign in again" was a flaky network being treated as an expired
- * session, because a thrown auth call and an invalid one looked identical.
+ * request reaches a page or bounces to sign-in.
  *
- * Three properties here are load-bearing and easy to break by accident:
+ * Two properties here are load-bearing and easy to break by accident:
  *
- *   1. It FAILS OPEN on a network failure. Supabase never said the session was
- *      invalid, so guessing "logged out" is a logout nobody asked for. Safe
- *      because the destination page authenticates itself and RLS enforces every
- *      query regardless — the middleware only decides whether to redirect.
- *   2. It FAILS CLOSED on an authoritative rejection. An error response from
- *      the Auth server IS an answer, and it means no session.
- *   3. It does not touch auth at all for /api/* or /_next/*. Every route handler
- *      already authenticates, so doing it here too was a duplicate Auth-server
- *      round trip on the most frequent request type in the app.
+ *   1. It verifies the session LOCALLY, via getClaims() (JWT signature +
+ *      expiry, checked against the project's public JWKS) rather than a
+ *      network round trip to the Auth server. That trade only works because
+ *      a page render is not the security boundary — Postgres RLS is, on
+ *      every actual data query the destination page or its API calls make.
+ *   2. It does not touch auth at all for /api/* or /_next/*. Every route handler
+ *      already authenticates, so doing it here too was a duplicate check on
+ *      the most frequent request type in the app.
  */
 
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const getUser = vi.fn()
-const createServerClient = vi.fn(() => ({ auth: { getUser: (...a: unknown[]) => getUser(...a) } }))
+const getClaims = vi.fn()
+const createServerClient = vi.fn(() => ({ auth: { getClaims: (...a: unknown[]) => getClaims(...a) } }))
 
 vi.mock('@supabase/ssr', () => ({
   createServerClient: (...args: unknown[]) => createServerClient(...(args as [])),
@@ -33,19 +29,18 @@ vi.mock('@supabase/ssr', () => ({
 const { middleware } = await import('../middleware')
 
 const ORIGIN = 'https://getinshape.co.in'
-const AUTH_TIMEOUT_MS = 5000
 
 function request(pathname: string) {
   return new NextRequest(new URL(pathname, ORIGIN))
 }
 
 function signedIn() {
-  getUser.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null })
+  getClaims.mockResolvedValue({ data: { claims: { sub: 'user-1' } }, error: null })
 }
 
 function signedOut() {
-  // An authoritative "no session" from the Auth server.
-  getUser.mockResolvedValue({ data: { user: null }, error: { message: 'invalid JWT' } })
+  // An authoritative "no valid session" — a missing, expired or bad-signature token.
+  getClaims.mockResolvedValue({ data: { claims: null }, error: { message: 'invalid JWT' } })
 }
 
 /** The Location header of a redirect, or null when the request passed through. */
@@ -93,15 +88,15 @@ describe('paths that skip auth entirely', () => {
     async (path) => {
       const res = await middleware(request(path))
       expect(redirectTo(res)).toBeNull()
-      // Route handlers authenticate themselves; doing it here too was a full
-      // Auth-server round trip on every search keystroke.
-      expect(getUser).not.toHaveBeenCalled()
+      // Route handlers authenticate themselves; doing it here too was a
+      // duplicate check on every search keystroke.
+      expect(getClaims).not.toHaveBeenCalled()
     }
   )
 
   it('does not re-authenticate Next internals', async () => {
     await middleware(request('/_next/webpack-hmr'))
-    expect(getUser).not.toHaveBeenCalled()
+    expect(getClaims).not.toHaveBeenCalled()
   })
 
   /**
@@ -175,9 +170,9 @@ describe('unauthenticated requests', () => {
     }
   )
 
-  /** An error response IS an answer: the Auth server was reached and said no. */
+  /** A rejected claims check IS an answer: the token is missing, expired or invalid. */
   it('treats an authoritative auth error as signed out', async () => {
-    getUser.mockResolvedValue({ data: { user: null }, error: { message: 'token expired' } })
+    getClaims.mockResolvedValue({ data: { claims: null }, error: { message: 'token expired' } })
     expect(redirectTo(await middleware(request('/dashboard')))).toContain('/auth/sign-in')
   })
 })
@@ -202,43 +197,6 @@ describe('authenticated requests', () => {
     const client = createServerClient.mock.results
     await middleware(request('/dashboard'))
     expect(client.every((r) => !(r.value as any).from)).toBe(true)
-  })
-})
-
-/**
- * The bug this section exists for. A thrown auth call means the network failed,
- * NOT that the session is invalid — Supabase never gave an answer. Redirecting
- * on that guess logs people out for a dropped packet.
- */
-describe('network failure fails open', () => {
-  it.each([
-    ['a connection reset', () => getUser.mockRejectedValue(new Error('ECONNRESET'))],
-    ['a DNS failure', () => getUser.mockRejectedValue(new Error('EAI_AGAIN'))],
-  ])('serves a protected page through %s', async (_label, arrange) => {
-    arrange()
-    expect(redirectTo(await middleware(request('/dashboard')))).toBeNull()
-  })
-
-  it('serves a protected page when the auth check times out', async () => {
-    vi.useFakeTimers()
-    try {
-      // Never settles — the timeout is the only thing that can resolve this.
-      getUser.mockReturnValue(new Promise(() => {}))
-
-      const pending = middleware(request('/dashboard'))
-      await vi.advanceTimersByTimeAsync(AUTH_TIMEOUT_MS + 1)
-
-      expect(redirectTo(await pending)).toBeNull()
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
-  it('does not send a signed-out user to the dashboard on a network failure', async () => {
-    // Failing open means "do not redirect", not "assume authenticated" — the
-    // page still authenticates itself and RLS still governs every query.
-    getUser.mockRejectedValue(new Error('ECONNRESET'))
-    expect(redirectTo(await middleware(request('/auth/sign-in')))).toBeNull()
   })
 })
 
