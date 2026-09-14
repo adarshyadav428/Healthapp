@@ -70,9 +70,18 @@ export function useFoodSearch({ recentFoods, recentLogItems, frequentFoods, logD
   })
   const [loggingMealId, setLoggingMealId] = useState<string | null>(null)
   const [deletingSavedMealId, setDeletingSavedMealId] = useState<string | null>(null)
+  // One key per pending log attempt, keyed by meal id so two different combos
+  // can be in flight without sharing a key. Cleared only on SUCCESS — a retry
+  // after a failed attempt (a timeout, a network blip) reuses the same key so
+  // the server can recognise it as a replay; only a log that actually landed
+  // clears the slot, so a later, genuinely new tap gets a fresh one. See
+  // insertIdempotentBatch and lib/requestIdempotency.ts.
+  const savedMealRequestIds = useRef<Record<string, string>>({})
 
   const logSavedMeal = async (mealId: string, mealType: string) => {
+    if (loggingMealId) return
     setLoggingMealId(mealId)
+    const clientRequestId = savedMealRequestIds.current[mealId] ??= crypto.randomUUID()
     try {
       const res = await fetch('/api/meals/log', {
         method: 'POST',
@@ -81,13 +90,15 @@ export function useFoodSearch({ recentFoods, recentLogItems, frequentFoods, logD
         // practice — but every other log in this hook threads logDate, and the
         // one that didn't is exactly how the FoodLanding copy of this row came
         // to file past-day combos on today. Structural, not guarded.
-        body: JSON.stringify({ meal_id: mealId, meal_type: mealType, date: logDate }),
+        body: JSON.stringify({ meal_id: mealId, meal_type: mealType, date: logDate, client_request_id: clientRequestId }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Failed to log meal')
+      delete savedMealRequestIds.current[mealId]
       toast({ title: `Logged ${json.logged} items`, duration: 2500 })
       queryClient.invalidateQueries({ queryKey: ['food-logs'] })
     } catch (err) {
+      // Leave the key in place — a retry of this same tap must reuse it.
       toast({ title: 'Could not log meal', description: (err as Error).message, variant: 'error' })
     } finally {
       setLoggingMealId(null)

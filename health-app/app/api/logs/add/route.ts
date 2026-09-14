@@ -7,6 +7,7 @@ import { captureFoodLogged } from '../../../../lib/posthog/server'
 import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
 import { resolveLoggedAtForRequest } from '../../../../lib/backfill'
 import { streakEventsForLog } from '../../../../lib/streakEvents'
+import { insertIdempotent } from '../../../../lib/requestIdempotency'
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
@@ -61,9 +62,18 @@ export async function POST(req: Request) {
     const isRestore = parsed.data.restore === true
     const activation = isRestore ? null : await getLogActivationContext(supabase, user.id)
 
-    const { data: inserted, error: insertError } = await supabase
-      .from('food_logs')
-      .insert({
+    // A rapid double-tap, a same-tick race between two requests, or a client
+    // retry after a timeout must not create a duplicate log — see migration
+    // 049 and lib/requestIdempotency.ts. client_request_id is generated once
+    // per modal-open, so a genuinely separate log (the user reopens the
+    // form) always gets a fresh key and still inserts. Confirmed exploitable
+    // before this: two genuinely simultaneous requests both persisted.
+    // 2026-09-13 remediation, R8.
+    const result = await insertIdempotent<{ id: string; meal: string; grams: number; servings: number; kcal: number; protein_g: number; carbs_g: number; fat_g: number; logged_at: string; food: Record<string, unknown> }>(
+      supabase,
+      'food_logs',
+      user.id,
+      {
         user_id: user.id,
         food_id: parsed.data.food_id,
         meal: parsed.data.meal,
@@ -78,13 +88,16 @@ export async function POST(req: Request) {
         // the edit route could set this, so no log ever carried a context and
         // the Trends insight built on it had no data to speak from.
         context: parsed.data.context ?? null,
-      })
-      .select(`id, meal, grams, servings, kcal, protein_g, carbs_g, fat_g, logged_at, food:foods(${FOOD_SELECT})`)
-      .single()
+        client_request_id: parsed.data.client_request_id ?? null,
+      },
+      `id, meal, grams, servings, kcal, protein_g, carbs_g, fat_g, logged_at, food:foods(${FOOD_SELECT})`
+    )
+    if (!result.ok) throw new Error(result.error)
+    const inserted = result.data
 
-    if (insertError) throw new Error(insertError.message)
-
-    if (activation) {
+    // A replay of an already-persisted submission must not double-count
+    // analytics or fire the milestone/first-log celebration a second time.
+    if (activation && !result.alreadyExisted) {
       // `method` defaults to search: this route backs the search/add-food sheet
       // unless the client names a more specific path (re-log, quick add).
       captureFoodLogged(user.id, req, 'search', {
@@ -99,7 +112,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       row: inserted,
-      milestone: activation ? toLogMilestone(activation, 1) : null,
+      milestone: activation && !result.alreadyExisted ? toLogMilestone(activation, 1) : null,
     })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })

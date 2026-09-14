@@ -2,9 +2,19 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { ChevronRight, Lock } from 'lucide-react'
 import type { WeeklyDeficitSummary } from '../../lib/deficit-calculator'
-import { CumulativeDeficitChart, type DeficitPoint } from './CumulativeDeficitChart'
+import type { DeficitPoint } from './CumulativeDeficitChart'
+
+// Defer recharts — this card statically imported CumulativeDeficitChart
+// (and therefore all of recharts) into /progress's initial bundle, unlike
+// its two siblings on the same page (TrendBarChart, WeightTrendChart), which
+// were already next/dynamic. 2026-09-13 remediation, Phase C.
+const CumulativeDeficitChart = dynamic(() => import('./CumulativeDeficitChart').then((m) => m.CumulativeDeficitChart), {
+  ssr: false,
+  loading: () => <div className="h-[164px] w-full animate-shimmer rounded-card bg-surface-2" />,
+})
 
 const STATUS_LABEL: Record<WeeklyDeficitSummary['status'], string> = {
   ahead: 'Ahead',

@@ -78,7 +78,12 @@ export const SMART_PORTIONS: SmartEntry[] = [
   },
   // ── BREADS ────────────────────────────────────────────────────────────────
   {
-    pattern: /roti|chapati|chapathi/i,
+    // Bounded: unanchored, "roti" hides inside "Protien" (a misspelled
+    // "Protein" — i/e swapped — that a real catalogue row carried), so a
+    // protein bar was offered "1 medium roti (35g)" as its unit. Same
+    // failure shape as the \bpuri\b fix below — every real roti product
+    // spells it as a whole word. 2026-09-13 remediation, NEW-1.
+    pattern: /\broti\b|\bchapati\b|\bchapathi\b/i,
     portions: [
       { key: 'small',  label: 'Small roti (25g)',  grams: 25 },
       { key: 'medium', label: 'Medium roti (35g)', grams: 35 },

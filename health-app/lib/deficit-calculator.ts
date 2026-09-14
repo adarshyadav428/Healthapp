@@ -305,11 +305,26 @@ export function calculatePeriodDeficit(
   const neededPerDay = Math.round(calBehind / Math.max(1, daysRemaining))
   const kcalPerDay = Math.round(Math.abs(avgDailyDeficit))
   const dayWord = daysLogged === 1 ? 'day' : 'days'
+  const elapsedDayWord = daysElapsed === 1 ? 'day' : 'days'
   // The card renders every other number with Indian digit grouping; an insight
   // reading "11230 kcal" beside a headline reading "8,570" looks like a defect.
   const n = (v: number) => Math.round(v).toLocaleString('en-IN')
   // The same sentences serve a month, so they cannot say "this week".
   const periodWord = periodDays > 7 ? 'month' : 'week'
+
+  // "Ahead of schedule" is the one insight that projects a confident WEEKLY
+  // PACE (kg/week) rather than just restating the target — and that pace is
+  // extrapolated from `daysLogged` alone, which can be as few as 1-2 days out
+  // of a 7-day window. The module's own contract says an unlogged day must be
+  // "named, not silently dropped" (see the file header) — `days_unlogged` was
+  // already computed correctly and shown elsewhere on the card, but this
+  // specific sentence made its claim without naming the sample it came from.
+  // Observed live: "You are ahead of schedule — 1.54 kg of fat loss per week
+  // at this pace" alongside "2 of 7 days logged · 5 not logged" on the SAME
+  // card. Naming the sample here, rather than changing the (correctly
+  // prorated) status/progress numbers themselves. 2026-09-13 remediation,
+  // NEW-3.
+  const sampleCaveat = daysUnlogged > 0 ? ` based on ${daysLogged} of ${daysElapsed} logged ${elapsedDayWord} so far` : ''
 
   let insight: string
   if (goal === 'maintain') {
@@ -319,13 +334,13 @@ export function calculatePeriodDeficit(
   } else if (goal === 'gain') {
     insight =
       status === 'surplus'  ? `You are eating below maintenance this ${periodWord}. Add ${n(kcalPerDay)} kcal/day to gain as planned.`
-      : status === 'ahead'    ? `Ahead of your gain pace — ${Math.abs(projectedWeeklyLoss).toFixed(2)} kg/week at this rate.`
+      : status === 'ahead'    ? `Ahead of your gain pace${sampleCaveat} — ${Math.abs(projectedWeeklyLoss).toFixed(2)} kg/week at this rate.`
       : status === 'on_track' ? `On track! Hold your ${n(Math.abs(targetDailyDeficit))} kcal/day surplus to hit your ${periodGoalKg} kg goal.`
       : `${n(calBehind)} kcal behind target. Add ${n(neededPerDay)} kcal each remaining day to hit your goal.`
   } else {
     insight =
       status === 'surplus'  ? `You are in a calorie surplus this ${periodWord}. Cut ${n(kcalPerDay)} kcal/day to get back on track.`
-      : status === 'ahead'    ? `You are ahead of schedule — ${projectedWeeklyLoss.toFixed(2)} kg of fat loss per week at this pace. Keep it up!`
+      : status === 'ahead'    ? `You are ahead of schedule${sampleCaveat} — ${projectedWeeklyLoss.toFixed(2)} kg of fat loss per week at this pace. Keep it up!`
       : status === 'on_track' ? `On track! Maintain your ${n(targetDailyDeficit)} kcal/day deficit to hit your ${periodGoalKg} kg goal.`
       : `${n(calBehind)} kcal behind target. Need a ${n(neededPerDay)} kcal deficit each remaining day to hit your goal.`
   }

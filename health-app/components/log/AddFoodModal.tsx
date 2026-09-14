@@ -18,6 +18,7 @@ import { coachingLine, dayContextFor } from '../../lib/coaching'
 import { useDailyTotals } from '../../hooks/useDailyTotals'
 import { useScrollLock } from '../ui/use-scroll-lock'
 import { useBackDismiss } from '../ui/use-back-dismiss'
+import { OverlayPortal } from '../ui/OverlayPortal'
 import { UnitPicker } from './UnitPicker'
 
 const MEAL_OPTIONS = [
@@ -89,6 +90,13 @@ export function AddFoodModal(
   const { user } = useUser()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const inFlightRef = useRef(false)
+  // Generated once for this modal's lifetime, not per submit attempt, so a
+  // rapid double-tap or a retry of the SAME submission always carries the
+  // same key — closes the server-side half of the duplicate-log bug
+  // (`inFlightRef` above only guards this one tab's own re-entrancy, not a
+  // genuine race between two requests). Same pattern as WeightLogModal.
+  // 2026-09-13 remediation, R8.
+  const clientRequestIdRef = useRef(crypto.randomUUID())
   const queryClient = useQueryClient()
 
   // Scoped to the day being logged to, not "today" — backfilling a past day
@@ -178,6 +186,7 @@ export function AddFoodModal(
           grams,
           date: logDate,
           context,
+          client_request_id: clientRequestIdRef.current,
         }),
       })
 
@@ -227,6 +236,7 @@ export function AddFoodModal(
   const emoji = foodEmoji(food.name)
 
   return (
+    <OverlayPortal>
     <div className="fixed inset-0 z-50 bg-canvas flex flex-col">
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 pt-3 pb-2 flex-shrink-0">
@@ -427,6 +437,7 @@ export function AddFoodModal(
         />
       )}
     </div>
+    </OverlayPortal>
   )
 }
 

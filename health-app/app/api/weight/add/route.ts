@@ -57,7 +57,25 @@ export async function POST(req: Request) {
     if (!result.ok) throw new Error(result.error)
     const row = result.data
 
-    // Auto-recalculate calorie & macro targets when weight shifts ≥ 0.5 kg.
+    // Auto-recalculate calorie & macro targets when weight shifts ≥ 0.5 kg —
+    // but only when THIS entry is the chronologically latest weigh-in on
+    // record. `current_weight_kg`/the calorie target are meant to track the
+    // user's most recent known weight; the recalc used to fire off insertion
+    // order instead, so backdating old weigh-ins (e.g. filling in a history)
+    // could overwrite today's live targets from stale data purely because
+    // they were POSTed last. Confirmed live: posting 14 backdated weigh-ins
+    // in chronological order shifted the calorie target from 1,589 to 1,578
+    // kcal, driven by an intermediate historical entry rather than the true
+    // latest weight. 2026-09-13 remediation, R6.
+    const { data: newerRow } = await supabase
+      .from('weight_logs')
+      .select('id')
+      .eq('user_id', user.id)
+      .gt('measured_at', parsed.data.measured_at)
+      .limit(1)
+      .maybeSingle()
+    const isLatestEntry = !newerRow
+
     // Awaited, not fire-and-forget: a serverless function can be frozen the
     // moment the response is sent, so detached async work may never run.
     // It's two cheap queries; a recalc failure still shouldn't fail the
@@ -70,7 +88,7 @@ export async function POST(req: Request) {
         .single()
 
       const diff = profile ? Math.abs((profile.current_weight_kg ?? 0) - parsed.data.weight_kg) : 0
-      if (profile && diff >= 0.5) {
+      if (profile && isLatestEntry && diff >= 0.5) {
         const targets = calculateTDEE({
           weightKg: parsed.data.weight_kg,
           heightCm: profile.height_cm,

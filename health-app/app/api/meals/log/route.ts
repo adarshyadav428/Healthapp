@@ -7,6 +7,7 @@ import { getLogActivationContext } from '../../../../lib/logActivation'
 import { resolveLoggedAtForRequest } from '../../../../lib/backfill'
 import { streakEventsForLog } from '../../../../lib/streakEvents'
 import { isFoodReferenceableBy } from '../../../../lib/foodOwnership'
+import { insertIdempotentBatch } from '../../../../lib/requestIdempotency'
 
 const schema = z.object({
   meal_id: z.string().uuid(),
@@ -20,6 +21,10 @@ const schema = z.object({
   // the whole meal on today, silently. Same shape as the camera bug that made
   // "every logging surface threads the date it is looking at" a hard rule.
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  // One key per logging tap, held until it succeeds — see insertIdempotentBatch
+  // and useFoodSearch.logSavedMeal. Optional: an older client goes unprotected,
+  // same as before this pass.
+  client_request_id: z.string().uuid().optional(),
 })
 
 export async function POST(req: Request) {
@@ -82,8 +87,14 @@ export async function POST(req: Request) {
 
     const activation = await getLogActivationContext(supabase, user.id)
 
-    const { error: insertErr } = await supabase.from('food_logs').insert(logRows)
-    if (insertErr) throw new Error(insertErr.message)
+    const insertResult = await insertIdempotentBatch(supabase, 'food_logs', user.id, logRows, parsed.data.client_request_id)
+    if (!insertResult.ok) throw new Error(insertResult.error)
+
+    // A replay of an already-logged combo must not double-count activation or
+    // streak signals for a submission that already happened.
+    if (insertResult.alreadyExisted) {
+      return NextResponse.json({ ok: true, logged: insertResult.inserted })
+    }
 
     captureServerEvent(user.id, 'meal_template_logged', {
       meal: parsed.data.meal_type,
@@ -100,7 +111,7 @@ export async function POST(req: Request) {
       streakEvents: streakEventsForLog(activation.logs_before, logged_at, activation.rescued_dates),
     })
 
-    return NextResponse.json({ ok: true, logged: logRows.length })
+    return NextResponse.json({ ok: true, logged: insertResult.inserted })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }

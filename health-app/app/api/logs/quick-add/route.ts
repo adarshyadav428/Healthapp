@@ -5,6 +5,7 @@ import { captureFoodLogged } from '../../../../lib/posthog/server'
 import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActivation'
 import { resolveLoggedAtForRequest } from '../../../../lib/backfill'
 import { streakEventsForLog } from '../../../../lib/streakEvents'
+import { insertIdempotent } from '../../../../lib/requestIdempotency'
 
 export const runtime = 'nodejs'
 
@@ -17,6 +18,9 @@ const schema = z.object({
   date:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   // Undo of a just-deleted entry — see the note on addFoodSchema.restore.
   restore: z.boolean().optional(),
+  // Same mechanism as /api/logs/add — migration 049, lib/requestIdempotency.ts.
+  // 2026-09-13 remediation, R8.
+  client_request_id: z.string().uuid().optional(),
 })
 
 export async function POST(req: Request) {
@@ -41,22 +45,30 @@ export async function POST(req: Request) {
       ? null
       : await getLogActivationContext(supabase, user.id)
 
-    const { error: logError } = await supabase.from('food_logs').insert({
-      user_id:   userId,
-      food_id:   null,
-      meal,
-      servings:  1,
-      grams:     0,
-      kcal,
-      protein_g: protein,
-      carbs_g:   carbs,
-      fat_g:     fat,
-      logged_at: when.logged_at,
-    })
+    // Same duplicate-submission protection as /api/logs/add — see the note
+    // there and migration 049. 2026-09-13 remediation, R8.
+    const result = await insertIdempotent<{ id: string }>(
+      supabase,
+      'food_logs',
+      userId,
+      {
+        user_id:   userId,
+        food_id:   null,
+        meal,
+        servings:  1,
+        grams:     0,
+        kcal,
+        protein_g: protein,
+        carbs_g:   carbs,
+        fat_g:     fat,
+        logged_at: when.logged_at,
+        client_request_id: parsed.data.client_request_id ?? null,
+      },
+      'id'
+    )
+    if (!result.ok) throw new Error(result.error)
 
-    if (logError) throw new Error(logError.message)
-
-    if (activation) {
+    if (activation && !result.alreadyExisted) {
       captureFoodLogged(userId, req, 'quick_add', {
         meal,
         kcal,
@@ -68,7 +80,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      milestone: activation ? toLogMilestone(activation, 1) : null,
+      milestone: activation && !result.alreadyExisted ? toLogMilestone(activation, 1) : null,
     })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })

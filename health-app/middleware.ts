@@ -10,7 +10,7 @@ import {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const publicFiles = ['/sw.js', '/manifest.webmanifest', '/robots.txt', '/sitemap.xml', '/opengraph-image']
-  const publicPrefixes = ['/icons/', '/.well-known/', '/workbox-', '/fallback-']
+  const publicPrefixes = ['/icons/', '/.well-known/', '/workbox-', '/fallback-', '/worker-', '/swe-worker-']
 
   if (
     publicFiles.includes(pathname) ||
@@ -55,6 +55,20 @@ export async function middleware(request: NextRequest) {
 
   const { origin } = request.nextUrl
   const isAuthRoute = pathname.startsWith('/auth/')
+  // Both of these are meant to be reached by an ALREADY-authenticated
+  // visitor, not just a signed-out one: /auth/callback is the PKCE code
+  // exchange for a verification/magic link a signed-in user clicks (its own
+  // handler runs the check that matters, on the code itself), and
+  // /auth/reset-password is where Supabase's password-recovery flow lands
+  // (a URL-hash token the server never even sees). The blanket "authenticated
+  // user on an /auth/* page bounces to /dashboard" rule below used to apply
+  // to both, so re-clicking a "confirm your email" link while already signed
+  // in — the flow's designed common case — redirected away before the
+  // callback route ever ran, and email_verified_at never stamped. Confirmed
+  // live: fetch('/auth/callback?code=...') while authenticated returned
+  // redirected:true to /dashboard, independent of the code's validity; same
+  // result for /auth/reset-password. 2026-09-13 remediation, R2.
+  const isAuthExemptWhenSignedIn = pathname === '/auth/callback' || pathname === '/auth/reset-password'
   // /studio is the design-review route: static mock data only, noindex, no user data.
   // /foods/* is the public, indexable programmatic-SEO food pages (curated IFCT data only).
   // /contact, /refunds and /pricing must be reachable without a session: a
@@ -112,8 +126,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(signInUrl)
   }
 
-  // Authenticated user on auth pages → redirect to dashboard
-  if (isAuthRoute) {
+  // Authenticated user on auth pages → redirect to dashboard, except the two
+  // routes above that a signed-in user is specifically meant to reach.
+  if (isAuthRoute && !isAuthExemptWhenSignedIn) {
     return NextResponse.redirect(new URL('/dashboard', origin))
   }
 
@@ -125,5 +140,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|sw\\.js|workbox-.*|manifest\\.webmanifest|robots\\.txt|sitemap\\.xml|opengraph-image|icons/.*|\\.well-known/.*).*)',],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|sw\\.js|workbox-.*|worker-.*\\.js|swe-worker-.*\\.js|manifest\\.webmanifest|robots\\.txt|sitemap\\.xml|opengraph-image|icons/.*|\\.well-known/.*).*)',],
 }

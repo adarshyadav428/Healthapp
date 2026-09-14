@@ -6,13 +6,20 @@ import { z } from 'zod'
 import { createServerClient, getApiUser } from '../../../../lib/supabase/server'
 import { captureServerEvent } from '../../../../lib/posthog/server'
 import { isFoodReferenceableBy } from '../../../../lib/foodOwnership'
+import { MAX_LOG_GRAMS } from '../../../../lib/portion-units'
 
 const createSchema = z.object({
   name: z.string().min(1).max(100),
   items: z.array(z.object({
     food_id: z.string().uuid(),
-    grams: z.number().positive(),
-    servings: z.number().positive(),
+    // These were positive() with no ceiling — the one door CLAUDE.md's own
+    // "bounded on both sides" rule left open (adversarial-audit F5,
+    // 2026-09-05). Confirmed live-exploitable: grams: 999999999 was accepted
+    // here, then /api/meals/log fed it to scaleMacros unbounded and wrote
+    // ~2.97 billion kcal to food_logs (2026-09-13 remediation, R4). Same
+    // ceilings addFoodSchema already uses for the same reason.
+    grams: z.number().positive().max(MAX_LOG_GRAMS, { message: 'Grams cannot exceed 10,000' }),
+    servings: z.number().positive().max(99, { message: 'Servings cannot exceed 99' }),
   })).min(1),
 })
 

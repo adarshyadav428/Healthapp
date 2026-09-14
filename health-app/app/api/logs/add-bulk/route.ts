@@ -6,6 +6,7 @@ import { getLogActivationContext, toLogMilestone } from '../../../../lib/logActi
 import { resolveLoggedAtForRequest } from '../../../../lib/backfill'
 import { streakEventsForLog } from '../../../../lib/streakEvents'
 import { isFoodReferenceableBy } from '../../../../lib/foodOwnership'
+import { insertIdempotentBatch } from '../../../../lib/requestIdempotency'
 
 const bulkLogSchema = z.object({
   items: z.array(z.object({
@@ -14,6 +15,10 @@ const bulkLogSchema = z.object({
     meal: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
   })).min(1).max(8),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  // One key per logical submission (camera scan confirm, chat log confirm) —
+  // see insertIdempotentBatch. Optional: an older client that doesn't send it
+  // just goes unprotected, same as before this pass.
+  client_request_id: z.string().uuid().optional(),
 })
 
 const round2 = (n: number) => Math.round(n * 100) / 100
@@ -71,8 +76,14 @@ export async function POST(req: Request) {
 
     const activation = await getLogActivationContext(supabase, user.id)
 
-    const { error: insertError } = await supabase.from('food_logs').insert(rows)
-    if (insertError) throw new Error(insertError.message)
+    const insertResult = await insertIdempotentBatch(supabase, 'food_logs', userId, rows, parsed.data.client_request_id)
+    if (!insertResult.ok) throw new Error(insertResult.error)
+
+    // A replay of an already-logged batch must not double-count activation,
+    // streak or milestone signals for a submission that already happened.
+    if (insertResult.alreadyExisted) {
+      return NextResponse.json({ ok: true, logged: insertResult.inserted, milestone: null })
+    }
 
     // Shared by the chat and camera flows — the client's x-log-method header
     // says which, so 'chat' is only the fallback.
@@ -84,7 +95,7 @@ export async function POST(req: Request) {
       streakEvents: streakEventsForLog(activation.logs_before, logged_at, activation.rescued_dates),
     })
 
-    return NextResponse.json({ ok: true, logged: rows.length, milestone: toLogMilestone(activation, rows.length) })
+    return NextResponse.json({ ok: true, logged: insertResult.inserted, milestone: toLogMilestone(activation, rows.length) })
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 })
   }

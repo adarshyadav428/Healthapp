@@ -107,3 +107,104 @@ describe('/api/logs/add — ownership (P0-2 follow-up)', () => {
     expect(mock.callsTo('food_logs').some((c) => c.operation === 'insert')).toBe(false)
   })
 })
+
+/**
+ * R8 (2026-09-13 remediation): two genuinely simultaneous identical requests
+ * both returned 200 and both rows persisted, confirmed against production.
+ * Fixed via lib/requestIdempotency.ts + migration 049 — a client-generated
+ * client_request_id, unique per (user_id, client_request_id). The second of
+ * two racing inserts hits that unique index and is recovered as a replay of
+ * the first, rather than a second row.
+ */
+describe('/api/logs/add — idempotency (R8)', () => {
+  const CONFLICT = { message: 'duplicate key value violates unique constraint', code: '23505' }
+  const KEY = '11111111-aaaa-bbbb-cccc-111111111111'
+
+  function postWithKey(clientRequestId: string) {
+    return POST(
+      new Request('http://localhost/api/logs/add', {
+        method: 'POST',
+        body: JSON.stringify({
+          food_id: CATALOGUE_FOOD.id,
+          grams: 100,
+          servings: 1,
+          meal: 'lunch',
+          client_request_id: clientRequestId,
+        }),
+      })
+    )
+  }
+
+  // getLogActivationContext reads food_logs twice per request (a head-only
+  // count, then a 60-day logged_at window) BEFORE the insert — these four
+  // slots (two requests × two reads) must stay empty/array-shaped so
+  // streakEventsForLog doesn't choke on them; only the 5th select (the
+  // idempotency recovery fetch, which fires once, on the second request's
+  // conflict) carries real data.
+  const EMPTY_SELECT = { data: null, error: null }
+
+  it('a genuine retry (same client_request_id) after a conflict recovers the original row instead of creating a second one', async () => {
+    const mock = wire({
+      tables: {
+        foods: { select: { data: CATALOGUE_FOOD } },
+        food_logs: {
+          insert: [
+            { data: { id: 'log-1', kcal: 130 }, error: null },
+            { data: null, error: CONFLICT },
+          ],
+          select: [EMPTY_SELECT, EMPTY_SELECT, EMPTY_SELECT, EMPTY_SELECT, { data: { id: 'log-1', kcal: 130 }, error: null }],
+        },
+      },
+    })
+
+    const first = await postWithKey(KEY)
+    const second = await postWithKey(KEY)
+
+    expect(first.status).toBe(200)
+    expect(second.status).toBe(200)
+    const firstBody = await first.json()
+    const secondBody = await second.json()
+    expect(firstBody.row.id).toBe('log-1')
+    expect(secondBody.row.id).toBe('log-1')
+
+    // Exactly one insert attempt actually created a row — the mock records
+    // both insert attempts (that's the race), but the recovery path proves
+    // the second never becomes an independent persisted row.
+    expect(mock.callsTo('food_logs').filter((c) => c.operation === 'insert')).toHaveLength(2)
+    expect(mock.callsTo('food_logs').some((c) => c.operation === 'select')).toBe(true)
+  })
+
+  it('a genuinely separate log (a fresh client_request_id) is never blocked', async () => {
+    const mock = wire({
+      tables: {
+        foods: { select: { data: CATALOGUE_FOOD } },
+        food_logs: { insert: { data: { id: 'log-2', kcal: 130 }, error: null } },
+      },
+    })
+    const res = await postWithKey('22222222-aaaa-bbbb-cccc-222222222222')
+    expect(res.status).toBe(200)
+    // Exactly one insert attempt, no conflict — the idempotency recovery
+    // path (an extra select keyed on client_request_id) never engages for a
+    // fresh key.
+    expect(mock.callsTo('food_logs').filter((c) => c.operation === 'insert')).toHaveLength(1)
+  })
+
+  it('does not double-fire the milestone/analytics on a recovered replay', async () => {
+    wire({
+      tables: {
+        foods: { select: { data: CATALOGUE_FOOD } },
+        food_logs: {
+          insert: [
+            { data: { id: 'log-1', kcal: 130 }, error: null },
+            { data: null, error: CONFLICT },
+          ],
+          select: [EMPTY_SELECT, EMPTY_SELECT, EMPTY_SELECT, EMPTY_SELECT, { data: { id: 'log-1', kcal: 130 }, error: null }],
+        },
+      },
+    })
+    await postWithKey(KEY)
+    const second = await postWithKey(KEY)
+    const body = await second.json()
+    expect(body.milestone).toBeNull()
+  })
+})
