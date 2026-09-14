@@ -4,6 +4,7 @@ import { Check } from 'lucide-react'
 import { Button } from '../ui/button'
 import { useScrollLock } from '../ui/use-scroll-lock'
 import { useBackDismiss } from '../ui/use-back-dismiss'
+import { OverlayPortal } from '../ui/OverlayPortal'
 import type { Unit } from '../../lib/portion-units'
 
 /** Bottom-sheet measure picker shared by AddFoodModal and EditFoodLogModal. */
@@ -23,6 +24,7 @@ export function UnitPicker({
   useBackDismiss(true, onClose)
 
   return (
+    <OverlayPortal>
     <div className="fixed inset-0 z-[60] flex items-end justify-center">
       <div className="absolute inset-0 bg-scrim backdrop-blur-md" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-t-sheet bg-surface px-4 pb-6 pt-3 shadow-float">
@@ -53,5 +55,6 @@ export function UnitPicker({
         </Button>
       </div>
     </div>
+    </OverlayPortal>
   )
 }

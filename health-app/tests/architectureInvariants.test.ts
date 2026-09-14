@@ -65,9 +65,16 @@ describe('every database write lives in app/api', () => {
 
   it('app/api still holds the writes', () => {
     const writers = API_FILES.filter((f) => /\.(insert|update|upsert|delete)\(/.test(read(f)))
-    // ~48 route files write today. If this collapses, the walk broke or the
-    // architecture moved — either way the next assertion proves nothing.
-    expect(writers.length).toBeGreaterThan(30)
+    // ~30 route files write today via a literal call in the route itself.
+    // A route that delegates its insert to a shared lib/ helper (insertIdempotent,
+    // insertIdempotentBatch, insertFoodLogCopies — /api/logs/add, add-bulk,
+    // quick-add, meals/log, copy-yesterday, copy-meal) carries no literal
+    // .insert( of its own and doesn't count here; that's the walk undercounting
+    // by design, not a violation — the write still lives in app/api's call
+    // graph, just one hop lower. This is a sanity floor, not an exact count. If
+    // this collapses, the walk broke or the architecture moved — either way
+    // the next assertion proves nothing.
+    expect(writers.length).toBeGreaterThan(25)
   })
 
   it('no component or hook writes to the database', () => {

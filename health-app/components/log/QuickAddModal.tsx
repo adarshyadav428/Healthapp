@@ -34,6 +34,10 @@ export function QuickAddModal({ onClose, logDate }: { onClose: () => void; logDa
   const [loading, setLoading] = useState(false)
   const queryClient = useQueryClient()
   const inputRef = useRef<HTMLInputElement>(null)
+  // Generated once for this modal's lifetime — same pattern as AddFoodModal
+  // and WeightLogModal, closing the server-side half of a rapid double-tap
+  // or retry duplicating a quick-add entry. 2026-09-13 remediation, R8.
+  const clientRequestIdRef = useRef(crypto.randomUUID())
 
   const kcalNum = parseInt(kcal, 10)
   const valid   = !isNaN(kcalNum) && kcalNum > 0 && kcalNum <= 5000
@@ -52,6 +56,7 @@ export function QuickAddModal({ onClose, logDate }: { onClose: () => void; logDa
           fat:     parseFloat(fat)     || 0,
           meal,
           date:    logDate,
+          client_request_id: clientRequestIdRef.current,
         }),
       })
       const body = (await res.json().catch(() => ({}))) as { error?: string; milestone?: LogMilestone }

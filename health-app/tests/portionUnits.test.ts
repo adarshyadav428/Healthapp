@@ -403,6 +403,25 @@ describe('SMART_PORTIONS table sanity', () => {
   })
 
   /**
+   * "Protien" (a real misspelling of "Protein" the catalogue carried — i/e
+   * swapped) hides "roti" as a substring: P-**roti**-en. An unbounded /roti/
+   * pattern offered a protein bar "1 medium roti (35g)" as its unit —
+   * NEW-1, found by live search on production. Same bounding fix as puri
+   * above; every real roti/chapati product spells it as a whole word.
+   * 2026-09-13 remediation.
+   */
+  it('"Protien" (misspelled Protein) contains "roti" — a protein bar is not a roti', () => {
+    for (const name of ['Protien Bar', 'Protein Bar (Chocolate)']) {
+      const food = makeFood({ name, serving_size_g: 40 })
+      expect(pickDefaultUnit(buildUnits(food), food).toGrams(1), name).not.toBe(35)
+    }
+    for (const name of ['Roti', 'Chapati / Roti', 'Tandoori Roti']) {
+      const food = makeFood({ name })
+      expect(pickDefaultUnit(buildUnits(food), food).toGrams(1), name).toBe(35)
+    }
+  })
+
+  /**
    * Not a word-boundary case: "Rice Bran" really is the word "rice". The only
    * fix is for the oil to match first.
    */

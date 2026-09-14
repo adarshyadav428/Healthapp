@@ -83,3 +83,45 @@ describe('POST /api/meals/saved — ownership (P0-2 follow-up)', () => {
     expect(mock.callsTo('saved_meal_items').some((c) => c.operation === 'insert')).toBe(false)
   })
 })
+
+/**
+ * grams/servings bound — R4 (2026-09-13 remediation). Previously
+ * `z.number().positive()` with no ceiling: `grams: 999999999` was accepted
+ * here (200 OK), then logged via /api/meals/log into a 2,969,999,997 kcal
+ * food_logs row that rendered unclamped on Food, Home's ring and the
+ * coaching line. Same MAX_LOG_GRAMS / 99-servings ceiling addFoodSchema
+ * already uses for the same reason.
+ */
+describe('POST /api/meals/saved — grams/servings bound (R4)', () => {
+  it('rejects an absurd grams value and persists nothing', async () => {
+    const mock = wire([RICE])
+    const res = await post([{ food_id: RICE.id, grams: 999999999, servings: 1 }])
+    expect(res.status).toBe(400)
+    expect(mock.callsTo('saved_meals').some((c) => c.operation === 'insert')).toBe(false)
+    expect(mock.callsTo('saved_meal_items').some((c) => c.operation === 'insert')).toBe(false)
+  })
+
+  it('rejects an absurd servings value and persists nothing', async () => {
+    const mock = wire([RICE])
+    const res = await post([{ food_id: RICE.id, grams: 150, servings: 100000 }])
+    expect(res.status).toBe(400)
+    expect(mock.callsTo('saved_meal_items').some((c) => c.operation === 'insert')).toBe(false)
+  })
+
+  it('accepts values at the valid maximum (10,000 g / 99 servings)', async () => {
+    const mock = wire([RICE])
+    const res = await post([{ food_id: RICE.id, grams: 10000, servings: 99 }])
+    expect(res.status).toBe(200)
+    expect(mock.callsTo('saved_meal_items').some((c) => c.operation === 'insert')).toBe(true)
+  })
+
+  it('rejects one gram or one serving past the maximum', async () => {
+    const mockGrams = wire([RICE])
+    expect((await post([{ food_id: RICE.id, grams: 10001, servings: 1 }])).status).toBe(400)
+    expect(mockGrams.callsTo('saved_meal_items').some((c) => c.operation === 'insert')).toBe(false)
+
+    const mockServings = wire([RICE])
+    expect((await post([{ food_id: RICE.id, grams: 100, servings: 100 }])).status).toBe(400)
+    expect(mockServings.callsTo('saved_meal_items').some((c) => c.operation === 'insert')).toBe(false)
+  })
+})

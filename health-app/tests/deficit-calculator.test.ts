@@ -162,6 +162,68 @@ describe('calculateWeeklyDeficit', () => {
     })
   })
 
+  /**
+   * NEW-3 (2026-09-13 remediation): the "ahead of schedule" insight
+   * extrapolated a confident weekly-pace claim from as few as 1-2 logged
+   * days, with no mention of the gap — even though `days_unlogged` was
+   * already computed correctly and shown elsewhere on the same card.
+   * Unlogged days are still correctly excluded from the sum (never treated
+   * as 0-eaten) and `status`/`progress_percent` are unchanged — the fix only
+   * names the sample size in the sentence making the pace claim.
+   */
+  describe('"ahead of schedule" names its sample size (NEW-3)', () => {
+    it('0 of 7 logged days: cannot reach "ahead" at all (no data to be ahead on)', () => {
+      const s = calculateWeeklyDeficit([], tdee, 0.5, { daysElapsed: 7 })
+      expect(s.status).not.toBe('ahead')
+      expect(s.days_logged).toBe(0)
+    })
+
+    it('2 of 7 logged days reaching "ahead" names the sample in the insight', () => {
+      // Two huge-deficit days against a target prorated to just 2 days.
+      const logs = [day('2026-07-13', 1200), day('2026-07-14', 1200)]
+      const s = calculateWeeklyDeficit(logs, tdee, 0.5, { daysElapsed: 7 })
+      expect(s.status).toBe('ahead')
+      expect(s.days_logged).toBe(2)
+      expect(s.days_unlogged).toBe(5)
+      expect(s.insight).toContain('based on 2 of 7 logged days')
+      expect(s.insight).toContain('ahead of schedule')
+    })
+
+    it('7 of 7 logged days reaching "ahead" carries no sample caveat — nothing was left out', () => {
+      const logs = Array.from({ length: 7 }, (_, i) => day(`2026-07-${13 + i}`, 1800))
+      const s = calculateWeeklyDeficit(logs, tdee, 0.5)
+      expect(s.status).toBe('ahead')
+      expect(s.days_unlogged).toBe(0)
+      expect(s.insight).not.toContain('based on')
+      expect(s.insight).toContain('ahead of schedule')
+    })
+
+    it('a partial week that only reaches "on_track" (not "ahead") is unaffected — the caveat is specific to the pace-claiming status', () => {
+      const logs = [day('2026-07-13', 1950)] // exactly on target for 1 day
+      const s = calculateWeeklyDeficit(logs, tdee, 0.5, { daysElapsed: 7 })
+      expect(s.status).toBe('on_track')
+      expect(s.insight).not.toContain('based on')
+    })
+
+    it('the gain-goal "ahead" mirror also names its sample size', () => {
+      // 400 kcal/day over maintenance for 1 of 7 days, prorated target hit easily.
+      const s = calculatePeriodDeficit([day('2026-07-13', 2900)], tdee, 0.25, {
+        goal: 'gain',
+        daysElapsed: 7,
+      })
+      expect(s.status).toBe('ahead')
+      expect(s.insight).toContain('based on 1 of 7 logged day')
+      expect(s.insight).toContain('Ahead of your gain pace')
+    })
+
+    it('missing data (daysElapsed defaults to daysLogged) never invents a gap or a caveat', () => {
+      const logs = Array.from({ length: 7 }, (_, i) => day(`2026-07-${13 + i}`, 1800))
+      const s = calculateWeeklyDeficit(logs, tdee, 0.5) // no daysElapsed passed
+      expect(s.days_unlogged).toBe(0)
+      expect(s.insight).not.toContain('based on')
+    })
+  })
+
   describe('maintain goal', () => {
     it('scores days held near maintenance instead of reporting a permanent 0%', () => {
       const s = calculateWeeklyDeficit(

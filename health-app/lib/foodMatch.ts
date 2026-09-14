@@ -31,7 +31,19 @@ function nameScore(name: string, query: string): number {
   const q = foldSpelling(query.toLowerCase().trim())
   if (!q) return 0
   if (n === q) return 4
-  if (n.startsWith(q)) return 3
+  // The whole-string-prefix tier only counts when what follows the query is a
+  // qualifier in parentheses ("Moong Dal (Yellow)") or nothing at all — not
+  // when the name continues with another bare word ("Curd Rice"), which makes
+  // it a different, longer dish name that merely starts with the same word.
+  // Without this, a plain ingredient a user or AI names on its own ("curd")
+  // prefix-matched "Curd Rice (Thayir Sadam)" at score 3 — one below an exact
+  // match — beating a genuine "Dahi (Curd)" row's word-prefix score of 2
+  // outright, and logging a rice dish for someone who said they ate curd.
+  // 2026-09-13 remediation, NEW-2.
+  if (n.startsWith(q)) {
+    const rest = n.slice(q.length)
+    if (rest === '' || /^\s*\(/.test(rest)) return 3
+  }
   if (n.split(/[\s/,(]+/).some((w) => w.startsWith(q))) return 2
   if (n.includes(q)) return 1
   return 0
@@ -70,10 +82,17 @@ export function pickBestFoodMatch<T extends { name: string; source: string; bran
 ): T | null {
   let best: T | null = null
   let bestScore = -1
+  let bestLen = Infinity
   for (const row of rows) {
     const score = brandAwareNameScore(row, query) * 10 + (SOURCE_RANK[row.source] ?? 0)
-    if (score > bestScore) {
+    const len = row.name.trim().length
+    // On a tie, prefer the shorter name — closer to what was actually asked
+    // for. This only ever breaks ties that were already ambiguous (e.g. two
+    // same-source rows both matching a query word only at word-prefix tier);
+    // it never overrides a genuine name-quality or source-rank difference.
+    if (score > bestScore || (score === bestScore && len < bestLen)) {
       bestScore = score
+      bestLen = len
       best = row
     }
   }

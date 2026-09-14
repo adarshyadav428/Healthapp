@@ -202,6 +202,51 @@ describe('logging a saved combo', () => {
       expect(body.meal_type).toBeTruthy()
     })
   })
+
+  // 2026-09-14 release-hardening pass: this route had no server-side
+  // duplicate-submission protection. useFoodSearch.logSavedMeal now sends a
+  // client_request_id held in a ref keyed by meal id, cleared only on
+  // success — a retry of a failed tap must resend the SAME id so the server
+  // can recognise it as a replay (tests/routeMealsLog.test.ts pins the
+  // server side); a tap after a successful log is a fresh, distinct action.
+  it('a retry after a failed log resends the same client_request_id; a log after success gets a fresh one', async () => {
+    const bodies: Record<string, unknown>[] = []
+    let mealLogCalls = 0
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.includes('/api/meals/saved')) return { ok: true, json: async () => [SAVED_MEAL] } as Response
+      if (url.includes('/api/foods/favourites')) return { ok: true, json: async () => [] } as Response
+      if (url.includes('/api/meals/log')) {
+        mealLogCalls += 1
+        bodies.push(JSON.parse(init!.body as string))
+        // First call fails (simulating a timeout/network blip); every call
+        // after that succeeds.
+        if (mealLogCalls === 1) return { ok: false, json: async () => ({ error: 'boom' }) } as Response
+        return { ok: true, json: async () => ({ logged: 1 }) } as Response
+      }
+      return { ok: true, json: async () => ({}) } as Response
+    }))
+
+    renderWithProviders(
+      <FoodSearch recentFoods={[POHA]} recentLogItems={[]} frequentFoods={[]} hasYesterdayLogs logDate={LOG_DATE} isToday />
+    )
+
+    await userEvent.click(await screen.findByRole('tab', { name: /my foods/i }))
+    await userEvent.click(await screen.findByRole('button', { name: /Log Usual breakfast/i }))
+    await waitFor(() => expect(bodies).toHaveLength(1))
+
+    // Retry of the SAME tap, after the first attempt failed.
+    await userEvent.click(await screen.findByRole('button', { name: /Log Usual breakfast/i }))
+    await waitFor(() => expect(bodies).toHaveLength(2))
+
+    expect(bodies[0].client_request_id).toBeTruthy()
+    expect(bodies[1].client_request_id).toBe(bodies[0].client_request_id)
+
+    // That retry succeeded — a further tap is a genuinely new log, not a retry.
+    await userEvent.click(await screen.findByRole('button', { name: /Log Usual breakfast/i }))
+    await waitFor(() => expect(bodies).toHaveLength(3))
+    expect(bodies[2].client_request_id).not.toBe(bodies[0].client_request_id)
+  })
 })
 
 describe('copy yesterday', () => {

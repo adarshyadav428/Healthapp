@@ -42,6 +42,59 @@ export async function insertIdempotent<T>(
 }
 
 /**
+ * Insert a batch of rows as ONE logical submission, keyed by a client-supplied
+ * `batchRequestId` shared across every row plus each row's ordinal position in
+ * the batch (`batch_seq`) — unique per `(user_id, batch_request_id, batch_seq)`,
+ * migration 050. A double-tap, a race between two identical concurrent
+ * submissions, or a client retry after a timeout all resend the SAME items in
+ * the SAME order, so they carry the SAME (batch_request_id, batch_seq) pairs:
+ * the insert either lands whole, or — on a 23505 from a row that already
+ * exists — is recognised as a replay of that same submission and reports the
+ * rows that already exist, rather than 500ing or silently duplicating the
+ * whole meal.
+ *
+ * NOT `insertIdempotent` reused: that function's index is unique on
+ * `(user_id, client_request_id)` alone, because its callers write one row per
+ * request. A batch writes N rows sharing one key, so 049's index would reject
+ * every row after the first even on a genuinely new submission. This is the
+ * batch-shaped generalisation of the same idea, not the single-row mechanism
+ * applied blindly.
+ *
+ * `batchRequestId` is optional — omitting it disables dedup for that insert
+ * (an older client), since a partial unique index never conflicts on NULL.
+ *
+ * 2026-09-14 release-hardening pass — /api/logs/add-bulk and /api/meals/log
+ * had no duplicate-submission protection at all.
+ */
+export async function insertIdempotentBatch(
+  supabase: SupabaseClient,
+  table: string,
+  userId: string,
+  rows: Record<string, unknown>[],
+  batchRequestId: string | undefined
+): Promise<{ ok: true; inserted: number; alreadyExisted: boolean } | { ok: false; error: string }> {
+  if (rows.length === 0) return { ok: true, inserted: 0, alreadyExisted: false }
+
+  const taggedRows = batchRequestId
+    ? rows.map((row, i) => ({ ...row, batch_request_id: batchRequestId, batch_seq: i }))
+    : rows
+
+  const { error } = await supabase.from(table).insert(taggedRows)
+  if (!error) return { ok: true, inserted: rows.length, alreadyExisted: false }
+
+  if (error.code === '23505' && batchRequestId) {
+    const { count, error: countErr } = await supabase
+      .from(table)
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('batch_request_id', batchRequestId)
+    if (!countErr && count !== null) return { ok: true, inserted: count, alreadyExisted: true }
+  }
+
+  return { ok: false, error: error.message }
+}
+
+/**
  * Filter out source `food_logs` rows that have already been copied onto the
  * same target IST day, so a caller only inserts what's genuinely new.
  *

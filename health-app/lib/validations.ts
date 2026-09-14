@@ -87,6 +87,13 @@ export const addFoodSchema = z.object({
   // `food_logged` event and no milestone, or an undo would inflate the log
   // count and could fire the first-log celebration a second time.
   restore: z.boolean().optional(),
+  // Generated once per modal-open on the client, not per HTTP call — lets the
+  // server collapse a rapid double-tap, a race, or a timeout-retry of the
+  // SAME submission into one row (lib/requestIdempotency.ts, migration 049).
+  // Optional: an older client or a caller that doesn't need this (add-bulk,
+  // saved combos) simply skips dedup. 2026-09-13 remediation, R8 — two
+  // genuinely simultaneous requests were confirmed to both persist.
+  client_request_id: z.string().uuid().optional(),
 })
 
 /**
@@ -95,23 +102,27 @@ export const addFoodSchema = z.object({
  * against addFoodSchema's — the two used to disagree, and an edit could store
  * a grams amount the add path forbids.
  *
- * The macro fields are client-computed here (unlike the add route, which
- * recomputes them server-side from the food row) because an entry may have no
- * linked food at all — a camera or chat log carries its own macros.
+ * The macro fields below are what the CLIENT computed for its own preview —
+ * app/api/logs/edit/route.ts only trusts them for a true quick-add row
+ * (food_id NULL, a raw calorie note with no per-100g row to recompute from,
+ * migration 009). Every other food_logs row has a NOT-NULL food_id (search,
+ * camera, chat and saved-combo entries all upsert or reference a real `foods`
+ * row first), so the route recomputes kcal/macros server-side from that
+ * food's per-100g values × the validated grams/servings, the same way the add
+ * route does — a fabricated kcal here used to persist and propagate straight
+ * to Home. 2026-09-13 remediation, R7 (confirmed: grams:105, kcal:4999 was
+ * accepted verbatim for a food whose true 105g value is 311.85 kcal).
  */
 export const editFoodLogSchema = z.object({
   id: z.string().uuid(),
   grams: z.number().positive().max(MAX_LOG_GRAMS, { message: 'Grams cannot exceed 10,000' }),
   servings: z.number().positive().max(99, { message: 'Servings cannot exceed 99' }).default(1),
   meal: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
-  // Bounds match quick-add's (app/api/logs/quick-add/route.ts) — the same
-  // client-computed-macro shape, so the same ceilings apply. These were
-  // nonnegative() with no upper bound: the one macro-accepting path that
-  // neither recomputes server-side (add-bulk, meals/log) nor caps the client
-  // value (quick-add) — self-scoped to the caller's own row, but still able
-  // to corrupt their own deficit, streak, Trends, weekly-recap and Wrapped
-  // stats, the last of which feeds a number into a Gemini prompt. Audit
-  // 2026-09-04, P2-2.
+  // Bounds match quick-add's (app/api/logs/quick-add/route.ts). Only reached
+  // for a food_id-NULL row now (see above) — self-scoped to the caller's own
+  // row, but still able to corrupt their own deficit, streak, Trends,
+  // weekly-recap and Wrapped stats, the last of which feeds a number into a
+  // Gemini prompt. Audit 2026-09-04, P2-2.
   kcal: z.number().nonnegative().max(5000, { message: 'Calories cannot exceed 5,000' }),
   protein_g: z.number().nonnegative().max(500, { message: 'Protein cannot exceed 500g' }),
   carbs_g: z.number().nonnegative().max(1000, { message: 'Carbs cannot exceed 1,000g' }),

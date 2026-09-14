@@ -10,7 +10,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { createSupabaseMock } from './helpers/supabaseMock'
-import { insertIdempotent, filterUncopiedToDay, insertFoodLogCopies } from '../lib/requestIdempotency'
+import { insertIdempotent, insertIdempotentBatch, filterUncopiedToDay, insertFoodLogCopies } from '../lib/requestIdempotency'
 
 const CONFLICT = { message: 'duplicate key value violates unique constraint', code: '23505' }
 const OTHER_ERROR = { message: 'connection reset', code: '08006' }
@@ -81,6 +81,79 @@ describe('insertIdempotent', () => {
       '*'
     )
     expect(result).toEqual({ ok: false, error: OTHER_ERROR.message })
+  })
+})
+
+/**
+ * 2026-09-14 release-hardening pass — /api/logs/add-bulk and /api/meals/log
+ * had no duplicate-submission protection at all. insertIdempotentBatch is
+ * the shared mechanism: every row in the batch shares one client-generated
+ * key plus its ordinal position, unique per (user_id, batch_request_id,
+ * batch_seq) via migration 050 — a genuinely different shape from
+ * insertIdempotent's single-row (user_id, client_request_id) index, which
+ * would reject the 2nd row of any batch sharing a key.
+ */
+describe('insertIdempotentBatch', () => {
+  it('inserts every row, tagging each with the shared batch id and its position', async () => {
+    const mock = createSupabaseMock({ tables: { food_logs: { insert: { data: null, error: null } } } })
+    const rows = [{ food_id: 'f1', kcal: 100 }, { food_id: 'f2', kcal: 150 }]
+    const result = await insertIdempotentBatch(mock.client, 'food_logs', 'user-1', rows, 'batch-1')
+    expect(result).toEqual({ ok: true, inserted: 2, alreadyExisted: false })
+
+    const insertCall = mock.callsTo('food_logs').find((c) => c.operation === 'insert')
+    const payload = insertCall?.payload as Array<{ batch_request_id: string; batch_seq: number }>
+    expect(payload.map((r) => r.batch_request_id)).toEqual(['batch-1', 'batch-1'])
+    expect(payload.map((r) => r.batch_seq)).toEqual([0, 1])
+  })
+
+  it('on a unique-constraint conflict with a batchRequestId, recovers the count of rows that already exist for it', async () => {
+    const mock = createSupabaseMock({
+      tables: {
+        food_logs: {
+          insert: { data: null, error: CONFLICT },
+          select: { data: null, count: 2, error: null },
+        },
+      },
+    })
+    const rows = [{ food_id: 'f1' }, { food_id: 'f2' }]
+    const result = await insertIdempotentBatch(mock.client, 'food_logs', 'user-1', rows, 'batch-1')
+    expect(result).toEqual({ ok: true, inserted: 2, alreadyExisted: true })
+
+    const selectCall = mock.callsTo('food_logs').find((c) => c.operation === 'select')
+    expect(selectCall?.head).toBe(true)
+    expect(selectCall?.filters).toContainEqual(['eq', 'user_id', 'user-1'])
+    expect(selectCall?.filters).toContainEqual(['eq', 'batch_request_id', 'batch-1'])
+  })
+
+  it('returns the original error when a conflict happens with no batchRequestId — nothing to recover with', async () => {
+    const mock = createSupabaseMock({ tables: { food_logs: { insert: { data: null, error: CONFLICT } } } })
+    const rows = [{ food_id: 'f1' }]
+    const result = await insertIdempotentBatch(mock.client, 'food_logs', 'user-1', rows, undefined)
+    expect(result.ok).toBe(false)
+  })
+
+  it('returns the error unchanged for a non-conflict failure — never treated as an idempotent replay', async () => {
+    const mock = createSupabaseMock({ tables: { food_logs: { insert: { data: null, error: OTHER_ERROR } } } })
+    const rows = [{ food_id: 'f1' }]
+    const result = await insertIdempotentBatch(mock.client, 'food_logs', 'user-1', rows, 'batch-1')
+    expect(result).toEqual({ ok: false, error: OTHER_ERROR.message })
+  })
+
+  it('returns a no-op for an empty row list rather than issuing an insert', async () => {
+    const mock = createSupabaseMock({ tables: {} })
+    const result = await insertIdempotentBatch(mock.client, 'food_logs', 'user-1', [], 'batch-1')
+    expect(result).toEqual({ ok: true, inserted: 0, alreadyExisted: false })
+    expect(mock.callsTo('food_logs')).toEqual([])
+  })
+
+  it('with no batchRequestId, inserts the rows untagged — an older client goes unprotected, not broken', async () => {
+    const mock = createSupabaseMock({ tables: { food_logs: { insert: { data: null, error: null } } } })
+    const rows = [{ food_id: 'f1' }, { food_id: 'f2' }]
+    const result = await insertIdempotentBatch(mock.client, 'food_logs', 'user-1', rows, undefined)
+    expect(result).toEqual({ ok: true, inserted: 2, alreadyExisted: false })
+    const insertCall = mock.callsTo('food_logs').find((c) => c.operation === 'insert')
+    const payload = insertCall?.payload as Array<{ batch_request_id?: string }>
+    expect(payload.every((r) => r.batch_request_id === undefined)).toBe(true)
   })
 })
 

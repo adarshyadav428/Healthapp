@@ -9,6 +9,7 @@ import { cn } from '../../lib/utils'
 import { useCameraScan, type AiFeedback, type Mode } from '../../hooks/useCameraScan'
 import { useScrollLock } from '../ui/use-scroll-lock'
 import { useBackDismiss } from '../ui/use-back-dismiss'
+import { OverlayPortal } from '../ui/OverlayPortal'
 import { aiScansLeftLabel } from '../../lib/aiTrial'
 
 type Props = {
@@ -167,6 +168,7 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
     // Full-bleed on a phone. From md up the tool keeps its phone shape in the
     // middle of a scrim — a camera is a portrait object, and stretching the
     // viewfinder across a monitor makes a small plate very large.
+    <OverlayPortal>
     <div className="fixed inset-0 z-50 md:grid md:place-items-center md:bg-scrim md:backdrop-blur-md">
       <div className="relative flex h-full w-full flex-col overflow-hidden bg-black text-white md:h-[min(56rem,94vh)] md:w-[26.875rem] md:rounded-sheet md:shadow-float">
         <input
@@ -532,5 +534,6 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
         )}
       </div>
     </div>
+    </OverlayPortal>
   )
 }

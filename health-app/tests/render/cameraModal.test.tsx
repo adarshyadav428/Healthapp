@@ -81,6 +81,26 @@ describe('the AI result sheet', () => {
     expect(screen.getByText('648')).toBeInTheDocument()
   })
 
+  // AddFoodModal's "Add" button was fully unreachable at desktop widths: it
+  // opens from inside app/log/page.tsx's `lg:sticky` search column, and
+  // `position: sticky` unconditionally creates a stacking context that
+  // scoped the modal's z-50 to lose against BottomNav's z-40 sitting outside
+  // it. CameraModal opens from the same column and carries the same risk —
+  // see tests/render/overlayPortal.test.tsx for the full writeup. jsdom has
+  // no layout engine, so this pins the actual fix (a portal to body), not
+  // the paint-order symptom.
+  it('mounts as a sibling of its host tree, not a descendant of it', () => {
+    const { container } = render(
+      <div style={{ position: 'relative', zIndex: 0 }}>
+        <CameraModal onClose={vi.fn()} onFoodFound={vi.fn()} />
+      </div>
+    )
+    const overlay = document.querySelector('.fixed.inset-0.z-50')
+    expect(overlay).toBeTruthy()
+    expect(container.contains(overlay)).toBe(false)
+    expect(overlay!.parentElement).toBe(document.body)
+  })
+
   it('the primary action names the meal and the calories, and logs', async () => {
     render(<CameraModal onClose={vi.fn()} onFoodFound={vi.fn()} />)
     await userEvent.click(screen.getByRole('button', { name: /add to lunch · 648 kcal/i }))

@@ -91,3 +91,41 @@ describe('pickBestFoodMatch with a branded row', () => {
     expect(pickBestFoodMatch(rows, 'dal')?.name).toBe('Dal')
   })
 })
+
+/**
+ * NEW-2 (2026-09-13 remediation): AI chat logging described "2 paratha with
+ * curd and achar" and Gemini reported "curd" as its own item — a plain
+ * condiment. The candidate lookup (`ilike('name', '%curd%')`) matched both a
+ * genuine "Dahi (Curd)" row and "Curd Rice (Thayir Sadam)", a completely
+ * different rice dish that merely starts with the same word. The old
+ * whole-string-prefix tier scored "Curd Rice..." a 3 (one below an exact
+ * match) purely because "curd rice..." starts with "curd" — beating "Dahi
+ * (Curd)"'s word-prefix score of 2 outright, regardless of source rank.
+ */
+describe('pickBestFoodMatch — a bare ingredient must not resolve to an unrelated compound dish (NEW-2)', () => {
+  it('does not let "curd" prefix-match "Curd Rice" over the real "Dahi (Curd)" row', () => {
+    const rows = [
+      { name: 'Curd Rice (Thayir Sadam)', source: 'ifct' },
+      { name: 'Dahi (Curd)', source: 'ifct' },
+    ]
+    expect(pickBestFoodMatch(rows, 'curd')?.name).toBe('Dahi (Curd)')
+  })
+
+  it('still lets an EXACT name win outright, unaffected by the tie-break', () => {
+    const rows = [
+      { name: 'Curd', source: 'off_india', brand: 'Mother Dairy' },
+      { name: 'Curd Rice', source: 'curated' },
+    ]
+    expect(pickBestFoodMatch(rows, 'curd')?.name).toBe('Curd')
+  })
+
+  it('still lets a qualifier-suffixed exact match win (the Moong Dal shape is unaffected)', () => {
+    const rows = [
+      { name: 'Moong Dal (Yellow)', source: 'ifct', brand: null },
+      { name: 'Moong Dal Halwa', source: 'curated', brand: null },
+    ]
+    // "Moong Dal (Yellow)" keeps tier 3 (qualifier in parens); "Moong Dal
+    // Halwa" — a different, longer dish — does not.
+    expect(pickBestFoodMatch(rows, 'Moong Dal')?.name).toBe('Moong Dal (Yellow)')
+  })
+})

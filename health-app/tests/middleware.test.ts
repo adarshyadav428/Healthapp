@@ -168,7 +168,7 @@ describe('unauthenticated requests', () => {
     expect(redirectTo(await middleware(request(path)))).toBeNull()
   })
 
-  it.each(['/auth/sign-in', '/auth/sign-up', '/auth/callback'])(
+  it.each(['/auth/sign-in', '/auth/sign-up', '/auth/callback', '/auth/reset-password'])(
     'serves %s without a session',
     async (path) => {
       expect(redirectTo(await middleware(request(path)))).toBeNull()
@@ -195,6 +195,21 @@ describe('authenticated requests', () => {
   it.each(['/auth/sign-in', '/auth/sign-up'])('sends %s to the dashboard', async (path) => {
     expect(redirectTo(await middleware(request(path)))).toBe(`${ORIGIN}/dashboard`)
   })
+
+  /**
+   * R2 (2026-09-13 remediation): both routes are meant to be reached by an
+   * already-authenticated visitor — /auth/callback is the code exchange a
+   * signed-in user hits when re-clicking a verification/magic link, and
+   * /auth/reset-password is where Supabase's recovery flow lands. The
+   * blanket auth-page bounce used to apply to both, so a signed-in user's
+   * email never got verified: the callback route never ran.
+   */
+  it.each(['/auth/callback', '/auth/reset-password'])(
+    'lets an authenticated visitor reach %s instead of bouncing to the dashboard',
+    async (path) => {
+      expect(redirectTo(await middleware(request(path)))).toBeNull()
+    }
+  )
 
   it('does not query the profile on every navigation', async () => {
     // Onboarding completeness is checked by each protected page, which already
