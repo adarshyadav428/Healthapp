@@ -23,7 +23,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   `generativelanguage.googleapis.com` to find them all.
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
-- **Tests:** Vitest 4.1 — **124 files / 1,612 tests**. `vitest.config.ts` exists but is deliberately
+- **Tests:** Vitest 4.1 — **135 files / 1,706 tests**. `vitest.config.ts` exists but is deliberately
   minimal: it pins `environment: 'node'` **explicitly** (so every pre-existing spec resolves exactly
   as it did when there was no config at all), declares one setup file, and overrides the JSX
   transform. **Render tests opt into jsdom per file** with a `// @vitest-environment jsdom` docblock —
@@ -80,7 +80,7 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   things. Since the 2026-09-11 Food redesign `FoodSearch` is the whole logging surface (field, the
   Recent / Favourites / My foods shelves, results) and `FoodLanding` is a thin shell around it that
   owns only the Home deep-link autofocus and the day's suggestion row.
-- **`supabase/migrations/`** — `001`–`048`. Numbers are **not unique** (`002`, `004`, `005`, `009` and
+- **`supabase/migrations/`** — `001`–`050`. Numbers are **not unique** (`002`, `004`, `005`, `009` and
   `043` each appear twice) and there is **no `021`**. Always reference a migration by its exact filename.
   (`040_body_focus.sql` **is** on `main` — PR #46 merged; this line previously said otherwise.)
   `011_weekly_calorie_view.sql` is deliberately **unapplied** and referenced nowhere in code. `045` was
@@ -88,7 +88,18 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   (the idempotency columns — see the hard rule on double-tappable inserts) landed 2026-09-05 in
   commit `9ae0d6f`, whose message records **`048` as verified against production**; `046` and `047`
   were applied in the same session but no probe result was written down, so probe them before
-  building on them (this file said `001`–`045` for a week after they landed). Don't assume
+  building on them (this file said `001`–`045` for a week after they landed). `049_food_logs_add_idempotency.sql`
+  (`food_logs.client_request_id`, unique per `(user_id, client_request_id)`) and
+  `050_food_logs_batch_idempotency.sql` (`food_logs.batch_request_id` + `batch_seq`, unique per
+  `(user_id, batch_request_id, batch_seq)`) landed 2026-09-14, closing the same idempotency gap `046`–`048`
+  left for the single-item and batch food-log insert paths — see the hard rule below. Both were **applied
+  and verified 2026-09-14**: structurally via PostgREST schema introspection and behaviorally via a real
+  `23505` conflict probe (`docs/qa/BATCH-IDEMPOTENCY-REPORT.md` §1). **This app has exactly one Supabase
+  project** — confirmed 2026-09-14 by reading the public `NEXT_PUBLIC_SUPABASE_URL` literal out of
+  production's own shipped JS bundle (`https://www.getinshape.co.in/_next/static/chunks/*.js`), which is
+  safe because that env var is deliberately public and already sent to every visitor's browser — so a
+  migration verified against the app's own Supabase project (however it was reached: local dev, the
+  Supabase dashboard, or production) needs no separate "also apply to production" step. Don't assume
   the rest — **probe** rather than trusting any list, including this one: a `select=<column>` against
   `/rest/v1/<table>` with the public anon key answers `42703` for a column that isn't there and `200`
   for one that is, without reading a single row (RLS returns `[]`). Always probe a column you know
@@ -109,6 +120,16 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   lives ungated (`/upgrade` is public, so paying before finishing the wizard reached `/welcome` with
   no height and narrated a plan the user had never seen). Both fixed 2026-09-06. Counting the sites
   was the mistake — the rule is "all of them", and only a test can say that.
+  **The "authenticated user on `/auth/*` bounces to `/dashboard`" rule has two exceptions:**
+  `/auth/callback` and `/auth/reset-password` are specifically meant to be reached by an
+  *already*-authenticated visitor, not just a signed-out one — `/auth/callback` is the PKCE code
+  exchange a signed-in user hits by re-clicking a verification or magic-link email (its own handler
+  checks the code; the blanket bounce ran first and never let it), and `/auth/reset-password` is
+  where Supabase's password-recovery flow lands (a URL-hash token the server never even sees).
+  Confirmed live before the fix: `fetch('/auth/callback?code=...')` while authenticated returned
+  `redirected: true` to `/dashboard` regardless of the code's validity, same for
+  `/auth/reset-password`. Fixed 2026-09-13 (R2) with an `isAuthExemptWhenSignedIn` check ahead of the
+  bounce. Pinned by `tests/middleware.test.ts`.
 - **The repo root is a different project** — a Bubblewrap-generated Android TWA wrapper. All npm
   commands below run from `health-app/`. See the root `CLAUDE.md`.
 
@@ -122,7 +143,7 @@ npm run dev              # dev server at http://localhost:3000
 npm run build            # production build
 npm start                # serve the production build
 
-npm test                 # vitest run — the whole suite (124 files / 1,612 tests)
+npm test                 # vitest run — the whole suite (135 files / 1,706 tests)
 npm run lint             # ESLint (next lint)
 npm run format           # Prettier write
 npm run check:tokens     # design-token guard: no raw hex/opacity modifiers; ratchets arbitrary spacing, type, radius
@@ -262,6 +283,18 @@ actively seeding.
   refinement. `components/log/FoodResult.tsx` no longer badges a result by source for this reason —
   `👤 Custom` (ownership) is the one label kept; provenance is an arbitration the collapse already
   performs, so surfacing it again re-asks a settled question.
+- **`lib/foodMatch.ts` resolves an AI-identified name (camera, chat) to a catalogue row — a separate
+  matcher from search ranking, with its own tier scheme.** `nameScore` ranks exact (4) > whole-string
+  prefix (3) > word prefix (2) > substring (1), and the whole-string-prefix tier is the one that needs
+  care: it must only count when what follows the query is a qualifier in parentheses ("Moong Dal
+  (Yellow)") or nothing at all, never when the name continues with another bare word — "Curd Rice" is
+  a different, longer dish that merely *starts with* "curd", not a match for it. Before 2026-09-13
+  (NEW-2) the unqualified `n.startsWith(q)` check let a bare "curd" (a real thing a user or the AI
+  would say on its own) prefix-match "Curd Rice (Thayir Sadam)" at score 3 — one below an exact match
+  — beating a genuine "Dahi (Curd)" row's word-prefix score of 2 outright, and logging a rice dish for
+  someone who ate curd. `pickBestFoodMatch` also breaks a tied score by preferring the **shorter**
+  name, added the same pass — it only ever resolves ties that were already ambiguous, never overrides
+  a real name-quality or `SOURCE_RANK` difference. Pinned by `tests/foodMatch.test.ts`.
 - **`subscriptions` has exactly one RLS policy — `subs_select`. Never give it a user-scoped write
   policy.** `status` is the entire Pro gate (`isProStatus`, ~20 surfaces) and it is an entitlement the
   *business* grants; every write in the tree is a provider webhook on `createAdminClient()`. From
@@ -330,6 +363,34 @@ actively seeding.
   onto two days is normal. Both columns are nullable and partial-indexed so every other insert path
   (search, camera, chat, quick-add, combos) is untouched. Pinned by `tests/routeWeightAdd.test.ts`,
   `routeExerciseAdd`, `routeCopyYesterday`, `routeCopyMeal` and `requestIdempotency.test.ts`.
+  **`food_logs` itself was the one glaring exception until 2026-09-14** — `046`–`048` covered every
+  table *except* the one users double-tap most, a documented, deliberate scope boundary at the time
+  that was then shown live-exploitable: two genuinely simultaneous `POST /api/logs/add` requests both
+  returned 200 and both rows persisted, confirmed against production. Two more mechanisms closed it,
+  neither reusing the other's index:
+  - **Single-item** (`/api/logs/add`, `/api/logs/quick-add`) — the exact `046` pattern, applied to
+    `food_logs`: `client_request_id`, unique per `(user_id, client_request_id)`, migration `049`. The
+    key lives in a `useRef` set once per modal lifetime (`AddFoodModal`, `QuickAddModal`), so a retry
+    of the same submission reuses it and a genuinely new one (the user reopens the form) gets a fresh
+    ref.
+  - **Batch** (`/api/logs/add-bulk`, `/api/meals/log`) — `insertIdempotentBatch`
+    (`lib/requestIdempotency.ts`), unique per **`(user_id, batch_request_id, batch_seq)`**, migration
+    `050`. `049`'s index cannot be reused here: a batch writes N rows sharing one key, so a single-row
+    unique constraint would reject every row after the first even on a genuinely new submission —
+    `batch_seq` (the row's ordinal position in the batch) is what makes each row's identity unique
+    while the whole batch still shares one submission key. On a `23505`, the helper re-selects and
+    returns the count of rows that already exist for that `batch_request_id` rather than erroring or
+    duplicating. The key is generated once per **analysed result set**, not per submit attempt: fresh
+    on a new camera scan or chat reply (`useCameraScan`, `useChatLog`), reused across retries of that
+    same confirm screen, and per-meal-id in `useFoodSearch.logSavedMeal` (a `Record<mealId, uuid>`) so
+    two different saved combos can be in flight without sharing a key, cleared only on success so a
+    failed attempt's retry still replays correctly. Both columns are nullable and optional in the
+    request schema, so an older client that doesn't send a key simply goes unprotected, same as
+    before either migration. Full live verification (real UI-driven chat log and saved-combo tap,
+    scripted retry/concurrent/new-key scenarios, direct DB row counts) in
+    `docs/qa/BATCH-IDEMPOTENCY-REPORT.md`. Pinned by `tests/requestIdempotency.test.ts`,
+    `tests/routeLogsAdd.test.ts`, `tests/routeLogsQuickAdd.test.ts`, `tests/routeLogsAddBulk.test.ts`
+    and `tests/routeMealsLog.test.ts`.
 - **A `source='user'` food is visible to its owner only.** The shared search query excludes
   `source='user'` outright (`.neq('source', 'user')`, `app/api/foods/search/route.ts`) and re-merges
   the caller's own rows via `source_id LIKE 'user_<uid>_%'` — the same predicate
@@ -383,11 +444,37 @@ actively seeding.
   an 8,000 g protein target; `height_cm: Infinity` made every macro target `Infinity`. Bounded by the
   shared `HEIGHT_CM` / `WEIGHT_KG` constants in `lib/validations.ts` (2026-09-03, P2-14) — one constant
   each, because the three schemas are three doors to the same column and a bound on two of them is the
-  same hole with an extra step. `customFoodSchema` already did this correctly; copy it. **One door is
-  still open:** `saved_meal_items.grams`/`servings` in `app/api/meals/saved/route.ts` are
-  `z.number().positive()` with no `.max()`, and `/api/meals/log` later feeds them to `scaleMacros`
-  unbounded (adversarial audit F5, 2026-09-05 — not fixed as of 2026-09-11). Bound them with
-  `MAX_LOG_GRAMS` and the `99` servings cap `foodLogSchema` already uses.
+  same hole with an extra step. `customFoodSchema` already did this correctly; copy it. **The last
+  open door — `saved_meal_items.grams`/`servings` in `app/api/meals/saved/route.ts` — was closed
+  2026-09-13 (R4, adversarial audit F5).** They were `z.number().positive()` with no `.max()`, and
+  `/api/meals/log` fed them to `scaleMacros` unbounded; confirmed live-exploitable, not just
+  theoretical — a `grams: 999999999` saved-combo item was accepted and wrote ~2.97 billion kcal to
+  `food_logs` on log. Now bounded by the same `MAX_LOG_GRAMS` and `99` servings cap `addFoodSchema`
+  uses. If a fourth door like this turns up, it's the same fix, not a new one.
+- **A `food_id`-linked `food_logs` row never trusts a client-sent kcal/macro number, on any write
+  path — insert or edit.** `/api/logs/add`, `/api/logs/add-bulk` and `/api/meals/log` always
+  recomputed from the referenced food's per-100g values; `/api/logs/edit` did not, because
+  `editFoodLogSchema` also has to serve the one row shape that genuinely has no food to recompute
+  from (a quick-add note, `food_id` NULL — migration `009`) and the schema originally trusted its
+  kcal/protein/carbs/fat fields uniformly for both shapes. That made edit the one remaining path
+  where a fabricated number could reach a real food's log row: confirmed live, `grams: 105, kcal:
+  4999` was accepted verbatim for a food whose true 105 g value is 311.85 kcal. Fixed 2026-09-13
+  (R7) by having the route fetch the row's linked food (one query; `food:foods(...)` resolves to
+  `null` on its own for a `food_id`-NULL row) and branch there: a real food overrides whatever the
+  client sent via `scaleMacros`, exactly like the add route; only a true quick-add note falls back
+  to the client's own figures, which are still bounded by the schema above. Pinned by
+  `tests/routeLogsEdit.test.ts`.
+- **`profiles.current_weight_kg` and the derived calorie/macro targets only recalculate from the
+  chronologically *latest* weigh-in, never from insertion order.** `/api/weight/add` used to
+  recalculate whenever a new row's weight differed from the profile's current figure by ≥ 0.5 kg,
+  with no check on *which* entry that was — so backdating old weigh-ins (filling in history) could
+  overwrite today's live targets with a stale number purely because it was POSTed last. Confirmed
+  live: posting 14 backdated entries in chronological order moved the calorie target from 1,589 to
+  1,578 kcal, driven by an intermediate historical entry, not the true latest weight. Fixed
+  2026-09-13 (R6): the route now queries for any existing row with a later `measured_at` before
+  deciding to recalculate, and only fires when there is none. Tested in both directions live — a
+  backdated entry with a large delta inserts (a legitimate backfill) without moving the targets, and
+  a genuinely-latest entry still recalculates correctly. Pinned by `tests/routeWeightAdd.test.ts`.
 - **A capped read must be an ordered read.** Postgres applies `LIMIT` before any sort, so
   `.limit(400)` with no `.order()` returns an arbitrary 400 rows that drift as the table grows and
   after a `VACUUM`. `/api/foods/suggest` did exactly that under a comment claiming the pool was
@@ -413,7 +500,11 @@ actively seeding.
   reason — `fanta` hid inside "Dark **Fanta**sy" (a 28 g biscuit pack offered a 250 ml glass, ~1,320
   kcal) and `puri` inside "Kolha**puri** Mutton" (a 150 g katori of curry offered one 25 g puri).
   Two ways to be wrong here: a pattern too broad (steals foods from below) and a pattern too low
-  (never gets reached) — the second is the invisible one. **Not every case is a boundary case:**
+  (never gets reached) — the second is the invisible one. The bread pattern (`roti|chapati|chapathi`)
+  had the identical unbounded shape and the identical fix (`\broti\b|\bchapati\b|\bchapathi\b`,
+  2026-09-13 NEW-1): `roti` hides inside "Protien" (a real catalogue row's misspelling of "Protein",
+  i/e swapped), so a protein bar was being offered "1 medium roti (35g)" as its logging unit. **Not
+  every case is a boundary case:**
   "Saffola Gold Oil (Rice Bran + Sunflower)" contains the real word "rice" and took the rice katori —
   150 g of a 900 kcal/100 g oil, ~1,350 kcal — so it needed a `\boil\b` rule placed *above* the dish
   rules instead. Where bounding a word would not be true to the name, the fix is ordering, not
@@ -548,6 +639,16 @@ actively seeding.
   eat) and maintenance (TDEE) are both live in this app and point opposite ways: 819 kcal is a *miss*
   against a 1,600 goal and the *best day of the week* against 2,602 maintenance. Deficit surfaces use
   maintenance.
+- **A projected weekly pace must name its sample size when the sample is thin.**
+  `calculatePeriodDeficit`'s "ahead of schedule" insight extrapolates a confident kg/week figure from
+  `daysLogged` alone — and that can be 1-2 days out of a 7-day window, since an unlogged day doesn't
+  stop the period from being "ahead" on what *was* logged. `days_unlogged` was already computed
+  correctly and shown elsewhere on the same card; this one sentence just didn't say where its number
+  came from. Observed live: "You are ahead of schedule — 1.54 kg of fat loss per week at this pace"
+  sitting next to "2 of 7 days logged · 5 not logged" on the same card. Fixed 2026-09-13 (NEW-3) by
+  naming the sample inline (`"...ahead of schedule based on 2 of 7 logged days so far — ..."`) whenever
+  `daysUnlogged > 0` — the fix names the claim's basis, it does not touch the (correctly prorated)
+  status/progress numbers themselves. Pinned by `tests/deficit-calculator.test.ts`.
 - **Deficit periods are calendar windows by default — Mon–Sun, or the 1st to month end.** A calendar
   total only grows and then resets; a trailing window drops whenever a good day ages out of the back,
   which reads as punishment for nothing. `/deficit`'s week-by-week history always uses this default.
@@ -667,6 +768,21 @@ actively seeding.
   gates and to every test; only a phone showed them. Grep for the shape before adding a surface,
   and ask the question the grep cannot: *can the user always reach the button this screen exists
   for, with the most content it can ever hold?*
+- **A hand-rolled `fixed inset-0` overlay that can be mounted from inside a page's layout (not just
+  at the top level) must portal to `document.body`** via `OverlayPortal` (`components/ui/
+  OverlayPortal.tsx`). `position: fixed` escapes layout but not *stacking*: any ancestor that creates
+  a stacking context scopes the overlay's z-index to compare only against that ancestor's own
+  siblings, so a sibling elsewhere in the tree with any explicit z-index paints over the whole
+  subtree no matter how high the overlay's z-index reads. This is what made `AddFoodModal`'s "Add"
+  button unreachable at desktop widths: it opens from inside `app/log/page.tsx`'s `lg:sticky` search
+  column, and `position: sticky` unconditionally creates a stacking context (CSS Positioned Layout
+  Module Level 3) regardless of z-index — `BottomNav`'s `z-40`, sitting outside that column, painted
+  over the modal's `z-50` every time. Confirmed live via `elementsFromPoint`, and confirmed as the fix
+  by forcing the sticky ancestor to `position: static`. Fixed 2026-09-14 by portalling instead —
+  `AddFoodModal`, `CameraModal` and `UnitPicker` now wrap their root in `<OverlayPortal>`; a future
+  ancestor with a stacking context is covered by the same fix, not specific to `lg:sticky`. Radix-based
+  sheets/dialogs already portal via `@radix-ui/react-dialog` and don't need this. Pinned by
+  `tests/render/overlayPortal.test.tsx`.
 - **Every hand-rolled `fixed inset-0` overlay must call `useScrollLock()`** (`components/ui/
   use-scroll-lock.ts`), or the page behind it scrolls under the user's finger. Radix sheets are
   already covered — `@radix-ui/react-dialog` ships `react-remove-scroll` — so **prefer
@@ -871,6 +987,11 @@ this file — what is written here is only the rule.
   message (it was written for a person), swallow a 5xx (it's a Postgres or provider string written for
   us). `lib/checkoutErrors.ts` does the same job on the checkout path.
 - **Numerals use `tabular-nums`.** Type is Inter (body) + Inter Tight (display); keep weights restrained.
+- **A chart card imports `recharts` via `next/dynamic({ ssr: false })`, not statically.** `TrendBarChart`
+  and `WeightTrendChart` on `/progress` already did; `DeficitTrendCard` statically imported
+  `CumulativeDeficitChart` (and therefore all of `recharts`) into `/progress`'s initial bundle until
+  2026-09-13 (Phase C) — the one sibling that hadn't caught up. Match the existing two, not the one
+  that didn't.
 - **Sentry is runtime capture only** — `instrumentation.ts`, deliberately *not* `withSentryConfig`, so
   the build pipeline stays untouched when a DSN or auth token is missing. Don't add the webpack plugin.
 
@@ -888,7 +1009,8 @@ These are deep dives, kept out of this file on purpose. Read the relevant one **
 | `docs/refactor-safety-contract.md` | Any refactor — it maps each covered behavior to the test that pins it, and lists the accepted residual gaps |
 | `TESTING.md` | Shipping. The manual script for everything tests can't reach (auth, real phones, the day boundary) |
 | `docs/deep-dive-audit-2026-09-04.md` | Investigating a suspected systemic issue — the **latest** full audit. Its two P0s (camera `pcs` fallback, cross-user custom-food visibility) and P1-1/P1-2 (monthly-wrap reads, Stripe webhook writes) are **fixed** (PR #80, commit `9ae0d6f`). **Still open:** P1-3 (`BottomNav` ignores `--kb-inset` — a design call pending a device) and P1-4 ("Founder pricing — lock in ₹1,999/year", `app/upgrade/page.tsx`, has no mechanism behind it) |
-| `docs/adversarial-audit-2026-09-05.md` | Anything about double-submit, hostile input, swallowed errors or session expiry. F2/F3/F4 fixed (the `SubscriptionReadError` and idempotency rules below came from it). **Still open:** F5 (`saved_meal_items.grams`/`servings` unbounded — a known violation of the "bounded on both sides" rule), F7 (Razorpay SDK has no timeout), F11 (sign-in never renders `?error=oauth_callback_failed`) |
+| `docs/adversarial-audit-2026-09-05.md` | Anything about double-submit, hostile input, swallowed errors or session expiry. F2/F3/F4 fixed (the `SubscriptionReadError` and idempotency rules below came from it); F5 fixed 2026-09-13 (`saved_meal_items.grams`/`servings` now bounded, R4). **Still open:** F7 (Razorpay SDK has no timeout), F11 (sign-in never renders `?error=oauth_callback_failed`) |
+| `docs/qa/FINAL-RELEASE-READINESS.md`, `docs/qa/BATCH-IDEMPOTENCY-REPORT.md`, `docs/qa/REGRESSION-REPORT.md` | The 2026-09-14 release-hardening pass — live, database-verified proof for migrations `049`/`050` and a re-check of every previously-fixed protection. Read before touching `food_logs` idempotency or claiming a release-readiness verdict without live evidence |
 | `docs/visual-audit-2026-09-04.md` | Anything that "looks like a website" on a phone — the first pass that judged screens at 375px rather than by the gates. The 2026-09-11 redesign audit (in the session transcript, not yet a doc) supersedes its remaining findings |
 | `docs/deep-dive-audit-2026-09-03.md` | The previous full audit. Every finding fixed — both P0s, all 13 P1s, all 14 P2s — and re-verified as holding by the 09-04 and 09-05 passes |
 | `docs/deep-dive-audit-2026-07-31.md` | The audit before that — read for the fixes it made and the false alarms it recorded |
