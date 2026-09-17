@@ -108,6 +108,14 @@ export async function POST() {
     const { error } = await admin.auth.admin.deleteUser(user.id)
     if (error) throw new Error(error.message)
 
+    // The auth user is gone server-side, but the caller's own session cookie
+    // is still valid until it expires — sign out on the cookie-bound client
+    // so the response clears it. Without this a browser that immediately
+    // signs up again can carry the deleted user's stale session into the new
+    // account, and any route using the authoritative getUser() check (like
+    // /api/onboarding) rejects it as Unauthorized.
+    await supabase.auth.signOut()
+
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('[account/delete]', err)

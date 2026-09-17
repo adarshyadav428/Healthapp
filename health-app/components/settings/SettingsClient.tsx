@@ -31,6 +31,8 @@ import { userFacingApiError } from '../../lib/apiError'
 import { formatKg } from '../../lib/formatWeight'
 import { formatIst } from '../../lib/dateUtils'
 import { BODY_FOCUSES, BODY_FOCUS_META, planForFocus, focusFromProfile, type BodyFocus } from '../../lib/bodyType'
+import { draftStorageKey } from '../../hooks/useOnboardingDraft'
+import { getBrowserSupabaseClient } from '../../lib/supabase/client'
 
 function ftInToCm(ft: number, inches: number) {
   return Math.round((ft * 12 + inches) * 2.54)
@@ -149,6 +151,7 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
         const body = await res.json().catch(() => null)
         throw new Error(userFacingApiError(res.status, body?.error, 'Could not sign you out.'))
       }
+      try { localStorage.removeItem(draftStorageKey(profile.id)) } catch { /* ignore */ }
       window.location.href = '/'
     } catch (err) {
       toast({ title: 'Sign out failed', description: (err as Error).message, variant: 'error', duration: 4000 })
@@ -170,7 +173,26 @@ export function SettingsClient({ profile, version, email }: { profile: Profile; 
           userFacingApiError(res.status, data?.error, 'Could not delete your account. Please try again, or email us.')
         )
       }
-      router.push('/')
+      // The server route already cleared this tab's session cookie, but a
+      // SECOND tab left open on the same (now-deleted) account still holds a
+      // live in-memory session with no way to learn that server-side. Calling
+      // signOut() on the browser client — not just the API route — makes
+      // supabase-js broadcast SIGNED_OUT to every open tab over its
+      // BroadcastChannel, which useUser()'s existing onAuthStateChange
+      // listener already resets on. signOut() deliberately ignores a 404
+      // ("user might not exist anymore") internally and still clears local
+      // state, which is exactly this case — the user was just deleted.
+      try { await getBrowserSupabaseClient().auth.signOut() } catch { /* best-effort */ }
+      // Also drop this account's onboarding draft — the key is per-user (see
+      // draftStorageKey), so a leftover one can't leak into a *different*
+      // account's wizard, but there's no reason to keep a deleted account's
+      // draft sitting in this browser's storage either.
+      try { localStorage.removeItem(draftStorageKey(profile.id)) } catch { /* ignore */ }
+      // Hard reload, not router.push — a soft nav keeps the in-memory Supabase
+      // client (and its auto-refresh timer) alive across the identity change,
+      // which is what let a deleted account's session survive into a fresh
+      // sign-up. Mirrors signOut()'s navigation above.
+      window.location.href = '/'
     } catch (err) {
       toast({ title: 'Delete failed', description: (err as Error).message, variant: 'error', duration: 4000 })
       setDeleteLoading(false)

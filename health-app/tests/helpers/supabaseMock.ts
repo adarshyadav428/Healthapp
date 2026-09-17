@@ -17,6 +17,8 @@
  * what the route asks for.
  */
 
+import { vi } from 'vitest'
+
 export interface PostgrestError {
   message: string
   code?: string
@@ -194,6 +196,7 @@ export function createSupabaseMock(options: MockOptions = {}) {
           data: user ? { claims: { sub: user.id, email: user.email ?? null } } : null,
           error: user ? null : { message: 'no session' },
         }),
+      signOut: vi.fn().mockResolvedValue({ error: null }),
     },
   }
 

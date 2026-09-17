@@ -17,9 +17,11 @@ import userEvent from '@testing-library/user-event'
 import type { Profile } from '../../types/index'
 import { renderWithProviders } from './support/renderWithProviders'
 import { installFetchSpy } from './support/fetchSpy'
+import { draftStorageKey } from '../../hooks/useOnboardingDraft'
 
 const subscription = vi.hoisted(() => ({ view: null as Record<string, unknown> | null }))
 const manage = vi.hoisted(() => ({ manageSubscription: vi.fn(), portalLoading: false }))
+const browserAuth = vi.hoisted(() => ({ signOut: vi.fn().mockResolvedValue({ error: null }) }))
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn(), refresh: vi.fn() }),
@@ -31,6 +33,9 @@ vi.mock('../../hooks/useManageSubscription', () => ({ useManageSubscription: () 
 vi.mock('../../lib/posthog/client', () => ({
   isAnalyticsOptedOut: () => false,
   setAnalyticsOptOut: vi.fn(),
+}))
+vi.mock('../../lib/supabase/client', () => ({
+  getBrowserSupabaseClient: () => ({ auth: browserAuth }),
 }))
 
 const { SettingsClient } = await import('../../components/settings/SettingsClient')
@@ -74,6 +79,7 @@ function renderProfile() {
 beforeEach(() => {
   subscription.view = null
   manage.manageSubscription.mockReset()
+  browserAuth.signOut.mockClear()
   window.localStorage.clear()
 })
 
@@ -130,6 +136,41 @@ describe('SettingsClient', () => {
     renderProfile()
     await user.click(screen.getByRole('button', { name: 'Sign out' }))
     await waitFor(() => fetchSpy.expectPosted('/api/auth/signout'))
+  })
+
+  // Regression for the "delete account, then sign up again → onboarding fails
+  // with Unauthorized" bug. The server route already clears this tab's
+  // session cookie on a successful delete, but two more things had to hold
+  // for a fresh sign-up in this browser (this tab, or another open one) to
+  // never inherit the deleted account's session: the in-page Supabase client
+  // must itself be signed out (so a second open tab is notified over
+  // supabase-js's cross-tab BroadcastChannel, and this tab's own auto-refresh
+  // timer is cancelled rather than surviving a soft navigation), and this
+  // account's onboarding-draft cache must not linger after it's gone.
+  it('deleting the account signs out the browser client and clears its onboarding draft', async () => {
+    const draftKey = draftStorageKey(PROFILE.id)
+    window.localStorage.setItem(draftKey, JSON.stringify({ step: 2, values: { display_name: 'Old Account' } }))
+    const fetchSpy = installFetchSpy()
+    vi.stubGlobal('confirm', vi.fn(() => true))
+    const user = userEvent.setup()
+    renderProfile()
+    await user.click(screen.getByRole('button', { name: 'Delete account' }))
+    await waitFor(() => fetchSpy.expectPosted('/api/account/delete'))
+    await waitFor(() => expect(browserAuth.signOut).toHaveBeenCalledTimes(1))
+    expect(window.localStorage.getItem(draftKey)).toBeNull()
+  })
+
+  it('declining the confirm dialog deletes nothing and leaves the draft untouched', async () => {
+    const draftKey = draftStorageKey(PROFILE.id)
+    window.localStorage.setItem(draftKey, JSON.stringify({ step: 2, values: {} }))
+    const fetchSpy = installFetchSpy()
+    vi.stubGlobal('confirm', vi.fn(() => false))
+    const user = userEvent.setup()
+    renderProfile()
+    await user.click(screen.getByRole('button', { name: 'Delete account' }))
+    expect(fetchSpy.calls.some((c) => c.url.includes('/api/account/delete'))).toBe(false)
+    expect(browserAuth.signOut).not.toHaveBeenCalled()
+    expect(window.localStorage.getItem(draftKey)).not.toBeNull()
   })
 
   it('a free account is offered Pro as a link, not a pitch', () => {
