@@ -84,6 +84,27 @@ describe('POST /api/account/delete', () => {
     expect(admin.client.auth.admin.deleteUser).toHaveBeenCalledWith('user-1')
   })
 
+  // A deleted auth user with a still-valid session cookie is exactly what let
+  // a re-signup in the same browser inherit a stale, now-invalid session and
+  // get rejected as Unauthorized by /api/onboarding's getUser() check.
+  it('signs out the caller session after a successful delete, so no stale cookie survives into a re-signup', async () => {
+    const { server } = wire({ tables: { subscriptions: { select: { data: null, error: null } } } })
+    const res = await POST()
+    expect(res.status).toBe(200)
+    expect(server.client.auth.signOut).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not sign out when deletion is blocked or fails', async () => {
+    const { server } = wire({
+      tables: {
+        subscriptions: { select: { data: { provider: 'google_play', status: 'active' }, error: null } },
+      },
+    })
+    const res = await POST()
+    expect(res.status).toBe(409)
+    expect(server.client.auth.signOut).not.toHaveBeenCalled()
+  })
+
   it('blocks deletion for an active Google Play subscription without attempting any cancel', async () => {
     const { admin } = wire({
       tables: {

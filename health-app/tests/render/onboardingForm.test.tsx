@@ -92,6 +92,34 @@ describe('the onboarding wizard does not submit before the final step', () => {
   })
 })
 
+describe('the draft is scoped per account', () => {
+  // Regression for the "delete account, sign up again → the wizard silently
+  // opened on the deleted account's half-filled answers" secondary bug. The
+  // draft key includes the authenticated user's id (see useOnboardingDraft's
+  // draftStorageKey) precisely so a second account in the same browser — from
+  // a second tab, or from signing up again after a delete — can never resume
+  // a different account's in-progress wizard.
+  it("a second account's wizard never resumes the first account's draft", async () => {
+    installFetchSpy()
+    const { unmount } = renderWithProviders(<OnboardingForm userId="user-a" />)
+    await userEvent.click(screen.getByRole('button', { name: /skip for now/i }))
+    const nameA = await screen.findByPlaceholderText(/your name/i)
+    await userEvent.type(nameA, 'Account A Name')
+    await waitFor(() => {
+      expect(window.localStorage.getItem('gis.onboarding.progress:user-a')).toContain('Account A Name')
+    })
+    unmount()
+
+    renderWithProviders(<OnboardingForm userId="user-b" />)
+    // A fresh account's wizard starts at step 1 (its own "skip for now" is
+    // still there to click) — it would already be past step 1, on account
+    // A's step, if it had resumed the wrong draft.
+    await userEvent.click(screen.getByRole('button', { name: /skip for now/i }))
+    const nameB = await screen.findByPlaceholderText(/your name/i)
+    expect(nameB).toHaveValue('')
+  })
+})
+
 describe('finishing the wizard', () => {
   it('POSTs the profile to /api/onboarding', async () => {
     const spy = installFetchSpy({ '/api/onboarding': { ok: true } })

@@ -62,6 +62,39 @@ const bestEffortUpdate = (mock: ReturnType<typeof wire>) =>
 beforeEach(() => vi.clearAllMocks())
 
 describe('POST /api/onboarding', () => {
+  // Regression: a deleted account's session cookie surviving into a fresh
+  // sign-up made this route return exactly this response ("Onboarding
+  // failed: Unauthorized" on Finish setup). The route must keep rejecting
+  // any request with no valid, live-verified session — getUser() is
+  // authoritative here on purpose (see lib/supabase/server.ts) — and must
+  // never fall back to trusting a client-supplied user id.
+  it('401s when there is no authenticated user, and writes nothing', async () => {
+    const mock = wire({ user: null })
+    const res = await post(BASE_PAYLOAD)
+    expect(res.status).toBe(401)
+    expect(profileUpdate(mock)).toBeUndefined()
+  })
+
+  it('never trusts a client-supplied id — the write always targets the authenticated session user', async () => {
+    // A request smuggling a different id in the payload must still only ever
+    // touch the authenticated caller's own row.
+    const mock = wire()
+    const res = await post({ ...BASE_PAYLOAD, id: 'someone-elses-id', user_id: 'someone-elses-id' } as Record<string, unknown>)
+    expect(res.status).toBe(200)
+    expect(profileUpdate(mock)?.filters).toContainEqual(['eq', 'id', 'user-1'])
+  })
+
+  // A legitimate, already-existing user's onboarding must behave exactly as
+  // it did before this fix — the delete-account signOut() change touches a
+  // different route entirely and must not alter this one's happy path.
+  it('a normal authenticated user completes onboarding unaffected', async () => {
+    const mock = wire()
+    const res = await post(BASE_PAYLOAD)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ ok: true })
+    expect(profileUpdate(mock)?.filters).toContainEqual(['eq', 'id', 'user-1'])
+  })
+
   it('persists the picked pace_kg_per_week alongside the targets', async () => {
     const mock = wire()
     const res = await post({ ...BASE_PAYLOAD, pace_kg_per_week: 0.25 })

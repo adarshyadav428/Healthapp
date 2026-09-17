@@ -32,7 +32,7 @@ export default async function OnboardingPage() {
           <p className="mt-1 text-sm text-ink-2">Let&apos;s get you started — takes about 2 minutes.</p>
         </div>
         <div className="rounded-sheet border border-hairline bg-surface p-6 shadow-rest">
-          <OnboardingForm />
+          <OnboardingForm userId={user.id} />
         </div>
       </div>
     </div>
