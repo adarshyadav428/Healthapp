@@ -2,15 +2,17 @@ import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createServerClient, createAdminClient } from '../../../../lib/supabase/server'
 import { getIsPro, SubscriptionReadError } from '../../../../lib/subscription'
-import { CHAT_LOG_PROMPT, stripMarkdown } from '../../../../lib/chat-prompt'
+import { CHAT_LOG_PROMPT, CHAT_RESPONSE_SCHEMA, stripMarkdown } from '../../../../lib/chat-prompt'
 import { pickBestFoodMatch } from '../../../../lib/foodMatch'
 import { parseStatedTotal, rebalanceChatItems, type ChatItem } from '../../../../lib/chat-nutrition'
 import { captureServerEvent } from '../../../../lib/posthog/server'
 import { recordAiUsage } from '../../../../lib/usageCounter'
 import { AI_TRIAL_SCANS } from '../../../../lib/aiTrial'
 import { checkAiTrial } from '../../../../lib/aiTrialServer'
+import { callGemini } from '../../../../lib/gemini'
 
-const GEMINI_TIMEOUT_MS = 20_000
+// Per attempt; lib/gemini may try the fallback model once. See camera/analyze.
+const GEMINI_TIMEOUT_MS = 15_000
 
 // Usage is only recorded on success (recordAiUsage runs after every failure
 // return below), so "it hasn't used a scan" is literally true.
@@ -77,39 +79,36 @@ export async function POST(req: Request) {
     ? `Time of day: ${currentTime}\n\nMeal description: ${message}`
     : `Meal description: ${message}`
 
-  let parsed: { meal: string; items: GeminiItem[]; assumptions?: string; error?: string }
+  const ai = await callGemini(
+    {
+      system: CHAT_LOG_PROMPT,
+      parts: [{ text: userContent }],
+      responseSchema: CHAT_RESPONSE_SCHEMA,
+      // Eight items plus `low` thinking; 800 was sized for flash-lite with
+      // thinking off and truncated a long meal mid-object.
+      maxOutputTokens: 4096,
+      temperature: 0.1,
+      thinking: 'low',
+      timeoutMs: GEMINI_TIMEOUT_MS,
+    },
+    process.env.GEMINI_API_KEY,
+  )
+  if (!ai.ok) {
+    // Provider text goes to Sentry, not to the user's screen.
+    Sentry.captureException(new Error(`Gemini ${ai.kind} (${ai.model}, attempt ${ai.attempts}): ${ai.message}`), {
+      tags: { route: 'chat/analyze', timedOut: String(ai.kind === 'timeout'), model: ai.model },
+    })
+    return NextResponse.json({ error: ai.kind === 'timeout' ? AI_TIMEOUT : AI_UNAVAILABLE }, { status: 503 })
+  }
+
+  let parsed: { meal: string; items: GeminiItem[]; assumptions?: string | null; error?: string | null }
   try {
-    const apiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: CHAT_LOG_PROMPT }] },
-          contents: [{ parts: [{ text: userContent }] }],
-          generationConfig: { maxOutputTokens: 800, temperature: 0.1 },
-        }),
-        // See app/api/camera/analyze/route.ts — an untimed Gemini call holds the
-        // request until the platform kills it, and the user just watches it die.
-        signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
-      }
-    )
-    const apiJson = await apiRes.json()
-    if (!apiRes.ok) {
-      // Provider text goes to Sentry, not to the user's screen.
-      const errMsg = apiJson?.error?.message ?? JSON.stringify(apiJson)
-      Sentry.captureException(new Error(`Gemini error: ${errMsg}`), { tags: { route: 'chat/analyze' } })
-      return NextResponse.json({ error: AI_UNAVAILABLE }, { status: 503 })
-    }
-    const raw = stripMarkdown(apiJson.candidates?.[0]?.content?.parts?.[0]?.text ?? '')
-    parsed = JSON.parse(raw)
-  } catch (e) {
-    const timedOut = e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError')
-    Sentry.captureException(e, { tags: { route: 'chat/analyze', timedOut: String(timedOut) } })
-    return NextResponse.json(
-      { error: timedOut ? AI_TIMEOUT : AI_UNAVAILABLE },
-      { status: 503 }
-    )
+    parsed = JSON.parse(stripMarkdown(ai.text))
+  } catch {
+    Sentry.captureException(new Error(`Gemini unparseable (${ai.model}, finish=${ai.finishReason ?? 'unknown'})`), {
+      tags: { route: 'chat/analyze', model: ai.model },
+    })
+    return NextResponse.json({ error: AI_UNAVAILABLE }, { status: 503 })
   }
 
   if (parsed.error === 'not_food') {
@@ -236,7 +235,9 @@ export async function POST(req: Request) {
 
   await recordAiUsage(supabase, 'chat_logs', userId)
 
-  captureServerEvent(userId, 'ai_scan_completed', { type: 'chat', items: validItems.length })
+  // `model` rides on every AI event so correction rates can be compared
+  // across models — the one accuracy signal that needs no ground truth.
+  captureServerEvent(userId, 'ai_scan_completed', { type: 'chat', items: validItems.length, model: ai.model })
 
   const remaining = trialRemaining === null ? null : trialRemaining - 1
   return NextResponse.json({
@@ -244,5 +245,6 @@ export async function POST(req: Request) {
     items: validItems,
     assumptions: rebalanced.assumptions || null,
     remaining,
+    model: ai.model,
   })
 }

@@ -15,12 +15,28 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
 - **Zustand** (client auth state) + **TanStack Query** (server state) + **Recharts** + **react-hook-form** + **Zod**.
 - **Billing:** Razorpay (web) + Google Play Billing (TWA). Stripe is **legacy, read-only**.
 - **AI:** Google Gemini — powers photo scan, chat logging and the weekly recap. Called over **raw
-  REST**, not the SDK: `@google/generative-ai` is in `package.json` but **imported nowhere**
-  (`camera/analyze/route.ts:149` records why — SDK v1beta routing). The model id is a **hardcoded
-  string duplicated in three routes** — `app/api/camera/analyze/route.ts`,
-  `app/api/chat/analyze/route.ts`, `app/api/cron/weekly-recap/route.ts`, all `gemini-2.5-flash-lite`
-  today. Change one and you have silently forked the other two; grep
-  `generativelanguage.googleapis.com` to find them all.
+  REST**, not the SDK: `@google/generative-ai` is in `package.json` but **imported nowhere**.
+  **`lib/gemini.ts` is the one call site and the one place a model is named** — `GEMINI_MODEL`
+  (`gemini-3.6-flash`) and `GEMINI_FALLBACK_MODEL` (`gemini-3.5-flash-lite`), and `callGemini`,
+  which every AI route goes through. It used to be a string literal duplicated in three routes, so
+  changing one silently forked the other two; `tests/geminiSingleSource.test.ts` now fails if any
+  shipped file outside `lib/gemini.ts` names the endpoint or a `gemini-*` id. Three things about the
+  call are load-bearing: (1) **responses are schema-constrained** (`responseMimeType: application/json`
+  + `CAMERA_RESPONSE_SCHEMA` / `CHAT_RESPONSE_SCHEMA`, pinned to the types they describe by
+  `tests/aiResponseSchemas.test.ts`), so "the model returned prose" and "a numeral as a string" are no
+  longer failure modes to parse around; (2) **thinking tokens count against `maxOutputTokens`** on
+  Gemini, so a budget sized for flash-lite with thinking off (1024) truncates a thali mid-object under
+  a thinking model — camera and chat use 4096 with `thinking: 'low'`, the recap uses `'off'` because
+  thoughts alone would eat its 120-token budget and return an empty string; (3) **the fallback model is
+  tried once** on a timeout, 429, 5xx or 404 — never on a 400, which is our request being wrong and
+  would be wrong on both. It exists because on 2026-09-18 the newest Flash models were 503 "high
+  demand" or hung outright on the dev key while `2.5-flash` had already been *retired for new users*
+  (Google's own error names `3.6-flash` as the replacement) — newer is not safer, and pinned beats
+  `-latest`. The answering model rides back on the response as `model` and onto `ai_scan_completed`
+  and `ai_estimate_corrected`, which is the accuracy signal that needs no ground truth: correction
+  rate and median delta **per model**. The camera prompt lives in `lib/camera-prompt.ts` (moved out of
+  the route so `scripts/ai-scan-compare.ts` can send the exact prompt the route sends — run it on a
+  folder of your own meal photos to eyeball a model or prompt change, no scale needed).
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
 - **Tests:** Vitest 4.1 — **135 files / 1,706 tests**. `vitest.config.ts` exists but is deliberately
@@ -1002,7 +1018,7 @@ These are deep dives, kept out of this file on purpose. Read the relevant one **
 | Read | Before touching |
 |---|---|
 | `docs/food-search.md` | `app/api/foods/search/`, `lib/searchRanking.ts`, `lib/searchFilter.ts`, `lib/food-synonyms.ts`, `lib/spelling-variants.ts`, `lib/typo-correction.ts`, `lib/mergeSearchResults.ts`, `lib/searchCache.ts` |
-| `docs/ai-logging.md` | `lib/chat-prompt.ts`, `lib/chat-nutrition.ts`, `app/api/chat/analyze/route.ts`, the inline prompt in `app/api/camera/analyze/route.ts` |
+| `docs/ai-logging.md` | `lib/gemini.ts`, `lib/camera-prompt.ts`, `lib/chat-prompt.ts`, `lib/chat-nutrition.ts`, `lib/camera-nutrition.ts`, `app/api/chat/analyze/route.ts`, `app/api/camera/analyze/route.ts` |
 | `docs/billing.md` | `app/api/razorpay/`, `app/api/play/`, `app/api/stripe/`, `lib/razorpay/`, `lib/play/`, `lib/stripe/`, `lib/subscription.ts`, `app/upgrade/` |
 | `docs/design-system.md` | `app/globals.css`, `tailwind.config.ts`, `components/ui/`, `components/layout/`, any screen styling |
 | `docs/growth-mechanics-plan-2026-07-29.md` | `components/story/`, `lib/streakRescue.ts`, `lib/mealSuggest.ts`, `lib/pushBudget.ts`, `lib/reminderSchedule.ts`, `lib/cronBatch.ts` — note Seasons was cut, see below |

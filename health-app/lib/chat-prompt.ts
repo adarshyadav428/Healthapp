@@ -83,6 +83,51 @@ Rules:
 - If the user describes something that is clearly not food, return: {"error": "not_food"}
 - Never return empty items array if any food was mentioned — always give a best estimate.`
 
+/**
+ * The response schema the chat route sends with every call — Gemini's
+ * OpenAPI-subset dialect, see GeminiCall.responseSchema in lib/gemini.ts.
+ * Mirrors the OUTPUT FORMAT block above. The prompt's `{"error":"not_food"}`
+ * branch is expressed as a nullable top-level `error`: under a schema the
+ * model can't drop `items`, so a non-food message comes back as
+ * `{ error: "not_food", items: [] }` and the route's existing
+ * `parsed.error === 'not_food'` check runs first, exactly as before.
+ * `propertyOrdering` is load-bearing (Gemini emits fields in that order).
+ */
+export const CHAT_RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  propertyOrdering: ['error', 'meal', 'assumptions', 'items'],
+  required: ['items'],
+  properties: {
+    error: { type: 'STRING', nullable: true },
+    meal: { type: 'STRING', nullable: true, enum: ['Breakfast', 'Lunch', 'Dinner', 'Snack'] },
+    assumptions: { type: 'STRING', nullable: true },
+    items: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        propertyOrdering: [
+          'name', 'portion_desc', 'grams', 'is_stated_component', 'confidence', 'unit', 'count',
+          'kcal_per_100g', 'protein_g_per_100g', 'carbs_g_per_100g', 'fat_g_per_100g',
+        ],
+        required: ['name', 'portion_desc', 'grams', 'confidence', 'kcal_per_100g', 'protein_g_per_100g', 'carbs_g_per_100g', 'fat_g_per_100g'],
+        properties: {
+          name: { type: 'STRING' },
+          portion_desc: { type: 'STRING' },
+          grams: { type: 'NUMBER' },
+          is_stated_component: { type: 'BOOLEAN', nullable: true },
+          confidence: { type: 'STRING', enum: ['low', 'medium', 'high'] },
+          unit: { type: 'STRING', nullable: true, enum: ['g', 'pcs'] },
+          count: { type: 'NUMBER', nullable: true },
+          kcal_per_100g: { type: 'NUMBER' },
+          protein_g_per_100g: { type: 'NUMBER' },
+          carbs_g_per_100g: { type: 'NUMBER' },
+          fat_g_per_100g: { type: 'NUMBER' },
+        },
+      },
+    },
+  },
+} as const
+
 export function stripMarkdown(text: string): string {
   return text.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim()
 }

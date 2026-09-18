@@ -10,7 +10,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { reportLogMilestone } from '../store/milestoneStore'
 import type { LogMilestone } from '../lib/logMilestones'
 import { coachingLine, dayContextFor } from '../lib/coaching'
-import { dateStrToUtcMidnight } from '../lib/dateUtils'
+import { dateStrToUtcMidnight, formatIst } from '../lib/dateUtils'
+import { prepareScanImage } from '../lib/imageDownscale'
 import { mealForTime } from '../lib/meal'
 import { scaleMacrosRaw } from '../lib/nutrition'
 import { portionRange } from '../lib/portion-units'
@@ -105,6 +106,9 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
   // detected food is logged; this only picks which one the detail card shows.
   const [selectedIdx, setSelectedIdx]       = useState(0)
   const [confidence, setConfidence]         = useState<string | null>(null)
+  // Which model produced `results` — reported back by the route and attached
+  // to the correction event, so accuracy can be compared across models.
+  const [scanModel, setScanModel]           = useState<string | null>(null)
   // Free AI scans left after the most recent scan. null = Pro, or not yet known
   // (the count only rides back on a scan response). See lib/aiTrial.
   const [scansLeft, setScansLeft]           = useState<number | null>(null)
@@ -280,21 +284,30 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
 
   const analyzePhoto = useCallback(() => {
     if (!captured) return
-    const base64 = captured.split(',')[1]
 
     setAnalyzing(true)
     setResults(null)
     setSelectedIdx(0)
     setConfidence(null)
-    fetch('/api/camera/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        imageBase64: base64,
-        mimeType: 'image/jpeg',
-        context: photoContext.trim() || undefined,
-      }),
-    })
+    setScanModel(null)
+    // Fit the photo to what the model can use and send its REAL mime type —
+    // a raw 12 MP gallery pick used to overflow Vercel's body limit and was
+    // always labelled JPEG. See lib/imageDownscale.ts.
+    prepareScanImage(captured)
+      .then(({ base64, mimeType }) =>
+        fetch('/api/camera/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageBase64: base64,
+            mimeType,
+            context: photoContext.trim() || undefined,
+            // IST wall-clock, same as the chat route sends — a 9pm plate is
+            // dinner-sized even when the device clock says otherwise.
+            currentTime: formatIst(new Date(), { hour: '2-digit', minute: '2-digit' }),
+          }),
+        }),
+      )
       .then(async (res) => {
         const json = await res.json()
         // Gated. Standalone: straight to the paywall rather than a toast the
@@ -328,6 +341,7 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
         setResults(items)
         setSelectedIdx(0)
         setConfidence(json.confidence ?? null)
+        setScanModel(typeof json.model === 'string' ? json.model : null)
         if (typeof json.remaining === 'number') setScansLeft(json.remaining)
         // Some detected items resolved; at least one didn't get a safe number
         // and was dropped server-side (lib/camera-nutrition.ts) rather than
@@ -446,6 +460,7 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
           delta_amount: r.grams - r.estimated_grams,
           unit: r.unit,
           confidence,
+          model: scanModel,
         })
       }
 
@@ -467,7 +482,7 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
     } finally {
       setLogging(false)
     }
-  }, [results, selected, logging, meal, grams, confidence, queryClient, logDate, dayKcalBefore, dayTarget])
+  }, [results, selected, logging, meal, grams, confidence, scanModel, queryClient, logDate, dayKcalBefore, dayTarget])
 
   // ── Derived nutrition values ──────────────────────────────────────────────────
   const macros  = selected ? scaleMacrosRaw(selected.food, grams) : null
