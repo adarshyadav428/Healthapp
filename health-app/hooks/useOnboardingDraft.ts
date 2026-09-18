@@ -14,6 +14,14 @@ export const TOTAL_STEPS = 4
 // current user's draft directly.
 export const ONBOARDING_STORAGE_KEY = 'gis.onboarding.progress'
 
+// A tap's `click` event can arrive well after the touch that produced it on
+// Android's WebView, targeting whatever now sits at those coordinates rather
+// than what was actually tapped. "Next" and "🎉 Finish setup" render in the
+// same spot, so the tap that advances step 3 into step 4 can have its own
+// deferred click land on the freshly-swapped submit button — see the guard
+// in OnboardingForm's handleFormSubmit.
+export const GHOST_CLICK_GUARD_MS = 400
+
 /**
  * The draft is scoped per user id, not one global key — `/onboarding` only
  * renders for an already-authenticated user (app/onboarding/page.tsx runs

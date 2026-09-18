@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import dynamic from 'next/dynamic'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -17,7 +17,7 @@ import {
 import { BodyTypeImage } from './BodyTypeImage'
 import { projectGoalDate, formatGoalDate } from '../../lib/projection'
 import { ftInToCm } from '../../lib/units'
-import { useOnboardingDraft, TOTAL_STEPS, STEP_LABELS } from '../../hooks/useOnboardingDraft'
+import { useOnboardingDraft, TOTAL_STEPS, STEP_LABELS, GHOST_CLICK_GUARD_MS } from '../../hooks/useOnboardingDraft'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
 import { ConfettiBurst } from '../ui/ConfettiBurst'
@@ -90,6 +90,20 @@ export function OnboardingForm({ userId }: { userId?: string } = {}) {
     nextStep, prevStep, clearDraft,
   } = useOnboardingDraft(form, userId)
 
+  // Every field on the final step also has a valid default, so a submit that
+  // reaches it needs nothing further from the user to succeed. On Android's
+  // WebView a tap's `click` event can fire well after the touch that produced
+  // it, hitting whatever now sits at those screen coordinates — and "Next"
+  // (step 3) sits in the exact same spot as "🎉 Finish setup" (step 4). The
+  // same tap that advances into the final step can have its own delayed
+  // click land on the freshly-swapped submit button, submitting step 4's
+  // untouched defaults before it was ever seen. Record when the final step
+  // was reached and ignore a submit that arrives implausibly soon after.
+  const finalStepArrivedAtRef = useRef(0)
+  useEffect(() => {
+    if (step === TOTAL_STEPS) finalStepArrivedAtRef.current = Date.now()
+  }, [step])
+
   // Every field has a valid default and onboardingSchema has no cross-field
   // rule, so the form is valid the moment a name is typed. Left alone, pressing
   // Enter in any input on steps 2–4 implicitly submits the whole form — saving
@@ -100,6 +114,10 @@ export function OnboardingForm({ userId }: { userId?: string } = {}) {
     if (step < TOTAL_STEPS) {
       e.preventDefault()
       nextStep()
+      return
+    }
+    if (Date.now() - finalStepArrivedAtRef.current < GHOST_CLICK_GUARD_MS) {
+      e.preventDefault()
       return
     }
     form.handleSubmit(onSubmit)(e)
