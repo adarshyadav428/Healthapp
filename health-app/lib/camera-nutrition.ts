@@ -29,6 +29,73 @@ export type GeminiFood = {
   label?: LabelPanel | null
 }
 
+/**
+ * How many distinct items one photo may return. A thali is six to eight
+ * dishes; the old cap of 3 told the model to be wrong on purpose. Matches
+ * the item cap on /api/logs/add-bulk, where a scan's items are written.
+ */
+export const MAX_CAMERA_ITEMS = 8
+
+/**
+ * The response schema the camera route sends with every call (Gemini's
+ * OpenAPI-subset dialect — see GeminiCall.responseSchema in lib/gemini.ts).
+ * It mirrors GeminiFood exactly: every field the route reads is declared
+ * here, the units and confidence are enums, and the per-serving totals and
+ * the label panel are nullable because they genuinely don't exist for most
+ * items. `propertyOrdering` is load-bearing — Gemini emits fields in that
+ * order and, per its docs, alphabetically otherwise.
+ */
+export const CAMERA_RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  propertyOrdering: ['foods', 'confidence'],
+  required: ['foods', 'confidence'],
+  properties: {
+    foods: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        propertyOrdering: [
+          'name', 'estimated_grams', 'unit',
+          'kcal_per_100g', 'protein_g_per_100g', 'carbs_g_per_100g', 'fat_g_per_100g',
+          'total_kcal', 'total_protein_g', 'total_carbs_g', 'total_fat_g',
+          'label',
+        ],
+        required: ['name', 'estimated_grams', 'unit', 'kcal_per_100g', 'protein_g_per_100g', 'carbs_g_per_100g', 'fat_g_per_100g'],
+        properties: {
+          name: { type: 'STRING' },
+          estimated_grams: { type: 'NUMBER' },
+          unit: { type: 'STRING', enum: ['g', 'ml', 'pcs'] },
+          kcal_per_100g: { type: 'NUMBER' },
+          protein_g_per_100g: { type: 'NUMBER' },
+          carbs_g_per_100g: { type: 'NUMBER' },
+          fat_g_per_100g: { type: 'NUMBER' },
+          total_kcal: { type: 'NUMBER', nullable: true },
+          total_protein_g: { type: 'NUMBER', nullable: true },
+          total_carbs_g: { type: 'NUMBER', nullable: true },
+          total_fat_g: { type: 'NUMBER', nullable: true },
+          label: {
+            type: 'OBJECT',
+            nullable: true,
+            propertyOrdering: ['panel_amount', 'energy_kcal', 'protein_g', 'carbs_g', 'fat_g', 'serving_size', 'servings_per_pack', 'net_quantity', 'unit'],
+            properties: {
+              panel_amount: { type: 'NUMBER' },
+              energy_kcal: { type: 'NUMBER' },
+              protein_g: { type: 'NUMBER' },
+              carbs_g: { type: 'NUMBER' },
+              fat_g: { type: 'NUMBER' },
+              serving_size: { type: 'NUMBER', nullable: true },
+              servings_per_pack: { type: 'NUMBER', nullable: true },
+              net_quantity: { type: 'NUMBER', nullable: true },
+              unit: { type: 'STRING', enum: ['g', 'ml'] },
+            },
+          },
+        },
+      },
+    },
+    confidence: { type: 'STRING', enum: ['low', 'medium', 'high'] },
+  },
+} as const
+
 export type ResolvedNutrition = {
   kcal_per_100g: number
   protein_g_per_100g: number

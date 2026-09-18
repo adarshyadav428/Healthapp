@@ -1,8 +1,8 @@
 # AI food logging — chat and camera
 
 > Read this before changing `lib/chat-prompt.ts`, `lib/chat-nutrition.ts`,
-> `app/api/chat/analyze/route.ts`, or the inline prompt in
-> `app/api/camera/analyze/route.ts`. `lib/chat-prompt.ts` had no pointer doc
+> `app/api/chat/analyze/route.ts`, `app/api/camera/analyze/route.ts`,
+> `lib/camera-prompt.ts` or `lib/gemini.ts`. `lib/chat-prompt.ts` had no pointer doc
 > until this one — the 2026-09-03 audit flagged that as a silent-regression
 > risk, since prompt wording is not unit-testable.
 
@@ -64,7 +64,7 @@ total — doing nothing is safer than rebalancing against the wrong number.
 
 ## The deliberate camera/chat prompt divergence
 
-Camera's prompt (inline in `app/api/camera/analyze/route.ts`, rule 2)
+Camera's prompt (`lib/camera-prompt.ts`, rule 2)
 explicitly decomposes a visible thali/bucket/combo into its components — the
 photo shows a plate with several distinct foods, so decomposing is correct.
 Chat's prompt has the opposite default: a single named dish stays one dish
@@ -119,12 +119,54 @@ it does **not** reliably make the model do the subtraction itself — confirm
 
 ## Model choice
 
-Chat currently runs `gemini-2.5-flash-lite` (same as camera), temperature
-0.1, no seed. A move to a stronger model (`gemini-2.5-flash` or
-`gemini-2.5-pro`) is a measured decision, not a default — re-run the manual
-eval above against the candidate model on the same messages, and only
-switch if it clearly improves the composite-dish/over-specification cases
-with acceptable latency (chat is a foreground wait, unlike camera's async
-upload). If chat and camera ever run different models, record which and why
-right here — a later reader will otherwise "align" them back to matching by
-default.
+**One place names the model: `lib/gemini.ts`.** Camera, chat and the weekly
+recap all call `callGemini`, which tries `GEMINI_MODEL` and, on a timeout /
+429 / 5xx / 404, `GEMINI_FALLBACK_MODEL` once. If chat and camera ever need
+different models, that becomes a second named constant there — never a
+literal in a route (`tests/geminiSingleSource.test.ts` walks the tree).
+
+**2026-09-18 — `gemini-2.5-flash-lite` → `gemini-3.6-flash`** (fallback
+`gemini-3.5-flash-lite`). Probed live against the project's key before
+choosing, because the docs and the reality of the key disagreed:
+
+| Model | What happened |
+|---|---|
+| `gemini-2.5-flash` | **404** — "no longer available to new users. Please update your code to use `models/gemini-3.6-flash`". `2.5-flash-lite`, what production ran, is one step behind on the same track. |
+| `gemini-3.6-flash` | Accepted everything: response schema with `propertyOrdering` + `nullable`, `thinkingLevel: low`, `thinkingBudget`, `seed`. Text calls 1.4–4.2 s; a structured image call ~2.5 s warm. Google's own named replacement. **Chosen.** |
+| `gemini-3.5-flash` | Works; slower (10 s for "Say OK" with thinking on by default, 60 thought tokens). |
+| `gemini-3.7-flash` | 503 "currently experiencing high demand", twice. |
+| `gemini-3.8-flash` | Hung — no response inside 45 s on three tries. |
+| `gemini-3.5-flash-lite` | Fast (1.7 s structured image call), accepted the same config. **Fallback.** |
+
+Two consequences are baked into `callGemini` rather than left as advice:
+newer is not safer (hence the fallback), and pinned beats `-latest` (an
+alias moving under a tuned prompt is the three-routes fork problem again,
+in time instead of across files).
+
+Also changed in the same pass, all pinned by `tests/gemini.test.ts`,
+`tests/aiResponseSchemas.test.ts` and `tests/routeCameraAnalyze.test.ts`:
+
+- **Structured output.** Both routes send a response schema (`CAMERA_RESPONSE_SCHEMA`
+  in `lib/camera-nutrition.ts`, `CHAT_RESPONSE_SCHEMA` in `lib/chat-prompt.ts`).
+  The chat prompt's `{"error":"not_food"}` branch survives as a nullable
+  top-level `error` — verified live: "my laptop charger broke" →
+  `{"error":"not_food","items":[]}`.
+- **Thinking `low`** for camera and chat, `off` for the recap. On Gemini the
+  thoughts count against `maxOutputTokens`, so both routes went 1024/800 →
+  4096; the recap keeps a tiny budget and therefore *must* stay `off`.
+- **Camera item cap 3 → 8** (`MAX_CAMERA_ITEMS`), matching `/api/logs/add-bulk`.
+- **Camera gets the IST time of day** like chat always did, bounded and
+  stripped of line breaks before it touches the prompt.
+- **The client fits the photo** to a 1536 px long edge as JPEG and sends the
+  real mime type (`lib/imageDownscale.ts`) — a raw 12 MP gallery pick used to
+  overflow Vercel's 4.5 MB body limit and was always labelled JPEG.
+- **`model` rides on every AI event.** `ai_scan_completed` (server) and
+  `ai_estimate_corrected` (client, both surfaces) carry the answering model,
+  so PostHog can show correction rate and median delta per model — the
+  accuracy metric that needs no ground truth.
+
+**Eyeballing a change without a golden set:** `npx tsx scripts/ai-scan-compare.ts
+<folder> [model,model]` runs real photos through the camera route's exact
+prompt, schema and settings and prints one row per photo per model. No
+score — that's the point; it's for looking. The camera prompt now lives in
+`lib/camera-prompt.ts` precisely so the script and the route can't drift.

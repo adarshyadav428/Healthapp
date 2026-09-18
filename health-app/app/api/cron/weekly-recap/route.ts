@@ -6,6 +6,7 @@ import { sendBudgetedPush } from '../../../../lib/push/budgetedSend'
 import { processInBatches, CRON_TIME_BUDGET_MS } from '../../../../lib/cronBatch'
 import { isProStatus } from '../../../../lib/subscription'
 import { computeWrappedStats } from '../../../../lib/wrappedStats'
+import { callGemini } from '../../../../lib/gemini'
 import {
   isMonthlyWrapWindow, previousMonthStart, istDayStartInstant, monthLabel, MIN_DAYS_FOR_WRAP,
 } from '../../../../lib/monthlyWrapped'
@@ -289,30 +290,31 @@ async function buildMessage(stats: RecapStats, firstName?: string): Promise<stri
       `average ${stats.avgKcal} kcal/day` +
       (stats.weightDeltaKg != null ? `, weight change ${stats.weightDeltaKg} kg` : '') +
       `. Be encouraging and honest; no medical claims. Return only the sentence.`
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    // Timed per attempt (lib/gemini) — without a timeout the whole cron can
+    // hang on one stalled socket. processInBatches only checks its deadline
+    // BETWEEN items, so an un-timed await inside one item bypasses
+    // CRON_TIME_BUDGET_MS entirely: at concurrency 8, eight stalled requests
+    // stall the run, Vercel kills the function at 60 s, and no response is
+    // ever written — so `remaining` and `timedOut` go unreported, which is the
+    // exact silent truncation lib/cronBatch.ts exists to prevent. Monthly
+    // Wrapped rides in this same run, so it dies with it. A failure here costs
+    // the AI sentence, nothing more — hence no fallback model: one attempt,
+    // then the template.
+    const ai = await callGemini(
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 80, temperature: 0.7 },
-        }),
-        // Without this the whole cron can hang on one stalled socket.
-        // processInBatches only checks its deadline BETWEEN items, so an
-        // un-timed await inside one item bypasses CRON_TIME_BUDGET_MS entirely:
-        // at concurrency 8, eight stalled requests stall the run, Vercel kills
-        // the function at 60 s, and no response is ever written — so `remaining`
-        // and `timedOut` go unreported, which is the exact silent truncation
-        // lib/cronBatch.ts exists to prevent. Monthly Wrapped rides in this same
-        // run, so it dies with it. The catch below already falls back to
-        // recapFallbackMessage, so a timeout costs the AI sentence, nothing more.
-        signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
-      }
+        parts: [{ text: prompt }],
+        // One sentence, nothing to reason about: thinking off, or the
+        // thoughts alone would eat this budget and return an empty string.
+        maxOutputTokens: 120,
+        temperature: 0.7,
+        thinking: 'off',
+        timeoutMs: GEMINI_TIMEOUT_MS,
+        fallback: false,
+      },
+      process.env.GEMINI_API_KEY,
     )
-    if (!res.ok) return fallback
-    const json = await res.json()
-    const text = (json.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim().replace(/^["']|["']$/g, '')
+    if (!ai.ok) return fallback
+    const text = ai.text.trim().replace(/^["']|["']$/g, '')
     return text || fallback
   } catch {
     return fallback
