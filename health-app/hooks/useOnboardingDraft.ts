@@ -10,7 +10,7 @@ import { EVENTS } from '../lib/posthog/events'
 // each extra screen is a place to drop out, and "What should we call you?"
 // alone did not earn one. Nothing was removed, only regrouped.
 export const TOTAL_STEPS = 4
-const ONBOARDING_STORAGE_KEY = 'gis.onboarding.progress'
+const ONBOARDING_STORAGE_PREFIX = 'gis.onboarding.progress'
 
 export const STEP_LABELS = ['Log a meal', 'About you', 'Your body & goal', 'Lifestyle']
 
@@ -31,18 +31,27 @@ const fieldsByStep: Record<number, (keyof OnboardingData)[]> = {
  * and the localStorage resume/persist so a mid-wizard exit picks up where it
  * left off. Extracted from OnboardingForm so it's pure presentation.
  * Behaviour (storage key, validation gating, analytics) is intentionally identical.
+ *
+ * The storage key is scoped to `userId`: an abandoned draft (started, never
+ * submitted, so nothing ever clears it) used to sit under one bare key shared
+ * by every account on that browser. The next signup on the same device — a
+ * different person, or the same person's fresh account after a first attempt
+ * fizzled — silently resumed at whatever step the earlier draft left off at,
+ * skipping the intro steps entirely.
  */
-export function useOnboardingDraft(form: UseFormReturn<OnboardingData>) {
+export function useOnboardingDraft(form: UseFormReturn<OnboardingData>, userId: string) {
   const [step, setStep] = useState(1)
   const [isNavigating, setIsNavigating] = useState(false)
   const [heightFt, setHeightFt] = useState(5)
   const [heightIn, setHeightIn] = useState(7)
 
+  const storageKey = `${ONBOARDING_STORAGE_PREFIX}.${userId}`
+
   // Resume where an abandoner left off instead of restarting at step 1/6.
   useEffect(() => {
     let resumedStep = 1
     try {
-      const raw = localStorage.getItem(ONBOARDING_STORAGE_KEY)
+      const raw = localStorage.getItem(storageKey)
       if (raw) {
         const saved = JSON.parse(raw) as { step?: number; values?: Partial<OnboardingData>; heightFt?: number; heightIn?: number }
         if (saved.values) form.reset({ ...form.getValues(), ...saved.values })
@@ -66,7 +75,7 @@ export function useOnboardingDraft(form: UseFormReturn<OnboardingData>) {
   useEffect(() => {
     try {
       localStorage.setItem(
-        ONBOARDING_STORAGE_KEY,
+        storageKey,
         JSON.stringify({ step, values: watchedValues, heightFt, heightIn })
       )
     } catch { /* ignore */ }
@@ -97,7 +106,7 @@ export function useOnboardingDraft(form: UseFormReturn<OnboardingData>) {
 
   // Clear the saved draft once onboarding is submitted successfully.
   const clearDraft = () => {
-    try { localStorage.removeItem(ONBOARDING_STORAGE_KEY) } catch { /* ignore */ }
+    try { localStorage.removeItem(storageKey) } catch { /* ignore */ }
   }
 
   return {

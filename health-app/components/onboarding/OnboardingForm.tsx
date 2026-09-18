@@ -37,7 +37,7 @@ const pillBase =
 const pillOn = 'border-brand bg-brand-soft text-brand-ink'
 const pillOff = 'border-hairline bg-surface-2 text-ink hover:border-brand-ring'
 
-export function OnboardingForm() {
+export function OnboardingForm({ userId }: { userId: string }) {
   const queryClient = useQueryClient()
   const [celebrating, setCelebrating] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
@@ -88,7 +88,7 @@ export function OnboardingForm() {
   const {
     step, isNavigating, heightFt, setHeightFt, heightIn, setHeightIn,
     nextStep, prevStep, clearDraft,
-  } = useOnboardingDraft(form)
+  } = useOnboardingDraft(form, userId)
 
   // Every field has a valid default and onboardingSchema has no cross-field
   // rule, so the form is valid the moment a name is typed. Left alone, pressing
