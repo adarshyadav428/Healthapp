@@ -22,6 +22,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderWithProviders } from './support/renderWithProviders'
 import { installFetchSpy } from './support/fetchSpy'
+import { GHOST_CLICK_GUARD_MS } from '../../hooks/useOnboardingDraft'
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn(), refresh: vi.fn() }),
@@ -46,7 +47,20 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
+
+/**
+ * A controllable Date.now(), so the ghost-click guard's timing can be moved
+ * past deterministically instead of by sleeping real wall-clock time in the
+ * test. userEvent's own internal delays run on real timers regardless — this
+ * only affects what the guard itself reads.
+ */
+function mockClock(startAt = 1_726_000_000_000) {
+  let now = startAt
+  vi.spyOn(Date, 'now').mockImplementation(() => now)
+  return { advance: (ms: number) => { now += ms } }
+}
 
 /**
  * Walk the wizard to its last step the way a user does.
@@ -122,10 +136,14 @@ describe('the draft is scoped per account', () => {
 
 describe('finishing the wizard', () => {
   it('POSTs the profile to /api/onboarding', async () => {
+    const clock = mockClock()
     const spy = installFetchSpy({ '/api/onboarding': { ok: true } })
     renderWithProviders(<OnboardingForm />)
 
     const finish = await walkToFinalStep()
+    // Past the ghost-click guard window — this is a deliberate click well
+    // after landing on the final step, not the same tap that reached it.
+    clock.advance(GHOST_CLICK_GUARD_MS + 100)
     await userEvent.click(finish)
 
     await waitFor(() => {
@@ -135,6 +153,38 @@ describe('finishing the wizard', () => {
       // which come from the wizard's own defaults here.
       expect(body).toBeTruthy()
       expect(Object.keys(body).length).toBeGreaterThan(3)
+    })
+  })
+})
+
+describe('the final step ignores an implausibly fast submit', () => {
+  // Regression for "the last page gets skipped and lands on the plan
+  // screen" — Android's WebView and iOS's installed-PWA mode can both fire a
+  // tap's `click` event well after the touch that produced it, targeting
+  // whatever now sits at those coordinates. "Next" (step 3) and "🎉 Finish
+  // setup" (step 4) render in the same spot, so the tap that advances into
+  // the final step can have its own delayed click land on the freshly
+  // swapped submit button — submitting step 4's untouched defaults before a
+  // person ever saw it. The guard in OnboardingForm's handleFormSubmit
+  // ignores a submit that arrives implausibly soon after landing on the
+  // final step, then accepts a later, genuine one normally.
+  it('swallows a submit within the guard window, then accepts one after it', async () => {
+    const clock = mockClock()
+    const spy = installFetchSpy({ '/api/onboarding': { ok: true } })
+    renderWithProviders(<OnboardingForm />)
+
+    const finish = await walkToFinalStep()
+
+    // No time has passed since landing on step 4 — this stands in for the
+    // deferred ghost click from the tap that reached this step.
+    await userEvent.click(finish)
+    expect(spy.calls.filter((c) => c.method === 'POST')).toHaveLength(0)
+
+    // A later, genuine click on the same button still works.
+    clock.advance(GHOST_CLICK_GUARD_MS + 100)
+    await userEvent.click(finish)
+    await waitFor(() => {
+      expect(spy.calls.filter((c) => c.method === 'POST')).toHaveLength(1)
     })
   })
 })
