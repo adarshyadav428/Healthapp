@@ -14,6 +14,22 @@ export type LabelPanel = {
   fat_g?: number
 }
 
+/**
+ * Where the plate is from. Decides portion baselines (a restaurant plate is
+ * 30–50% larger than a home katori) and how much oil, ghee and cream the
+ * model should assume in gravies and fried food. The model reads it off the
+ * photo; the user can also say it with one tap before the shutter
+ * (`settingHint`), which the route feeds back as context.
+ */
+export const CAMERA_SETTINGS = ['home', 'restaurant', 'street', 'packaged', 'unknown'] as const
+export type CameraSetting = (typeof CAMERA_SETTINGS)[number]
+
+/** The subset a user can assert with a chip. `street` folds into restaurant for the user; `unknown` is the absence of a tap. */
+export const SETTING_HINTS = ['home', 'restaurant', 'packaged'] as const
+export type SettingHint = (typeof SETTING_HINTS)[number]
+
+export type ItemConfidence = 'low' | 'medium' | 'high'
+
 export type GeminiFood = {
   name: string
   estimated_grams: number
@@ -27,6 +43,24 @@ export type GeminiFood = {
   total_carbs_g?: number
   total_fat_g?: number
   label?: LabelPanel | null
+  /** Per item — the top-level `confidence` is the model's read of the whole photo. */
+  confidence?: ItemConfidence
+  /**
+   * Up to two other dishes this could plausibly be, most likely first, empty
+   * when the model is sure. Rendered as one-tap swaps under the name, so a
+   * wrong identification is a tap away from the right one instead of a
+   * retype.
+   */
+  alternatives?: string[]
+}
+
+/** The whole answer: what the model saw, then what it concluded. */
+export type GeminiScan = {
+  /** One or two sentences written BEFORE the items — the observe-then-estimate step. */
+  scene?: string
+  setting?: CameraSetting
+  foods: GeminiFood[]
+  confidence: string
 }
 
 /**
@@ -36,20 +70,31 @@ export type GeminiFood = {
  */
 export const MAX_CAMERA_ITEMS = 8
 
+/** How many alternative identities an item may carry. Two fits on one line under the name. */
+export const MAX_ALTERNATIVES = 2
+
 /**
  * The response schema the camera route sends with every call (Gemini's
  * OpenAPI-subset dialect — see GeminiCall.responseSchema in lib/gemini.ts).
- * It mirrors GeminiFood exactly: every field the route reads is declared
- * here, the units and confidence are enums, and the per-serving totals and
- * the label panel are nullable because they genuinely don't exist for most
- * items. `propertyOrdering` is load-bearing — Gemini emits fields in that
- * order and, per its docs, alphabetically otherwise.
+ * It mirrors GeminiScan/GeminiFood exactly: every field the route reads is
+ * declared here, the units, settings and confidence are enums, and the
+ * per-serving totals and the label panel are nullable because they
+ * genuinely don't exist for most items.
+ *
+ * `propertyOrdering` is load-bearing twice over. Gemini emits fields in that
+ * order (alphabetically otherwise, per its docs) — and `scene` and `setting`
+ * come FIRST so the model has to write down what it sees before it writes a
+ * single gram. That is chain-of-thought inside structured output: the
+ * numbers are conditioned on an explicit observation rather than produced
+ * cold.
  */
 export const CAMERA_RESPONSE_SCHEMA = {
   type: 'OBJECT',
-  propertyOrdering: ['foods', 'confidence'],
-  required: ['foods', 'confidence'],
+  propertyOrdering: ['scene', 'setting', 'foods', 'confidence'],
+  required: ['scene', 'setting', 'foods', 'confidence'],
   properties: {
+    scene: { type: 'STRING' },
+    setting: { type: 'STRING', enum: [...CAMERA_SETTINGS] },
     foods: {
       type: 'ARRAY',
       items: {
@@ -58,9 +103,9 @@ export const CAMERA_RESPONSE_SCHEMA = {
           'name', 'estimated_grams', 'unit',
           'kcal_per_100g', 'protein_g_per_100g', 'carbs_g_per_100g', 'fat_g_per_100g',
           'total_kcal', 'total_protein_g', 'total_carbs_g', 'total_fat_g',
-          'label',
+          'label', 'confidence', 'alternatives',
         ],
-        required: ['name', 'estimated_grams', 'unit', 'kcal_per_100g', 'protein_g_per_100g', 'carbs_g_per_100g', 'fat_g_per_100g'],
+        required: ['name', 'estimated_grams', 'unit', 'kcal_per_100g', 'protein_g_per_100g', 'carbs_g_per_100g', 'fat_g_per_100g', 'confidence', 'alternatives'],
         properties: {
           name: { type: 'STRING' },
           estimated_grams: { type: 'NUMBER' },
@@ -73,6 +118,8 @@ export const CAMERA_RESPONSE_SCHEMA = {
           total_protein_g: { type: 'NUMBER', nullable: true },
           total_carbs_g: { type: 'NUMBER', nullable: true },
           total_fat_g: { type: 'NUMBER', nullable: true },
+          confidence: { type: 'STRING', enum: ['low', 'medium', 'high'] },
+          alternatives: { type: 'ARRAY', items: { type: 'STRING' } },
           label: {
             type: 'OBJECT',
             nullable: true,
@@ -308,4 +355,40 @@ export function resolveNutrition(item: GeminiFood): ResolvedNutrition {
     plausible:          true,
     resolvable:         true,
   }
+}
+
+/** A `setting` off the wire, or 'unknown' for anything that isn't one of ours. */
+export function parseSetting(v: unknown): CameraSetting {
+  return typeof v === 'string' && (CAMERA_SETTINGS as readonly string[]).includes(v) ? (v as CameraSetting) : 'unknown'
+}
+
+/** A `settingHint` off the wire, or null. Only the three a user can tap. */
+export function parseSettingHint(v: unknown): SettingHint | null {
+  return typeof v === 'string' && (SETTING_HINTS as readonly string[]).includes(v) ? (v as SettingHint) : null
+}
+
+export function parseItemConfidence(v: unknown): ItemConfidence | undefined {
+  return v === 'low' || v === 'medium' || v === 'high' ? v : undefined
+}
+
+/**
+ * The alternatives the UI will offer for an item: trimmed, de-duplicated
+ * (case-insensitively), never the item's own name, at most MAX_ALTERNATIVES.
+ * The model is told all of this too, but the schema can't express "not equal
+ * to a sibling field", so it is enforced here.
+ */
+export function normalizeAlternatives(name: string, raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  const seen = new Set<string>([name.trim().toLowerCase()])
+  const out: string[] = []
+  for (const v of raw) {
+    if (typeof v !== 'string') continue
+    const s = v.trim().slice(0, 60)
+    const key = s.toLowerCase()
+    if (!s || seen.has(key)) continue
+    seen.add(key)
+    out.push(s)
+    if (out.length === MAX_ALTERNATIVES) break
+  }
+  return out
 }

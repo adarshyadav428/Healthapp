@@ -37,6 +37,28 @@ chat, barcode or saved combo; the app tracks calories, macros, weight and a logg
   rate and median delta **per model**. The camera prompt lives in `lib/camera-prompt.ts` (moved out of
   the route so `scripts/ai-scan-compare.ts` can send the exact prompt the route sends — run it on a
   folder of your own meal photos to eyeball a model or prompt change, no scale needed).
+- **The camera prompt is observe-then-estimate, not estimate-cold.** `CAMERA_RESPONSE_SCHEMA`'s
+  `propertyOrdering` puts `scene` (what's physically there) and `setting` (`home` / `restaurant` /
+  `street` / `packaged` / `unknown`) FIRST, before a single item or gram — Gemini fills fields in
+  that order, so this is chain-of-thought bought inside structured output, for free. `setting` exists
+  because a restaurant dal and a home dal look similar but carry very different oil, and the model is
+  told to estimate the per-100g values for the preparation it actually sees rather than a single
+  generic figure; `INDIAN_VESSEL_REFERENCE` (`lib/camera-prompt.ts`) gives it a ruler (a katori is
+  100–150 ml, a full thali 28–30 cm) so a portion is sized from what's in frame, not guessed cold. The
+  user can also assert the setting with one of three chips before the shutter (Home-cooked /
+  Restaurant / Packaged, `components/camera/CameraModal.tsx`) — sent as `settingHint`, an enum the
+  route parses with `parseSettingHint` before it ever reaches the prompt string, same reasoning as
+  the time-of-day token. Each item also carries its own `confidence` (independent of the whole-scan
+  one — a shaky paneer estimate on an otherwise-clear thali shouldn't badge the rice next to it) and
+  up to `MAX_ALTERNATIVES` (2) `alternatives`: other dishes it could plausibly be, rendered as
+  one-tap "Not quite?" swap chips. Tapping one runs the ordinary `/api/foods/search` — the same
+  ranked, synonym-aware matcher the manual search box uses, and a sharper one than the AI route's own
+  substring match — for that name and replaces the whole food (not just the label) on a hit, so the
+  swap is real macros, never a relabelled guess; a miss falls back to relabelling with a toast saying
+  so. `normalizeAlternatives` (`lib/camera-nutrition.ts`) excludes the item's own name
+  case-insensitively **before** applying the cap — the self-exclusion has to run first, or a
+  self-match occupying a slot silently shrinks the real alternatives by one, which is invisible unless
+  the self-name is tested as the *first* entry (a later one is masked by the cap either way).
 - **Observability:** Sentry (runtime capture only) + PostHog (product analytics).
 - **PWA:** `@ducanh2912/next-pwa` (Workbox) — `worker/index.js` plus the generated `public/sw.js`.
 - **Tests:** Vitest 4.1 — **135 files / 1,706 tests**. `vitest.config.ts` exists but is deliberately

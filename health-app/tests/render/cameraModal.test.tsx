@@ -51,16 +51,17 @@ function resultState(overrides: Record<string, unknown> = {}) {
     videoRef: { current: null }, canvasRef: { current: null }, galleryRef: { current: null },
     barcodeSupport: false, mode: 'photo', camError: null, barcodeLoading: false,
     captured: 'data:image/jpeg;base64,AAAA', analyzing: false,
-    results: [{ food: BIRYANI, estimated_grams: 300, unit: 'g', grams: 300, name: 'Chicken Biryani' }],
-    selected: { food: BIRYANI, estimated_grams: 300, unit: 'g', grams: 300, name: 'Chicken Biryani' },
+    results: [{ food: BIRYANI, estimated_grams: 300, unit: 'g', grams: 300, name: 'Chicken Biryani', alternatives: [] }],
+    selected: { food: BIRYANI, estimated_grams: 300, unit: 'g', grams: 300, name: 'Chicken Biryani', alternatives: [] },
     selectedIdx: 0, confidence: 'high', scansLeft: null, grams: 300,
-    photoContext: '', showContextInput: false, meal: 'lunch', logging: false,
+    photoContext: '', showContextInput: false, settingHint: null, swappingIdx: null, swappingAlt: null,
+    meal: 'lunch', logging: false,
     manualBarcode: '', manualLoading: false, customName: 'Chicken Biryani', editingName: false,
     feedback: null, logged: null,
-    setGrams: vi.fn(), setPhotoContext: noop, setShowContextInput: noop, setMeal: vi.fn(),
+    setGrams: vi.fn(), setPhotoContext: noop, setShowContextInput: noop, setMeal: vi.fn(), setSettingHint: vi.fn(),
     setManualBarcode: noop, setCustomName: noop, setEditingName: noop,
     onGallerySelect: noop, capturePhoto: noop, analyzePhoto: noop, submitManualBarcode: noop,
-    retake: vi.fn(), switchMode: noop, selectResult: noop, logFood: vi.fn(), rateResult: vi.fn(),
+    retake: vi.fn(), switchMode: noop, selectResult: noop, logFood: vi.fn(), rateResult: vi.fn(), swapAlternative: vi.fn(),
     kcal: 648, protein: 27, carbs: 81, fat: 21, coaching: null,
     amountMin: 10, amountMax: 1500, amountStep: 5,
     multiItem: false, totalKcal: 648, totalProtein: 27, totalCarbs: 81, totalFat: 21,
@@ -143,12 +144,75 @@ describe('the AI result sheet', () => {
   })
 
   it('a multi-food plate lists every item and adds them all', () => {
-    const roti = { food: { ...BIRYANI, id: 'food-roti', name: 'Roti' }, estimated_grams: 70, unit: 'g', grams: 70, name: 'Roti' }
+    const roti = { food: { ...BIRYANI, id: 'food-roti', name: 'Roti' }, estimated_grams: 70, unit: 'g', grams: 70, name: 'Roti', alternatives: [] }
     const items = [hook.state.selected, roti]
     hook.state = resultState({ results: items, multiItem: true, totalKcal: 850 })
     render(<CameraModal onClose={vi.fn()} onFoodFound={vi.fn()} />)
     expect(screen.getByRole('button', { name: /^roti/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /add 2 foods to lunch · 850 kcal/i })).toBeInTheDocument()
+  })
+
+  // The per-item read is more precise than the whole-photo one — a shaky
+  // paneer estimate on an otherwise-clear thali shouldn't badge the rice
+  // next to it — so it must win whenever the scan sent one.
+  it("prefers the selected item's own confidence over the whole-scan one", () => {
+    hook.state = resultState({ confidence: 'high', selected: { ...hook.state.selected as object, itemConfidence: 'low' } })
+    render(<CameraModal onClose={vi.fn()} onFoodFound={vi.fn()} />)
+    expect(screen.getByText(/check this one/i)).toBeInTheDocument()
+  })
+
+  it('offers alternatives as one-tap swaps, and they reach swapAlternative', async () => {
+    hook.state = resultState({
+      selected: { ...hook.state.selected as object, alternatives: ['Mutton Biryani', 'Veg Biryani'] },
+    })
+    render(<CameraModal onClose={vi.fn()} onFoodFound={vi.fn()} />)
+    expect(screen.getByText(/not quite\?/i)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Mutton Biryani' }))
+    expect(hook.state.swapAlternative).toHaveBeenCalledWith('Mutton Biryani')
+  })
+
+  it('renders no "Not quite?" row when the model had no alternatives', () => {
+    render(<CameraModal onClose={vi.fn()} onFoodFound={vi.fn()} />)
+    expect(screen.queryByText(/not quite\?/i)).not.toBeInTheDocument()
+  })
+
+  it('disables both alternative chips while one is swapping', () => {
+    hook.state = resultState({
+      selected: { ...hook.state.selected as object, alternatives: ['Mutton Biryani', 'Veg Biryani'] },
+      swappingIdx: 0,
+      swappingAlt: 'Mutton Biryani',
+    })
+    render(<CameraModal onClose={vi.fn()} onFoodFound={vi.fn()} />)
+    expect(screen.getByRole('button', { name: /veg biryani/i })).toBeDisabled()
+  })
+})
+
+describe('before analysing — the setting chips', () => {
+  function captureState(overrides: Record<string, unknown> = {}) {
+    return resultState({ results: null, selected: null, ...overrides })
+  }
+
+  it('a tapped chip reaches setSettingHint', async () => {
+    hook.state = captureState()
+    render(<CameraModal onClose={vi.fn()} onFoodFound={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Restaurant' }))
+    expect(hook.state.setSettingHint).toHaveBeenCalledWith('restaurant')
+  })
+
+  it('tapping the already-selected chip clears it, rather than re-asserting it', async () => {
+    hook.state = captureState({ settingHint: 'home' })
+    render(<CameraModal onClose={vi.fn()} onFoodFound={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'Home-cooked' })).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(screen.getByRole('button', { name: 'Home-cooked' }))
+    expect(hook.state.setSettingHint).toHaveBeenCalledWith(null)
+  })
+
+  it('only the selected chip is pressed', () => {
+    hook.state = captureState({ settingHint: 'packaged' })
+    render(<CameraModal onClose={vi.fn()} onFoodFound={vi.fn()} />)
+    expect(screen.getByRole('button', { name: 'Packaged' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Home-cooked' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Restaurant' })).toHaveAttribute('aria-pressed', 'false')
   })
 })
 

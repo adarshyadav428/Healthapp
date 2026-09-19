@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { resolveNutrition, num, piecesInServing, type GeminiFood } from '../lib/camera-nutrition'
+import {
+  resolveNutrition,
+  num,
+  piecesInServing,
+  parseSetting,
+  parseSettingHint,
+  parseItemConfidence,
+  normalizeAlternatives,
+  type GeminiFood,
+} from '../lib/camera-nutrition'
 
 const base: GeminiFood = {
   name: 'Test food',
@@ -148,5 +157,84 @@ describe('piecesInServing()', () => {
     expect(piecesInServing('1 piece (60g)')).toBe(1)
     expect(piecesInServing('100g')).toBe(1)
     expect(piecesInServing(null)).toBe(1)
+  })
+})
+
+describe('parseSetting()', () => {
+  it('accepts every value CAMERA_RESPONSE_SCHEMA can return', () => {
+    expect(parseSetting('home')).toBe('home')
+    expect(parseSetting('restaurant')).toBe('restaurant')
+    expect(parseSetting('street')).toBe('street')
+    expect(parseSetting('packaged')).toBe('packaged')
+    expect(parseSetting('unknown')).toBe('unknown')
+  })
+
+  it('falls back to unknown for anything the model was not asked for, and for non-strings', () => {
+    expect(parseSetting('cafeteria')).toBe('unknown')
+    expect(parseSetting(undefined)).toBe('unknown')
+    expect(parseSetting(null)).toBe('unknown')
+    expect(parseSetting(42)).toBe('unknown')
+  })
+})
+
+describe('parseSettingHint()', () => {
+  it('accepts only the three chips a user can tap', () => {
+    expect(parseSettingHint('home')).toBe('home')
+    expect(parseSettingHint('restaurant')).toBe('restaurant')
+    expect(parseSettingHint('packaged')).toBe('packaged')
+  })
+
+  it("rejects 'street'/'unknown' (not user-facing chips) and anything else, as null", () => {
+    expect(parseSettingHint('street')).toBeNull()
+    expect(parseSettingHint('unknown')).toBeNull()
+    expect(parseSettingHint(undefined)).toBeNull()
+    expect(parseSettingHint('<script>alert(1)</script>')).toBeNull()
+  })
+})
+
+describe('parseItemConfidence()', () => {
+  it('accepts the three levels and nothing else', () => {
+    expect(parseItemConfidence('low')).toBe('low')
+    expect(parseItemConfidence('medium')).toBe('medium')
+    expect(parseItemConfidence('high')).toBe('high')
+    expect(parseItemConfidence('very high')).toBeUndefined()
+    expect(parseItemConfidence(undefined)).toBeUndefined()
+  })
+})
+
+describe('normalizeAlternatives()', () => {
+  it('trims and caps at MAX_ALTERNATIVES', () => {
+    expect(normalizeAlternatives('Aloo Paratha', ['Gobi Paratha', '  Paneer Paratha  ', 'Mooli Paratha'])).toEqual([
+      'Gobi Paratha',
+      'Paneer Paratha',
+    ])
+  })
+
+  it("excludes the item's own name (case-insensitively), even when it would otherwise take a slot", () => {
+    // The self-name is FIRST here on purpose: MAX_ALTERNATIVES is 2, so if
+    // self-exclusion were broken this would return ['aloo paratha', 'Gobi
+    // Paratha'] — the cap alone can hide a missing exclusion when the self-
+    // name isn't first, which is why it goes first here.
+    expect(normalizeAlternatives('Aloo Paratha', ['aloo paratha', 'Gobi Paratha'])).toEqual(['Gobi Paratha'])
+  })
+
+  it('de-duplicates case-insensitively', () => {
+    expect(normalizeAlternatives('Dal', ['Moong Dal', 'moong dal', 'Arhar Dal'])).toEqual(['Moong Dal', 'Arhar Dal'])
+  })
+
+  it('returns [] for anything that is not an array, and drops non-string entries', () => {
+    expect(normalizeAlternatives('X', undefined)).toEqual([])
+    expect(normalizeAlternatives('X', null)).toEqual([])
+    expect(normalizeAlternatives('X', 'Y')).toEqual([])
+    expect(normalizeAlternatives('X', [1, null, 'Real Name'])).toEqual(['Real Name'])
+  })
+
+  it('drops an empty or whitespace-only entry rather than keeping a blank chip', () => {
+    expect(normalizeAlternatives('X', ['   ', '', 'Real Name'])).toEqual(['Real Name'])
+  })
+
+  it('bounds an absurdly long alternative rather than overflowing the UI', () => {
+    const long = 'A'.repeat(500)
+    expect(normalizeAlternatives('X', [long])[0].length).toBe(60)
   })
 })

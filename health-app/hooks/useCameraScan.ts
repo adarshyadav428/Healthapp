@@ -14,11 +14,12 @@ import { dateStrToUtcMidnight, formatIst } from '../lib/dateUtils'
 import { prepareScanImage } from '../lib/imageDownscale'
 import { mealForTime } from '../lib/meal'
 import { scaleMacrosRaw } from '../lib/nutrition'
-import { portionRange } from '../lib/portion-units'
+import { portionRange, defaultPortionFor } from '../lib/portion-units'
 import { useUser } from './useUser'
 import { useDailyTotals } from './useDailyTotals'
 import { resolveAiGateAction } from '../lib/aiGateRedirect'
 import { recordAiVerificationBlock } from '../lib/verifyPromptStore'
+import type { SettingHint } from '../lib/camera-nutrition'
 
 export type Mode = 'barcode' | 'photo' | 'manual'
 /** The one-tap verdict on a scan result. See EVENTS.AI_RESULT_FEEDBACK. */
@@ -53,6 +54,16 @@ export type PhotoResult = {
    * correction analytics; the logged row always references `food.id`.
    */
   name: string
+  /** The model's per-item read, distinct from the whole-scan `confidence` state. */
+  itemConfidence?: 'low' | 'medium' | 'high'
+  /**
+   * Other dishes the model thought this might be, most likely first — empty
+   * once swapped away from, or when the model was sure. Tapping one re-runs
+   * the ordinary catalogue search for that name (never another Gemini call)
+   * and, on a match, replaces `food`/`grams`/`unit` wholesale so the nutrition
+   * is real, not a relabelled guess.
+   */
+  alternatives: string[]
 }
 
 type Params = {
@@ -114,6 +125,16 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
   const [scansLeft, setScansLeft]           = useState<number | null>(null)
   const [photoContext, setPhotoContext]     = useState('')
   const [showContextInput, setShowContextInput] = useState(false)
+  // One of three chips the user can tap before the shutter — 'home' /
+  // 'restaurant' / 'packaged' — or null for "didn't say". Reset on retake so
+  // it never silently carries over onto an unrelated next photo.
+  const [settingHint, setSettingHint]       = useState<SettingHint | null>(null)
+  // Which result row (by index into `results`) is mid-swap to an alternative
+  // identity, and which of its alternative NAMES was tapped — so only that
+  // one chip shows a spinner (the sibling chip stays readable-but-disabled)
+  // and neither can double-fire.
+  const [swappingIdx, setSwappingIdx]       = useState<number | null>(null)
+  const [swappingAlt, setSwappingAlt]       = useState<string | null>(null)
   const [meal, setMeal]                     = useState<string>(mealForTime())
   const [logging, setLogging]               = useState(false)
   const [manualBarcode, setManualBarcode]   = useState('')
@@ -138,13 +159,68 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
   const customName = selected?.name ?? ''
 
   const patchSelected = useCallback(
-    (patch: Partial<Pick<PhotoResult, 'grams' | 'name'>>) => {
+    (patch: Partial<PhotoResult>) => {
       setResults((rs) => (rs ? rs.map((r, i) => (i === selectedIdx ? { ...r, ...patch } : r)) : rs))
     },
     [selectedIdx],
   )
   const setGrams      = useCallback((v: number) => patchSelected({ grams: v }), [patchSelected])
   const setCustomName = useCallback((v: string) => patchSelected({ name: v }), [patchSelected])
+
+  // One tap on an alternative the model offered ("Aloo Paratha" instead of
+  // "Gobi Paratha"): re-run the ordinary catalogue search for that name — the
+  // same ranked, synonym-aware matcher the manual search box uses, and a
+  // sharper one than the AI route's own name-substring match — and, on a
+  // real hit, replace the whole food (not just the label) so the macros are
+  // real rather than a relabelled guess. No match: fall back to relabelling,
+  // which is still strictly better than the wrong name.
+  const swapAlternative = useCallback(
+    async (altName: string) => {
+      const idx = selectedIdx
+      setSwappingIdx(idx)
+      setSwappingAlt(altName)
+      try {
+        const res = await fetch(`/api/foods/search?q=${encodeURIComponent(altName)}`)
+        const json = await res.json().catch(() => [])
+        const match = Array.isArray(json) ? (json[0] as Food | undefined) : undefined
+        if (match) {
+          // The matched row's own default portion, not the old item's grams —
+          // a different dish rarely shares the same serving size. `unit`
+          // here is display-only (nutrition always comes from `grams` × the
+          // food's per-100g values), so 'g' is the safe default; a liquid or
+          // piece-counted match still displays correctly via portionRange.
+          const portion = defaultPortionFor(match)
+          setResults((rs) =>
+            rs
+              ? rs.map((r, i) =>
+                  i === idx
+                    ? {
+                        ...r,
+                        food: match,
+                        name: match.name,
+                        unit: 'g',
+                        estimated_grams: portion.grams,
+                        grams: portion.grams,
+                        itemConfidence: undefined,
+                        alternatives: [],
+                      }
+                    : r,
+                )
+              : rs,
+          )
+        } else {
+          toast({ title: `Couldn't find "${altName}" in the catalogue`, description: 'Renamed it — you can still adjust the amount.', variant: 'error' })
+          patchSelected({ name: altName, alternatives: [] })
+        }
+      } catch {
+        toast({ title: 'Could not switch food', description: 'Check your connection and try again.', variant: 'error' })
+      } finally {
+        setSwappingIdx(null)
+        setSwappingAlt(null)
+      }
+    },
+    [selectedIdx, patchSelected],
+  )
 
   // Start the clock for `seconds_to_log`: this surface opening is the moment
   // the user set out to log something. See markLogStart in lib/posthog/client.
@@ -305,6 +381,7 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
             // IST wall-clock, same as the chat route sends — a 9pm plate is
             // dinner-sized even when the device clock says otherwise.
             currentTime: formatIst(new Date(), { hour: '2-digit', minute: '2-digit' }),
+            settingHint: settingHint ?? undefined,
           }),
         }),
       )
@@ -326,7 +403,13 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
           return
         }
         if (!res.ok) throw new Error(json.error ?? 'Analysis failed')
-        const items: PhotoResult[] = (json.foods as Array<Food & { estimated_grams: number; unit?: string }>).map((f) => {
+        type ScannedFood = Food & {
+          estimated_grams: number
+          unit?: string
+          item_confidence?: 'low' | 'medium' | 'high'
+          alternatives?: string[]
+        }
+        const items: PhotoResult[] = (json.foods as ScannedFood[]).map((f) => {
           const estimated_grams = f.estimated_grams || f.serving_size_g || 100
           return {
             food: f,
@@ -335,6 +418,8 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
             // Seed the editable fields; both persist per item from here on.
             grams: estimated_grams,
             name: f.name,
+            itemConfidence: f.item_confidence,
+            alternatives: Array.isArray(f.alternatives) ? f.alternatives : [],
           }
         })
         clientRequestIdRef.current = crypto.randomUUID()
@@ -359,11 +444,11 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
         setCaptured(null)
       })
       .finally(() => setAnalyzing(false))
-  }, [captured, photoContext, onClose, router, context, user?.id])
+  }, [captured, photoContext, settingHint, onClose, router, context, user?.id])
 
   const retake = useCallback(() => {
     setCaptured(null); setResults(null); setSelectedIdx(0); setConfidence(null)
-    setEditingName(false); setPhotoContext(''); setShowContextInput(false)
+    setEditingName(false); setPhotoContext(''); setShowContextInput(false); setSettingHint(null)
     setFeedback(null); setLogged(null)
     lastBarcode.current = null; setBarcodeLoading(false)
     setManualBarcode(''); setManualLoading(false)
@@ -520,13 +605,14 @@ export function useCameraScan({ onClose, onFoodFound, logDate, context = 'standa
     // state
     barcodeSupport, mode, camError, barcodeLoading, captured, analyzing,
     results, selected, selectedIdx, confidence, scansLeft, grams, photoContext, showContextInput,
+    settingHint, swappingIdx, swappingAlt,
     meal, logging, manualBarcode, manualLoading, customName, editingName, feedback, logged,
     // setters exposed to the view
-    setGrams, setPhotoContext, setShowContextInput, setMeal,
+    setGrams, setPhotoContext, setShowContextInput, setMeal, setSettingHint,
     setManualBarcode, setCustomName, setEditingName,
     // actions
     onGallerySelect, capturePhoto, analyzePhoto, submitManualBarcode,
-    retake, switchMode, selectResult, logFood, rateResult,
+    retake, switchMode, selectResult, logFood, rateResult, swapAlternative,
     // derived
     kcal, protein, carbs, fat, coaching, amountMin, amountMax, amountStep,
     multiItem, totalKcal, totalProtein, totalCarbs, totalFat,

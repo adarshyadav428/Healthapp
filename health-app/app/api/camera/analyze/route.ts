@@ -11,11 +11,23 @@ import { CAMERA_PROMPT } from '../../../../lib/camera-prompt'
 import {
   resolveNutrition,
   piecesInServing,
+  parseSetting,
+  parseSettingHint,
+  parseItemConfidence,
+  normalizeAlternatives,
   CAMERA_RESPONSE_SCHEMA,
   MAX_CAMERA_ITEMS,
-  type GeminiFood,
+  type GeminiScan,
+  type SettingHint,
 } from '../../../../lib/camera-nutrition'
 import { callGemini } from '../../../../lib/gemini'
+
+/** What each setting chip tells the model, appended to the prompt as context. */
+const SETTING_HINT_LINES: Record<SettingHint, string> = {
+  home: 'The user says this is home-cooked food.',
+  restaurant: 'The user says this is from a restaurant, cloud kitchen or hotel.',
+  packaged: 'The user says this is a packaged product with a nutrition label.',
+}
 
 // Per attempt. lib/gemini tries the fallback model once on a timeout, so the
 // worst case is twice this plus the DB work — still inside the 60 s function
@@ -84,17 +96,21 @@ export async function POST(req: Request) {
   if (!body?.imageBase64) {
     return NextResponse.json({ error: 'No image provided' }, { status: 400 })
   }
-  const { imageBase64, mimeType = 'image/jpeg', context, currentTime } = body as {
+  const { imageBase64, mimeType = 'image/jpeg', context, currentTime, settingHint: rawSettingHint } = body as {
     imageBase64: string
     mimeType?: string
     context?: string
     currentTime?: string
+    settingHint?: string
   }
   const userContext = typeof context === 'string' ? context.trim().slice(0, 200) : ''
   // IST wall-clock time from the client (formatIst, same as the chat route).
   // Untrusted input: bounded and stripped of line breaks before it reaches
   // the prompt, so it can only ever be a short token — never an instruction.
   const timeOfDay = typeof currentTime === 'string' ? currentTime.replace(/[\r\n]+/g, ' ').trim().slice(0, 20) : ''
+  // One of three chips the user can tap before the shutter. An enum, so the
+  // only thing that can reach the prompt is one of our own three words.
+  const settingHint = parseSettingHint(rawSettingHint)
 
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 })
@@ -104,6 +120,7 @@ export async function POST(req: Request) {
     timeOfDay
       ? `Time of day in India when this photo was taken: ${timeOfDay}. Use it to disambiguate breakfast dishes from lunch/dinner ones and to pick typical portions for that meal — never to override what is actually visible.`
       : '',
+    settingHint ? `${SETTING_HINT_LINES[settingHint]} Set "setting" accordingly and size portions and oil for it.` : '',
     userContext
       ? `Additional context from the user about this food (use it to refine your estimate, but don't let it override what you actually see in the image): "${userContext}"`
       : '',
@@ -140,7 +157,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: ai.kind === 'timeout' ? AI_TIMEOUT : AI_UNAVAILABLE }, { status: 503 })
   }
 
-  let geminiResult: { foods: GeminiFood[]; confidence: string }
+  let geminiResult: GeminiScan
   try {
     geminiResult = JSON.parse(stripMarkdown(ai.text))
   } catch {
@@ -188,6 +205,13 @@ export async function POST(req: Request) {
       geminiResult.foods.slice(0, MAX_CAMERA_ITEMS).map(async (item): Promise<ItemOutcome> => {
         const n = resolveNutrition(item)
         const clamped = !n.plausible
+        // The model's read of THIS item in THIS photo — not a property of the
+        // catalogue row `enriched` is otherwise built from, so it rides along
+        // as extra fields rather than living in `foods`.
+        const itemAnnotations = {
+          item_confidence: parseItemConfidence(item.confidence),
+          alternatives: normalizeAlternatives(item.name, item.alternatives),
+        }
 
         // A readable printed panel is authoritative for that exact product — never
         // let a fuzzy name match against a generic DB food override it. A pcs-total
@@ -257,13 +281,13 @@ export async function POST(req: Request) {
 
               if (convertErr) throw new UpsertFailedError(`DB upsert failed: ${convertErr.message}`)
               if (converted) {
-                return { clamped, enriched: { ...converted, estimated_grams: n.portion, unit: 'pcs' } }
+                return { clamped, enriched: { ...converted, estimated_grams: n.portion, unit: 'pcs', ...itemAnnotations } }
               }
               // Fall through to the generic estimate upsert below if this failed.
             } else if (n.unit !== 'pcs') {
               return {
                 clamped,
-                enriched: { ...existing, estimated_grams: n.portion || existing.serving_size_g || 100, unit: n.unit },
+                enriched: { ...existing, estimated_grams: n.portion || existing.serving_size_g || 100, unit: n.unit, ...itemAnnotations },
               }
             }
           }
@@ -308,7 +332,7 @@ export async function POST(req: Request) {
 
         if (upsertErr) throw new UpsertFailedError(`DB upsert failed: ${upsertErr.message}`)
 
-        return created ? { clamped, enriched: { ...created, estimated_grams: n.portion, unit: n.unit } } : { clamped }
+        return created ? { clamped, enriched: { ...created, estimated_grams: n.portion, unit: n.unit, ...itemAnnotations } } : { clamped }
       })
     )
   } catch (e) {
@@ -341,6 +365,8 @@ export async function POST(req: Request) {
   // user knows to double-check it, even if Gemini itself reported "high".
   const confidence = anyClamped ? 'low' : geminiResult.confidence
 
+  const setting = parseSetting(geminiResult.setting)
+
   // `model` rides on every AI event so correction rates can be compared
   // across models — the one accuracy signal that needs no ground truth.
   captureServerEvent(userId, 'ai_scan_completed', {
@@ -348,6 +374,7 @@ export async function POST(req: Request) {
     confidence,
     model: ai.model,
     items: enrichedFoods.length,
+    setting,
   })
 
   // `trialRemaining` was the count before this scan; one has now been spent.
@@ -357,6 +384,7 @@ export async function POST(req: Request) {
     confidence,
     remaining,
     model: ai.model,
+    setting,
     // Present only when at least one detected item was dropped for lack of a
     // safe number — the common case (nothing dropped) omits the field.
     ...(unresolvedNames.length ? { unresolved: unresolvedNames } : {}),
