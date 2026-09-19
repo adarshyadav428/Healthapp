@@ -28,6 +28,19 @@ const MEALS = [
   { value: 'snack',     label: 'Snack' },
 ] as const
 
+/**
+ * One tap tells the model something a photo alone can leave ambiguous — a
+ * home dal and a restaurant dal look similar but carry very different oil —
+ * cheaper and more reliable than asking the model to infer it every time.
+ * Tapping the already-selected chip clears it (a considered "I'm not sure"
+ * beats a stale guess from the last photo).
+ */
+const SETTING_CHIPS = [
+  { value: 'home',       label: 'Home-cooked' },
+  { value: 'restaurant', label: 'Restaurant' },
+  { value: 'packaged',   label: 'Packaged' },
+] as const
+
 const mealLabel = (meal: string) => MEALS.find((m) => m.value === meal)?.label ?? meal
 
 const FEEDBACK: { value: AiFeedback; label: string }[] = [
@@ -134,11 +147,12 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
     videoRef, canvasRef, galleryRef,
     barcodeSupport, mode, camError, barcodeLoading, captured, analyzing,
     results, selected, selectedIdx, confidence, scansLeft, grams, photoContext, showContextInput,
+    settingHint, swappingIdx, swappingAlt,
     meal, logging, manualBarcode, manualLoading, customName, editingName, feedback, logged,
-    setGrams, setPhotoContext, setShowContextInput, setMeal,
+    setGrams, setPhotoContext, setShowContextInput, setMeal, setSettingHint,
     setManualBarcode, setCustomName, setEditingName,
     onGallerySelect, capturePhoto, analyzePhoto, submitManualBarcode,
-    retake, switchMode, selectResult, logFood, rateResult,
+    retake, switchMode, selectResult, logFood, rateResult, swapAlternative,
     kcal, protein, carbs, fat, coaching, amountMin, amountMax, amountStep,
     multiItem, totalKcal,
   } = useCameraScan({ onClose, onFoodFound, logDate, context })
@@ -245,6 +259,22 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
             {captured ? (
               // Review: the photo is taken, the model has not seen it yet.
               <div className="space-y-3">
+                <div role="group" aria-label="Where is this food from?" className="flex gap-1.5">
+                  {SETTING_CHIPS.map((c) => (
+                    <button
+                      key={c.value}
+                      type="button"
+                      aria-pressed={settingHint === c.value}
+                      onClick={() => setSettingHint(settingHint === c.value ? null : c.value)}
+                      className={cn(
+                        'h-9 rounded-full px-3.5 text-caption font-semibold tap-scale transition-colors backdrop-blur-md',
+                        settingHint === c.value ? 'bg-white text-black' : 'bg-white/15 text-white/80 hover:bg-white/25',
+                      )}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
                 {showContextInput ? (
                   <input
                     type="text"
@@ -372,9 +402,31 @@ export function CameraModal({ onClose, onFoodFound, logDate, context }: Props) {
               )}
               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-ink-3">
                 {selected!.food.brand && <span>{selected!.food.brand}</span>}
-                {confidence === 'low' && <Chip tone="energy" size="sm">Check this one</Chip>}
+                {/* The item's own read is more precise than the whole-photo one — a
+                    shaky paneer estimate shouldn't badge the rice next to it too — and
+                    is preferred whenever the scan carried one. */}
+                {(selected!.itemConfidence ?? confidence) === 'low' && <Chip tone="energy" size="sm">Check this one</Chip>}
                 {scansLine && <span className="tabular-nums">{scansLine}</span>}
               </div>
+
+              {/* Not sure it's the right dish? One tap re-matches the catalogue for
+                  real macros instead of just relabelling a guess. */}
+              {selected!.alternatives.length > 0 && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <span className="text-caption text-ink-3">Not quite?</span>
+                  {selected!.alternatives.map((alt) => (
+                    <button
+                      key={alt}
+                      type="button"
+                      disabled={swappingIdx === selectedIdx}
+                      onClick={() => swapAlternative(alt)}
+                      className="h-8 rounded-full border border-hairline bg-surface px-3 text-caption font-medium text-ink-2 tap-scale hover:text-ink disabled:opacity-50"
+                    >
+                      {swappingIdx === selectedIdx && swappingAlt === alt ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : alt}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* The number, and what it is made of. */}
               <div className="mt-4 rounded-card-lg border border-hairline bg-surface px-4 py-4 shadow-air">

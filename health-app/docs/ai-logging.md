@@ -170,3 +170,65 @@ Also changed in the same pass, all pinned by `tests/gemini.test.ts`,
 prompt, schema and settings and prints one row per photo per model. No
 score — that's the point; it's for looking. The camera prompt now lives in
 `lib/camera-prompt.ts` precisely so the script and the route can't drift.
+
+## The camera prompt rewrite (PR 2, 2026-09-18)
+
+Rewrote `CAMERA_PROMPT` (`lib/camera-prompt.ts`) around a question the v1
+prompt never asked: **where did this food come from, and what does that
+imply about its oil?** A home dal and a restaurant dal makhani look similar
+in a photo and are not similar in calories.
+
+- **Observe, then estimate.** `scene` and `setting` are FIRST in
+  `CAMERA_RESPONSE_SCHEMA`'s `propertyOrdering`, so the model has to
+  describe what it sees — vessel, size cues, item count, oil, provenance —
+  before it commits to a single gram figure. This is the same lesson
+  `is_stated_component` taught chat (classify, then let arithmetic follow)
+  applied to vision instead of text.
+- **`INDIAN_VESSEL_REFERENCE`** gives the model a ruler `INDIAN_PORTION_REFERENCE`
+  never did: a katori is 100–150 ml, a quarter plate 18 cm, a full thali
+  28–30 cm, a foil takeaway box 500–750 ml. Sizing a portion from the vessel
+  it sits in, rather than a name-keyed lookup, is what makes a restaurant
+  serving genuinely different from a home one instead of the same number
+  scaled by a fixed multiplier — which is also why there is **no numeric
+  oil multiplier in code**: the app cannot know how much oilier "this
+  restaurant's dal makhani" is than "a home moong dal" without seeing it,
+  so the model estimates the per-100g values for the preparation it
+  actually observes, and `setting` is there to bias that estimate, not
+  replace it.
+- **`settingHint`** — the one thing a photo genuinely cannot always settle —
+  is a chip the user taps before the shutter (Home-cooked / Restaurant /
+  Packaged, `components/camera/CameraModal.tsx`), parsed server-side to one
+  of exactly three enum values (`parseSettingHint`) before it ever reaches
+  the prompt string. Never free text: an enum is a value, not an
+  instruction, which is what keeps user input out of prompt-injection reach
+  the same way the bounded `currentTime` token already did.
+- **Per-item `confidence`** is independent of the whole-scan one. The route
+  prefers it when present (`selected.itemConfidence ?? confidence` in
+  `CameraModal.tsx`), so a shaky item on an otherwise-clear thali is flagged
+  without badging the whole plate.
+- **`alternatives`** (≤ `MAX_ALTERNATIVES`, 2) are other dishes an item could
+  plausibly be — "aloo or gobi paratha", "moong or arhar dal" — rendered as
+  one-tap "Not quite?" chips. Tapping one calls `/api/foods/search` (the
+  same ranked, synonym-aware matcher the manual search box uses, sharper
+  than the AI route's own `ilike` substring match) for that name and swaps
+  the **whole food**, not just the label, on a hit — so correcting a
+  misidentification also corrects the macros, which a plain rename never
+  would. `normalizeAlternatives` excludes the item's own name
+  case-insensitively before capping; get the order backwards and a
+  self-match silently eats a slot, invisible in a test unless the self-name
+  is placed first (a later one is masked by the cap regardless).
+- **`category` was cut before shipping.** It was in the schema for one
+  iteration (a coarse dish taxonomy — bread/dal/curry/etc.) with no
+  consumer anywhere in the app; adding it back needs an actual use, not
+  "might be useful for a later pass".
+
+**Manual eval — not yet run against real photos.** The wiring is verified
+live (schema round-trips, `scene`/`setting` come back correctly for a
+synthetic blank image — "no food visible" — see the PR), but the actual
+QUESTION this rewrite is meant to answer — does `setting` + the vessel
+reference measurably improve restaurant-vs-home portion sizing, do
+`alternatives` fire on genuinely ambiguous dishes — needs real meal photos,
+which weren't available this session. Run `scripts/ai-scan-compare.ts`
+against a folder of real photos (thali, restaurant box, packaged snack,
+ambiguous dish) and record the result here before trusting this prompt
+beyond "it doesn't crash".

@@ -19,7 +19,7 @@
 import { readdirSync, readFileSync, existsSync } from 'node:fs'
 import { join, extname, resolve } from 'node:path'
 import { GEMINI_MODEL, buildGeminiBody, geminiUrl, type GeminiCall } from '../lib/gemini'
-import { CAMERA_RESPONSE_SCHEMA, resolveNutrition, type GeminiFood } from '../lib/camera-nutrition'
+import { CAMERA_RESPONSE_SCHEMA, resolveNutrition, type GeminiFood, type GeminiScan } from '../lib/camera-nutrition'
 import { CAMERA_PROMPT } from '../lib/camera-prompt'
 
 function readEnvKey(): string {
@@ -59,7 +59,7 @@ async function scan(model: string, apiKey: string, base64: string, mimeType: str
   if (!res.ok) return { ms, error: `${res.status} ${json.error?.message ?? ''}`.trim() }
   const text = (json.candidates?.[0]?.content?.parts ?? []).filter((p) => !p.thought).map((p) => p.text ?? '').join('')
   try {
-    const parsed = JSON.parse(text) as { foods: GeminiFood[]; confidence: string }
+    const parsed = JSON.parse(text) as GeminiScan
     return { ms, parsed, finish: json.candidates?.[0]?.finishReason, usage: json.usageMetadata }
   } catch {
     return { ms, error: `unparseable (finish=${json.candidates?.[0]?.finishReason})`, raw: text.slice(0, 200) }
@@ -71,7 +71,9 @@ function describe(f: GeminiFood): string {
   const per = n.unit === 'pcs' ? n.kcal_per_100g / 100 : n.kcal_per_100g / 100
   const kcal = Math.round(per * n.portion)
   const flags = [n.fromLabel ? 'label' : '', n.fromServingTotal ? 'pcs-total' : '', !n.plausible ? 'CLAMPED' : '', !n.resolvable ? 'UNRESOLVED' : ''].filter(Boolean).join(',')
-  return `${f.name} — ${Math.round(n.portion)}${n.unit} ≈ ${kcal} kcal${flags ? ` [${flags}]` : ''}`
+  const conf = f.confidence ? ` (${f.confidence})` : ''
+  const alts = f.alternatives?.length ? ` — or: ${f.alternatives.join(' / ')}` : ''
+  return `${f.name}${conf} — ${Math.round(n.portion)}${n.unit} ≈ ${kcal} kcal${flags ? ` [${flags}]` : ''}${alts}`
 }
 
 async function main() {
@@ -100,7 +102,8 @@ async function main() {
         continue
       }
       const p = r.parsed!
-      console.log(`  ${model.padEnd(26)} ${String(r.ms).padStart(6)} ms  confidence=${p.confidence}  items=${p.foods.length}  finish=${r.finish}`)
+      console.log(`  ${model.padEnd(26)} ${String(r.ms).padStart(6)} ms  setting=${p.setting ?? '?'}  confidence=${p.confidence}  items=${p.foods.length}  finish=${r.finish}`)
+      if (p.scene) console.log(`     scene: ${p.scene}`)
       for (const f of p.foods) console.log(`     · ${describe(f)}`)
     }
     console.log()
